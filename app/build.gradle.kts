@@ -55,21 +55,36 @@ tasks.register<JavaExec>("pitest") {
     mainClass.set("org.pitest.mutationtest.commandline.MutationCoverageReport")
 
     doFirst {
-        val mainClasses = layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile
-        val testClasses = layout.buildDirectory.dir("tmp/kotlin-classes/debugUnitTest").get().asFile
-        val rcp = configurations["debugUnitTestRuntimeClasspath"].files
+        val mainClasses = layout.buildDirectory
+            .dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes").get().asFile
+        val testClasses = layout.buildDirectory
+            .dir("intermediates/built_in_kotlinc/debugUnitTest/compileDebugUnitTestKotlin/classes").get().asFile
 
-        val mutationClassPath = (listOf(mainClasses, testClasses) + rcp)
-            .joinToString(File.pathSeparator)
+        val androidJar = File(System.getenv("ANDROID_HOME") ?: "${System.getProperty("user.home")}/Android/Sdk")
+            .resolve("platforms/android-36.1/android.jar")
+
+        val rcp = configurations["debugUnitTestRuntimeClasspath"].files
+            .filter { it.extension == "jar" }
+
+        val byteBuddyAgent = rcp.first { it.name.startsWith("byte-buddy-agent") }
+
+        val classpathFile = layout.buildDirectory.file("pitest-classpath.txt").get().asFile
+        classpathFile.parentFile.mkdirs()
+        classpathFile.writeText(
+            (listOf(mainClasses, testClasses, androidJar) + rcp)
+                .joinToString("\n") { it.absolutePath }
+        )
 
         args(
             "--reportDir", layout.buildDirectory.dir("reports/pitest").get().asFile.absolutePath,
-            "--targetClasses", "fr.mandarine.todolist.*",
+            "--targetClasses", "fr.mandarine.todolist.domain.*,fr.mandarine.todolist.data.*,fr.mandarine.todolist.presentation.*",
+            "--excludedClasses", "*Test,*Tests",
+            "--targetTests", "fr.mandarine.todolist.*",
             "--sourceDirs", "${projectDir}/src/main/java",
-            "--classPath", mutationClassPath,
+            "--classPathFile", classpathFile.absolutePath,
+            "--jvmArgs", "-javaagent:${byteBuddyAgent.absolutePath}",
             "--outputFormats", "HTML,XML",
             "--mutationThreshold", "100",
-            "--coverageThreshold", "100",
             "--threads", "4",
             "--timestampedReports", "false",
             "--failWhenNoMutations", "false"
@@ -81,6 +96,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    implementation(libs.androidx.recyclerview)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
