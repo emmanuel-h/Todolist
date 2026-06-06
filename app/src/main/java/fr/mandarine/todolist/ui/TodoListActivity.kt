@@ -6,6 +6,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.InMemoryTodoRepository
@@ -22,6 +23,7 @@ class TodoListActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_todo_list)
+        setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
 
         val repository = InMemoryTodoRepository()
         viewModel = TodoListViewModel(AddTodoUseCase(repository), GetTodosUseCase(repository))

@@ -32,6 +32,15 @@ Android native to-do list app (`fr.mandarine.todolist`). Kotlin, single `:app` m
 
 Every feature must reach **100% JaCoCo line+branch coverage** and **100% Pitest mutation score** before it is considered done. The `developer` agent (`.claude/agents/developer.md`) enforces this automatically.
 
+## Agent pipeline
+
+For any user-facing feature, run the agents in this order:
+
+1. **`developer`** — TDD logic: domain, data, ViewModel, unit tests, coverage + mutation gates
+2. **`ui`** — Polish: layouts, themes, accessibility, Material Design 3 compliance, build check
+
+The `ui` agent never touches domain/data/ViewModel code. The `developer` agent never touches layout XML or theme files.
+
 ## Architecture
 
 Three strict layers — a class must not import from a layer above it or import `android.*` in `domain/`:
