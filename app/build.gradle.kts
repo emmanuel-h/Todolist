@@ -47,6 +47,7 @@ tasks.register<JavaExec>("pitest") {
     group = "verification"
     description = "Runs Pitest mutation testing against unit-test classes"
 
+    notCompatibleWithConfigurationCache("pitest accesses project state at execution time")
     dependsOn("compileDebugKotlin", "compileDebugUnitTestKotlin", "testDebugUnitTest")
 
     // Run the Pitest CLI using its own fat-jar classpath.
