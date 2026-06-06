@@ -2,4 +2,14 @@
     <string name="app_name">To do list</string>
     <string name="add_item">Add item</string>
     <string name="add">Add</string>
+    <string name="my_lists">My Lists</string>
+    <string name="create_list">Create list</string>
+    <string name="list_name_hint">List name</string>
+    <string name="delete_list">Delete list</string>
+    <string name="delete_list_confirmation_title">Delete list?</string>
+    <string name="delete_list_confirmation_message">This will permanently delete the list and all its items.</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="empty_lists_message">No lists yet. Tap + to create one.</string>
+    <string name="empty_todos_message">No items yet. Tap + to add one.</string>
 </resources>

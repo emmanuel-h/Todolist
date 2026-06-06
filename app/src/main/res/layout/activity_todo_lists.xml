@@ -13,35 +13,36 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:title="@string/app_name" />
+            android:title="@string/my_lists" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+        android:id="@+id/recyclerViewLists"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
+        android:paddingTop="8dp"
         android:paddingBottom="88dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/textEmptyTodos"
+        android:id="@+id/textEmptyLists"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:text="@string/empty_todos_message"
+        android:text="@string/empty_lists_message"
         android:textAppearance="?attr/textAppearanceBodyLarge"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAdd"
+        android:id="@+id/fabAddList"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="@string/add_item"
+        android:contentDescription="@string/create_list"
         app:backgroundTint="?attr/colorPrimaryContainer"
         app:tint="?attr/colorOnPrimaryContainer"
         app:srcCompat="@android:drawable/ic_input_add" />

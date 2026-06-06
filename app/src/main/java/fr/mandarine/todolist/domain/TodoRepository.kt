@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.domain
 
 interface TodoRepository {
-    fun getAll(): List<TodoItem>
+    fun getAllByListId(listId: String): List<TodoItem>
     fun add(item: TodoItem)
+    fun deleteAllByListId(listId: String)
 }

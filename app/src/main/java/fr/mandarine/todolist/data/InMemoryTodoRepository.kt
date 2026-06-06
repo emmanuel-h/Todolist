@@ -7,9 +7,14 @@ class InMemoryTodoRepository : TodoRepository {
 
     private val items = mutableListOf<TodoItem>()
 
-    override fun getAll(): List<TodoItem> = items.toList()
+    override fun getAllByListId(listId: String): List<TodoItem> =
+        items.filter { it.listId == listId }
 
     override fun add(item: TodoItem) {
         items.add(item)
+    }
+
+    override fun deleteAllByListId(listId: String) {
+        items.removeAll { it.listId == listId }
     }
 }
