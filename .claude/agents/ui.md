@@ -32,7 +32,7 @@ You are a senior Android UI/UX engineer on the **fr.mandarine.todolist** project
 - `domain/` — models, use cases, repository interfaces
 - `data/` — repository implementations
 - `presentation/` ViewModel files (files ending in `ViewModel.kt`)
-- Test files
+- Test files outside `app/src/test/java/fr/mandarine/todolist/ui/`
 - `build.gradle.kts` or any Gradle configuration
 
 ---
@@ -139,7 +139,41 @@ After all edits, build the debug APK to verify no compilation or resource errors
 
 If the build fails, read the full error, fix the root cause, and rebuild. Do not proceed until the build is clean.
 
-### 4. VERIFY VISUALLY (optional but preferred)
+### 4. ROBOLECTRIC TESTS
+
+Write integration tests that validate the full UI wiring (Activity → ViewModel → use cases → adapter → views). Tests live in `app/src/test/java/fr/mandarine/todolist/ui/<ActivityName>Test.kt` and run under the standard `testDebugUnitTest` task.
+
+Dependencies (add to `testImplementation` in `app/build.gradle.kts` if not already present):
+- `libs.robolectric` — test runner + Android simulation
+- `libs.androidx.test.core` — `ActivityScenario`
+- `libs.androidx.espresso.core` — view interactions (needed for dialog access)
+
+Framework setup:
+- `@RunWith(RobolectricTestRunner::class)` + `@Config(sdk = [34])`
+- `ActivityScenario.launch(…).use { scenario -> … }` to start the Activity
+- Use **Espresso** (`onView(…).perform(…)`) **outside** `scenario.onActivity { }` for click and text actions — Espresso handles the classloader boundary between Robolectric's sandbox and the test JVM; `ShadowAlertDialog` / direct casting does NOT work with AppCompat dialogs
+- Trigger dialogs via `onView(withId(R.id.fabAdd)).perform(click())`
+- Interact with dialog views via `onView(…).inRoot(isDialog()).perform(…)` — use `isAssignableFrom(EditText::class.java)` to match the EditText, `withId(android.R.id.button1)` for the positive button
+- Read adapter state or perform checkbox interactions inside `scenario.onActivity { activity -> … }` (runs on the main thread)
+- Force RecyclerView layout before accessing `getChildAt(i)`: call `measure(…)` then `layout(…)` on the RecyclerView
+
+Required tests for every screen with a list + FAB + dialog pattern:
+1. **Empty state** — adapter `itemCount == 0` on launch
+2. **Single add** — one valid submission → `itemCount == 1`
+3. **Multiple adds** — three submissions → `itemCount == 3`
+4. **Blank title rejected** — empty input → `itemCount` stays 0
+5. **Whitespace title rejected** — spaces-only input → `itemCount` stays 0
+6. **Checkbox on** — `performClick()` on unchecked box → `isChecked == true`
+7. **Checkbox off** — two clicks on a box → `isChecked == false`
+
+Add tests for any additional interactions specific to the screen (swipe-to-delete, reorder, filters, etc.).
+
+Run and verify all tests pass:
+```bash
+./gradlew testDebugUnitTest 2>&1 | tail -40
+```
+
+### 5. VERIFY VISUALLY (optional but preferred)
 
 If the `run` skill or an emulator is available, launch the app and confirm:
 - The AppBar title is fully visible and not clipped
@@ -177,6 +211,7 @@ When you finish, output exactly this:
 - <short description of each finding resolved>
 
 **Build:** assembleDebug passed / failed (reason)
+**Tests:** <N> Robolectric tests, all passing / failed (reason)
 **Visual check:** confirmed in emulator / not verified (reason)
 ```
 
