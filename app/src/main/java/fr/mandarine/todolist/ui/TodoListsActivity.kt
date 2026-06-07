@@ -2,14 +2,15 @@ package fr.mandarine.todolist.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
-import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.textfield.TextInputEditText
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoListRepository
 import fr.mandarine.todolist.data.RoomTodoRepository
@@ -65,11 +66,11 @@ class TodoListsActivity : AppCompatActivity() {
     }
 
     private fun showCreateListDialog() {
-        val input = EditText(this)
-        input.hint = getString(R.string.list_name_hint)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_list, null)
+        val input = dialogView.findViewById<TextInputEditText>(R.id.editDialogCreateList)
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.create_list)
-            .setView(input)
+            .setView(dialogView)
             .setPositiveButton(R.string.add) { _, _ ->
                 val name = input.text.toString()
                 if (name.isNotBlank()) {

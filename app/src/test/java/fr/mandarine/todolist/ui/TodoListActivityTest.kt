@@ -1,15 +1,17 @@
 package fr.mandarine.todolist.ui
 
+import android.app.Application
 import android.content.Intent
+import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.matcher.ViewMatchers.withId
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
+import com.google.android.material.textfield.TextInputEditText
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.data.TodoListEntity
@@ -21,7 +23,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowInputMethodManager
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -47,9 +51,25 @@ class TodoListActivityTest {
         return ActivityScenario.launch(intent)
     }
 
-    private fun addItemViaInlineBar(title: String) {
-        onView(withId(R.id.editAddItem)).perform(replaceText(title))
-        onView(withId(R.id.btnAddItem)).perform(click())
+    private fun addItemViaInlineRow(activity: TodoListActivity, title: String) {
+        val rv = activity.recyclerView()
+        layoutRecyclerView(rv)
+        val addRow = rv.getChildAt(rv.childCount - 1)
+            ?: error("no children in recycler view")
+        val editText = addRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+        editText.setText(title)
+        editText.onEditorAction(EditorInfo.IME_ACTION_DONE)
+    }
+
+    private fun addItemViaSubmitButton(activity: TodoListActivity, title: String) {
+        val rv = activity.recyclerView()
+        layoutRecyclerView(rv)
+        val addRow = rv.getChildAt(rv.childCount - 1)
+            ?: error("no children in recycler view")
+        val editText = addRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+        val submitButton = addRow.findViewById<MaterialButton>(R.id.btnInlineSubmit)
+        editText.setText(title)
+        submitButton.performClick()
     }
 
     @Test
@@ -62,29 +82,8 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show zero todo items when no todos have been added`() {
+    fun `should show one item in recycler when no todos have been added (inline add row only)`() {
         launchWithListId().use { scenario ->
-            scenario.onActivity { activity ->
-                val rv = activity.recyclerView()
-                layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
-            }
-        }
-    }
-
-    @Test
-    fun `should show empty state when no todos have been added`() {
-        launchWithListId().use { scenario ->
-            scenario.onActivity { activity ->
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
-            }
-        }
-    }
-
-    @Test
-    fun `should add item to list when valid title is submitted via inline bar`() {
-        launchWithListId().use { scenario ->
-            addItemViaInlineBar("Buy milk")
             scenario.onActivity { activity ->
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
@@ -94,9 +93,8 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should hide empty state after first item is added`() {
+    fun `should hide empty state view always because inline input replaces it`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("Buy milk")
             scenario.onActivity { activity ->
                 assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
             }
@@ -104,15 +102,27 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should accumulate items when multiple todos are added`() {
+    fun `should show two items in recycler after one todo is added`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("Buy milk")
-            addItemViaInlineBar("Call dentist")
-            addItemViaInlineBar("Walk the dog")
             scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(3, rv.adapter!!.itemCount)
+                assertEquals(2, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should accumulate items when multiple todos are added`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                addItemViaInlineRow(activity, "Call dentist")
+                addItemViaInlineRow(activity, "Walk the dog")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(4, rv.adapter!!.itemCount)
             }
         }
     }
@@ -120,11 +130,11 @@ class TodoListActivityTest {
     @Test
     fun `should not add item when title is blank`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("   ")
             scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "   ")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
@@ -132,11 +142,11 @@ class TodoListActivityTest {
     @Test
     fun `should not add item when title is empty`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("")
             scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
@@ -144,8 +154,8 @@ class TodoListActivityTest {
     @Test
     fun `should check item when checkbox is tapped`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("Buy milk")
             scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
                 val checkBox = firstCheckBox(activity)
                 assertFalse(checkBox.isChecked)
                 checkBox.performClick()
@@ -157,8 +167,8 @@ class TodoListActivityTest {
     @Test
     fun `should uncheck item when checked checkbox is tapped again`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("Buy milk")
             scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
                 val checkBox = firstCheckBox(activity)
                 checkBox.performClick()
                 checkBox.performClick()
@@ -170,14 +180,164 @@ class TodoListActivityTest {
     @Test
     fun `should persist completed state across list refresh when item is toggled`() {
         launchWithListId().use { scenario ->
-            addItemViaInlineBar("Buy milk")
             scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
                 firstCheckBox(activity).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
                 assertTrue(firstCheckBox(activity).isChecked)
+            }
+        }
+    }
+
+    @Test
+    fun `should place inline add row as last item after adding todos`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val lastChild = rv.getChildAt(rv.childCount - 1)
+                val editText = lastChild?.findViewById<TextInputEditText>(R.id.editInlineAdd)
+                assertTrue(editText != null)
+            }
+        }
+    }
+
+    @Test
+    fun `should add item when submit button is tapped with non-blank title`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaSubmitButton(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(2, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should not add item when submit button is tapped with blank title`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaSubmitButton(activity, "   ")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(1, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should clear focus on inline editText when touch event is outside its bounds`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val addRow = rv.getChildAt(rv.childCount - 1)!!
+                val editText = addRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+
+                editText.requestFocus()
+                assertTrue(editText.hasFocus())
+
+                val outsideX = 5000f
+                val outsideY = 5000f
+                val downEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, outsideX, outsideY, 0)
+                activity.dispatchTouchEvent(downEvent)
+                downEvent.recycle()
+
+                assertFalse(editText.hasFocus())
+            }
+        }
+    }
+
+    @Test
+    fun `should hide soft keyboard when touch event is outside the inline editText bounds`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val addRow = rv.getChildAt(rv.childCount - 1)!!
+                val editText = addRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+
+                editText.requestFocus()
+
+                val imm = activity.getSystemService(InputMethodManager::class.java)
+                val shadowImm = Shadows.shadowOf(imm) as ShadowInputMethodManager
+                imm.showSoftInput(editText, 0)
+                assertTrue(shadowImm.isSoftInputVisible)
+
+                val outsideX = 5000f
+                val outsideY = 5000f
+                val downEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, outsideX, outsideY, 0)
+                activity.dispatchTouchEvent(downEvent)
+                downEvent.recycle()
+
+                assertFalse(shadowImm.isSoftInputVisible)
+            }
+        }
+    }
+
+    @Test
+    fun `should not clear focus when touch event is inside the inline editText bounds`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val addRow = rv.getChildAt(rv.childCount - 1)!!
+                val editText = addRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+
+                editText.requestFocus()
+                assertTrue(editText.hasFocus())
+
+                val location = IntArray(2)
+                editText.getLocationOnScreen(location)
+                val insideX = (location[0] + editText.width / 2).toFloat()
+                val insideY = (location[1] + editText.height / 2).toFloat()
+                val downEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, insideX, insideY, 0)
+                activity.dispatchTouchEvent(downEvent)
+                downEvent.recycle()
+
+                assertTrue(editText.hasFocus())
+            }
+        }
+    }
+
+    @Test
+    fun `should not crash when no view currently has focus during touch event`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                activity.currentFocus?.clearFocus()
+
+                val downEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, 500f, 500f, 0)
+                activity.dispatchTouchEvent(downEvent)
+                downEvent.recycle()
+            }
+        }
+    }
+
+    @Test
+    fun `should not clear focus when focused view is not an EditText`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+
+                val nonEditView = View(activity)
+                nonEditView.isFocusable = true
+                nonEditView.isFocusableInTouchMode = true
+                activity.addContentView(nonEditView, android.view.ViewGroup.LayoutParams(100, 100))
+                nonEditView.layout(0, 0, 100, 100)
+                nonEditView.requestFocus()
+                assertTrue(nonEditView.hasFocus())
+
+                val downEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, 5000f, 5000f, 0)
+                activity.dispatchTouchEvent(downEvent)
+                downEvent.recycle()
+
+                assertTrue(nonEditView.hasFocus())
             }
         }
     }

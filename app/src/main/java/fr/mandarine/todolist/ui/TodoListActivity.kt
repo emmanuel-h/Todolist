@@ -1,15 +1,15 @@
 package fr.mandarine.todolist.ui
 
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.TodoDatabase
@@ -53,6 +53,10 @@ class TodoListActivity : AppCompatActivity() {
             onToggle = { todoId ->
                 viewModel.toggleTodo(todoId)
                 renderState(viewModel.state.value)
+            },
+            onSubmit = { title ->
+                viewModel.submitInlineInput(title)
+                renderState(viewModel.state.value)
             }
         )
 
@@ -64,21 +68,33 @@ class TodoListActivity : AppCompatActivity() {
         )
 
         renderState(viewModel.state.value)
+    }
 
-        val editAddItem = findViewById<TextInputEditText>(R.id.editAddItem)
-        val tilAddItem = findViewById<TextInputLayout>(R.id.tilAddItem)
-
-        findViewById<MaterialButton>(R.id.btnAddItem).setOnClickListener {
-            val title = editAddItem.text?.toString().orEmpty()
-            if (title.isBlank()) {
-                tilAddItem.error = getString(R.string.add_item_hint)
-            } else {
-                tilAddItem.error = null
-                viewModel.submitInlineInput(title)
-                editAddItem.text?.clear()
-                renderState(viewModel.state.value)
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            val focused = currentFocus ?: window.decorView.findFocus()
+            if (focused is TextInputEditText && isTouchOutsideView(ev, focused)) {
+                val result = super.dispatchTouchEvent(ev)
+                focused.isFocusable = false
+                focused.clearFocus()
+                focused.isFocusableInTouchMode = true
+                focused.isFocusable = true
+                getSystemService(InputMethodManager::class.java)
+                    .hideSoftInputFromWindow(focused.windowToken, 0)
+                return result
             }
         }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun isTouchOutsideView(ev: MotionEvent, view: View): Boolean {
+        val location = IntArray(2)
+        view.getLocationOnScreen(location)
+        val left = location[0].toFloat()
+        val top = location[1].toFloat()
+        val right = left + view.width
+        val bottom = top + view.height
+        return ev.rawX < left || ev.rawX > right || ev.rawY < top || ev.rawY > bottom
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -94,7 +110,7 @@ class TodoListActivity : AppCompatActivity() {
         when (state) {
             is TodoListState.Empty -> {
                 adapter.submitList(emptyList())
-                emptyLayout.visibility = View.VISIBLE
+                emptyLayout.visibility = View.GONE
             }
             is TodoListState.Content -> {
                 adapter.submitList(state.items)

@@ -1,40 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="center_vertical"
-    android:minHeight="56dp"
-    android:orientation="horizontal"
-    android:paddingHorizontal="16dp">
+    android:layout_height="wrap_content">
 
-    <!-- Spacer matching MaterialCheckBox width (wrap_content ~32dp) + its end margin (12dp) -->
-    <Space
-        android:layout_width="44dp"
-        android:layout_height="1dp" />
+    <!--
+        GHOST ROW — visible when the field is not focused.
+        Tapping it requests focus on the hidden EditText which then
+        reveals the EXPANDED ROW.
+    -->
+    <LinearLayout
+        android:id="@+id/ghostRow"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/inline_add_ghost_height"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:visibility="visible">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilInlineAdd"
-        style="@style/Widget.Material3.TextInputLayout.FilledBox.Dense"
+        <Space
+            android:layout_width="@dimen/inline_add_leading_spacer"
+            android:layout_height="1dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textGhostHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:alpha="0.45"
+            android:text="@string/add_item_ghost_hint"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:importantForAccessibility="no" />
+
+    </LinearLayout>
+
+    <!--
+        EXPANDED ROW — visible only when the EditText is focused.
+    -->
+    <LinearLayout
+        android:id="@+id/expandedRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/add_item_hint"
-        app:boxBackgroundColor="@android:color/transparent"
-        app:boxStrokeWidth="0dp"
-        app:boxStrokeWidthFocused="0dp"
-        app:hintEnabled="false">
+        android:gravity="center_vertical"
+        android:minHeight="56dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp"
+        android:visibility="gone">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editInlineAdd"
-            android:layout_width="match_parent"
+        <Space
+            android:layout_width="@dimen/inline_add_leading_spacer"
+            android:layout_height="1dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilInlineAdd"
+            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="@string/add_item_hint"
-            android:imeOptions="actionDone"
-            android:inputType="textCapSentences"
-            android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceBodyLarge" />
+            android:layout_weight="1"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:hintEnabled="false">
 
-    </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editInlineAdd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/add_item_hint"
+                android:imeOptions="actionDone"
+                android:inputType="textCapSentences"
+                android:maxLines="1"
+                android:textAppearance="?attr/textAppearanceBodyLarge" />
 
-</LinearLayout>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnInlineSubmit"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/submit_inline_add"
+            app:icon="@drawable/ic_arrow_forward"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconTint="?attr/colorPrimary" />
+
+    </LinearLayout>
+
+</FrameLayout>

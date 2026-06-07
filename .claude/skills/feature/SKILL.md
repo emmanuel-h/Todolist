@@ -17,7 +17,8 @@ Feature request: $ARGUMENTS
 
 Parse its output:
 
-- If it outputs `NO_QUESTIONS`: set `$SPEC = $ARGUMENTS` and skip to Step 1.
+- If it outputs `NO_QUESTIONS_UI_ONLY`: set `$SPEC = $ARGUMENTS`, set `$UI_ONLY = true`, and skip to Step 2.
+- If it outputs `NO_QUESTIONS`: set `$SPEC = $ARGUMENTS`, set `$UI_ONLY = false`, and proceed to Step 1.
 - If it outputs `QUESTIONS`: each line after that header is a question in the format `<text> | <opt1> | <opt2> [| <opt3>] [| <opt4>]`. Call the `AskUserQuestion` tool with those questions, mapping each pipe-separated segment to the question text and its options array. Wait for the user's answers.
 
   Then build an enriched spec:
@@ -31,9 +32,11 @@ Parse its output:
   …
   ```
 
-  If the user selected "Other" and provided free text, use that text as the answer. Set `$SPEC` to this enriched text.
+  If the user selected "Other" and provided free text, use that text as the answer. Set `$SPEC` to this enriched text. Set `$UI_ONLY = false`. Proceed to Step 1.
 
 ## Step 1 — developer agent (TDD logic)
+
+**Skip this step if `$UI_ONLY = true`.**
 
 Spawn a **`developer`** subagent (subagent_type = "developer") with the following prompt:
 
@@ -47,16 +50,26 @@ Wait for the agent to finish. If it reports any failing gate, do not proceed to 
 
 ## Step 2 — ui agent (UI polish)
 
-Once the developer agent has delivered green gates, spawn a **`ui`** subagent (subagent_type = "ui") with this prompt:
+Spawn a **`ui`** subagent (subagent_type = "ui") with this prompt:
 
-```
-The developer agent has just landed the backend logic for this feature: $SPEC
+- If `$UI_ONLY = false` (developer agent ran):
+  ```
+  The developer agent has just landed the backend logic for this feature: $SPEC
 
-Follow your mandatory workflow: ask the user about layout options first (CLARIFY step), then audit existing layouts, fix all findings, and confirm a clean assembleDebug build.
-```
+  Follow your mandatory workflow: ask the user about layout options first (CLARIFY step), then audit existing layouts, fix all findings, and confirm a clean assembleDebug build.
+  ```
+
+- If `$UI_ONLY = true` (developer agent was skipped):
+  ```
+  Implement the UI for this feature: $SPEC
+
+  This is a UI-only change — no domain/data/ViewModel files need to be touched.
+
+  Follow your mandatory workflow: ask the user about layout options first (CLARIFY step), then audit existing layouts, implement all findings, and confirm a clean assembleDebug build.
+  ```
 
 Wait for the agent to finish and surface its output to the user.
 
 ## Output
 
-After both agents complete successfully, summarise in one sentence what was built and confirm both gates (coverage + mutation) are green and the build passes.
+After all agents complete successfully, summarise in one sentence what was built. If the developer agent ran, confirm both gates (coverage + mutation) are green. Always confirm the build passes.

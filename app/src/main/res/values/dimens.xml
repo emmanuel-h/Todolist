@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Width of the leading spacer in the inline-add row, matching the
+         MaterialCheckBox touch target (wrap_content ~32dp) plus its end
+         margin (12dp) so the text field aligns with todo item titles. -->
+    <dimen name="inline_add_leading_spacer">44dp</dimen>
+    <!-- Collapsed ghost-row height — slimmer than the full 56dp item row. -->
+    <dimen name="inline_add_ghost_height">40dp</dimen>
+</resources>
