@@ -12,4 +12,5 @@
     <string name="cancel">Cancel</string>
     <string name="empty_lists_message">No lists yet. Tap + to create one.</string>
     <string name="empty_todos_message">No items yet. Tap + to add one.</string>
+    <string name="item_completed">Mark item as completed</string>
 </resources>

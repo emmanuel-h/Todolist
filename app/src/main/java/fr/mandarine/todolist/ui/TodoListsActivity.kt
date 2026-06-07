@@ -12,8 +12,9 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
-import fr.mandarine.todolist.data.InMemoryTodoListRepository
-import fr.mandarine.todolist.data.InMemoryTodoRepository
+import fr.mandarine.todolist.data.RoomTodoListRepository
+import fr.mandarine.todolist.data.RoomTodoRepository
+import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsUseCase
@@ -32,8 +33,9 @@ class TodoListsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_todo_lists)
         setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
 
-        val todoListRepository = InMemoryTodoListRepository()
-        val todoRepository = InMemoryTodoRepository()
+        val db = TodoDatabase.getInstance(this)
+        val todoListRepository = RoomTodoListRepository(db.todoListDao())
+        val todoRepository = RoomTodoRepository(db.todoItemDao())
         viewModel = TodoListsViewModel(
             CreateTodoListUseCase(todoListRepository),
             DeleteTodoListUseCase(todoListRepository, todoRepository),
@@ -56,6 +58,11 @@ class TodoListsActivity : AppCompatActivity() {
         findViewById<FloatingActionButton>(R.id.fabAddList).setOnClickListener {
             showCreateListDialog()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshLists()
     }
 
     private fun showCreateListDialog() {
@@ -90,6 +97,7 @@ class TodoListsActivity : AppCompatActivity() {
     private fun openList(list: TodoList) {
         val intent = Intent(this, TodoListActivity::class.java)
         intent.putExtra("LIST_ID", list.id)
+        intent.putExtra("LIST_NAME", list.name)
         startActivity(intent)
     }
 

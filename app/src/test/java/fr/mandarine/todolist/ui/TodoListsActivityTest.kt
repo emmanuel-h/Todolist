@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.EditText
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.replaceText
@@ -13,9 +14,12 @@ import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import com.google.android.material.button.MaterialButton
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.data.TodoDatabase
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,6 +28,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class TodoListsActivityTest {
+
+    private lateinit var db: TodoDatabase
+
+    @Before
+    fun setUp() {
+        db = TodoDatabase.getInstance(ApplicationProvider.getApplicationContext())
+    }
+
+    @After
+    fun tearDown() {
+        db.clearAllTables()
+    }
 
     @Test
     fun `should show empty state when no lists have been created`() {
@@ -127,6 +143,7 @@ class TodoListsActivityTest {
                 assertNotNull(nextIntent)
                 assertTrue(nextIntent!!.component!!.className.contains("TodoListActivity"))
                 assertNotNull(nextIntent.getStringExtra("LIST_ID"))
+                assertEquals("Work", nextIntent.getStringExtra("LIST_NAME"))
             }
         }
     }

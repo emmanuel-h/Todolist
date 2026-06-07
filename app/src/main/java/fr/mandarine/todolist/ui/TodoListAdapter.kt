@@ -3,9 +3,9 @@ package fr.mandarine.todolist.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.checkbox.MaterialCheckBox
+import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 
@@ -35,7 +35,7 @@ class TodoListAdapter : RecyclerView.Adapter<TodoListAdapter.ViewHolder>() {
     override fun getItemCount(): Int = items.size
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val titleView: TextView = view.findViewById(R.id.textTitle)
+        private val titleView: MaterialTextView = view.findViewById(R.id.textTitle)
         private val checkBox: MaterialCheckBox = view.findViewById(R.id.checkCompleted)
 
         fun bind(item: TodoItem, completedIds: Set<String>, onToggle: (String, Boolean) -> Unit) {

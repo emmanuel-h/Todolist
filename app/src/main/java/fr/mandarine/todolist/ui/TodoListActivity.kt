@@ -11,10 +11,9 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
-import fr.mandarine.todolist.data.InMemoryTodoListRepository
-import fr.mandarine.todolist.data.InMemoryTodoRepository
+import fr.mandarine.todolist.data.RoomTodoRepository
+import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.AddTodoUseCase
-import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
@@ -31,12 +30,14 @@ class TodoListActivity : AppCompatActivity() {
         setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val listId = intent.getStringExtra("LIST_ID") ?: run {
-            val todoListRepository = InMemoryTodoListRepository()
-            CreateTodoListUseCase(todoListRepository)("My List").id
+        val listId = requireNotNull(intent.getStringExtra("LIST_ID")) {
+            "TodoListActivity requires LIST_ID intent extra"
         }
+        val listName = intent.getStringExtra("LIST_NAME") ?: getString(R.string.app_name)
+        supportActionBar?.title = listName
 
-        val todoRepository = InMemoryTodoRepository()
+        val db = TodoDatabase.getInstance(this)
+        val todoRepository = RoomTodoRepository(db.todoItemDao())
         viewModel = TodoListViewModel(
             AddTodoUseCase(todoRepository),
             GetTodosUseCase(todoRepository),
