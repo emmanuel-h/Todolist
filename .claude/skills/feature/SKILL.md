@@ -9,7 +9,7 @@ Implement the feature described in `$ARGUMENTS` end-to-end.
 
 ## Step 0 — spec analyst (clarify before coding)
 
-Spawn the `spec-analyst` agent with this prompt:
+Spawn a **`spec-analyst`** subagent (subagent_type = "spec-analyst") with this prompt:
 
 ```
 Feature request: $ARGUMENTS
@@ -35,7 +35,7 @@ Parse its output:
 
 ## Step 1 — developer agent (TDD logic)
 
-Spawn the `developer` agent with the following prompt:
+Spawn a **`developer`** subagent (subagent_type = "developer") with the following prompt:
 
 ```
 Implement this feature: $SPEC
@@ -47,7 +47,7 @@ Wait for the agent to finish. If it reports any failing gate, do not proceed to 
 
 ## Step 2 — ui agent (UI polish)
 
-Once the developer agent has delivered green gates, spawn the `ui` agent with the following prompt:
+Once the developer agent has delivered green gates, spawn a **`ui`** subagent (subagent_type = "ui") with this prompt:
 
 ```
 The developer agent has just landed the backend logic for this feature: $SPEC
