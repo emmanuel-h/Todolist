@@ -4,13 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoListRepository
 import fr.mandarine.todolist.data.RoomTodoRepository
@@ -26,7 +25,7 @@ class TodoListsActivity : AppCompatActivity() {
 
     private lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
-    private lateinit var emptyView: MaterialTextView
+    private lateinit var emptyLayout: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +41,7 @@ class TodoListsActivity : AppCompatActivity() {
             GetTodoListsUseCase(todoListRepository)
         )
 
-        emptyView = findViewById(R.id.textEmptyLists)
+        emptyLayout = findViewById(R.id.layoutEmptyLists)
 
         adapter = TodoListsAdapter(
             onListClick = { list -> openList(list) },
@@ -68,7 +67,7 @@ class TodoListsActivity : AppCompatActivity() {
     private fun showCreateListDialog() {
         val input = EditText(this)
         input.hint = getString(R.string.list_name_hint)
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.create_list)
             .setView(input)
             .setPositiveButton(R.string.add) { _, _ ->
@@ -83,7 +82,7 @@ class TodoListsActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmation(list: TodoList) {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.delete_list_confirmation_title)
             .setMessage(R.string.delete_list_confirmation_message)
             .setPositiveButton(R.string.delete) { _, _ ->
@@ -105,11 +104,11 @@ class TodoListsActivity : AppCompatActivity() {
         when (val s = viewModel.state) {
             is TodoListsState.Empty -> {
                 adapter.submitList(emptyList())
-                emptyView.visibility = View.VISIBLE
+                emptyLayout.visibility = View.VISIBLE
             }
             is TodoListsState.Content -> {
                 adapter.submitList(s.lists)
-                emptyView.visibility = View.GONE
+                emptyLayout.visibility = View.GONE
             }
         }
     }

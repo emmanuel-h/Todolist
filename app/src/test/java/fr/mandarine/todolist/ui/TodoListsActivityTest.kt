@@ -46,7 +46,7 @@ class TodoListsActivityTest {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.textEmptyLists).visibility)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
             }
         }
     }
@@ -57,7 +57,7 @@ class TodoListsActivityTest {
             createListViaDialog("Work")
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
-                assertEquals(View.GONE, activity.findViewById<View>(R.id.textEmptyLists).visibility)
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
             }
         }
     }
@@ -107,7 +107,7 @@ class TodoListsActivityTest {
             deleteFirstListViaDialog(scenario)
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.textEmptyLists).visibility)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
             }
         }
     }

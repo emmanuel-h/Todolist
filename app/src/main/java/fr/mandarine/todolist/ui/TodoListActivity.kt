@@ -3,10 +3,13 @@ package fr.mandarine.todolist.ui
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.textview.MaterialTextView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.TodoDatabase
@@ -20,7 +23,7 @@ class TodoListActivity : AppCompatActivity() {
 
     private lateinit var viewModel: TodoListViewModel
     private lateinit var adapter: TodoListAdapter
-    private lateinit var emptyView: MaterialTextView
+    private lateinit var emptyLayout: View
     internal lateinit var recyclerViewInternal: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,27 +47,38 @@ class TodoListActivity : AppCompatActivity() {
             listId = listId
         )
 
-        emptyView = findViewById(R.id.textEmptyTodos)
+        emptyLayout = findViewById(R.id.layoutEmptyTodos)
 
         adapter = TodoListAdapter(
-            onCommit = { title ->
-                val added = viewModel.submitInlineInput(title)
-                if (added) {
-                    renderState(viewModel.state.value)
-                    recyclerViewInternal.scrollToPosition(adapter.itemCount - 1)
-                    adapter.requestAddRowFocus()
-                }
-            },
             onToggle = { todoId ->
                 viewModel.toggleTodo(todoId)
                 renderState(viewModel.state.value)
             }
         )
+
         recyclerViewInternal = findViewById(R.id.recyclerView)
         recyclerViewInternal.layoutManager = LinearLayoutManager(this)
         recyclerViewInternal.adapter = adapter
+        recyclerViewInternal.addItemDecoration(
+            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
+        )
 
         renderState(viewModel.state.value)
+
+        val editAddItem = findViewById<TextInputEditText>(R.id.editAddItem)
+        val tilAddItem = findViewById<TextInputLayout>(R.id.tilAddItem)
+
+        findViewById<MaterialButton>(R.id.btnAddItem).setOnClickListener {
+            val title = editAddItem.text?.toString().orEmpty()
+            if (title.isBlank()) {
+                tilAddItem.error = getString(R.string.add_item_hint)
+            } else {
+                tilAddItem.error = null
+                viewModel.submitInlineInput(title)
+                editAddItem.text?.clear()
+                renderState(viewModel.state.value)
+            }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -80,11 +94,11 @@ class TodoListActivity : AppCompatActivity() {
         when (state) {
             is TodoListState.Empty -> {
                 adapter.submitList(emptyList())
-                emptyView.visibility = View.GONE
+                emptyLayout.visibility = View.VISIBLE
             }
             is TodoListState.Content -> {
                 adapter.submitList(state.items)
-                emptyView.visibility = View.GONE
+                emptyLayout.visibility = View.GONE
             }
         }
     }
