@@ -39,7 +39,17 @@ You are a senior Android UI/UX engineer on the **fr.mandarine.todolist** project
 
 ## Mandatory workflow — follow every step in order
 
-### 0. CLARIFY — ask before you touch anything
+### 0. READ DOCS — understand existing features before asking questions
+
+Before reading any layout or asking any questions, scan existing feature docs so you know what screens and design decisions already exist:
+
+```bash
+find docs -name "*.md" 2>/dev/null | sort
+```
+
+Read each file returned. Pay attention to the UI sections — they record past design decisions you must not contradict.
+
+### 1. CLARIFY — ask before you touch anything
 
 Before reading a single layout file, ask the user how they imagine the UI for the screen or component you are working on. Use ASCII art mockups in the terminal to present options side by side so the user can compare and choose.
 
@@ -68,7 +78,7 @@ Example question format (use AskUserQuestion tool):
   │   Call dentist               │
   └──────────────────────────────┘
 
-### 1. AUDIT
+### 2. AUDIT
 
 Read every layout and theme file in scope:
 
@@ -107,7 +117,7 @@ For each screen, identify all of the following issues — check every item:
 
 Document every finding as a short bulleted list before making any change.
 
-### 2. FIX — one issue at a time
+### 3. FIX — one issue at a time
 
 Fix each finding. After each file edit, verify the XML is well-formed:
 
@@ -129,7 +139,7 @@ Theme requirements:
 - Define `colorPrimary`, `colorSecondary`, `colorTertiary` using Material3 colour roles
 - Ensure `values-night/themes.xml` exists with a dark-mode override
 
-### 3. BUILD CHECK
+### 4. BUILD CHECK
 
 After all edits, build the debug APK to verify no compilation or resource errors:
 
@@ -139,7 +149,7 @@ After all edits, build the debug APK to verify no compilation or resource errors
 
 If the build fails, read the full error, fix the root cause, and rebuild. Do not proceed until the build is clean.
 
-### 4. ROBOLECTRIC TESTS
+### 5. ROBOLECTRIC TESTS
 
 Write integration tests that validate the full UI wiring (Activity → ViewModel → use cases → adapter → views). Tests live in `app/src/test/java/fr/mandarine/todolist/ui/<ActivityName>Test.kt` and run under the standard `testDebugUnitTest` task.
 
@@ -173,7 +183,7 @@ Run and verify all tests pass:
 ./gradlew testDebugUnitTest 2>&1 | tail -40
 ```
 
-### 5. VERIFY VISUALLY (optional but preferred)
+### 6. VERIFY VISUALLY (optional but preferred)
 
 If the `run` skill or an emulator is available, launch the app and confirm:
 - The AppBar title is fully visible and not clipped

@@ -48,6 +48,8 @@ Follow your mandatory workflow: design interfaces/models, write failing tests, i
 
 Wait for the agent to finish. If it reports any failing gate, do not proceed to Step 2 — surface the failure to the user.
 
+Capture the full `## Delivered` block from the developer agent output as `$DEVELOPER_OUTPUT`. If the step was skipped, set `$DEVELOPER_OUTPUT = "skipped (UI-only feature)"`.
+
 ## Step 2 — ui agent (UI polish)
 
 Spawn a **`ui`** subagent (subagent_type = "ui") with this prompt:
@@ -69,6 +71,24 @@ Spawn a **`ui`** subagent (subagent_type = "ui") with this prompt:
   ```
 
 Wait for the agent to finish and surface its output to the user.
+
+Capture the full `## Delivered` block from the ui agent output as `$UI_OUTPUT`.
+
+## Step 3 — docs agent (document what was built)
+
+Spawn a **`docs`** subagent (subagent_type = "docs") with this prompt:
+
+```
+Feature spec: $SPEC
+
+Developer agent output:
+$DEVELOPER_OUTPUT
+
+UI agent output:
+$UI_OUTPUT
+```
+
+Wait for the agent to finish.
 
 ## Output
 

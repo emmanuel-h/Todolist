@@ -21,7 +21,15 @@ You are a senior Android/Kotlin engineer on the **fr.mandarine.todolist** projec
 ## Mandatory workflow — follow every step in order
 
 ### 1. UNDERSTAND
-Read the need carefully. Identify:
+Before designing anything, read existing feature docs so you know what is already in place and do not break it:
+
+```bash
+find docs -name "*.md" 2>/dev/null | sort
+```
+
+Read each file returned. Pay attention to invariants & contracts sections — those are constraints you must preserve.
+
+Then read the need carefully. Identify:
 - The layer: domain (pure Kotlin), data (repositories), or presentation (ViewModel)
 - Input/output contracts
 - Edge cases and error paths
