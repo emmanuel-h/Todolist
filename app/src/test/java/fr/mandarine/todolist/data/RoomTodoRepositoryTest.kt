@@ -6,6 +6,7 @@ import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -87,5 +88,43 @@ class RoomTodoRepositoryTest {
     fun `should do nothing when deleteAllByListId is called for a list with no items`() {
         repository.deleteAllByListId("list-nonexistent")
         assertTrue(repository.getAllByListId("list-nonexistent").isEmpty())
+    }
+
+    @Test
+    fun `should persist isCompleted false by default when item is added`() {
+        val item = TodoItem("1", "Item 1", "list-1")
+        repository.add(item)
+        assertFalse(repository.getAllByListId("list-1").first().isCompleted)
+    }
+
+    @Test
+    fun `should mark item as completed when toggle is called on an incomplete item`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.toggle("1")
+        assertTrue(repository.getAllByListId("list-1").first().isCompleted)
+    }
+
+    @Test
+    fun `should mark item as incomplete when toggle is called on a completed item`() {
+        repository.add(TodoItem("1", "Item 1", "list-1", isCompleted = true))
+        repository.toggle("1")
+        assertFalse(repository.getAllByListId("list-1").first().isCompleted)
+    }
+
+    @Test
+    fun `should only toggle the item with the matching id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.add(TodoItem("2", "Item 2", "list-1"))
+        repository.toggle("1")
+        val items = repository.getAllByListId("list-1")
+        assertTrue(items.first { it.id == "1" }.isCompleted)
+        assertFalse(items.first { it.id == "2" }.isCompleted)
+    }
+
+    @Test
+    fun `should do nothing when toggle is called for a non-existent id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.toggle("non-existent")
+        assertFalse(repository.getAllByListId("list-1").first().isCompleted)
     }
 }

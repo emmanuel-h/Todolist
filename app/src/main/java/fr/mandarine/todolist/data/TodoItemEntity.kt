@@ -20,5 +20,6 @@ import androidx.room.PrimaryKey
 data class TodoItemEntity(
     @PrimaryKey val id: String,
     val title: String,
-    val listId: String
+    val listId: String,
+    val completed: Boolean = false
 )

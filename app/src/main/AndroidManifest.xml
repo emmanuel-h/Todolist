@@ -24,7 +24,8 @@
         <activity
             android:name=".ui.TodoListActivity"
             android:exported="false"
-            android:parentActivityName=".ui.TodoListsActivity" />
+            android:parentActivityName=".ui.TodoListsActivity"
+            android:windowSoftInputMode="adjustResize" />
 
     </application>
 

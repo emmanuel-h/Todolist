@@ -22,7 +22,7 @@
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:paddingTop="8dp"
-        android:paddingBottom="88dp"
+        android:paddingBottom="8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <com.google.android.material.textview.MaterialTextView
@@ -34,16 +34,5 @@
         android:textAppearance="?attr/textAppearanceBodyLarge"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAdd"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:contentDescription="@string/add_item"
-        app:backgroundTint="?attr/colorPrimaryContainer"
-        app:tint="?attr/colorOnPrimaryContainer"
-        app:srcCompat="@android:drawable/ic_input_add" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

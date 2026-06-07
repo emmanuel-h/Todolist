@@ -2,6 +2,7 @@ package fr.mandarine.todolist.data
 
 import fr.mandarine.todolist.domain.TodoItem
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -75,5 +76,50 @@ class InMemoryTodoRepositoryTest {
     fun `should do nothing when deleteAllByListId is called for a list with no items`() {
         repository.deleteAllByListId("list-nonexistent")
         assertTrue(repository.getAllByListId("list-nonexistent").isEmpty())
+    }
+
+    @Test
+    fun `should mark item as completed when toggle is called on an incomplete item`() {
+        val item = TodoItem("1", "Item 1", "list-1")
+        repository.add(item)
+        repository.toggle("1")
+        val result = repository.getAllByListId("list-1").first()
+        assertTrue(result.isCompleted)
+    }
+
+    @Test
+    fun `should mark item as incomplete when toggle is called on a completed item`() {
+        val item = TodoItem("1", "Item 1", "list-1", isCompleted = true)
+        repository.add(item)
+        repository.toggle("1")
+        val result = repository.getAllByListId("list-1").first()
+        assertFalse(result.isCompleted)
+    }
+
+    @Test
+    fun `should only toggle the item with the matching id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.add(TodoItem("2", "Item 2", "list-1"))
+        repository.toggle("1")
+        val items = repository.getAllByListId("list-1")
+        assertTrue(items.first { it.id == "1" }.isCompleted)
+        assertFalse(items.first { it.id == "2" }.isCompleted)
+    }
+
+    @Test
+    fun `should do nothing when toggle is called for a non-existent id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.toggle("non-existent")
+        assertFalse(repository.getAllByListId("list-1").first().isCompleted)
+    }
+
+    @Test
+    fun `should toggle the second item in a two-item list when toggling by its id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.add(TodoItem("2", "Item 2", "list-1"))
+        repository.toggle("2")
+        val items = repository.getAllByListId("list-1")
+        assertFalse(items.first { it.id == "1" }.isCompleted)
+        assertTrue(items.first { it.id == "2" }.isCompleted)
     }
 }

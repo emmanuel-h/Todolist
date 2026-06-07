@@ -7,10 +7,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.pressImeActionButton
 import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.matcher.RootMatchers.isDialog
-import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import com.google.android.material.checkbox.MaterialCheckBox
 import fr.mandarine.todolist.R
@@ -19,6 +17,7 @@ import fr.mandarine.todolist.data.TodoListEntity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -60,20 +59,48 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show empty list when no todos have been added`() {
+    fun `should show inline input row immediately without any FAB interaction`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
-                assertEquals(0, activity.recyclerView().adapter!!.itemCount)
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertNotNull(findInlineInputView(rv))
             }
         }
     }
 
     @Test
-    fun `should add item to list when valid title is submitted`() {
+    fun `should show zero todo items when no todos have been added`() {
         launchWithListId().use { scenario ->
-            addTodoViaDialog("Buy milk")
             scenario.onActivity { activity ->
-                assertEquals(1, activity.recyclerView().adapter!!.itemCount)
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(1, rv.adapter!!.itemCount)
+                assertNotNull(findInlineInputView(rv))
+            }
+        }
+    }
+
+    @Test
+    fun `should add item to list when valid title is submitted via IME done`() {
+        launchWithListId().use { scenario ->
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Buy milk"), pressImeActionButton())
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(2, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should keep inline input row after item is added`() {
+        launchWithListId().use { scenario ->
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Buy milk"), pressImeActionButton())
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertNotNull(findInlineInputView(rv))
             }
         }
     }
@@ -81,11 +108,13 @@ class TodoListActivityTest {
     @Test
     fun `should accumulate items when multiple todos are added`() {
         launchWithListId().use { scenario ->
-            addTodoViaDialog("Buy milk")
-            addTodoViaDialog("Call dentist")
-            addTodoViaDialog("Walk the dog")
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Buy milk"), pressImeActionButton())
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Call dentist"), pressImeActionButton())
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Walk the dog"), pressImeActionButton())
             scenario.onActivity { activity ->
-                assertEquals(3, activity.recyclerView().adapter!!.itemCount)
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(4, rv.adapter!!.itemCount)
             }
         }
     }
@@ -93,22 +122,35 @@ class TodoListActivityTest {
     @Test
     fun `should not add item when title is blank`() {
         launchWithListId().use { scenario ->
-            onView(withId(R.id.fabAdd)).perform(click())
-            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("   "), pressImeActionButton())
             scenario.onActivity { activity ->
-                assertEquals(0, activity.recyclerView().adapter!!.itemCount)
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
 
     @Test
-    fun `should not add item when title is whitespace only`() {
+    fun `should not add item when title is empty`() {
         launchWithListId().use { scenario ->
-            onView(withId(R.id.fabAdd)).perform(click())
-            onView(isAssignableFrom(EditText::class.java)).inRoot(isDialog()).perform(replaceText("   "))
-            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            onView(withId(R.id.editInlineAdd)).perform(replaceText(""), pressImeActionButton())
             scenario.onActivity { activity ->
-                assertEquals(0, activity.recyclerView().adapter!!.itemCount)
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(1, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should keep inline input row after blank IME done action`() {
+        launchWithListId().use { scenario ->
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("   "), pressImeActionButton())
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertNotNull(findInlineInputView(rv))
             }
         }
     }
@@ -116,7 +158,7 @@ class TodoListActivityTest {
     @Test
     fun `should check item when checkbox is tapped`() {
         launchWithListId().use { scenario ->
-            addTodoViaDialog("Buy milk")
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Buy milk"), pressImeActionButton())
             scenario.onActivity { activity ->
                 val checkBox = firstCheckBox(activity)
                 assertFalse(checkBox.isChecked)
@@ -129,7 +171,7 @@ class TodoListActivityTest {
     @Test
     fun `should uncheck item when checked checkbox is tapped again`() {
         launchWithListId().use { scenario ->
-            addTodoViaDialog("Buy milk")
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Buy milk"), pressImeActionButton())
             scenario.onActivity { activity ->
                 val checkBox = firstCheckBox(activity)
                 checkBox.performClick()
@@ -139,21 +181,43 @@ class TodoListActivityTest {
         }
     }
 
-    private fun addTodoViaDialog(title: String) {
-        onView(withId(R.id.fabAdd)).perform(click())
-        onView(isAssignableFrom(EditText::class.java)).inRoot(isDialog()).perform(replaceText(title))
-        onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+    @Test
+    fun `should persist completed state across list refresh when item is toggled`() {
+        launchWithListId().use { scenario ->
+            onView(withId(R.id.editInlineAdd)).perform(replaceText("Buy milk"), pressImeActionButton())
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                firstCheckBox(activity).performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+                assertTrue(firstCheckBox(activity).isChecked)
+            }
+        }
     }
 
     private fun firstCheckBox(activity: TodoListActivity): MaterialCheckBox {
         val rv = activity.recyclerView()
+        layoutRecyclerView(rv)
+        return rv.getChildAt(0)!!.findViewById(R.id.checkCompleted)
+    }
+
+    private fun findInlineInputView(rv: RecyclerView): EditText? {
+        for (i in 0 until rv.childCount) {
+            val child = rv.getChildAt(i)
+            val edit = child?.findViewById<EditText>(R.id.editInlineAdd)
+            if (edit != null) return edit
+        }
+        return null
+    }
+
+    private fun layoutRecyclerView(rv: RecyclerView) {
         rv.measure(
             View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
         )
         rv.layout(0, 0, 1080, 1920)
-        return rv.getChildAt(0)!!.findViewById(R.id.checkCompleted)
     }
 
-    private fun TodoListActivity.recyclerView() = findViewById<RecyclerView>(R.id.recyclerView)
+    private fun TodoListActivity.recyclerView() = recyclerViewInternal
 }

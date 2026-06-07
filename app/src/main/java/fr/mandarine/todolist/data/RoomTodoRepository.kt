@@ -6,10 +6,15 @@ import fr.mandarine.todolist.domain.TodoRepository
 class RoomTodoRepository(private val dao: TodoItemDao) : TodoRepository {
 
     override fun getAllByListId(listId: String): List<TodoItem> =
-        dao.getAllByListId(listId).map { TodoItem(it.id, it.title, it.listId) }
+        dao.getAllByListId(listId).map { TodoItem(it.id, it.title, it.listId, it.completed) }
 
     override fun add(item: TodoItem) {
-        dao.insert(TodoItemEntity(item.id, item.title, item.listId))
+        dao.insert(TodoItemEntity(item.id, item.title, item.listId, item.isCompleted))
+    }
+
+    override fun toggle(todoId: String) {
+        val entity = dao.getById(todoId) ?: return
+        dao.updateCompleted(todoId, !entity.completed)
     }
 
     override fun deleteAllByListId(listId: String) {

@@ -2,19 +2,17 @@ package fr.mandarine.todolist.ui
 
 import android.os.Bundle
 import android.view.View
-import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.AddTodoUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
+import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
 
@@ -23,6 +21,7 @@ class TodoListActivity : AppCompatActivity() {
     private lateinit var viewModel: TodoListViewModel
     private lateinit var adapter: TodoListAdapter
     private lateinit var emptyView: MaterialTextView
+    internal lateinit var recyclerViewInternal: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,19 +40,31 @@ class TodoListActivity : AppCompatActivity() {
         viewModel = TodoListViewModel(
             AddTodoUseCase(todoRepository),
             GetTodosUseCase(todoRepository),
+            ToggleTodoUseCase(todoRepository),
             listId = listId
         )
 
         emptyView = findViewById(R.id.textEmptyTodos)
 
-        adapter = TodoListAdapter()
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
+        adapter = TodoListAdapter(
+            onCommit = { title ->
+                val added = viewModel.submitInlineInput(title)
+                if (added) {
+                    renderState(viewModel.state.value)
+                    recyclerViewInternal.scrollToPosition(adapter.itemCount - 1)
+                    adapter.requestAddRowFocus()
+                }
+            },
+            onToggle = { todoId ->
+                viewModel.toggleTodo(todoId)
+                renderState(viewModel.state.value)
+            }
+        )
+        recyclerViewInternal = findViewById(R.id.recyclerView)
+        recyclerViewInternal.layoutManager = LinearLayoutManager(this)
+        recyclerViewInternal.adapter = adapter
 
-        refreshList()
-
-        findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener { showAddDialog() }
+        renderState(viewModel.state.value)
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -61,30 +72,18 @@ class TodoListActivity : AppCompatActivity() {
         return true
     }
 
-    private fun showAddDialog() {
-        val input = EditText(this)
-        AlertDialog.Builder(this)
-            .setTitle(R.string.add_item)
-            .setView(input)
-            .setPositiveButton(R.string.add) { _, _ ->
-                val title = input.text.toString()
-                if (title.isNotBlank()) {
-                    viewModel.addTodo(title)
-                    refreshList()
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    internal fun refreshListForTest() {
+        renderState(viewModel.state.value)
     }
 
-    private fun refreshList() {
-        when (val s = viewModel.state) {
+    private fun renderState(state: TodoListState) {
+        when (state) {
             is TodoListState.Empty -> {
                 adapter.submitList(emptyList())
-                emptyView.visibility = View.VISIBLE
+                emptyView.visibility = View.GONE
             }
             is TodoListState.Content -> {
-                adapter.submitList(s.items)
+                adapter.submitList(state.items)
                 emptyView.visibility = View.GONE
             }
         }

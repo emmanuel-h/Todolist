@@ -14,6 +14,13 @@ class InMemoryTodoRepository : TodoRepository {
         items.add(item)
     }
 
+    override fun toggle(todoId: String) {
+        val index = items.indexOfFirst { it.id == todoId }
+        if (index >= 0) {
+            items[index] = items[index].copy(isCompleted = !items[index].isCompleted)
+        }
+    }
+
     override fun deleteAllByListId(listId: String) {
         items.removeAll { it.listId == listId }
     }

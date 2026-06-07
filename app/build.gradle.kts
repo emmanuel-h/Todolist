@@ -85,7 +85,7 @@ tasks.register<JavaExec>("pitest") {
         args(
             "--reportDir", layout.buildDirectory.dir("reports/pitest").get().asFile.absolutePath,
             "--targetClasses", "fr.mandarine.todolist.domain.*,fr.mandarine.todolist.data.*,fr.mandarine.todolist.presentation.*",
-            "--excludedClasses", "*Test,*Tests,*_Impl,*_Impl\$*,fr.mandarine.todolist.data.TodoDatabase,fr.mandarine.todolist.data.TodoDatabase\$Companion",
+            "--excludedClasses", "*Test,*Tests,*_Impl,*_Impl\$*,fr.mandarine.todolist.data.TodoDatabase,fr.mandarine.todolist.data.TodoDatabase\$*",
             "--targetTests", "fr.mandarine.todolist.*",
             "--sourceDirs", "${projectDir}/src/main/java",
             "--classPathFile", classpathFile.absolutePath,
@@ -105,6 +105,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.kotlinx.coroutines.core)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

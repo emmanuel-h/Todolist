@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">To do list</string>
     <string name="add_item">Add item</string>
+    <string name="add_item_hint">New item…</string>
     <string name="add">Add</string>
     <string name="my_lists">My Lists</string>
     <string name="create_list">Create list</string>
@@ -11,6 +12,7 @@
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="empty_lists_message">No lists yet. Tap + to create one.</string>
-    <string name="empty_todos_message">No items yet. Tap + to add one.</string>
-    <string name="item_completed">Mark item as completed</string>
+    <string name="empty_todos_message">No items yet. Type below to add one.</string>
+    <string name="item_mark_completed">Mark item as completed</string>
+    <string name="item_mark_incomplete">Mark item as incomplete</string>
 </resources>
