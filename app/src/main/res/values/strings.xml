@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">To do list</string>
     <string name="add_item">Add item</string>
-    <string name="add_item_hint">New item…</string>
+    <string name="add_item_hint">…</string>
     <string name="add">Add</string>
     <string name="my_lists">My Lists</string>
     <string name="create_list">Create list</string>
-    <string name="list_name_hint">List name</string>
+    <string name="list_name_hint">…</string>
     <string name="delete_list">Delete list</string>
     <string name="delete_list_confirmation_title">Delete list?</string>
     <string name="delete_list_confirmation_message">This will permanently delete the list and all its items.</string>
@@ -20,9 +20,9 @@
     <string name="add_list_fab_description">Create new list</string>
     <string name="add_item_fab_description">Add new item</string>
     <string name="submit_inline_add">Submit new item</string>
-    <string name="add_item_ghost_hint">Add an item…</string>
+    <string name="add_item_ghost_hint">…</string>
     <string name="empty_state_icon_description"></string>
-    <string name="completed_section_header">Completed (%d)</string>
+    <string name="completed_section_header">%d</string>
     <string name="item_edit">Edit item</string>
     <string name="item_delete">Delete item</string>
     <string name="edit_item_title">Edit item</string>

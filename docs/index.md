@@ -12,3 +12,4 @@
 - [Edit and Delete Todo](edit-delete-todo.md) — inline title editing (tap ✎ or double-tap title) and immediate delete with colorError affordance; no dialog, no confirmation
 - [Reorder Active Todo Items](reorder-todos.md) — always-visible drag handle on every active row; handle-only drag (no long-press) reorders within active section; drag clamped at completed section boundary; position persisted in Room (migration 3→4)
 - [Inline-Add Row UX Polish](inline-add-ux-polish.md) — top-divider affordance, raised ghost-text alpha, no-width-jump expanded row, concise empty-state copy
+- [Icon-Only UI](icon-only-ui.md) — toolbar removed, dialogs icon-only, completed divider shows count badge only, ghost row "…", empty states illustration-only at 120dp

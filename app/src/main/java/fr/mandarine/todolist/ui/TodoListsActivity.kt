@@ -7,7 +7,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
@@ -31,7 +31,6 @@ class TodoListsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_todo_lists)
-        setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
 
         val db = TodoDatabase.getInstance(this)
         val todoListRepository = RoomTodoListRepository(db.todoListDao())
@@ -67,31 +66,58 @@ class TodoListsActivity : AppCompatActivity() {
 
     private fun showCreateListDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_list, null)
+        currentDialogView = dialogView
         val input = dialogView.findViewById<TextInputEditText>(R.id.editDialogCreateList)
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.create_list)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setView(dialogView)
-            .setPositiveButton(R.string.add) { _, _ ->
-                val name = input.text.toString()
-                if (name.isNotBlank()) {
-                    viewModel.createList(name)
-                    refreshLists()
-                }
+            .create()
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
+            val name = input.text.toString()
+            if (name.isNotBlank()) {
+                viewModel.createList(name)
+                refreshLists()
+                dialog.dismiss()
             }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        }
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     private fun showDeleteConfirmation(list: TodoList) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.delete_list_confirmation_title)
-            .setMessage(R.string.delete_list_confirmation_message)
-            .setPositiveButton(R.string.delete) { _, _ ->
-                viewModel.deleteList(list.id)
-                refreshLists()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_list, null)
+        currentDialogView = dialogView
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
+            viewModel.deleteList(list.id)
+            refreshLists()
+            dialog.dismiss()
+        }
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    internal var currentDialogView: android.view.View? = null
+
+    internal fun openCreateDialogForTest() {
+        showCreateListDialog()
+    }
+
+    internal fun typeInCurrentDialogForTest(text: String) {
+        currentDialogView?.findViewById<TextInputEditText>(R.id.editDialogCreateList)?.setText(text)
+    }
+
+    internal fun confirmDialogForTest() {
+        currentDialogView?.findViewById<MaterialButton>(R.id.btnDialogConfirm)?.performClick()
+    }
+
+    internal fun cancelCurrentDialogForTest() {
+        currentDialogView?.findViewById<MaterialButton>(R.id.btnDialogCancel)?.performClick()
     }
 
     private fun openList(list: TodoList) {

@@ -219,7 +219,7 @@ class TodoListAdapter(
         private val label: MaterialTextView = view.findViewById(R.id.textDividerLabel)
 
         fun bind(completedCount: Int) {
-            label.text = label.context.getString(R.string.completed_section_header, completedCount)
+            label.text = completedCount.toString()
         }
     }
 

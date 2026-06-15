@@ -261,9 +261,8 @@ class TodoListAdapterTest {
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER) as TodoListAdapter.DividerViewHolder
         adapter.onBindViewHolder(holder, 1)
 
-        val expectedLabel = themedContext.getString(fr.mandarine.todolist.R.string.completed_section_header, 2)
         val label = holder.itemView.findViewById<com.google.android.material.textview.MaterialTextView>(fr.mandarine.todolist.R.id.textDividerLabel)
-        assertEquals(expectedLabel, label.text.toString())
+        assertEquals("2", label.text.toString())
     }
 
     @Test

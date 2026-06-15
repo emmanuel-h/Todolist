@@ -2,16 +2,9 @@ package fr.mandarine.todolist.ui
 
 import android.content.Intent
 import android.view.View
-import android.widget.EditText
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.matcher.RootMatchers.isDialog
-import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
-import androidx.test.espresso.matcher.ViewMatchers.withId
 import com.google.android.material.button.MaterialButton
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.TodoDatabase
@@ -54,7 +47,7 @@ class TodoListsActivityTest {
     @Test
     fun `should add list when valid name is submitted`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog("Work")
+            createListViaDialog(scenario, "Work")
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
                 assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
@@ -65,9 +58,9 @@ class TodoListsActivityTest {
     @Test
     fun `should accumulate lists when multiple names are submitted`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog("Work")
-            createListViaDialog("Shopping")
-            createListViaDialog("Personal")
+            createListViaDialog(scenario, "Work")
+            createListViaDialog(scenario, "Shopping")
+            createListViaDialog(scenario, "Personal")
             scenario.onActivity { activity ->
                 assertEquals(3, activity.recyclerView().adapter!!.itemCount)
             }
@@ -77,8 +70,10 @@ class TodoListsActivityTest {
     @Test
     fun `should not add list when name is blank`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            onView(withId(R.id.fabAddList)).perform(click())
-            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                activity.openCreateDialogForTest()
+                activity.confirmDialogForTest()
+            }
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
             }
@@ -88,9 +83,11 @@ class TodoListsActivityTest {
     @Test
     fun `should not add list when name is whitespace only`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            onView(withId(R.id.fabAddList)).perform(click())
-            onView(isAssignableFrom(EditText::class.java)).inRoot(isDialog()).perform(replaceText("   "))
-            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                activity.openCreateDialogForTest()
+                activity.typeInCurrentDialogForTest("   ")
+                activity.confirmDialogForTest()
+            }
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
             }
@@ -100,7 +97,7 @@ class TodoListsActivityTest {
     @Test
     fun `should remove list when delete is confirmed`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog("Work")
+            createListViaDialog(scenario, "Work")
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
             }
@@ -115,9 +112,11 @@ class TodoListsActivityTest {
     @Test
     fun `should not remove list when delete is cancelled`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog("Work")
+            createListViaDialog(scenario, "Work")
             tapDeleteButtonOnFirstRow(scenario)
-            onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                activity.cancelCurrentDialogForTest()
+            }
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
             }
@@ -127,7 +126,7 @@ class TodoListsActivityTest {
     @Test
     fun `should navigate to TodoListActivity when list card is tapped`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog("Work")
+            createListViaDialog(scenario, "Work")
             scenario.onActivity { activity ->
                 val rv = activity.recyclerView()
                 rv.measure(
@@ -148,10 +147,12 @@ class TodoListsActivityTest {
         }
     }
 
-    private fun createListViaDialog(name: String) {
-        onView(withId(R.id.fabAddList)).perform(click())
-        onView(isAssignableFrom(EditText::class.java)).inRoot(isDialog()).perform(replaceText(name))
-        onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+    private fun createListViaDialog(scenario: ActivityScenario<TodoListsActivity>, name: String) {
+        scenario.onActivity { activity ->
+            activity.openCreateDialogForTest()
+            activity.typeInCurrentDialogForTest(name)
+            activity.confirmDialogForTest()
+        }
     }
 
     private fun tapDeleteButtonOnFirstRow(scenario: ActivityScenario<TodoListsActivity>) {
@@ -168,7 +169,9 @@ class TodoListsActivityTest {
 
     private fun deleteFirstListViaDialog(scenario: ActivityScenario<TodoListsActivity>) {
         tapDeleteButtonOnFirstRow(scenario)
-        onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+        scenario.onActivity { activity ->
+            activity.confirmDialogForTest()
+        }
     }
 
     private fun TodoListsActivity.recyclerView() = findViewById<RecyclerView>(R.id.recyclerViewLists)

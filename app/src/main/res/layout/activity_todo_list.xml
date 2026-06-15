@@ -42,31 +42,11 @@
             android:visibility="gone">
 
             <ImageView
-                android:layout_width="72dp"
-                android:layout_height="72dp"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
                 android:importantForAccessibility="no"
                 app:srcCompat="@drawable/ic_checklist"
                 app:tint="?attr/colorOnSurfaceVariant" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/textEmptyTodosHeadline"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:gravity="center"
-                android:text="@string/empty_todos_headline"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textColor="?attr/colorOnSurface" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/textEmptyTodosSub"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:text="@string/empty_todos_subheadline"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorOnSurfaceVariant" />
 
         </LinearLayout>
 
