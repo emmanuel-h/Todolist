@@ -1,14 +1,15 @@
 package fr.mandarine.todolist.ui
 
 import android.graphics.Paint
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
@@ -16,6 +17,8 @@ import fr.mandarine.todolist.domain.TodoItem
 
 class TodoListAdapter(
     private val onToggle: (String) -> Unit,
+    private val onDelete: (String) -> Unit,
+    private val onEdit: (String, String) -> Unit,
     private val onSubmit: (String) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -83,36 +86,110 @@ class TodoListAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
-            is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle)
+            is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle, onDelete, onEdit)
             is ListRow.Divider -> (holder as DividerViewHolder).bind(row.completedCount)
             is ListRow.InlineAdd -> Unit
         }
     }
 
     class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val titleView: MaterialTextView = view.findViewById(R.id.textTitle)
-        private val checkBox: MaterialCheckBox = view.findViewById(R.id.checkCompleted)
+        internal val titleView: MaterialTextView = view.findViewById(R.id.textTitle)
+        internal val editTitleInline: TextInputEditText = view.findViewById(R.id.editTitleInline)
+        private val btnToggleComplete: MaterialButton = view.findViewById(R.id.btnToggleComplete)
+        private val btnEdit: MaterialButton = view.findViewById(R.id.btnEdit)
+        private val btnDelete: MaterialButton = view.findViewById(R.id.btnDelete)
 
-        fun bind(item: TodoItem, onToggle: (String) -> Unit) {
+        fun bind(
+            item: TodoItem,
+            onToggle: (String) -> Unit,
+            onDelete: (String) -> Unit,
+            onEdit: (String, String) -> Unit
+        ) {
             titleView.text = item.title
+            exitEditMode()
+
             if (item.isCompleted) {
-                titleView.alpha = 0.38f
+                titleView.alpha = 0.5f
                 titleView.paintFlags = titleView.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                btnToggleComplete.setIconResource(R.drawable.ic_undo)
+                btnToggleComplete.contentDescription =
+                    btnToggleComplete.context.getString(R.string.item_mark_incomplete)
             } else {
                 titleView.alpha = 1.0f
                 titleView.paintFlags = titleView.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                btnToggleComplete.setIconResource(R.drawable.ic_check)
+                btnToggleComplete.contentDescription =
+                    btnToggleComplete.context.getString(R.string.item_mark_completed)
             }
-            checkBox.setOnCheckedChangeListener(null)
-            checkBox.isChecked = item.isCompleted
-            checkBox.contentDescription = checkBox.context.getString(
-                if (item.isCompleted) R.string.item_mark_incomplete else R.string.item_mark_completed
+
+            val gestureDetector = GestureDetector(
+                titleView.context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        onToggle(item.id)
+                        return true
+                    }
+                }
             )
-            checkBox.setOnCheckedChangeListener { _, _ ->
-                checkBox.contentDescription = checkBox.context.getString(
-                    if (checkBox.isChecked) R.string.item_mark_incomplete else R.string.item_mark_completed
-                )
-                onToggle(item.id)
+            titleView.setOnTouchListener { v, event ->
+                val consumed = gestureDetector.onTouchEvent(event)
+                if (!consumed) v.performClick()
+                consumed
             }
+
+            btnToggleComplete.setOnClickListener { onToggle(item.id) }
+            btnDelete.setOnClickListener { onDelete(item.id) }
+
+            btnEdit.setOnClickListener {
+                enterEditMode(item.id, item.title, onEdit)
+            }
+        }
+
+        private fun enterEditMode(
+            itemId: String,
+            currentTitle: String,
+            onEdit: (String, String) -> Unit
+        ) {
+            titleView.visibility = View.GONE
+            editTitleInline.visibility = View.VISIBLE
+            editTitleInline.setText(currentTitle)
+            editTitleInline.setSelection(currentTitle.length)
+            editTitleInline.requestFocus()
+
+            val imm = editTitleInline.context.getSystemService(InputMethodManager::class.java)
+            imm.showSoftInput(editTitleInline, InputMethodManager.SHOW_IMPLICIT)
+
+            fun commitEdit() {
+                val newTitle = editTitleInline.text?.toString().orEmpty()
+                if (newTitle.isNotBlank()) {
+                    onEdit(itemId, newTitle)
+                }
+                exitEditMode()
+                val immHide = editTitleInline.context.getSystemService(InputMethodManager::class.java)
+                immHide.hideSoftInputFromWindow(editTitleInline.windowToken, 0)
+            }
+
+            editTitleInline.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    commitEdit()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            editTitleInline.setOnFocusChangeListener { _, hasFocus ->
+                if (!hasFocus) {
+                    commitEdit()
+                }
+            }
+        }
+
+        internal fun exitEditMode() {
+            editTitleInline.visibility = View.GONE
+            titleView.visibility = View.VISIBLE
+            editTitleInline.setOnEditorActionListener(null)
+            editTitleInline.setOnFocusChangeListener(null)
         }
     }
 

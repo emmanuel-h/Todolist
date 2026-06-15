@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.presentation
 
 import fr.mandarine.todolist.domain.AddTodoUseCase
+import fr.mandarine.todolist.domain.DeleteTodoUseCase
+import fr.mandarine.todolist.domain.EditTodoUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
@@ -18,6 +20,8 @@ class TodoListViewModelTest {
     private lateinit var addTodoUseCase: AddTodoUseCase
     private lateinit var getTodosUseCase: GetTodosUseCase
     private lateinit var toggleTodoUseCase: ToggleTodoUseCase
+    private lateinit var deleteTodoUseCase: DeleteTodoUseCase
+    private lateinit var editTodoUseCase: EditTodoUseCase
     private lateinit var viewModel: TodoListViewModel
 
     @Before
@@ -25,8 +29,17 @@ class TodoListViewModelTest {
         addTodoUseCase = mockk(relaxed = true)
         getTodosUseCase = mockk()
         toggleTodoUseCase = mockk(relaxed = true)
+        deleteTodoUseCase = mockk(relaxed = true)
+        editTodoUseCase = mockk(relaxed = true)
         every { getTodosUseCase("list-1") } returns emptyList()
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase,
+            getTodosUseCase,
+            toggleTodoUseCase,
+            deleteTodoUseCase,
+            editTodoUseCase,
+            listId = "list-1"
+        )
     }
 
     @Test
@@ -38,7 +51,9 @@ class TodoListViewModelTest {
     fun `should emit content state when there are todos for the list`() {
         val items = listOf(TodoItem("1", "Item 1", "list-1"))
         every { getTodosUseCase("list-1") } returns items
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         assertTrue(viewModel.state.value is TodoListState.Content)
     }
@@ -47,7 +62,9 @@ class TodoListViewModelTest {
     fun `should expose active items in content state when all items are incomplete`() {
         val items = listOf(TodoItem("1", "Item 1", "list-1"), TodoItem("2", "Item 2", "list-1"))
         every { getTodosUseCase("list-1") } returns items
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(items, content.activeItems)
@@ -59,7 +76,9 @@ class TodoListViewModelTest {
         val active = TodoItem("1", "Item 1", "list-1")
         val completed = TodoItem("2", "Item 2", "list-1", isCompleted = true, completedAt = 1000L)
         every { getTodosUseCase("list-1") } returns listOf(active, completed)
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(active), content.activeItems)
@@ -71,7 +90,9 @@ class TodoListViewModelTest {
         val first = TodoItem("1", "First", "list-1", isCompleted = true, completedAt = 1000L)
         val second = TodoItem("2", "Second", "list-1", isCompleted = true, completedAt = 2000L)
         every { getTodosUseCase("list-1") } returns listOf(first, second)
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(second, first), content.completedItems)
@@ -82,7 +103,9 @@ class TodoListViewModelTest {
         val completed1 = TodoItem("1", "Item 1", "list-1", isCompleted = true, completedAt = 1000L)
         val completed2 = TodoItem("2", "Item 2", "list-1", isCompleted = true, completedAt = 2000L)
         every { getTodosUseCase("list-1") } returns listOf(completed1, completed2)
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         val content = viewModel.state.value as TodoListState.Content
         assertTrue(content.activeItems.isEmpty())
@@ -93,7 +116,9 @@ class TodoListViewModelTest {
     fun `should only show items belonging to the list`() {
         val items = listOf(TodoItem("1", "Item 1", "list-1"))
         every { getTodosUseCase("list-1") } returns items
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals("list-1", content.activeItems.first().listId)
@@ -175,9 +200,56 @@ class TodoListViewModelTest {
         val item2 = TodoItem("2", "Second", "list-1")
         val item3 = TodoItem("3", "Third", "list-1")
         every { getTodosUseCase("list-1") } returns listOf(item1, item2, item3)
-        viewModel = TodoListViewModel(addTodoUseCase, getTodosUseCase, toggleTodoUseCase, listId = "list-1")
+        viewModel = TodoListViewModel(
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+        )
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(item1, item2, item3), content.activeItems)
+    }
+
+    @Test
+    fun `should delegate deleteTodo to use case with given id`() {
+        viewModel.deleteTodo("item-1")
+
+        verify { deleteTodoUseCase("item-1") }
+    }
+
+    @Test
+    fun `should refresh state after deleteTodo`() {
+        every { getTodosUseCase("list-1") } returns emptyList()
+
+        viewModel.deleteTodo("item-1")
+
+        assertEquals(TodoListState.Empty, viewModel.state.value)
+    }
+
+    @Test
+    fun `should emit content state without deleted item after deleteTodo`() {
+        val remaining = TodoItem("2", "Still here", "list-1")
+        every { getTodosUseCase("list-1") } returns listOf(remaining)
+
+        viewModel.deleteTodo("1")
+
+        val content = viewModel.state.value as TodoListState.Content
+        assertEquals(listOf(remaining), content.activeItems)
+    }
+
+    @Test
+    fun `should delegate editTodo to use case with given id and new title`() {
+        viewModel.editTodo("item-1", "Updated title")
+
+        verify { editTodoUseCase("item-1", "Updated title") }
+    }
+
+    @Test
+    fun `should refresh state after editTodo`() {
+        val updated = TodoItem("1", "Updated title", "list-1")
+        every { getTodosUseCase("list-1") } returns listOf(updated)
+
+        viewModel.editTodo("1", "Updated title")
+
+        val content = viewModel.state.value as TodoListState.Content
+        assertEquals("Updated title", content.activeItems.first().title)
     }
 }

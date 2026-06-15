@@ -25,4 +25,8 @@
     <string name="add_item_ghost_hint">Add an item…</string>
     <string name="empty_state_icon_description"></string>
     <string name="completed_section_header">Completed (%d)</string>
+    <string name="item_edit">Edit item</string>
+    <string name="item_delete">Delete item</string>
+    <string name="edit_item_title">Edit item</string>
+    <string name="save">Save</string>
 </resources>

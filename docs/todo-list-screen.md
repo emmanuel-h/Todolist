@@ -1,41 +1,52 @@
 # Todo List Screen
 
 ## What it does
-Displays the items belonging to a single todo list in a RecyclerView. The user adds new items via an inline text field pinned at the bottom of the list; tapping outside the field dismisses the keyboard.
+Displays the items belonging to a single todo list in a RecyclerView. The user adds new items via an inline text field pinned at the bottom of the list; tapping outside the field dismisses the keyboard. Each item row has three action buttons: toggle complete/uncomplete, edit, and delete. Tapping edit (or double-tapping the title) makes the title editable in place; delete removes the item immediately with no confirmation. → see `edit-delete-todo.md` for full delete/edit details.
 
 ## Architecture
 - **Layers**: domain, presentation, ui
 - **Key types**:
-  - `TodoItem` — immutable domain model (`id`, `title`, `listId`, `isCompleted`)
-  - `TodoListState` — sealed class: `Empty` | `Content(items: List<TodoItem>)`
-  - `TodoListViewModel` — exposes `state: StateFlow<TodoListState>`; methods `submitInlineInput(title): Boolean`, `toggleTodo(todoId)`
+  - `TodoItem` — immutable domain model (`id`, `title`, `listId`, `isCompleted`, `completedAt`)
+  - `TodoListState` — sealed class: `Empty` | `Content(activeItems, completedItems)`
+  - `TodoListViewModel` — exposes `state: StateFlow<TodoListState>`; methods `submitInlineInput(title): Boolean`, `toggleTodo(todoId)`, `deleteTodo(todoId)`, `editTodo(todoId, newTitle)`
   - `AddTodoUseCase` — validates title is non-blank, generates UUID id
   - `GetTodosUseCase` — returns all items for a given `listId`
+  - `DeleteTodoUseCase` — delegates delete by id to repository
+  - `EditTodoUseCase` — validates title is non-blank, delegates updateTitle to repository
 - **Async contract**: synchronous (no Flow/suspend); ViewModel holds a `StateFlow` updated on each mutating call
 
 ## Files
 - `app/src/main/java/fr/mandarine/todolist/domain/TodoItem.kt` — domain model
-- `app/src/main/java/fr/mandarine/todolist/domain/TodoRepository.kt` — repository interface (`getAllByListId`, `add`, `toggle`, `deleteAllByListId`)
+- `app/src/main/java/fr/mandarine/todolist/domain/TodoRepository.kt` — repository interface (`getAllByListId`, `add`, `toggle`, `delete`, `updateTitle`, `deleteAllByListId`)
 - `app/src/main/java/fr/mandarine/todolist/domain/AddTodoUseCase.kt` — creates `TodoItem` with UUID, enforces non-blank title
 - `app/src/main/java/fr/mandarine/todolist/domain/GetTodosUseCase.kt` — fetches items by `listId`
 - `app/src/main/java/fr/mandarine/todolist/domain/ToggleTodoUseCase.kt` — delegates toggle to repository
+- `app/src/main/java/fr/mandarine/todolist/domain/DeleteTodoUseCase.kt` — delegates delete by id to repository
+- `app/src/main/java/fr/mandarine/todolist/domain/EditTodoUseCase.kt` — validates non-blank, delegates updateTitle to repository
 - `app/src/main/java/fr/mandarine/todolist/presentation/TodoListState.kt` — UI state sealed class
 - `app/src/main/java/fr/mandarine/todolist/presentation/TodoListViewModel.kt` — ViewModel wiring state to use cases
-- `app/src/main/java/fr/mandarine/todolist/ui/TodoListActivity.kt` — host activity; reads `LIST_ID` + `LIST_NAME` from intent extras
-- `app/src/main/java/fr/mandarine/todolist/ui/TodoListAdapter.kt` — two view types: `TODO_ITEM` and `INLINE_ADD`
+- `app/src/main/java/fr/mandarine/todolist/ui/TodoListActivity.kt` — host activity; reads `LIST_ID` + `LIST_NAME` from intent extras; shows edit dialog
+- `app/src/main/java/fr/mandarine/todolist/ui/TodoListAdapter.kt` — three view types: `TODO_ITEM`, `DIVIDER`, and `INLINE_ADD`; `ItemViewHolder` has three action buttons
 - `app/src/main/res/layout/activity_todo_list.xml` — CoordinatorLayout, MaterialToolbar with back arrow, RecyclerView
-- `app/src/main/res/layout/item_todo.xml` — checkbox + title text
+- `app/src/main/res/layout/item_todo.xml` — title text + three icon buttons (toggle, edit, delete); no checkbox
 - `app/src/main/res/layout/item_todo_inline_add.xml` — TextInputEditText + send icon
-- `app/src/main/res/layout/dialog_add_item.xml` — legacy dialog layout, kept but not used in main flow
+- `app/src/main/res/layout/dialog_edit_item.xml` — TextInputEditText for title editing in AlertDialog
+- `app/src/main/res/layout/item_todo_divider.xml` — labeled divider row between active/completed sections
+- `app/src/main/res/drawable/ic_check.xml` — check icon for complete button
+- `app/src/main/res/drawable/ic_undo.xml` — undo/restore icon for uncomplete button
+- `app/src/main/res/drawable/ic_edit.xml` — pencil icon for edit button
 
 ## Invariants & contracts
 - `TodoListActivity` requires the `LIST_ID` intent extra; it crashes with `requireNotNull` if absent — always supply it from `TodoListsActivity`.
 - `submitInlineInput` returns `false` for blank input and does not mutate state; callers must guard on the return value.
-- `addTodo` adds without refreshing state; only `submitInlineInput` and `toggleTodo` trigger a state refresh.
+- `addTodo` adds without refreshing state; only `submitInlineInput`, `toggleTodo`, `deleteTodo`, and `editTodo` trigger a state refresh.
 - `TodoItem.id` is generated by `AddTodoUseCase` via `UUID.randomUUID()`; never pass a hand-crafted id from the UI.
 - The repository must be injected into the ViewModel; never instantiate a concrete repository inside the ViewModel.
+- There is no checkbox on item rows; completion state is indicated by strikethrough + 50% alpha on the title.
+- Delete is immediate with no confirmation dialog.
+- Inline edit silently discards blank input and reverts to the original title; no AlertDialog is involved.
 
 ## UI
 - **Screen(s)**: `TodoListActivity`
-- **Layout file(s)**: `res/layout/activity_todo_list.xml`, `res/layout/item_todo.xml`, `res/layout/item_todo_inline_add.xml`
-- **Design decisions**: `dispatchTouchEvent` clears focus and hides the IME whenever the user taps outside a `TextInputEditText`; the up button delegates to `onBackPressedDispatcher` rather than `super.onSupportNavigateUp()`.
+- **Layout file(s)**: `res/layout/activity_todo_list.xml`, `res/layout/item_todo.xml`, `res/layout/item_todo_inline_add.xml`, `res/layout/dialog_edit_item.xml`
+- **Design decisions**: `dispatchTouchEvent` clears focus and hides the IME whenever the user taps outside a `TextInputEditText`; the up button delegates to `onBackPressedDispatcher` rather than `super.onSupportNavigateUp()`; three `MaterialButton` icon-only buttons replace the former checkbox; completed items use `STRIKE_THRU_TEXT_FLAG` and `alpha = 0.5f`.

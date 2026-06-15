@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.presentation
 
 import fr.mandarine.todolist.domain.AddTodoUseCase
+import fr.mandarine.todolist.domain.DeleteTodoUseCase
+import fr.mandarine.todolist.domain.EditTodoUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +12,8 @@ class TodoListViewModel(
     private val addTodoUseCase: AddTodoUseCase,
     private val getTodosUseCase: GetTodosUseCase,
     private val toggleTodoUseCase: ToggleTodoUseCase,
+    private val deleteTodoUseCase: DeleteTodoUseCase,
+    private val editTodoUseCase: EditTodoUseCase,
     private val listId: String
 ) {
     private val _state = MutableStateFlow(buildState())
@@ -28,6 +32,16 @@ class TodoListViewModel(
 
     fun toggleTodo(todoId: String) {
         toggleTodoUseCase(todoId)
+        _state.value = buildState()
+    }
+
+    fun deleteTodo(todoId: String) {
+        deleteTodoUseCase(todoId)
+        _state.value = buildState()
+    }
+
+    fun editTodo(todoId: String, newTitle: String) {
+        editTodoUseCase(todoId, newTitle)
         _state.value = buildState()
     }
 

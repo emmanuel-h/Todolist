@@ -9,3 +9,4 @@
 - [Complete Todo](complete-todo.md) — toggle completed state per item with strikethrough + fade, persisted in Room
 - [UI Polish](ui-polish.md) — illustrated empty states, fixed inline add bar, M3 theme tokens, dark mode
 - [Completed Section](completed-section.md) — completed items move to a timestamped bottom section with a labeled divider; uncompleting returns item to active with no position memory
+- [Edit and Delete Todo](edit-delete-todo.md) — inline title editing (tap ✎ or double-tap title) and immediate delete with colorError affordance; no dialog, no confirmation

@@ -24,6 +24,14 @@ class RoomTodoRepository(
         dao.updateCompleted(todoId, nowCompleted, completedAt)
     }
 
+    override fun delete(todoId: String) {
+        dao.deleteById(todoId)
+    }
+
+    override fun updateTitle(todoId: String, title: String) {
+        dao.updateTitle(todoId, title)
+    }
+
     override fun deleteAllByListId(listId: String) {
         dao.deleteAllByListId(listId)
     }

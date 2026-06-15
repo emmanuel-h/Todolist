@@ -13,6 +13,8 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.AddTodoUseCase
+import fr.mandarine.todolist.domain.DeleteTodoUseCase
+import fr.mandarine.todolist.domain.EditTodoUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListState
@@ -43,6 +45,8 @@ class TodoListActivity : AppCompatActivity() {
             AddTodoUseCase(todoRepository),
             GetTodosUseCase(todoRepository),
             ToggleTodoUseCase(todoRepository),
+            DeleteTodoUseCase(todoRepository),
+            EditTodoUseCase(todoRepository),
             listId = listId
         )
 
@@ -51,6 +55,14 @@ class TodoListActivity : AppCompatActivity() {
         adapter = TodoListAdapter(
             onToggle = { todoId ->
                 viewModel.toggleTodo(todoId)
+                renderState(viewModel.state.value)
+            },
+            onDelete = { todoId ->
+                viewModel.deleteTodo(todoId)
+                renderState(viewModel.state.value)
+            },
+            onEdit = { todoId, newTitle ->
+                viewModel.editTodo(todoId, newTitle)
                 renderState(viewModel.state.value)
             },
             onSubmit = { title ->

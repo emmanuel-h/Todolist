@@ -165,4 +165,61 @@ class InMemoryTodoRepositoryTest {
         val repoWithDefaultClock = InMemoryTodoRepository()
         assertTrue(repoWithDefaultClock.getAllByListId("list-1").isEmpty())
     }
+
+    @Test
+    fun `should remove item when delete is called with matching id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.delete("1")
+        assertTrue(repository.getAllByListId("list-1").isEmpty())
+    }
+
+    @Test
+    fun `should not remove other items when delete is called with one id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.add(TodoItem("2", "Item 2", "list-1"))
+        repository.delete("1")
+        assertEquals(1, repository.getAllByListId("list-1").size)
+        assertEquals("2", repository.getAllByListId("list-1").first().id)
+    }
+
+    @Test
+    fun `should do nothing when delete is called with non-existent id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.delete("non-existent")
+        assertEquals(1, repository.getAllByListId("list-1").size)
+    }
+
+    @Test
+    fun `should update title when updateTitle is called with matching id`() {
+        repository.add(TodoItem("1", "Old title", "list-1"))
+        repository.updateTitle("1", "New title")
+        assertEquals("New title", repository.getAllByListId("list-1").first().title)
+    }
+
+    @Test
+    fun `should preserve other fields when updateTitle is called`() {
+        repository.add(TodoItem("1", "Old title", "list-1", isCompleted = true, completedAt = 5000L))
+        repository.updateTitle("1", "New title")
+        val item = repository.getAllByListId("list-1").first()
+        assertTrue(item.isCompleted)
+        assertEquals(5000L, item.completedAt)
+        assertEquals("list-1", item.listId)
+    }
+
+    @Test
+    fun `should do nothing when updateTitle is called with non-existent id`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.updateTitle("non-existent", "New title")
+        assertEquals("Item 1", repository.getAllByListId("list-1").first().title)
+    }
+
+    @Test
+    fun `should update only the second item title when updateTitle is called on the second of two items`() {
+        repository.add(TodoItem("1", "First", "list-1"))
+        repository.add(TodoItem("2", "Second", "list-1"))
+        repository.updateTitle("2", "Updated second")
+        val items = repository.getAllByListId("list-1")
+        assertEquals("First", items.first { it.id == "1" }.title)
+        assertEquals("Updated second", items.first { it.id == "2" }.title)
+    }
 }

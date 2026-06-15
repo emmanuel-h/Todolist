@@ -132,4 +132,18 @@ class RoomTodoRepositoryUnitTest {
         every { dao.getAllByListId("list-1") } returns emptyList()
         assertTrue(repoWithDefaultClock.getAllByListId("list-1").isEmpty())
     }
+
+    @Test
+    fun `should call dao delete when delete is called`() {
+        every { dao.deleteById("item-1") } returns Unit
+        repository.delete("item-1")
+        verify { dao.deleteById("item-1") }
+    }
+
+    @Test
+    fun `should call dao updateTitle when updateTitle is called`() {
+        every { dao.updateTitle("item-1", "New title") } returns Unit
+        repository.updateTitle("item-1", "New title")
+        verify { dao.updateTitle("item-1", "New title") }
+    }
 }

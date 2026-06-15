@@ -25,6 +25,16 @@ class InMemoryTodoRepository(private val clock: Clock = SystemClock()) : TodoRep
         items[index] = current.copy(isCompleted = nowCompleted, completedAt = completedAt)
     }
 
+    override fun delete(todoId: String) {
+        items.removeAll { it.id == todoId }
+    }
+
+    override fun updateTitle(todoId: String, title: String) {
+        val index = items.indexOfFirst { it.id == todoId }
+        if (index < 0) return
+        items[index] = items[index].copy(title = title)
+    }
+
     override fun deleteAllByListId(listId: String) {
         items.removeAll { it.listId == listId }
     }

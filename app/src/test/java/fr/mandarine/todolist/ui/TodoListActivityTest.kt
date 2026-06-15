@@ -1,6 +1,5 @@
 package fr.mandarine.todolist.ui
 
-import android.app.Application
 import android.content.Intent
 import android.view.MotionEvent
 import android.view.View
@@ -10,14 +9,15 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.data.TodoListEntity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -162,42 +162,38 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should check item when checkbox is tapped`() {
-        launchWithListId().use { scenario ->
-            scenario.onActivity { activity ->
-                addItemViaInlineRow(activity, "Buy milk")
-                val checkBox = firstCheckBox(activity)
-                assertFalse(checkBox.isChecked)
-                checkBox.performClick()
-                assertTrue(checkBox.isChecked)
-            }
-        }
-    }
-
-    @Test
-    fun `should uncheck item when checked checkbox is tapped again`() {
-        launchWithListId().use { scenario ->
-            scenario.onActivity { activity ->
-                addItemViaInlineRow(activity, "Buy milk")
-                val checkBox = firstCheckBox(activity)
-                checkBox.performClick()
-                checkBox.performClick()
-                assertFalse(checkBox.isChecked)
-            }
-        }
-    }
-
-    @Test
-    fun `should persist completed state across list refresh when item is toggled`() {
+    fun `should toggle item to completed when complete button is tapped`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
                 addItemViaInlineRow(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                firstCheckBox(activity).performClick()
+                val firstItem = rv.getChildAt(0)!!
+                val toggleBtn = firstItem.findViewById<MaterialButton>(R.id.btnToggleComplete)
+                assertNotNull(toggleBtn)
+                toggleBtn.performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
-                assertTrue(firstCheckBox(activity).isChecked)
+                val hasDivider = (0 until rv.adapter!!.itemCount).any {
+                    rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_DIVIDER
+                }
+                assertFalse(hasDivider)
+                assertEquals(2, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should persist completed state when toggle button is tapped and list is refreshed`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+                assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, rv.adapter!!.getItemViewType(0))
             }
         }
     }
@@ -352,22 +348,6 @@ class TodoListActivityTest {
         }
     }
 
-    private fun firstCheckBox(activity: TodoListActivity): MaterialCheckBox {
-        val rv = activity.recyclerView()
-        layoutRecyclerView(rv)
-        return rv.getChildAt(0)!!.findViewById(R.id.checkCompleted)
-    }
-
-    private fun layoutRecyclerView(rv: RecyclerView) {
-        rv.measure(
-            View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
-        )
-        rv.layout(0, 0, 1080, 1920)
-    }
-
-    private fun TodoListActivity.recyclerView() = recyclerViewInternal
-
     @Test
     fun `should show divider row when both active and completed sections are non-empty`() {
         launchWithListId().use { scenario ->
@@ -376,7 +356,7 @@ class TodoListActivityTest {
                 addItemViaInlineRow(activity, "Call dentist")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                firstCheckBox(activity).performClick()
+                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
 
@@ -412,7 +392,7 @@ class TodoListActivityTest {
                 addItemViaInlineRow(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                firstCheckBox(activity).performClick()
+                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
 
@@ -433,8 +413,8 @@ class TodoListActivityTest {
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
 
-                val secondCheckBox = rv.getChildAt(1)!!.findViewById<MaterialCheckBox>(R.id.checkCompleted)
-                secondCheckBox.performClick()
+                val secondItem = rv.getChildAt(1)!!
+                secondItem.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
 
@@ -445,4 +425,188 @@ class TodoListActivityTest {
             }
         }
     }
+
+    @Test
+    fun `should remove item from list when delete button is tapped`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                assertEquals(2, rv.adapter!!.itemCount)
+
+                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnDelete).performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                assertEquals(1, rv.adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should show empty state after last item is deleted`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnDelete).performClick()
+                activity.refreshListForTest()
+
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should switch title to inline edit field when edit button is tapped`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                firstItem.findViewById<MaterialButton>(R.id.btnEdit).performClick()
+
+                val titleView = firstItem.findViewById<MaterialTextView>(R.id.textTitle)
+                val editField = firstItem.findViewById<TextInputEditText>(R.id.editTitleInline)
+                assertEquals(View.GONE, titleView.visibility)
+                assertEquals(View.VISIBLE, editField.visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should prefill inline edit field with current item title when edit button is tapped`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                firstItem.findViewById<MaterialButton>(R.id.btnEdit).performClick()
+
+                val editField = firstItem.findViewById<TextInputEditText>(R.id.editTitleInline)
+                assertEquals("Buy milk", editField.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should update item title when inline edit is committed via IME Done`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                firstItem.findViewById<MaterialButton>(R.id.btnEdit).performClick()
+
+                val editField = firstItem.findViewById<TextInputEditText>(R.id.editTitleInline)
+                editField.setText("Whole milk")
+                editField.onEditorAction(EditorInfo.IME_ACTION_DONE)
+
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                val titleView = rv.getChildAt(0)
+                    ?.findViewById<MaterialTextView>(R.id.textTitle)
+                assertEquals("Whole milk", titleView?.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should restore title view visibility after inline edit is committed`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                firstItem.findViewById<MaterialButton>(R.id.btnEdit).performClick()
+
+                val editField = firstItem.findViewById<TextInputEditText>(R.id.editTitleInline)
+                editField.setText("Whole milk")
+                editField.onEditorAction(EditorInfo.IME_ACTION_DONE)
+
+                val titleView = firstItem.findViewById<MaterialTextView>(R.id.textTitle)
+                assertEquals(View.VISIBLE, titleView.visibility)
+                assertEquals(View.GONE, editField.visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should not update item when inline edit is committed with blank text`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                firstItem.findViewById<MaterialButton>(R.id.btnEdit).performClick()
+
+                val editField = firstItem.findViewById<TextInputEditText>(R.id.editTitleInline)
+                editField.setText("   ")
+                editField.onEditorAction(EditorInfo.IME_ACTION_DONE)
+
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                val titleView = rv.getChildAt(0)
+                    ?.findViewById<MaterialTextView>(R.id.textTitle)
+                assertEquals("Buy milk", titleView?.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should update item title when inline edit is committed via focus loss`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                firstItem.findViewById<MaterialButton>(R.id.btnEdit).performClick()
+
+                val editField = firstItem.findViewById<TextInputEditText>(R.id.editTitleInline)
+                editField.setText("Whole milk")
+                editField.clearFocus()
+
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                val titleView = rv.getChildAt(0)
+                    ?.findViewById<MaterialTextView>(R.id.textTitle)
+                assertEquals("Whole milk", titleView?.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should have delete button with error tint on item row`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val firstItem = rv.getChildAt(0)!!
+                val btnDelete = firstItem.findViewById<MaterialButton>(R.id.btnDelete)
+                assertNotNull(btnDelete)
+            }
+        }
+    }
+
+    private fun layoutRecyclerView(rv: RecyclerView) {
+        rv.measure(
+            View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+        )
+        rv.layout(0, 0, 1080, 1920)
+    }
+
+    private fun TodoListActivity.recyclerView() = recyclerViewInternal
 }
