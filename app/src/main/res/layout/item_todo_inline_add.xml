@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!--
+        TOP DIVIDER — same colour as the completed-section divider, giving
+        the ghost row a minimal affordance (Option D).
+    -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorOutlineVariant" />
 
     <!--
         GHOST ROW — visible when the field is not focused.
@@ -21,25 +31,32 @@
         android:paddingEnd="16dp"
         android:visibility="visible">
 
-        <Space
+        <ImageView
             android:layout_width="@dimen/inline_add_leading_spacer"
-            android:layout_height="1dp" />
+            android:layout_height="24dp"
+            android:importantForAccessibility="no"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:scaleType="fitCenter"
+            app:srcCompat="@drawable/ic_add"
+            app:tint="?attr/colorPrimary" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/textGhostHint"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:alpha="0.45"
+            android:importantForAccessibility="no"
             android:text="@string/add_item_ghost_hint"
             android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurface"
-            android:importantForAccessibility="no" />
+            android:textColor="?attr/colorPrimary" />
 
     </LinearLayout>
 
     <!--
         EXPANDED ROW — visible only when the EditText is focused.
+        No TextInputLayout wrapper so the EditText left edge aligns
+        exactly with the ghost-row text, preventing a visual width jump.
     -->
     <LinearLayout
         android:id="@+id/expandedRow"
@@ -56,26 +73,20 @@
             android:layout_width="@dimen/inline_add_leading_spacer"
             android:layout_height="1dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilInlineAdd"
-            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editInlineAdd"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:boxBackgroundColor="@android:color/transparent"
-            app:hintEnabled="false">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editInlineAdd"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/add_item_hint"
-                android:imeOptions="actionDone"
-                android:inputType="textCapSentences"
-                android:maxLines="1"
-                android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-        </com.google.android.material.textfield.TextInputLayout>
+            android:background="@null"
+            android:hint="@string/add_item_hint"
+            android:imeOptions="actionDone"
+            android:inputType="textCapSentences"
+            android:maxLines="1"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnInlineSubmit"
@@ -90,4 +101,4 @@
 
     </LinearLayout>
 
-</FrameLayout>
+</LinearLayout>

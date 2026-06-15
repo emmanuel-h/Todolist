@@ -14,9 +14,7 @@
     <string name="empty_lists_headline">No lists yet</string>
     <string name="empty_lists_subheadline">Tap + to create your first list.</string>
     <string name="empty_todos_headline">No items yet</string>
-    <string name="empty_todos_subheadline">Type in the field below to add your first item.</string>
-    <string name="empty_lists_message">No lists yet. Tap + to create one.</string>
-    <string name="empty_todos_message">No items yet. Tap + to add one.</string>
+    <string name="empty_todos_subheadline">Type above to start.</string>
     <string name="item_mark_completed">Mark item as completed</string>
     <string name="item_mark_incomplete">Mark item as incomplete</string>
     <string name="add_list_fab_description">Create new list</string>
