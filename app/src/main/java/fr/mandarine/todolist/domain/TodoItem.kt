@@ -5,5 +5,6 @@ data class TodoItem(
     val title: String,
     val listId: String,
     val isCompleted: Boolean = false,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val position: Int = 0
 )

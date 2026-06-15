@@ -10,7 +10,7 @@ class InMemoryTodoRepository(private val clock: Clock = SystemClock()) : TodoRep
     private val items = mutableListOf<TodoItem>()
 
     override fun getAllByListId(listId: String): List<TodoItem> =
-        items.filter { it.listId == listId }
+        items.filter { it.listId == listId }.sortedBy { it.position }
 
     override fun add(item: TodoItem) {
         items.add(item)
@@ -37,5 +37,19 @@ class InMemoryTodoRepository(private val clock: Clock = SystemClock()) : TodoRep
 
     override fun deleteAllByListId(listId: String) {
         items.removeAll { it.listId == listId }
+    }
+
+    override fun reorder(listId: String, fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val activeItems = items.filter { it.listId == listId && !it.isCompleted }
+            .sortedBy { it.position }
+            .toMutableList()
+        if (activeItems.isEmpty()) return
+        val item = activeItems.removeAt(fromIndex)
+        activeItems.add(toIndex, item)
+        for (position in activeItems.indices) {
+            val globalIndex = items.indexOfFirst { it.id == activeItems[position].id }
+            items[globalIndex] = items[globalIndex].copy(position = position)
+        }
     }
 }

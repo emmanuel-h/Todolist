@@ -5,6 +5,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -16,6 +17,7 @@ import fr.mandarine.todolist.domain.AddTodoUseCase
 import fr.mandarine.todolist.domain.DeleteTodoUseCase
 import fr.mandarine.todolist.domain.EditTodoUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
+import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
@@ -26,6 +28,7 @@ class TodoListActivity : AppCompatActivity() {
     private lateinit var adapter: TodoListAdapter
     private lateinit var emptyLayout: View
     internal lateinit var recyclerViewInternal: RecyclerView
+    internal lateinit var itemTouchHelperInternal: ItemTouchHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +50,7 @@ class TodoListActivity : AppCompatActivity() {
             ToggleTodoUseCase(todoRepository),
             DeleteTodoUseCase(todoRepository),
             EditTodoUseCase(todoRepository),
+            ReorderTodosUseCase(todoRepository),
             listId = listId
         )
 
@@ -68,6 +72,9 @@ class TodoListActivity : AppCompatActivity() {
             onSubmit = { title ->
                 viewModel.submitInlineInput(title)
                 renderState(viewModel.state.value)
+            },
+            onStartDrag = { holder ->
+                itemTouchHelperInternal.startDrag(holder)
             }
         )
 
@@ -75,8 +82,72 @@ class TodoListActivity : AppCompatActivity() {
         recyclerViewInternal.layoutManager = LinearLayoutManager(this)
         recyclerViewInternal.adapter = adapter
 
+        itemTouchHelperInternal = ItemTouchHelper(buildDragCallback())
+        itemTouchHelperInternal.attachToRecyclerView(recyclerViewInternal)
+
         renderState(viewModel.state.value)
     }
+
+    private fun buildDragCallback(): ItemTouchHelper.Callback =
+        object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            0
+        ) {
+            private var dragFromIndex: Int = RecyclerView.NO_ID.toInt()
+
+            override fun getMovementFlags(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int {
+                if (viewHolder.itemViewType != TodoListAdapter.VIEW_TYPE_ITEM) return 0
+                val position = viewHolder.bindingAdapterPosition
+                if (position == RecyclerView.NO_ID.toInt()) return 0
+                val isActive = position < adapter.activeItemCount()
+                return if (isActive) {
+                    makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0)
+                } else {
+                    0
+                }
+            }
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val fromPos = viewHolder.bindingAdapterPosition
+                val toPos = target.bindingAdapterPosition
+                val activeCount = adapter.activeItemCount()
+                if (toPos < 0 || toPos >= activeCount) return false
+                if (target.itemViewType != TodoListAdapter.VIEW_TYPE_ITEM) return false
+                adapter.moveItem(fromPos, toPos)
+                if (dragFromIndex == RecyclerView.NO_ID.toInt()) {
+                    dragFromIndex = fromPos
+                }
+                return true
+            }
+
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    dragFromIndex = viewHolder?.bindingAdapterPosition ?: RecyclerView.NO_ID.toInt()
+                }
+            }
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+                val toIndex = viewHolder.bindingAdapterPosition
+                if (dragFromIndex != RecyclerView.NO_ID.toInt() && toIndex != RecyclerView.NO_ID.toInt() && dragFromIndex != toIndex) {
+                    viewModel.reorderTodos(dragFromIndex, toIndex)
+                    renderState(viewModel.state.value)
+                }
+                dragFromIndex = RecyclerView.NO_ID.toInt()
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun isLongPressDragEnabled(): Boolean = false
+        }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.action == MotionEvent.ACTION_DOWN) {

@@ -11,10 +11,10 @@ class RoomTodoRepository(
 ) : TodoRepository {
 
     override fun getAllByListId(listId: String): List<TodoItem> =
-        dao.getAllByListId(listId).map { TodoItem(it.id, it.title, it.listId, it.completed, it.completedAt) }
+        dao.getAllByListId(listId).map { TodoItem(it.id, it.title, it.listId, it.completed, it.completedAt, it.position) }
 
     override fun add(item: TodoItem) {
-        dao.insert(TodoItemEntity(item.id, item.title, item.listId, item.isCompleted, item.completedAt))
+        dao.insert(TodoItemEntity(item.id, item.title, item.listId, item.isCompleted, item.completedAt, item.position))
     }
 
     override fun toggle(todoId: String) {
@@ -34,5 +34,19 @@ class RoomTodoRepository(
 
     override fun deleteAllByListId(listId: String) {
         dao.deleteAllByListId(listId)
+    }
+
+    override fun reorder(listId: String, fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val activeItems = dao.getAllByListId(listId)
+            .filter { !it.completed }
+            .sortedBy { it.position }
+            .toMutableList()
+        if (activeItems.isEmpty()) return
+        val item = activeItems.removeAt(fromIndex)
+        activeItems.add(toIndex, item)
+        for (position in activeItems.indices) {
+            dao.updatePosition(activeItems[position].id, position)
+        }
     }
 }

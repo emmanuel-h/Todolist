@@ -29,4 +29,5 @@
     <string name="item_delete">Delete item</string>
     <string name="edit_item_title">Edit item</string>
     <string name="save">Save</string>
+    <string name="drag_handle">Drag to reorder</string>
 </resources>

@@ -6,7 +6,7 @@ import androidx.room.Query
 
 @Dao
 interface TodoItemDao {
-    @Query("SELECT * FROM todo_items WHERE listId = :listId")
+    @Query("SELECT * FROM todo_items WHERE listId = :listId ORDER BY position ASC")
     fun getAllByListId(listId: String): List<TodoItemEntity>
 
     @Query("SELECT * FROM todo_items WHERE id = :id LIMIT 1")
@@ -26,4 +26,7 @@ interface TodoItemDao {
 
     @Query("DELETE FROM todo_items WHERE listId = :listId")
     fun deleteAllByListId(listId: String)
+
+    @Query("UPDATE todo_items SET position = :position WHERE id = :id")
+    fun updatePosition(id: String, position: Int)
 }

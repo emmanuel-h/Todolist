@@ -7,4 +7,5 @@ interface TodoRepository {
     fun delete(todoId: String)
     fun updateTitle(todoId: String, title: String)
     fun deleteAllByListId(listId: String)
+    fun reorder(listId: String, fromIndex: Int, toIndex: Int)
 }

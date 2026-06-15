@@ -4,6 +4,7 @@ import fr.mandarine.todolist.domain.AddTodoUseCase
 import fr.mandarine.todolist.domain.DeleteTodoUseCase
 import fr.mandarine.todolist.domain.EditTodoUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
+import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import io.mockk.every
@@ -22,6 +23,7 @@ class TodoListViewModelTest {
     private lateinit var toggleTodoUseCase: ToggleTodoUseCase
     private lateinit var deleteTodoUseCase: DeleteTodoUseCase
     private lateinit var editTodoUseCase: EditTodoUseCase
+    private lateinit var reorderTodosUseCase: ReorderTodosUseCase
     private lateinit var viewModel: TodoListViewModel
 
     @Before
@@ -31,6 +33,7 @@ class TodoListViewModelTest {
         toggleTodoUseCase = mockk(relaxed = true)
         deleteTodoUseCase = mockk(relaxed = true)
         editTodoUseCase = mockk(relaxed = true)
+        reorderTodosUseCase = mockk(relaxed = true)
         every { getTodosUseCase("list-1") } returns emptyList()
         viewModel = TodoListViewModel(
             addTodoUseCase,
@@ -38,6 +41,7 @@ class TodoListViewModelTest {
             toggleTodoUseCase,
             deleteTodoUseCase,
             editTodoUseCase,
+            reorderTodosUseCase,
             listId = "list-1"
         )
     }
@@ -52,7 +56,7 @@ class TodoListViewModelTest {
         val items = listOf(TodoItem("1", "Item 1", "list-1"))
         every { getTodosUseCase("list-1") } returns items
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         assertTrue(viewModel.state.value is TodoListState.Content)
@@ -63,7 +67,7 @@ class TodoListViewModelTest {
         val items = listOf(TodoItem("1", "Item 1", "list-1"), TodoItem("2", "Item 2", "list-1"))
         every { getTodosUseCase("list-1") } returns items
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         val content = viewModel.state.value as TodoListState.Content
@@ -77,7 +81,7 @@ class TodoListViewModelTest {
         val completed = TodoItem("2", "Item 2", "list-1", isCompleted = true, completedAt = 1000L)
         every { getTodosUseCase("list-1") } returns listOf(active, completed)
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         val content = viewModel.state.value as TodoListState.Content
@@ -91,7 +95,7 @@ class TodoListViewModelTest {
         val second = TodoItem("2", "Second", "list-1", isCompleted = true, completedAt = 2000L)
         every { getTodosUseCase("list-1") } returns listOf(first, second)
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         val content = viewModel.state.value as TodoListState.Content
@@ -104,7 +108,7 @@ class TodoListViewModelTest {
         val completed2 = TodoItem("2", "Item 2", "list-1", isCompleted = true, completedAt = 2000L)
         every { getTodosUseCase("list-1") } returns listOf(completed1, completed2)
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         val content = viewModel.state.value as TodoListState.Content
@@ -117,7 +121,7 @@ class TodoListViewModelTest {
         val items = listOf(TodoItem("1", "Item 1", "list-1"))
         every { getTodosUseCase("list-1") } returns items
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         val content = viewModel.state.value as TodoListState.Content
@@ -201,7 +205,7 @@ class TodoListViewModelTest {
         val item3 = TodoItem("3", "Third", "list-1")
         every { getTodosUseCase("list-1") } returns listOf(item1, item2, item3)
         viewModel = TodoListViewModel(
-            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, listId = "list-1"
+            addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
 
         val content = viewModel.state.value as TodoListState.Content

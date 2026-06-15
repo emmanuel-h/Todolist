@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -19,7 +20,8 @@ class TodoListAdapter(
     private val onToggle: (String) -> Unit,
     private val onDelete: (String) -> Unit,
     private val onEdit: (String, String) -> Unit,
-    private val onSubmit: (String) -> Unit
+    private val onSubmit: (String) -> Unit,
+    private val onStartDrag: ((RecyclerView.ViewHolder) -> Unit)? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     sealed class ListRow {
@@ -40,6 +42,16 @@ class TodoListAdapter(
         rows = buildRows(activeItems, completedItems)
         @Suppress("NotifyDataSetChanged")
         notifyDataSetChanged()
+    }
+
+    fun activeItemCount(): Int = rows.count { it is ListRow.Item && !(it as ListRow.Item).todo.isCompleted }
+
+    fun moveItem(fromPosition: Int, toPosition: Int) {
+        val mutableRows = rows.toMutableList()
+        val item = mutableRows.removeAt(fromPosition)
+        mutableRows.add(toPosition, item)
+        rows = mutableRows
+        notifyItemMoved(fromPosition, toPosition)
     }
 
     private fun buildRows(
@@ -86,7 +98,7 @@ class TodoListAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
-            is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle, onDelete, onEdit)
+            is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle, onDelete, onEdit, onStartDrag)
             is ListRow.Divider -> (holder as DividerViewHolder).bind(row.completedCount)
             is ListRow.InlineAdd -> Unit
         }
@@ -95,6 +107,7 @@ class TodoListAdapter(
     class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         internal val titleView: MaterialTextView = view.findViewById(R.id.textTitle)
         internal val editTitleInline: TextInputEditText = view.findViewById(R.id.editTitleInline)
+        internal val dragHandle: ImageView = view.findViewById(R.id.dragHandle)
         private val btnToggleComplete: MaterialButton = view.findViewById(R.id.btnToggleComplete)
         private val btnEdit: MaterialButton = view.findViewById(R.id.btnEdit)
         private val btnDelete: MaterialButton = view.findViewById(R.id.btnDelete)
@@ -103,7 +116,8 @@ class TodoListAdapter(
             item: TodoItem,
             onToggle: (String) -> Unit,
             onDelete: (String) -> Unit,
-            onEdit: (String, String) -> Unit
+            onEdit: (String, String) -> Unit,
+            onStartDrag: ((RecyclerView.ViewHolder) -> Unit)?
         ) {
             titleView.text = item.title
             exitEditMode()
@@ -114,12 +128,20 @@ class TodoListAdapter(
                 btnToggleComplete.setIconResource(R.drawable.ic_undo)
                 btnToggleComplete.contentDescription =
                     btnToggleComplete.context.getString(R.string.item_mark_incomplete)
+                dragHandle.visibility = View.GONE
             } else {
                 titleView.alpha = 1.0f
                 titleView.paintFlags = titleView.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
                 btnToggleComplete.setIconResource(R.drawable.ic_check)
                 btnToggleComplete.contentDescription =
                     btnToggleComplete.context.getString(R.string.item_mark_completed)
+                dragHandle.visibility = View.VISIBLE
+                dragHandle.setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                        onStartDrag?.invoke(this)
+                    }
+                    false
+                }
             }
 
             val gestureDetector = GestureDetector(

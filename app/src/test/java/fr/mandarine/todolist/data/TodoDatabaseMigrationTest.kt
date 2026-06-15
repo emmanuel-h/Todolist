@@ -23,6 +23,14 @@ class TodoDatabaseMigrationTest {
         verify { db.execSQL("ALTER TABLE todo_items ADD COLUMN completedAt INTEGER") }
     }
 
+    @Test
+    fun `should execute ADD COLUMN position when migration 3 to 4 runs`() {
+        val migration = getMigration("MIGRATION_3_4")
+        val db = mockk<SupportSQLiteDatabase>(relaxed = true)
+        migration.migrate(db)
+        verify { db.execSQL("ALTER TABLE todo_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0") }
+    }
+
     private fun getMigration(fieldName: String) =
         TodoDatabase::class.java
             .getDeclaredField(fieldName)
