@@ -24,4 +24,5 @@
     <string name="submit_inline_add">Submit new item</string>
     <string name="add_item_ghost_hint">Add an item…</string>
     <string name="empty_state_icon_description"></string>
+    <string name="completed_section_header">Completed (%d)</string>
 </resources>

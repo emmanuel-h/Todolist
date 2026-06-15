@@ -2,11 +2,12 @@ package fr.mandarine.todolist.data
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import fr.mandarine.todolist.domain.Clock
 import fr.mandarine.todolist.domain.TodoItem
-import fr.mandarine.todolist.domain.TodoList
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -20,6 +21,8 @@ class RoomTodoRepositoryTest {
 
     private lateinit var database: TodoDatabase
     private lateinit var repository: RoomTodoRepository
+    private var clockTime = 1000L
+    private val clock = Clock { clockTime }
 
     @Before
     fun setUp() {
@@ -29,7 +32,7 @@ class RoomTodoRepositoryTest {
         ).allowMainThreadQueries().build()
         database.todoListDao().insert(TodoListEntity("list-1", "List 1"))
         database.todoListDao().insert(TodoListEntity("list-2", "List 2"))
-        repository = RoomTodoRepository(database.todoItemDao())
+        repository = RoomTodoRepository(database.todoItemDao(), clock)
     }
 
     @After
@@ -98,6 +101,13 @@ class RoomTodoRepositoryTest {
     }
 
     @Test
+    fun `should persist completedAt as null by default when item is added`() {
+        val item = TodoItem("1", "Item 1", "list-1")
+        repository.add(item)
+        assertNull(repository.getAllByListId("list-1").first().completedAt)
+    }
+
+    @Test
     fun `should mark item as completed when toggle is called on an incomplete item`() {
         repository.add(TodoItem("1", "Item 1", "list-1"))
         repository.toggle("1")
@@ -105,10 +115,25 @@ class RoomTodoRepositoryTest {
     }
 
     @Test
+    fun `should set completedAt to clock time when toggle is called on an incomplete item`() {
+        clockTime = 9000L
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.toggle("1")
+        assertEquals(9000L, repository.getAllByListId("list-1").first().completedAt)
+    }
+
+    @Test
     fun `should mark item as incomplete when toggle is called on a completed item`() {
-        repository.add(TodoItem("1", "Item 1", "list-1", isCompleted = true))
+        repository.add(TodoItem("1", "Item 1", "list-1", isCompleted = true, completedAt = 1000L))
         repository.toggle("1")
         assertFalse(repository.getAllByListId("list-1").first().isCompleted)
+    }
+
+    @Test
+    fun `should clear completedAt when toggle is called on a completed item`() {
+        repository.add(TodoItem("1", "Item 1", "list-1", isCompleted = true, completedAt = 1000L))
+        repository.toggle("1")
+        assertNull(repository.getAllByListId("list-1").first().completedAt)
     }
 
     @Test

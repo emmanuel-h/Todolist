@@ -5,7 +5,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -63,9 +62,6 @@ class TodoListActivity : AppCompatActivity() {
         recyclerViewInternal = findViewById(R.id.recyclerView)
         recyclerViewInternal.layoutManager = LinearLayoutManager(this)
         recyclerViewInternal.adapter = adapter
-        recyclerViewInternal.addItemDecoration(
-            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-        )
 
         renderState(viewModel.state.value)
     }
@@ -109,11 +105,11 @@ class TodoListActivity : AppCompatActivity() {
     private fun renderState(state: TodoListState) {
         when (state) {
             is TodoListState.Empty -> {
-                adapter.submitList(emptyList())
-                emptyLayout.visibility = View.GONE
+                adapter.submitList(emptyList(), emptyList())
+                emptyLayout.visibility = View.VISIBLE
             }
             is TodoListState.Content -> {
-                adapter.submitList(state.items)
+                adapter.submitList(state.activeItems, state.completedItems)
                 emptyLayout.visibility = View.GONE
             }
         }

@@ -45,14 +45,14 @@ class TodoListAdapterTest {
             TodoItem("1", "Buy milk", "list-1"),
             TodoItem("2", "Call dentist", "list-1")
         )
-        adapter.submitList(items)
+        adapter.submitList(items, emptyList())
 
         assertEquals(3, adapter.itemCount)
     }
 
     @Test
     fun `should return one when getItemCount is called with empty list`() {
-        adapter.submitList(emptyList())
+        adapter.submitList(emptyList(), emptyList())
 
         assertEquals(1, adapter.itemCount)
     }
@@ -60,7 +60,7 @@ class TodoListAdapterTest {
     @Test
     fun `should return VIEW_TYPE_ITEM for item positions`() {
         val items = listOf(TodoItem("1", "Buy milk", "list-1"))
-        adapter.submitList(items)
+        adapter.submitList(items, emptyList())
 
         assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
     }
@@ -68,14 +68,14 @@ class TodoListAdapterTest {
     @Test
     fun `should return VIEW_TYPE_ADD for last position`() {
         val items = listOf(TodoItem("1", "Buy milk", "list-1"))
-        adapter.submitList(items)
+        adapter.submitList(items, emptyList())
 
         assertEquals(TodoListAdapter.VIEW_TYPE_ADD, adapter.getItemViewType(1))
     }
 
     @Test
     fun `should return VIEW_TYPE_ADD at position zero when list is empty`() {
-        adapter.submitList(emptyList())
+        adapter.submitList(emptyList(), emptyList())
 
         assertEquals(TodoListAdapter.VIEW_TYPE_ADD, adapter.getItemViewType(0))
     }
@@ -204,5 +204,63 @@ class TodoListAdapterTest {
         submitButton.performClick()
 
         assertEquals("", editText.text.toString())
+    }
+
+    @Test
+    fun `should not include divider row when only active items exist`() {
+        val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
+        adapter.submitList(activeItems, emptyList())
+
+        assertEquals(2, adapter.itemCount)
+        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
+        assertEquals(TodoListAdapter.VIEW_TYPE_ADD, adapter.getItemViewType(1))
+    }
+
+    @Test
+    fun `should not include divider row when only completed items exist`() {
+        val completedItems = listOf(TodoItem("1", "Buy milk", "list-1", isCompleted = true, completedAt = 1000L))
+        adapter.submitList(emptyList(), completedItems)
+
+        assertEquals(2, adapter.itemCount)
+        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
+        assertEquals(TodoListAdapter.VIEW_TYPE_ADD, adapter.getItemViewType(1))
+    }
+
+    @Test
+    fun `should include divider row between active and completed items when both sections are non-empty`() {
+        val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
+        val completedItems = listOf(TodoItem("2", "Call dentist", "list-1", isCompleted = true, completedAt = 1000L))
+        adapter.submitList(activeItems, completedItems)
+
+        assertEquals(4, adapter.itemCount)
+        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
+        assertEquals(TodoListAdapter.VIEW_TYPE_DIVIDER, adapter.getItemViewType(1))
+        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(2))
+        assertEquals(TodoListAdapter.VIEW_TYPE_ADD, adapter.getItemViewType(3))
+    }
+
+    @Test
+    fun `should bind divider with correct completed count`() {
+        val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
+        val completedItems = listOf(
+            TodoItem("2", "Call dentist", "list-1", isCompleted = true, completedAt = 1000L),
+            TodoItem("3", "Walk the dog", "list-1", isCompleted = true, completedAt = 2000L)
+        )
+        adapter.submitList(activeItems, completedItems)
+
+        val parent = FrameLayout(themedContext)
+        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER) as TodoListAdapter.DividerViewHolder
+        adapter.onBindViewHolder(holder, 1)
+
+        val expectedLabel = themedContext.getString(fr.mandarine.todolist.R.string.completed_section_header, 2)
+        val label = holder.itemView.findViewById<com.google.android.material.textview.MaterialTextView>(fr.mandarine.todolist.R.id.textDividerLabel)
+        assertEquals(expectedLabel, label.text.toString())
+    }
+
+    @Test
+    fun `should create divider view holder for VIEW_TYPE_DIVIDER`() {
+        val parent = FrameLayout(themedContext)
+        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
+        assertEquals(TodoListAdapter.DividerViewHolder::class.java, holder.javaClass)
     }
 }

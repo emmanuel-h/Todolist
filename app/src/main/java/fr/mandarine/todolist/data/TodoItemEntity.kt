@@ -21,5 +21,6 @@ data class TodoItemEntity(
     @PrimaryKey val id: String,
     val title: String,
     val listId: String,
-    val completed: Boolean = false
+    val completed: Boolean = false,
+    val completedAt: Long? = null
 )

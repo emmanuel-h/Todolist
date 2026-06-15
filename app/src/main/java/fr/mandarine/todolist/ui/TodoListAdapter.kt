@@ -19,23 +19,48 @@ class TodoListAdapter(
     private val onSubmit: (String) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private var items: List<TodoItem> = emptyList()
+    sealed class ListRow {
+        data class Item(val todo: TodoItem) : ListRow()
+        data class Divider(val completedCount: Int) : ListRow()
+        object InlineAdd : ListRow()
+    }
+
+    private var rows: List<ListRow> = listOf(ListRow.InlineAdd)
 
     companion object {
         const val VIEW_TYPE_ITEM = 0
         const val VIEW_TYPE_ADD = 1
+        const val VIEW_TYPE_DIVIDER = 2
     }
 
-    fun submitList(newItems: List<TodoItem>) {
-        items = newItems
+    fun submitList(activeItems: List<TodoItem>, completedItems: List<TodoItem>) {
+        rows = buildRows(activeItems, completedItems)
         @Suppress("NotifyDataSetChanged")
         notifyDataSetChanged()
     }
 
-    override fun getItemCount(): Int = items.size + 1
+    private fun buildRows(
+        activeItems: List<TodoItem>,
+        completedItems: List<TodoItem>
+    ): List<ListRow> {
+        val result = mutableListOf<ListRow>()
+        activeItems.forEach { result += ListRow.Item(it) }
+        if (activeItems.isNotEmpty() && completedItems.isNotEmpty()) {
+            result += ListRow.Divider(completedItems.size)
+        }
+        completedItems.forEach { result += ListRow.Item(it) }
+        result += ListRow.InlineAdd
+        return result
+    }
+
+    override fun getItemCount(): Int = rows.size
 
     override fun getItemViewType(position: Int): Int =
-        if (position == items.size) VIEW_TYPE_ADD else VIEW_TYPE_ITEM
+        when (rows[position]) {
+            is ListRow.Item -> VIEW_TYPE_ITEM
+            is ListRow.InlineAdd -> VIEW_TYPE_ADD
+            is ListRow.Divider -> VIEW_TYPE_DIVIDER
+        }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
         when (viewType) {
@@ -43,6 +68,11 @@ class TodoListAdapter(
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.item_todo_inline_add, parent, false)
                 AddInputViewHolder(view, onSubmit)
+            }
+            VIEW_TYPE_DIVIDER -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_todo_divider, parent, false)
+                DividerViewHolder(view)
             }
             else -> {
                 val view = LayoutInflater.from(parent.context)
@@ -52,8 +82,10 @@ class TodoListAdapter(
         }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ItemViewHolder) {
-            holder.bind(items[position], onToggle)
+        when (val row = rows[position]) {
+            is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle)
+            is ListRow.Divider -> (holder as DividerViewHolder).bind(row.completedCount)
+            is ListRow.InlineAdd -> Unit
         }
     }
 
@@ -81,6 +113,14 @@ class TodoListAdapter(
                 )
                 onToggle(item.id)
             }
+        }
+    }
+
+    class DividerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val label: MaterialTextView = view.findViewById(R.id.textDividerLabel)
+
+        fun bind(completedCount: Int) {
+            label.text = label.context.getString(R.string.completed_section_header, completedCount)
         }
     }
 

@@ -32,6 +32,10 @@ Android native to-do list app (`fr.mandarine.todolist`). Kotlin, single `:app` m
 
 Every feature must reach **100% JaCoCo line+branch coverage** and **100% Pitest mutation score** before it is considered done. The `developer` agent (`.claude/agents/developer.md`) enforces this automatically.
 
+## Product specification
+
+**`docs/SPEC.md` is the authoritative product definition.** Every agent must read it before starting any feature work. It defines all screens, behaviors, invariants, and which behaviors are not yet implemented (with linked GitHub issues). Do not implement anything that contradicts it; if a planned feature conflicts with the spec, flag it to the user before proceeding.
+
 ## Agent pipeline
 
 For any user-facing feature, run the agents in this order:

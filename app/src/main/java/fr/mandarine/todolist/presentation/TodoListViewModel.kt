@@ -33,6 +33,9 @@ class TodoListViewModel(
 
     private fun buildState(): TodoListState {
         val items = getTodosUseCase(listId)
-        return if (items.isEmpty()) TodoListState.Empty else TodoListState.Content(items)
+        if (items.isEmpty()) return TodoListState.Empty
+        val activeItems = items.filter { !it.isCompleted }
+        val completedItems = items.filter { it.isCompleted }.sortedByDescending { it.completedAt }
+        return TodoListState.Content(activeItems, completedItems)
     }
 }

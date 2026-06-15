@@ -1,8 +1,10 @@
 package fr.mandarine.todolist.data
 
+import fr.mandarine.todolist.domain.Clock
 import fr.mandarine.todolist.domain.TodoItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -10,10 +12,13 @@ import org.junit.Test
 class InMemoryTodoRepositoryTest {
 
     private lateinit var repository: InMemoryTodoRepository
+    private var clockTime = 1000L
+    private val clock = Clock { clockTime }
 
     @Before
     fun setUp() {
-        repository = InMemoryTodoRepository()
+        clockTime = 1000L
+        repository = InMemoryTodoRepository(clock)
     }
 
     @Test
@@ -88,12 +93,31 @@ class InMemoryTodoRepositoryTest {
     }
 
     @Test
+    fun `should set completedAt to clock time when toggle is called on an incomplete item`() {
+        clockTime = 5000L
+        val item = TodoItem("1", "Item 1", "list-1")
+        repository.add(item)
+        repository.toggle("1")
+        val result = repository.getAllByListId("list-1").first()
+        assertEquals(5000L, result.completedAt)
+    }
+
+    @Test
     fun `should mark item as incomplete when toggle is called on a completed item`() {
-        val item = TodoItem("1", "Item 1", "list-1", isCompleted = true)
+        val item = TodoItem("1", "Item 1", "list-1", isCompleted = true, completedAt = 1000L)
         repository.add(item)
         repository.toggle("1")
         val result = repository.getAllByListId("list-1").first()
         assertFalse(result.isCompleted)
+    }
+
+    @Test
+    fun `should clear completedAt when toggle is called on a completed item`() {
+        val item = TodoItem("1", "Item 1", "list-1", isCompleted = true, completedAt = 1000L)
+        repository.add(item)
+        repository.toggle("1")
+        val result = repository.getAllByListId("list-1").first()
+        assertNull(result.completedAt)
     }
 
     @Test
@@ -121,5 +145,24 @@ class InMemoryTodoRepositoryTest {
         val items = repository.getAllByListId("list-1")
         assertFalse(items.first { it.id == "1" }.isCompleted)
         assertTrue(items.first { it.id == "2" }.isCompleted)
+    }
+
+    @Test
+    fun `should assign different completedAt values when two items are toggled at different times`() {
+        repository.add(TodoItem("1", "Item 1", "list-1"))
+        repository.add(TodoItem("2", "Item 2", "list-1"))
+        clockTime = 1000L
+        repository.toggle("1")
+        clockTime = 2000L
+        repository.toggle("2")
+        val items = repository.getAllByListId("list-1")
+        assertEquals(1000L, items.first { it.id == "1" }.completedAt)
+        assertEquals(2000L, items.first { it.id == "2" }.completedAt)
+    }
+
+    @Test
+    fun `should use system clock when no clock is provided`() {
+        val repoWithDefaultClock = InMemoryTodoRepository()
+        assertTrue(repoWithDefaultClock.getAllByListId("list-1").isEmpty())
     }
 }

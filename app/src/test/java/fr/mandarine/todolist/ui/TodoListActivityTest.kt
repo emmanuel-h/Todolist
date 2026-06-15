@@ -93,9 +93,19 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should hide empty state view always because inline input replaces it`() {
+    fun `should show empty state view when no todos have been added`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should hide empty state view after a todo is added`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
                 assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
             }
         }
@@ -357,4 +367,82 @@ class TodoListActivityTest {
     }
 
     private fun TodoListActivity.recyclerView() = recyclerViewInternal
+
+    @Test
+    fun `should show divider row when both active and completed sections are non-empty`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                addItemViaInlineRow(activity, "Call dentist")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                firstCheckBox(activity).performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                val hasDivider = (0 until rv.adapter!!.itemCount).any {
+                    rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_DIVIDER
+                }
+                assertTrue(hasDivider)
+            }
+        }
+    }
+
+    @Test
+    fun `should not show divider row when all items are active`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                addItemViaInlineRow(activity, "Call dentist")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+
+                val hasDivider = (0 until rv.adapter!!.itemCount).any {
+                    rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_DIVIDER
+                }
+                assertFalse(hasDivider)
+            }
+        }
+    }
+
+    @Test
+    fun `should not show divider row when all items are completed`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Buy milk")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                firstCheckBox(activity).performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                val hasDivider = (0 until rv.adapter!!.itemCount).any {
+                    rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_DIVIDER
+                }
+                assertFalse(hasDivider)
+            }
+        }
+    }
+
+    @Test
+    fun `should place completed item after divider in adapter when toggled`() {
+        launchWithListId().use { scenario ->
+            scenario.onActivity { activity ->
+                addItemViaInlineRow(activity, "Active item")
+                addItemViaInlineRow(activity, "To complete")
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+
+                val secondCheckBox = rv.getChildAt(1)!!.findViewById<MaterialCheckBox>(R.id.checkCompleted)
+                secondCheckBox.performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+
+                val dividerPosition = (0 until rv.adapter!!.itemCount).first {
+                    rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_DIVIDER
+                }
+                assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, rv.adapter!!.getItemViewType(dividerPosition + 1))
+            }
+        }
+    }
 }

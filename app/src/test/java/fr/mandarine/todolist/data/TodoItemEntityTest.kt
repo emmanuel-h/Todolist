@@ -3,6 +3,7 @@ package fr.mandarine.todolist.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,9 +24,21 @@ class TodoItemEntityTest {
     }
 
     @Test
+    fun `should default completedAt to null when not specified`() {
+        val entity = TodoItemEntity("1", "Buy milk", "list-1")
+        assertNull(entity.completedAt)
+    }
+
+    @Test
     fun `should store true when completed is set to true`() {
         val entity = TodoItemEntity("1", "Buy milk", "list-1", completed = true)
         assertTrue(entity.completed)
+    }
+
+    @Test
+    fun `should store completedAt timestamp when provided`() {
+        val entity = TodoItemEntity("1", "Buy milk", "list-1", completed = true, completedAt = 1000L)
+        assertEquals(1000L, entity.completedAt)
     }
 
     @Test
@@ -47,6 +60,14 @@ class TodoItemEntityTest {
     }
 
     @Test
+    fun `should not be equal when completedAt differs`() {
+        assertNotEquals(
+            TodoItemEntity("1", "Buy milk", "list-1", completed = true, completedAt = 1000L),
+            TodoItemEntity("1", "Buy milk", "list-1", completed = true, completedAt = 2000L)
+        )
+    }
+
+    @Test
     fun `should copy entity with updated title`() {
         val original = TodoItemEntity("1", "Buy milk", "list-1")
         val copy = original.copy(title = "Buy eggs")
@@ -61,5 +82,13 @@ class TodoItemEntityTest {
         val toggled = original.copy(completed = true)
         assertTrue(toggled.completed)
         assertEquals("1", toggled.id)
+    }
+
+    @Test
+    fun `should copy entity with updated completedAt`() {
+        val original = TodoItemEntity("1", "Buy milk", "list-1", completed = false, completedAt = null)
+        val updated = original.copy(completed = true, completedAt = 5000L)
+        assertTrue(updated.completed)
+        assertEquals(5000L, updated.completedAt)
     }
 }

@@ -15,8 +15,8 @@ interface TodoItemDao {
     @Insert
     fun insert(item: TodoItemEntity)
 
-    @Query("UPDATE todo_items SET completed = :completed WHERE id = :id")
-    fun updateCompleted(id: String, completed: Boolean)
+    @Query("UPDATE todo_items SET completed = :completed, completedAt = :completedAt WHERE id = :id")
+    fun updateCompleted(id: String, completed: Boolean, completedAt: Long?)
 
     @Query("DELETE FROM todo_items WHERE listId = :listId")
     fun deleteAllByListId(listId: String)
