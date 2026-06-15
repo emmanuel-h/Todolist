@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.TodoDatabase
 import org.junit.After
@@ -147,6 +148,124 @@ class TodoListsActivityTest {
         }
     }
 
+    @Test
+    fun `should rename list when edit icon is tapped and new name is confirmed`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            createListViaDialog(scenario, "Work")
+            tapEditButtonOnFirstRow(scenario)
+            scenario.onActivity { activity ->
+                activity.typeInRenameDialogForTest("Work Revised")
+                activity.confirmDialogForTest()
+            }
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                rv.measure(
+                    View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+                )
+                rv.layout(0, 0, 1080, 1920)
+                val nameView = rv.getChildAt(0)!!.findViewById<MaterialTextView>(R.id.textListName)
+                assertEquals("Work Revised", nameView.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should not rename list when new name is blank`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            createListViaDialog(scenario, "Work")
+            tapEditButtonOnFirstRow(scenario)
+            scenario.onActivity { activity ->
+                activity.typeInRenameDialogForTest("")
+                activity.confirmDialogForTest()
+            }
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                rv.measure(
+                    View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+                )
+                rv.layout(0, 0, 1080, 1920)
+                val nameView = rv.getChildAt(0)!!.findViewById<MaterialTextView>(R.id.textListName)
+                assertEquals("Work", nameView.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should not rename list when new name is whitespace only`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            createListViaDialog(scenario, "Work")
+            tapEditButtonOnFirstRow(scenario)
+            scenario.onActivity { activity ->
+                activity.typeInRenameDialogForTest("   ")
+                activity.confirmDialogForTest()
+            }
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                rv.measure(
+                    View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+                )
+                rv.layout(0, 0, 1080, 1920)
+                val nameView = rv.getChildAt(0)!!.findViewById<MaterialTextView>(R.id.textListName)
+                assertEquals("Work", nameView.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should not rename list when rename dialog is cancelled`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            createListViaDialog(scenario, "Work")
+            tapEditButtonOnFirstRow(scenario)
+            scenario.onActivity { activity ->
+                activity.typeInRenameDialogForTest("Should Not Save")
+                activity.cancelCurrentDialogForTest()
+            }
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                rv.measure(
+                    View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+                )
+                rv.layout(0, 0, 1080, 1920)
+                val nameView = rv.getChildAt(0)!!.findViewById<MaterialTextView>(R.id.textListName)
+                assertEquals("Work", nameView.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should pre-fill rename dialog with current list name`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            createListViaDialog(scenario, "Groceries")
+            tapEditButtonOnFirstRow(scenario)
+            scenario.onActivity { activity ->
+                val input = activity.currentDialogView
+                    ?.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editDialogRenameList)
+                assertEquals("Groceries", input?.text.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `should have edit icon button on each list row`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            createListViaDialog(scenario, "Work")
+            scenario.onActivity { activity ->
+                val rv = activity.recyclerView()
+                rv.measure(
+                    View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+                )
+                rv.layout(0, 0, 1080, 1920)
+                val editBtn = rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnEditList)
+                assertNotNull(editBtn)
+            }
+        }
+    }
+
     private fun createListViaDialog(scenario: ActivityScenario<TodoListsActivity>, name: String) {
         scenario.onActivity { activity ->
             activity.openCreateDialogForTest()
@@ -164,6 +283,18 @@ class TodoListsActivityTest {
             )
             rv.layout(0, 0, 1080, 1920)
             rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnDeleteList).performClick()
+        }
+    }
+
+    private fun tapEditButtonOnFirstRow(scenario: ActivityScenario<TodoListsActivity>) {
+        scenario.onActivity { activity ->
+            val rv = activity.recyclerView()
+            rv.measure(
+                View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+            )
+            rv.layout(0, 0, 1080, 1920)
+            rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnEditList).performClick()
         }
     }
 

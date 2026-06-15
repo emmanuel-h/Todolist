@@ -16,4 +16,11 @@ class InMemoryTodoListRepository : TodoListRepository {
     override fun delete(todoListId: String) {
         lists.removeAll { it.id == todoListId }
     }
+
+    override fun updateName(todoListId: String, name: String) {
+        val index = lists.indexOfFirst { it.id == todoListId }
+        if (index >= 0) {
+            lists[index] = lists[index].copy(name = name)
+        }
+    }
 }

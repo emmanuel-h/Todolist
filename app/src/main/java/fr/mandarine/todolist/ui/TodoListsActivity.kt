@@ -17,6 +17,7 @@ import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
+import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.presentation.TodoListsState
@@ -38,6 +39,7 @@ class TodoListsActivity : AppCompatActivity() {
         viewModel = TodoListsViewModel(
             CreateTodoListUseCase(todoListRepository),
             DeleteTodoListUseCase(todoListRepository, todoRepository),
+            EditTodoListUseCase(todoListRepository),
             GetTodoListsUseCase(todoListRepository)
         )
 
@@ -45,7 +47,8 @@ class TodoListsActivity : AppCompatActivity() {
 
         adapter = TodoListsAdapter(
             onListClick = { list -> openList(list) },
-            onDeleteClick = { list -> showDeleteConfirmation(list) }
+            onDeleteClick = { list -> showDeleteConfirmation(list) },
+            onRenameClick = { list -> showRenameDialog(list) }
         )
 
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewLists)
@@ -85,6 +88,28 @@ class TodoListsActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    private fun showRenameDialog(list: TodoList) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_rename_list, null)
+        currentDialogView = dialogView
+        val input = dialogView.findViewById<TextInputEditText>(R.id.editDialogRenameList)
+        input.setText(list.name)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
+            val newName = input.text.toString()
+            if (newName.isNotBlank()) {
+                viewModel.editList(list.id, newName)
+                refreshLists()
+                dialog.dismiss()
+            }
+        }
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
     private fun showDeleteConfirmation(list: TodoList) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_list, null)
         currentDialogView = dialogView
@@ -110,6 +135,12 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal fun typeInCurrentDialogForTest(text: String) {
         currentDialogView?.findViewById<TextInputEditText>(R.id.editDialogCreateList)?.setText(text)
+    }
+
+    internal fun typeInRenameDialogForTest(text: String) {
+        currentDialogView?.findViewById<TextInputEditText>(R.id.editDialogRenameList)?.apply {
+            setText(text)
+        }
     }
 
     internal fun confirmDialogForTest() {

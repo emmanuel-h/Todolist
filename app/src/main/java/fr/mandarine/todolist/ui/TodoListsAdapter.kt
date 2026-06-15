@@ -11,7 +11,8 @@ import fr.mandarine.todolist.domain.TodoList
 
 class TodoListsAdapter(
     private val onListClick: (TodoList) -> Unit,
-    private val onDeleteClick: (TodoList) -> Unit
+    private val onDeleteClick: (TodoList) -> Unit,
+    private val onRenameClick: (TodoList) -> Unit
 ) : RecyclerView.Adapter<TodoListsAdapter.ViewHolder>() {
 
     private var lists: List<TodoList> = emptyList()
@@ -29,7 +30,7 @@ class TodoListsAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(lists[position], onListClick, onDeleteClick)
+        holder.bind(lists[position], onListClick, onDeleteClick, onRenameClick)
     }
 
     override fun getItemCount(): Int = lists.size
@@ -37,14 +38,17 @@ class TodoListsAdapter(
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val nameView: MaterialTextView = view.findViewById(R.id.textListName)
         private val deleteButton: MaterialButton = view.findViewById(R.id.btnDeleteList)
+        private val editButton: MaterialButton = view.findViewById(R.id.btnEditList)
 
         fun bind(
             list: TodoList,
             onListClick: (TodoList) -> Unit,
-            onDeleteClick: (TodoList) -> Unit
+            onDeleteClick: (TodoList) -> Unit,
+            onRenameClick: (TodoList) -> Unit
         ) {
             nameView.text = list.name
             itemView.setOnClickListener { onListClick(list) }
+            editButton.setOnClickListener { onRenameClick(list) }
             deleteButton.setOnClickListener { onDeleteClick(list) }
         }
     }

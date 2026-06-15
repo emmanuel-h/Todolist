@@ -15,4 +15,8 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
     override fun delete(todoListId: String) {
         dao.deleteById(todoListId)
     }
+
+    override fun updateName(todoListId: String, name: String) {
+        dao.updateName(todoListId, name)
+    }
 }
