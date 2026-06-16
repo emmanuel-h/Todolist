@@ -33,6 +33,16 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
+            <ImageView
+                android:id="@+id/imageWatermark"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:layout_gravity="center"
+                android:alpha="0.15"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_checklist"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
@@ -50,13 +60,6 @@
                 android:orientation="vertical"
                 android:padding="32dp"
                 android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:importantForAccessibility="no"
-                    app:srcCompat="@drawable/ic_checklist"
-                    app:tint="?attr/colorOnSurfaceVariant" />
 
             </LinearLayout>
 

@@ -5,6 +5,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,6 +30,7 @@ class TodoListActivity : AppCompatActivity() {
     private lateinit var viewModel: TodoListViewModel
     private lateinit var adapter: TodoListAdapter
     private lateinit var emptyLayout: View
+    private lateinit var watermark: ImageView
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var itemTouchHelperInternal: ItemTouchHelper
     internal lateinit var inlineAddEditTextInternal: TextInputEditText
@@ -58,6 +60,7 @@ class TodoListActivity : AppCompatActivity() {
         )
 
         emptyLayout = findViewById(R.id.layoutEmptyTodos)
+        watermark = findViewById(R.id.imageWatermark)
 
         wireInlineAddRow()
 
@@ -238,10 +241,12 @@ class TodoListActivity : AppCompatActivity() {
             is TodoListState.Empty -> {
                 adapter.submitList(emptyList(), emptyList())
                 emptyLayout.visibility = View.VISIBLE
+                watermark.alpha = 0.15f
             }
             is TodoListState.Content -> {
                 adapter.submitList(state.activeItems, state.completedItems)
                 emptyLayout.visibility = View.GONE
+                watermark.alpha = 0.08f
             }
         }
     }

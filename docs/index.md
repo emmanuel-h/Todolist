@@ -16,3 +16,4 @@
 - [Rename Todo List](rename-todo-list.md) — dimmed pencil icon on each list row opens a pre-filled rename dialog; blank confirm discards silently
 - [Drag Handle Alignment Fix](drag-handle-alignment.md) — completed rows use `INVISIBLE` instead of `GONE` on the drag handle so item text stays horizontally aligned with the active section
 - [Reorder Todo Lists](reorder-todo-lists.md) — always-visible drag handle on each list row; handle-only drag (no long-press) reorders lists; position persisted in Room (migration 4→5); long-press on row disabled
+- [Empty-State Icon Fix](empty-state-icon-fix.md) — replaces incoherent three-path white-hardcoded ic_checklist with a coherent Material clipboard-with-checkmark tinted via colorOnSurfaceVariant
