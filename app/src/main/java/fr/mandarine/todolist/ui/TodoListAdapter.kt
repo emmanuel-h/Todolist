@@ -128,7 +128,7 @@ class TodoListAdapter(
                 btnToggleComplete.setIconResource(R.drawable.ic_undo)
                 btnToggleComplete.contentDescription =
                     btnToggleComplete.context.getString(R.string.item_mark_incomplete)
-                dragHandle.visibility = View.GONE
+                dragHandle.visibility = View.INVISIBLE
             } else {
                 titleView.alpha = 1.0f
                 titleView.paintFlags = titleView.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()

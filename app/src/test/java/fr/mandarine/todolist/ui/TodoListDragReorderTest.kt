@@ -93,7 +93,28 @@ class TodoListDragReorderTest {
                 val firstItem = rv.getChildAt(0)!!
                 val handle = firstItem.findViewById<ImageView>(R.id.dragHandle)
                 assertNotNull(handle)
-                assertEquals(View.GONE, handle.visibility)
+                assertEquals(View.INVISIBLE, handle.visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should keep drag handle space on completed row to align with active rows`() {
+        launchActivity().use { scenario ->
+            scenario.onActivity { activity ->
+                addItem(activity, "Active task")
+                addItem(activity, "Task to complete")
+                val rv = activity.recyclerViewInternal
+                layoutRecyclerView(rv)
+                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
+                activity.refreshListForTest()
+                layoutRecyclerView(rv)
+                val activeItem = rv.getChildAt(0)!!
+                val completedItem = rv.getChildAt(2)!!
+                val activeHandle = activeItem.findViewById<ImageView>(R.id.dragHandle)
+                val completedHandle = completedItem.findViewById<ImageView>(R.id.dragHandle)
+                assertEquals(View.INVISIBLE, completedHandle.visibility)
+                assertEquals(activeHandle.width, completedHandle.width)
             }
         }
     }
