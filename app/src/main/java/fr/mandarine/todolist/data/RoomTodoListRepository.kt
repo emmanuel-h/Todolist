@@ -30,4 +30,8 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
             dao.updatePosition(sorted[position].id, position)
         }
     }
+
+    override fun shiftAllPositionsUp() {
+        dao.incrementAllPositions()
+    }
 }

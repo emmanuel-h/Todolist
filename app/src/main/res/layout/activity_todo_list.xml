@@ -61,6 +61,13 @@
                 android:padding="32dp"
                 android:visibility="gone">
 
+                <ImageView
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/ic_checklist"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
             </LinearLayout>
 
         </FrameLayout>

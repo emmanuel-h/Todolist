@@ -8,8 +8,8 @@ class CreateTodoListUseCase(
 ) {
     operator fun invoke(name: String): TodoList {
         require(name.isNotBlank())
-        val position = repository.getAll().size
-        val todoList = TodoList(id = generateId(), name = name, position = position)
+        val todoList = TodoList(id = generateId(), name = name, position = 0)
+        repository.shiftAllPositionsUp()
         repository.add(todoList)
         return todoList
     }

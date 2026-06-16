@@ -6,4 +6,5 @@ interface TodoListRepository {
     fun delete(todoListId: String)
     fun updateName(todoListId: String, name: String)
     fun reorder(fromIndex: Int, toIndex: Int)
+    fun shiftAllPositionsUp()
 }

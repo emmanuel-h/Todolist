@@ -62,12 +62,12 @@ class CreateTodoListUseCaseTest {
     }
 
     @Test
-    fun `should assign position equal to current list count when repository has lists`() {
+    fun `should assign position zero when repository has lists`() {
         every { repository.getAll() } returns listOf(
             TodoList("1", "First", 0),
             TodoList("2", "Second", 1)
         )
         val result = useCase("Third")
-        assertEquals(2, result.position)
+        assertEquals(0, result.position)
     }
 }

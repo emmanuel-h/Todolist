@@ -20,4 +20,7 @@ interface TodoListDao {
 
     @Query("UPDATE todo_lists SET position = :position WHERE id = :id")
     fun updatePosition(id: String, position: Int)
+
+    @Query("UPDATE todo_lists SET position = position + 1")
+    fun incrementAllPositions()
 }

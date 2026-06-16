@@ -35,4 +35,10 @@ class InMemoryTodoListRepository : TodoListRepository {
             lists[globalIndex] = lists[globalIndex].copy(position = position)
         }
     }
+
+    override fun shiftAllPositionsUp() {
+        for (index in lists.indices) {
+            lists[index] = lists[index].copy(position = lists[index].position + 1)
+        }
+    }
 }
