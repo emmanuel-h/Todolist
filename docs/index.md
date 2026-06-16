@@ -19,3 +19,4 @@
 - [Empty-State Icon Fix](empty-state-icon-fix.md) — replaces incoherent three-path white-hardcoded ic_checklist with a coherent Material clipboard-with-checkmark tinted via colorOnSurfaceVariant
 - [Inline List Create](inline-list-create.md) — FAB opens an ephemeral tinted inline row pinned below the toolbar instead of a modal dialog; FAB and empty state hide while the row is active
 - [Create List — Insert at Top](create-list-top-insert.md) — newly created lists are inserted at position 0, pushing existing lists down; drag-to-reorder remains the only subsequent reordering mechanism
+- [Lists Screen Watermark Icon](lists-screen-watermark.md) — permanent 200dp/alpha=0.15 background watermark plus empty-state 120dp overlay using ic_format_list_bulleted, matching the dual-layer pattern of the items screen
