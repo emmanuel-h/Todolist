@@ -23,6 +23,12 @@ class TodoListsViewModel(
         createTodoListUseCase(name)
     }
 
+    fun submitInlineInput(name: String): Boolean {
+        if (name.isBlank()) return false
+        createTodoListUseCase(name)
+        return true
+    }
+
     fun deleteList(todoListId: String) {
         deleteTodoListUseCase(todoListId)
     }

@@ -5,6 +5,16 @@
 A personal to-do list Android app. The user manages multiple named lists; each list holds
 items that can be checked off. All data persists across restarts via Room/SQLite.
 
+### Design principle — icon-only UI
+
+**All static labels, screen titles, and empty-state copy are forbidden.** Every affordance must be self-explanatory through icons alone. Specifically:
+- No toolbar title text on any screen.
+- No headline or body text in any empty-state layout — icon only.
+- Text-field hints use `"…"` rather than a descriptive label.
+- Dynamic content (list names, item titles entered by the user) is exempt.
+
+This principle overrides any contradictory suggestion from a UI agent or the wireframes below.
+
 ---
 
 ## Navigation

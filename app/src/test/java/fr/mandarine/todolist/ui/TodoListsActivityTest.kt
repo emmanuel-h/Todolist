@@ -48,7 +48,7 @@ class TodoListsActivityTest {
     @Test
     fun `should add list when valid name is submitted`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
                 assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
@@ -59,9 +59,9 @@ class TodoListsActivityTest {
     @Test
     fun `should accumulate lists when multiple names are submitted`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
-            createListViaDialog(scenario, "Shopping")
-            createListViaDialog(scenario, "Personal")
+            createListViaInlineRow(scenario, "Work")
+            createListViaInlineRow(scenario, "Shopping")
+            createListViaInlineRow(scenario, "Personal")
             scenario.onActivity { activity ->
                 assertEquals(3, activity.recyclerView().adapter!!.itemCount)
             }
@@ -72,8 +72,9 @@ class TodoListsActivityTest {
     fun `should not add list when name is blank`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                activity.openCreateDialogForTest()
-                activity.confirmDialogForTest()
+                activity.tapFab()
+                activity.typeInInlineRowForTest("   ")
+                activity.submitInlineRowForTest()
             }
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
@@ -82,12 +83,11 @@ class TodoListsActivityTest {
     }
 
     @Test
-    fun `should not add list when name is whitespace only`() {
+    fun `should not add list when name is empty`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                activity.openCreateDialogForTest()
-                activity.typeInCurrentDialogForTest("   ")
-                activity.confirmDialogForTest()
+                activity.tapFab()
+                activity.submitInlineRowForTest()
             }
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
@@ -98,7 +98,7 @@ class TodoListsActivityTest {
     @Test
     fun `should remove list when delete is confirmed`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
             }
@@ -113,7 +113,7 @@ class TodoListsActivityTest {
     @Test
     fun `should not remove list when delete is cancelled`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             tapDeleteButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 activity.cancelCurrentDialogForTest()
@@ -127,7 +127,7 @@ class TodoListsActivityTest {
     @Test
     fun `should navigate to TodoListActivity when list card is tapped`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             scenario.onActivity { activity ->
                 val rv = activity.recyclerView()
                 rv.measure(
@@ -151,7 +151,7 @@ class TodoListsActivityTest {
     @Test
     fun `should rename list when edit icon is tapped and new name is confirmed`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 activity.typeInRenameDialogForTest("Work Revised")
@@ -173,7 +173,7 @@ class TodoListsActivityTest {
     @Test
     fun `should not rename list when new name is blank`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 activity.typeInRenameDialogForTest("")
@@ -195,7 +195,7 @@ class TodoListsActivityTest {
     @Test
     fun `should not rename list when new name is whitespace only`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 activity.typeInRenameDialogForTest("   ")
@@ -217,7 +217,7 @@ class TodoListsActivityTest {
     @Test
     fun `should not rename list when rename dialog is cancelled`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 activity.typeInRenameDialogForTest("Should Not Save")
@@ -239,7 +239,7 @@ class TodoListsActivityTest {
     @Test
     fun `should pre-fill rename dialog with current list name`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Groceries")
+            createListViaInlineRow(scenario, "Groceries")
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 val input = activity.currentDialogView
@@ -252,7 +252,7 @@ class TodoListsActivityTest {
     @Test
     fun `should have edit icon button on each list row`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaDialog(scenario, "Work")
+            createListViaInlineRow(scenario, "Work")
             scenario.onActivity { activity ->
                 val rv = activity.recyclerView()
                 rv.measure(
@@ -266,11 +266,11 @@ class TodoListsActivityTest {
         }
     }
 
-    private fun createListViaDialog(scenario: ActivityScenario<TodoListsActivity>, name: String) {
+    private fun createListViaInlineRow(scenario: ActivityScenario<TodoListsActivity>, name: String) {
         scenario.onActivity { activity ->
-            activity.openCreateDialogForTest()
-            activity.typeInCurrentDialogForTest(name)
-            activity.confirmDialogForTest()
+            activity.tapFab()
+            activity.typeInInlineRowForTest(name)
+            activity.submitInlineRowForTest()
         }
     }
 

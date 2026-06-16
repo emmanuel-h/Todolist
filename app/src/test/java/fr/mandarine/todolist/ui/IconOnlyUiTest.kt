@@ -11,6 +11,7 @@ import fr.mandarine.todolist.domain.TodoItem
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -126,9 +127,7 @@ class IconOnlyUiTest {
             .inflate(R.layout.activity_todo_lists, parent, false)
 
         val toolbar = listsView.findViewById<android.view.View>(R.id.toolbar)
-        assert(toolbar == null) {
-            "Expected no toolbar in the lists screen but found one"
-        }
+        assertNull("Expected no toolbar in the lists screen", toolbar)
     }
 
     @Test

@@ -110,9 +110,9 @@ class TodoListsDragReorderTest {
 
     private fun createListViaDialog(scenario: ActivityScenario<TodoListsActivity>, name: String) {
         scenario.onActivity { activity ->
-            activity.openCreateDialogForTest()
-            activity.typeInCurrentDialogForTest(name)
-            activity.confirmDialogForTest()
+            activity.tapFab()
+            activity.typeInInlineRowForTest(name)
+            activity.submitInlineRowForTest()
         }
     }
 }

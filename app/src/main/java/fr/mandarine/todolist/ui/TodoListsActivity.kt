@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,7 +32,9 @@ class TodoListsActivity : AppCompatActivity() {
     private lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
     private lateinit var emptyLayout: View
+    private lateinit var fab: FloatingActionButton
     internal lateinit var recyclerViewInternal: RecyclerView
+    internal lateinit var inlineAddRowInternal: View
     internal var itemTouchHelperInternal: ItemTouchHelper? = null
 
     private var dragFromIndex: Int = -1
@@ -51,6 +55,8 @@ class TodoListsActivity : AppCompatActivity() {
         )
 
         emptyLayout = findViewById(R.id.layoutEmptyLists)
+        fab = findViewById(R.id.fabAddList)
+        inlineAddRowInternal = findViewById(R.id.inlineAddListRow)
 
         adapter = TodoListsAdapter(
             onListClick = { list -> openList(list) },
@@ -96,10 +102,12 @@ class TodoListsActivity : AppCompatActivity() {
         itemTouchHelperInternal = ItemTouchHelper(touchCallback)
         itemTouchHelperInternal!!.attachToRecyclerView(recyclerViewInternal)
 
+        wireInlineAddRow()
+
         refreshLists()
 
-        findViewById<FloatingActionButton>(R.id.fabAddList).setOnClickListener {
-            showCreateListDialog()
+        fab.setOnClickListener {
+            showInlineAddRow()
         }
     }
 
@@ -108,25 +116,59 @@ class TodoListsActivity : AppCompatActivity() {
         refreshLists()
     }
 
-    private fun showCreateListDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_list, null)
-        currentDialogView = dialogView
-        val input = dialogView.findViewById<TextInputEditText>(R.id.editDialogCreateList)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .create()
-        dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
-            val name = input.text.toString()
-            if (name.isNotBlank()) {
-                viewModel.createList(name)
+    private fun wireInlineAddRow() {
+        val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
+        val submitButton = inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineSubmit)
+        val cancelButton = inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineCancel)
+
+        fun trySubmit() {
+            val name = editText.text?.toString().orEmpty()
+            if (viewModel.submitInlineInput(name)) {
+                editText.text?.clear()
+                hideInlineAddRow()
                 refreshLists()
-                dialog.dismiss()
             }
         }
-        dialogView.findViewById<MaterialButton>(R.id.btnDialogCancel).setOnClickListener {
-            dialog.dismiss()
+
+        editText.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                trySubmit()
+                true
+            } else {
+                false
+            }
         }
-        dialog.show()
+
+        submitButton.setOnClickListener { trySubmit() }
+
+        cancelButton.setOnClickListener {
+            editText.text?.clear()
+            hideInlineAddRow()
+        }
+    }
+
+    private fun showInlineAddRow() {
+        inlineAddRowInternal.visibility = View.VISIBLE
+        val divider = findViewById<View>(R.id.inlineAddListDivider)
+        divider.visibility = View.VISIBLE
+        fab.visibility = View.GONE
+        emptyLayout.visibility = View.GONE
+        val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
+        editText.requestFocus()
+        val imm = getSystemService(InputMethodManager::class.java)
+        imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideInlineAddRow() {
+        inlineAddRowInternal.visibility = View.GONE
+        val divider = findViewById<View>(R.id.inlineAddListDivider)
+        divider.visibility = View.GONE
+        fab.visibility = View.VISIBLE
+        val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
+        editText.clearFocus()
+        val imm = getSystemService(InputMethodManager::class.java)
+        imm.hideSoftInputFromWindow(editText.windowToken, 0)
+        refreshLists()
     }
 
     private fun showRenameDialog(list: TodoList) {
@@ -170,12 +212,20 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal var currentDialogView: android.view.View? = null
 
-    internal fun openCreateDialogForTest() {
-        showCreateListDialog()
+    internal fun tapFab() {
+        fab.performClick()
     }
 
-    internal fun typeInCurrentDialogForTest(text: String) {
-        currentDialogView?.findViewById<TextInputEditText>(R.id.editDialogCreateList)?.setText(text)
+    internal fun typeInInlineRowForTest(text: String) {
+        inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd).setText(text)
+    }
+
+    internal fun submitInlineRowForTest() {
+        inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineSubmit).performClick()
+    }
+
+    internal fun cancelInlineRowForTest() {
+        inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineCancel).performClick()
     }
 
     internal fun typeInRenameDialogForTest(text: String) {
@@ -208,7 +258,9 @@ class TodoListsActivity : AppCompatActivity() {
         when (val s = viewModel.state) {
             is TodoListsState.Empty -> {
                 adapter.submitList(emptyList())
-                emptyLayout.visibility = View.VISIBLE
+                if (inlineAddRowInternal.visibility != View.VISIBLE) {
+                    emptyLayout.visibility = View.VISIBLE
+                }
             }
             is TodoListsState.Content -> {
                 adapter.submitList(s.lists)
