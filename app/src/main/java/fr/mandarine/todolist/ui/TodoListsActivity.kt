@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -19,6 +20,7 @@ import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsUseCase
+import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
@@ -28,6 +30,10 @@ class TodoListsActivity : AppCompatActivity() {
     private lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
     private lateinit var emptyLayout: View
+    internal lateinit var recyclerViewInternal: RecyclerView
+    internal var itemTouchHelperInternal: ItemTouchHelper? = null
+
+    private var dragFromIndex: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +46,8 @@ class TodoListsActivity : AppCompatActivity() {
             CreateTodoListUseCase(todoListRepository),
             DeleteTodoListUseCase(todoListRepository, todoRepository),
             EditTodoListUseCase(todoListRepository),
-            GetTodoListsUseCase(todoListRepository)
+            GetTodoListsUseCase(todoListRepository),
+            ReorderTodoListsUseCase(todoListRepository)
         )
 
         emptyLayout = findViewById(R.id.layoutEmptyLists)
@@ -48,12 +55,46 @@ class TodoListsActivity : AppCompatActivity() {
         adapter = TodoListsAdapter(
             onListClick = { list -> openList(list) },
             onDeleteClick = { list -> showDeleteConfirmation(list) },
-            onRenameClick = { list -> showRenameDialog(list) }
+            onRenameClick = { list -> showRenameDialog(list) },
+            onDragStart = { holder -> itemTouchHelperInternal?.startDrag(holder) }
         )
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewLists)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
+        recyclerViewInternal = findViewById(R.id.recyclerViewLists)
+        recyclerViewInternal.layoutManager = LinearLayoutManager(this)
+        recyclerViewInternal.adapter = adapter
+
+        val touchCallback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+        ) {
+            override fun isLongPressDragEnabled(): Boolean = false
+
+            override fun onMove(
+                rv: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (dragFromIndex < 0) dragFromIndex = from
+                adapter.moveItem(from, to)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun clearView(rv: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(rv, viewHolder)
+                val to = viewHolder.bindingAdapterPosition
+                if (dragFromIndex >= 0 && dragFromIndex != to) {
+                    viewModel.reorderLists(dragFromIndex, to)
+                    refreshLists()
+                }
+                dragFromIndex = -1
+            }
+        }
+
+        itemTouchHelperInternal = ItemTouchHelper(touchCallback)
+        itemTouchHelperInternal!!.attachToRecyclerView(recyclerViewInternal)
 
         refreshLists()
 
@@ -149,6 +190,11 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal fun cancelCurrentDialogForTest() {
         currentDialogView?.findViewById<MaterialButton>(R.id.btnDialogCancel)?.performClick()
+    }
+
+    internal fun commitReorderForTest(fromIndex: Int, toIndex: Int) {
+        viewModel.reorderLists(fromIndex, toIndex)
+        refreshLists()
     }
 
     private fun openList(list: TodoList) {

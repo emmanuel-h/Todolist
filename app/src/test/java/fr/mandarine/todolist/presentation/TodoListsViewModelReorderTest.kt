@@ -5,12 +5,15 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import fr.mandarine.todolist.domain.TodoList
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-class TodoListsViewModelEditTest {
+class TodoListsViewModelReorderTest {
 
     private lateinit var createTodoListUseCase: CreateTodoListUseCase
     private lateinit var deleteTodoListUseCase: DeleteTodoListUseCase
@@ -36,30 +39,35 @@ class TodoListsViewModelEditTest {
     }
 
     @Test
-    fun `should delegate editList to use case with correct id and name`() {
-        viewModel.editList("list-1", "Groceries")
+    fun `should delegate reorderLists to use case with fromIndex and toIndex`() {
+        viewModel.reorderLists(0, 2)
 
-        verify { editTodoListUseCase("list-1", "Groceries") }
+        verify { reorderTodoListsUseCase(0, 2) }
     }
 
     @Test
-    fun `should delegate editList with another id and name`() {
-        viewModel.editList("list-42", "Work tasks")
+    fun `should delegate reorderLists to use case with another pair of indices`() {
+        viewModel.reorderLists(1, 3)
 
-        verify { editTodoListUseCase("list-42", "Work tasks") }
+        verify { reorderTodoListsUseCase(1, 3) }
     }
 
     @Test
-    fun `should not call use case when name is blank`() {
-        viewModel.editList("list-1", "   ")
+    fun `should delegate reorderLists when moving upward`() {
+        viewModel.reorderLists(2, 0)
 
-        verify(exactly = 0) { editTodoListUseCase(any(), any()) }
+        verify { reorderTodoListsUseCase(2, 0) }
     }
 
     @Test
-    fun `should not call use case when name is empty`() {
-        viewModel.editList("list-1", "")
+    fun `should reflect updated order in state after reorderLists`() {
+        val list1 = TodoList("1", "Groceries", position = 0)
+        val list2 = TodoList("2", "Work", position = 1)
+        every { getTodoListsUseCase() } returns listOf(list1, list2)
 
-        verify(exactly = 0) { editTodoListUseCase(any(), any()) }
+        viewModel.reorderLists(1, 0)
+
+        val content = viewModel.state as TodoListsState.Content
+        assertEquals(listOf(list1, list2), content.lists)
     }
 }

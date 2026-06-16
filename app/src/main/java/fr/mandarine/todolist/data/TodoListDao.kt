@@ -6,7 +6,7 @@ import androidx.room.Query
 
 @Dao
 interface TodoListDao {
-    @Query("SELECT * FROM todo_lists")
+    @Query("SELECT * FROM todo_lists ORDER BY position ASC")
     fun getAll(): List<TodoListEntity>
 
     @Insert
@@ -17,4 +17,7 @@ interface TodoListDao {
 
     @Query("UPDATE todo_lists SET name = :name WHERE id = :id")
     fun updateName(id: String, name: String)
+
+    @Query("UPDATE todo_lists SET position = :position WHERE id = :id")
+    fun updatePosition(id: String, position: Int)
 }

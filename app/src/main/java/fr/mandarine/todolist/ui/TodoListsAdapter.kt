@@ -1,8 +1,10 @@
 package fr.mandarine.todolist.ui
 
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
@@ -12,7 +14,8 @@ import fr.mandarine.todolist.domain.TodoList
 class TodoListsAdapter(
     private val onListClick: (TodoList) -> Unit,
     private val onDeleteClick: (TodoList) -> Unit,
-    private val onRenameClick: (TodoList) -> Unit
+    private val onRenameClick: (TodoList) -> Unit,
+    private val onDragStart: (RecyclerView.ViewHolder) -> Unit
 ) : RecyclerView.Adapter<TodoListsAdapter.ViewHolder>() {
 
     private var lists: List<TodoList> = emptyList()
@@ -23,6 +26,14 @@ class TodoListsAdapter(
         notifyDataSetChanged()
     }
 
+    fun moveItem(fromPosition: Int, toPosition: Int) {
+        val mutable = lists.toMutableList()
+        val item = mutable.removeAt(fromPosition)
+        mutable.add(toPosition, item)
+        lists = mutable
+        notifyItemMoved(fromPosition, toPosition)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_todo_list, parent, false)
@@ -30,7 +41,7 @@ class TodoListsAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(lists[position], onListClick, onDeleteClick, onRenameClick)
+        holder.bind(lists[position], onListClick, onDeleteClick, onRenameClick, onDragStart)
     }
 
     override fun getItemCount(): Int = lists.size
@@ -39,17 +50,25 @@ class TodoListsAdapter(
         private val nameView: MaterialTextView = view.findViewById(R.id.textListName)
         private val deleteButton: MaterialButton = view.findViewById(R.id.btnDeleteList)
         private val editButton: MaterialButton = view.findViewById(R.id.btnEditList)
+        val dragHandle: ImageView = view.findViewById(R.id.dragHandleList)
 
         fun bind(
             list: TodoList,
             onListClick: (TodoList) -> Unit,
             onDeleteClick: (TodoList) -> Unit,
-            onRenameClick: (TodoList) -> Unit
+            onRenameClick: (TodoList) -> Unit,
+            onDragStart: (RecyclerView.ViewHolder) -> Unit
         ) {
             nameView.text = list.name
             itemView.setOnClickListener { onListClick(list) }
             editButton.setOnClickListener { onRenameClick(list) }
             deleteButton.setOnClickListener { onDeleteClick(list) }
+            dragHandle.setOnTouchListener { _, event ->
+                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                    onDragStart(this)
+                }
+                false
+            }
         }
     }
 }

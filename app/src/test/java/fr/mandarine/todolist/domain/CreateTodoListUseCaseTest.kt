@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.domain
 
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -51,5 +52,22 @@ class CreateTodoListUseCaseTest {
         val defaultUseCase = CreateTodoListUseCase(repository)
         val result = defaultUseCase("Groceries")
         assertTrue(result.id.isNotBlank())
+    }
+
+    @Test
+    fun `should assign position zero when repository is empty`() {
+        every { repository.getAll() } returns emptyList()
+        val result = useCase("Groceries")
+        assertEquals(0, result.position)
+    }
+
+    @Test
+    fun `should assign position equal to current list count when repository has lists`() {
+        every { repository.getAll() } returns listOf(
+            TodoList("1", "First", 0),
+            TodoList("2", "Second", 1)
+        )
+        val result = useCase("Third")
+        assertEquals(2, result.position)
     }
 }

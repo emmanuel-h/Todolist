@@ -6,5 +6,6 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "todo_lists")
 data class TodoListEntity(
     @PrimaryKey val id: String,
-    val name: String
+    val name: String,
+    val position: Int = 0
 )

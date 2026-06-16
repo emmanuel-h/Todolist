@@ -4,12 +4,14 @@ import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsUseCase
+import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 
 class TodoListsViewModel(
     private val createTodoListUseCase: CreateTodoListUseCase,
     private val deleteTodoListUseCase: DeleteTodoListUseCase,
     private val editTodoListUseCase: EditTodoListUseCase,
-    private val getTodoListsUseCase: GetTodoListsUseCase
+    private val getTodoListsUseCase: GetTodoListsUseCase,
+    private val reorderTodoListsUseCase: ReorderTodoListsUseCase
 ) {
     val state: TodoListsState
         get() {
@@ -28,5 +30,9 @@ class TodoListsViewModel(
     fun editList(todoListId: String, newName: String) {
         if (newName.isBlank()) return
         editTodoListUseCase(todoListId, newName)
+    }
+
+    fun reorderLists(fromIndex: Int, toIndex: Int) {
+        reorderTodoListsUseCase(fromIndex, toIndex)
     }
 }

@@ -7,7 +7,7 @@ class InMemoryTodoListRepository : TodoListRepository {
 
     private val lists = mutableListOf<TodoList>()
 
-    override fun getAll(): List<TodoList> = lists.toList()
+    override fun getAll(): List<TodoList> = lists.sortedBy { it.position }
 
     override fun add(todoList: TodoList) {
         lists.add(todoList)
@@ -21,6 +21,18 @@ class InMemoryTodoListRepository : TodoListRepository {
         val index = lists.indexOfFirst { it.id == todoListId }
         if (index >= 0) {
             lists[index] = lists[index].copy(name = name)
+        }
+    }
+
+    override fun reorder(fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val sorted = lists.sortedBy { it.position }.toMutableList()
+        if (sorted.isEmpty()) return
+        val item = sorted.removeAt(fromIndex)
+        sorted.add(toIndex, item)
+        for (position in sorted.indices) {
+            val globalIndex = lists.indexOfFirst { it.id == sorted[position].id }
+            lists[globalIndex] = lists[globalIndex].copy(position = position)
         }
     }
 }

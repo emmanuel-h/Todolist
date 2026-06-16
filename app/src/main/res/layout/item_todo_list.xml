@@ -10,6 +10,7 @@
     android:layout_marginBottom="4dp"
     android:clickable="true"
     android:focusable="true"
+    android:longClickable="false"
     app:cardElevation="2dp"
     app:cardCornerRadius="12dp"
     app:strokeWidth="0dp">
@@ -25,18 +26,24 @@
         android:paddingEnd="4dp"
         android:paddingBottom="12dp">
 
+        <ImageView
+            android:id="@+id/dragHandleList"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:contentDescription="@string/drag_handle"
+            app:srcCompat="@drawable/ic_drag_handle"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEditList"
             style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:alpha="0.38"
             android:contentDescription="@string/edit_list"
             app:icon="@drawable/ic_edit"
-            app:iconSize="16dp"
-            app:iconTint="?attr/colorOnSurface"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp" />
+            app:iconTint="?attr/colorOnSurface" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/textListName"
@@ -55,9 +62,7 @@
             android:layout_height="48dp"
             android:contentDescription="@string/delete_list"
             app:icon="@drawable/ic_delete"
-            app:iconTint="?attr/colorError"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp" />
+            app:iconTint="?attr/colorError" />
 
     </LinearLayout>
 
