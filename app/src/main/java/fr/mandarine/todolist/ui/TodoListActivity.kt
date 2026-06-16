@@ -3,12 +3,14 @@ package fr.mandarine.todolist.ui
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoRepository
@@ -29,6 +31,7 @@ class TodoListActivity : AppCompatActivity() {
     private lateinit var emptyLayout: View
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var itemTouchHelperInternal: ItemTouchHelper
+    internal lateinit var inlineAddEditTextInternal: TextInputEditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +59,8 @@ class TodoListActivity : AppCompatActivity() {
 
         emptyLayout = findViewById(R.id.layoutEmptyTodos)
 
+        wireInlineAddRow()
+
         adapter = TodoListAdapter(
             onToggle = { todoId ->
                 viewModel.toggleTodo(todoId)
@@ -67,10 +72,6 @@ class TodoListActivity : AppCompatActivity() {
             },
             onEdit = { todoId, newTitle ->
                 viewModel.editTodo(todoId, newTitle)
-                renderState(viewModel.state.value)
-            },
-            onSubmit = { title ->
-                viewModel.submitInlineInput(title)
                 renderState(viewModel.state.value)
             },
             onStartDrag = { holder ->
@@ -86,6 +87,53 @@ class TodoListActivity : AppCompatActivity() {
         itemTouchHelperInternal.attachToRecyclerView(recyclerViewInternal)
 
         renderState(viewModel.state.value)
+    }
+
+    private fun wireInlineAddRow() {
+        val inlineAddRow = findViewById<View>(R.id.inlineAddRow)
+        val ghostRow = inlineAddRow.findViewById<View>(R.id.ghostRow)
+        val expandedRow = inlineAddRow.findViewById<View>(R.id.expandedRow)
+        val editText = inlineAddRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+        val submitButton = inlineAddRow.findViewById<MaterialButton>(R.id.btnInlineSubmit)
+        inlineAddEditTextInternal = editText
+
+        fun showExpanded(expanded: Boolean) {
+            ghostRow.visibility = if (expanded) View.GONE else View.VISIBLE
+            expandedRow.visibility = if (expanded) View.VISIBLE else View.GONE
+        }
+
+        fun trySubmit() {
+            val title = editText.text?.toString().orEmpty()
+            if (title.isNotBlank()) {
+                viewModel.submitInlineInput(title)
+                editText.text?.clear()
+                renderState(viewModel.state.value)
+            }
+        }
+
+        editText.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                trySubmit()
+                true
+            } else {
+                false
+            }
+        }
+
+        submitButton.setOnClickListener { trySubmit() }
+
+        editText.setOnFocusChangeListener { _, hasFocus ->
+            showExpanded(hasFocus)
+            if (hasFocus) {
+                val imm = getSystemService(InputMethodManager::class.java)
+                imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+            }
+        }
+
+        ghostRow.setOnClickListener {
+            showExpanded(true)
+            editText.requestFocus()
+        }
     }
 
     private fun buildDragCallback(): ItemTouchHelper.Callback =

@@ -1,6 +1,5 @@
 package fr.mandarine.todolist.ui
 
-import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -9,11 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.data.TodoListEntity
-import fr.mandarine.todolist.domain.TodoItem
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -56,13 +53,10 @@ class TodoListDragReorderTest {
     }
 
     private fun addItem(activity: TodoListActivity, title: String) {
-        val rv = activity.recyclerViewInternal
-        layoutRecyclerView(rv)
-        val addRow = rv.getChildAt(rv.childCount - 1)!!
-        val editText = addRow.findViewById<TextInputEditText>(R.id.editInlineAdd)
+        val editText = activity.inlineAddEditTextInternal
         editText.setText(title)
         editText.onEditorAction(EditorInfo.IME_ACTION_DONE)
-        layoutRecyclerView(rv)
+        layoutRecyclerView(activity.recyclerViewInternal)
     }
 
     @Test

@@ -26,8 +26,8 @@ Displays the items belonging to a single todo list in a RecyclerView. The user a
 - `app/src/main/java/fr/mandarine/todolist/presentation/TodoListState.kt` — UI state sealed class
 - `app/src/main/java/fr/mandarine/todolist/presentation/TodoListViewModel.kt` — ViewModel wiring state to use cases
 - `app/src/main/java/fr/mandarine/todolist/ui/TodoListActivity.kt` — host activity; reads `LIST_ID` + `LIST_NAME` from intent extras; shows edit dialog
-- `app/src/main/java/fr/mandarine/todolist/ui/TodoListAdapter.kt` — three view types: `TODO_ITEM`, `DIVIDER`, and `INLINE_ADD`; `ItemViewHolder` has three action buttons
-- `app/src/main/res/layout/activity_todo_list.xml` — CoordinatorLayout, MaterialToolbar with back arrow, RecyclerView
+- `app/src/main/java/fr/mandarine/todolist/ui/TodoListAdapter.kt` — two view types: `TODO_ITEM` and `DIVIDER`; `ItemViewHolder` has three action buttons; the inline-add row is no longer an adapter item (→ see `inline-add-ux-polish.md`)
+- `app/src/main/res/layout/activity_todo_list.xml` — vertical `LinearLayout` below `AppBarLayout`; pinned inline-add row at top, `RecyclerView` + empty state below (→ see `inline-add-ux-polish.md`)
 - `app/src/main/res/layout/item_todo.xml` — title text + three icon buttons (toggle, edit, delete); no checkbox
 - `app/src/main/res/layout/item_todo_inline_add.xml` — TextInputEditText + send icon
 - `app/src/main/res/layout/dialog_edit_item.xml` — TextInputEditText for title editing in AlertDialog

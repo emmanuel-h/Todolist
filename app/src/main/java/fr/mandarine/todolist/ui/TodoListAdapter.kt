@@ -20,21 +20,18 @@ class TodoListAdapter(
     private val onToggle: (String) -> Unit,
     private val onDelete: (String) -> Unit,
     private val onEdit: (String, String) -> Unit,
-    private val onSubmit: (String) -> Unit,
     private val onStartDrag: ((RecyclerView.ViewHolder) -> Unit)? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     sealed class ListRow {
         data class Item(val todo: TodoItem) : ListRow()
         data class Divider(val completedCount: Int) : ListRow()
-        object InlineAdd : ListRow()
     }
 
-    private var rows: List<ListRow> = listOf(ListRow.InlineAdd)
+    private var rows: List<ListRow> = emptyList()
 
     companion object {
         const val VIEW_TYPE_ITEM = 0
-        const val VIEW_TYPE_ADD = 1
         const val VIEW_TYPE_DIVIDER = 2
     }
 
@@ -64,7 +61,6 @@ class TodoListAdapter(
             result += ListRow.Divider(completedItems.size)
         }
         completedItems.forEach { result += ListRow.Item(it) }
-        result += ListRow.InlineAdd
         return result
     }
 
@@ -73,17 +69,11 @@ class TodoListAdapter(
     override fun getItemViewType(position: Int): Int =
         when (rows[position]) {
             is ListRow.Item -> VIEW_TYPE_ITEM
-            is ListRow.InlineAdd -> VIEW_TYPE_ADD
             is ListRow.Divider -> VIEW_TYPE_DIVIDER
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
         when (viewType) {
-            VIEW_TYPE_ADD -> {
-                val view = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.item_todo_inline_add, parent, false)
-                AddInputViewHolder(view, onSubmit)
-            }
             VIEW_TYPE_DIVIDER -> {
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.item_todo_divider, parent, false)
@@ -100,7 +90,6 @@ class TodoListAdapter(
         when (val row = rows[position]) {
             is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle, onDelete, onEdit, onStartDrag)
             is ListRow.Divider -> (holder as DividerViewHolder).bind(row.completedCount)
-            is ListRow.InlineAdd -> Unit
         }
     }
 
@@ -220,53 +209,6 @@ class TodoListAdapter(
 
         fun bind(completedCount: Int) {
             label.text = completedCount.toString()
-        }
-    }
-
-    class AddInputViewHolder(view: View, onSubmit: (String) -> Unit) : RecyclerView.ViewHolder(view) {
-        internal val editText: TextInputEditText = view.findViewById(R.id.editInlineAdd)
-        private val ghostRow: View = view.findViewById(R.id.ghostRow)
-        private val expandedRow: View = view.findViewById(R.id.expandedRow)
-
-        init {
-            val submitButton = view.findViewById<MaterialButton>(R.id.btnInlineSubmit)
-
-            fun trySubmit() {
-                val title = editText.text?.toString().orEmpty()
-                if (title.isNotBlank()) {
-                    onSubmit(title)
-                    editText.text?.clear()
-                }
-            }
-
-            editText.setOnEditorActionListener { _, actionId, _ ->
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    trySubmit()
-                    true
-                } else {
-                    false
-                }
-            }
-
-            submitButton.setOnClickListener { trySubmit() }
-
-            editText.setOnFocusChangeListener { _, hasFocus ->
-                showExpanded(hasFocus)
-                if (hasFocus) {
-                    val imm = editText.context.getSystemService(InputMethodManager::class.java)
-                    imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
-                }
-            }
-
-            ghostRow.setOnClickListener {
-                showExpanded(true)
-                editText.requestFocus()
-            }
-        }
-
-        private fun showExpanded(expanded: Boolean) {
-            ghostRow.visibility = if (expanded) View.GONE else View.VISIBLE
-            expandedRow.visibility = if (expanded) View.VISIBLE else View.GONE
         }
     }
 }

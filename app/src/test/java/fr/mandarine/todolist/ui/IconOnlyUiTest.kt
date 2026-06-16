@@ -30,12 +30,10 @@ class IconOnlyUiTest {
         val onToggle: (String) -> Unit = mockk(relaxed = true)
         val onDelete: (String) -> Unit = mockk(relaxed = true)
         val onEdit: (String, String) -> Unit = mockk(relaxed = true)
-        val onSubmit: (String) -> Unit = mockk(relaxed = true)
         adapter = TodoListAdapter(
             onToggle = onToggle,
             onDelete = onDelete,
-            onEdit = onEdit,
-            onSubmit = onSubmit
+            onEdit = onEdit
         )
         themedContext = ContextThemeWrapper(
             RuntimeEnvironment.getApplication(),
