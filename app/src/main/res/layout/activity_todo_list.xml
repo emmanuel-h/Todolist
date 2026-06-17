@@ -51,25 +51,6 @@
                 android:paddingTop="4dp"
                 android:paddingBottom="16dp" />
 
-            <LinearLayout
-                android:id="@+id/layoutEmptyTodos"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="32dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:importantForAccessibility="no"
-                    app:srcCompat="@drawable/ic_checklist"
-                    app:tint="?attr/colorOnSurfaceVariant" />
-
-            </LinearLayout>
-
         </FrameLayout>
 
     </LinearLayout>

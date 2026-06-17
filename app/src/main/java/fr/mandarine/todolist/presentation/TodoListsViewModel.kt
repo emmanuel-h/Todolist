@@ -3,20 +3,23 @@ package fr.mandarine.todolist.presentation
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
-import fr.mandarine.todolist.domain.GetTodoListsUseCase
+import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 
 class TodoListsViewModel(
     private val createTodoListUseCase: CreateTodoListUseCase,
     private val deleteTodoListUseCase: DeleteTodoListUseCase,
     private val editTodoListUseCase: EditTodoListUseCase,
-    private val getTodoListsUseCase: GetTodoListsUseCase,
+    private val getTodoListsWithStatusUseCase: GetTodoListsWithStatusUseCase,
     private val reorderTodoListsUseCase: ReorderTodoListsUseCase
 ) {
     val state: TodoListsState
         get() {
-            val lists = getTodoListsUseCase()
-            return if (lists.isEmpty()) TodoListsState.Empty else TodoListsState.Content(lists)
+            val summaries = getTodoListsWithStatusUseCase()
+            if (summaries.isEmpty()) return TodoListsState.Empty
+            val activeSummaries = summaries.filter { !it.allDone }
+            val doneSummaries = summaries.filter { it.allDone }
+            return TodoListsState.Content(activeSummaries, doneSummaries)
         }
 
     fun createList(name: String) {

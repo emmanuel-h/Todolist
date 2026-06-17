@@ -87,20 +87,22 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show empty state view when no todos have been added`() {
+    fun `should show watermark at high alpha when no todos have been added`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
+                val watermark = activity.findViewById<android.widget.ImageView>(R.id.imageWatermark)
+                assertEquals(0.15f, watermark.alpha, 0.01f)
             }
         }
     }
 
     @Test
-    fun `should hide empty state view after a todo is added`() {
+    fun `should reduce watermark alpha after a todo is added`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
                 addItemViaInlineRow(activity, "Buy milk")
-                assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
+                val watermark = activity.findViewById<android.widget.ImageView>(R.id.imageWatermark)
+                assertEquals(0.08f, watermark.alpha, 0.01f)
             }
         }
     }
@@ -416,7 +418,7 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show empty state after last item is deleted`() {
+    fun `should show watermark at high alpha after last item is deleted`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
                 addItemViaInlineRow(activity, "Buy milk")
@@ -425,7 +427,8 @@ class TodoListActivityTest {
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnDelete).performClick()
                 activity.refreshListForTest()
 
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyTodos).visibility)
+                val watermark = activity.findViewById<android.widget.ImageView>(R.id.imageWatermark)
+                assertEquals(0.15f, watermark.alpha, 0.01f)
             }
         }
     }

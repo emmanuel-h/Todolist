@@ -103,10 +103,8 @@ class IconOnlyUiTest {
         val parent = FrameLayout(themedContext)
         val contentView = LayoutInflater.from(themedContext)
             .inflate(R.layout.activity_todo_list, parent, false)
-        val emptyLayout = contentView.findViewById<ViewGroup>(R.id.layoutEmptyTodos)
-
-        val textViewCount = countTextViews(emptyLayout)
-        assertEquals("Empty state in todo list should have no visible text views", 0, textViewCount)
+        val watermark = contentView.findViewById<android.widget.ImageView>(R.id.imageWatermark)
+        assertNotNull("Watermark icon must exist in todo list layout", watermark)
     }
 
     @Test

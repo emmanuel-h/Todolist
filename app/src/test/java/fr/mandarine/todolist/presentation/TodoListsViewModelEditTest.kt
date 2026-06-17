@@ -3,7 +3,7 @@ package fr.mandarine.todolist.presentation
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
-import fr.mandarine.todolist.domain.GetTodoListsUseCase
+import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,7 +15,7 @@ class TodoListsViewModelEditTest {
     private lateinit var createTodoListUseCase: CreateTodoListUseCase
     private lateinit var deleteTodoListUseCase: DeleteTodoListUseCase
     private lateinit var editTodoListUseCase: EditTodoListUseCase
-    private lateinit var getTodoListsUseCase: GetTodoListsUseCase
+    private lateinit var getTodoListsWithStatusUseCase: GetTodoListsWithStatusUseCase
     private lateinit var reorderTodoListsUseCase: ReorderTodoListsUseCase
     private lateinit var viewModel: TodoListsViewModel
 
@@ -24,13 +24,13 @@ class TodoListsViewModelEditTest {
         createTodoListUseCase = mockk(relaxed = true)
         deleteTodoListUseCase = mockk(relaxed = true)
         editTodoListUseCase = mockk(relaxed = true)
-        getTodoListsUseCase = mockk(relaxed = true)
+        getTodoListsWithStatusUseCase = mockk(relaxed = true)
         reorderTodoListsUseCase = mockk(relaxed = true)
         viewModel = TodoListsViewModel(
             createTodoListUseCase,
             deleteTodoListUseCase,
             editTodoListUseCase,
-            getTodoListsUseCase,
+            getTodoListsWithStatusUseCase,
             reorderTodoListsUseCase
         )
     }

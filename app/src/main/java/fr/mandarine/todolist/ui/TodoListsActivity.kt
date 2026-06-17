@@ -21,7 +21,7 @@ import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
-import fr.mandarine.todolist.domain.GetTodoListsUseCase
+import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.presentation.TodoListsState
@@ -50,7 +50,7 @@ class TodoListsActivity : AppCompatActivity() {
             CreateTodoListUseCase(todoListRepository),
             DeleteTodoListUseCase(todoListRepository, todoRepository),
             EditTodoListUseCase(todoListRepository),
-            GetTodoListsUseCase(todoListRepository),
+            GetTodoListsWithStatusUseCase(todoListRepository, todoRepository),
             ReorderTodoListsUseCase(todoListRepository)
         )
 
@@ -74,6 +74,20 @@ class TodoListsActivity : AppCompatActivity() {
         ) {
             override fun isLongPressDragEnabled(): Boolean = false
 
+            override fun getMovementFlags(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int {
+                if (viewHolder.itemViewType != TodoListsAdapter.VIEW_TYPE_ITEM) return 0
+                val position = viewHolder.bindingAdapterPosition
+                if (position == RecyclerView.NO_ID.toInt()) return 0
+                return if (position < adapter.activeItemCount()) {
+                    makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0)
+                } else {
+                    0
+                }
+            }
+
             override fun onMove(
                 rv: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
@@ -81,6 +95,9 @@ class TodoListsActivity : AppCompatActivity() {
             ): Boolean {
                 val from = viewHolder.bindingAdapterPosition
                 val to = target.bindingAdapterPosition
+                val activeCount = adapter.activeItemCount()
+                if (to < 0 || to >= activeCount) return false
+                if (target.itemViewType != TodoListsAdapter.VIEW_TYPE_ITEM) return false
                 if (dragFromIndex < 0) dragFromIndex = from
                 adapter.moveItem(from, to)
                 return true
@@ -257,13 +274,13 @@ class TodoListsActivity : AppCompatActivity() {
     private fun refreshLists() {
         when (val s = viewModel.state) {
             is TodoListsState.Empty -> {
-                adapter.submitList(emptyList())
+                adapter.submitList(emptyList(), emptyList())
                 if (inlineAddRowInternal.visibility != View.VISIBLE) {
                     emptyLayout.visibility = View.VISIBLE
                 }
             }
             is TodoListsState.Content -> {
-                adapter.submitList(s.lists)
+                adapter.submitList(s.activeSummaries, s.doneSummaries)
                 emptyLayout.visibility = View.GONE
             }
         }
