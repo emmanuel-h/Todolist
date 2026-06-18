@@ -22,3 +22,4 @@
 - [Lists Screen Watermark Icon](lists-screen-watermark.md) — permanent 200dp/alpha=0.15 background watermark plus empty-state 120dp overlay using ic_format_list_bulleted, matching the dual-layer pattern of the items screen
 - [All-Done List Status](all-done-list-status.md) — lists screen highlights fully-completed lists with colorSecondaryContainer background and strikethrough on the list name; empty lists never trigger the treatment
 - [List Item Count Badges](list-item-count-badges.md) — each list row shows active and completed item counts as two pill-shaped badges (e.g. "3 / 2"); empty lists show "0 / 0"
+- [Inset Item Dividers](inset-item-dividers.md) — 1dp inset dividers between consecutive item rows on Screen 2; skips rows adjacent to the section-header; aligns with title text by insetting 52dp past the drag handle

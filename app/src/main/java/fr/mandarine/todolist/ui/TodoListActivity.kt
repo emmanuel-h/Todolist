@@ -1,5 +1,8 @@
 package fr.mandarine.todolist.ui
 
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
@@ -83,6 +86,7 @@ class TodoListActivity : AppCompatActivity() {
         recyclerViewInternal = findViewById(R.id.recyclerView)
         recyclerViewInternal.layoutManager = LinearLayoutManager(this)
         recyclerViewInternal.adapter = adapter
+        recyclerViewInternal.addItemDecoration(InsetItemDivider())
 
         itemTouchHelperInternal = ItemTouchHelper(buildDragCallback())
         itemTouchHelperInternal.attachToRecyclerView(recyclerViewInternal)
@@ -232,6 +236,64 @@ class TodoListActivity : AppCompatActivity() {
 
     internal fun refreshListForTest() {
         renderState(viewModel.state.value)
+    }
+
+    private inner class InsetItemDivider : RecyclerView.ItemDecoration() {
+
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val dividerHeightPx: Int
+        private val insetStartPx: Int
+        private val insetEndPx: Int
+
+        init {
+            val density = resources.displayMetrics.density
+            dividerHeightPx = (1f * density).toInt().coerceAtLeast(1)
+            insetStartPx = (52f * density).toInt()
+            insetEndPx = (16f * density).toInt()
+            val typedArray = obtainStyledAttributes(
+                intArrayOf(com.google.android.material.R.attr.colorOutlineVariant)
+            )
+            paint.color = typedArray.getColor(0, android.graphics.Color.LTGRAY)
+            typedArray.recycle()
+        }
+
+        override fun getItemOffsets(
+            outRect: Rect,
+            view: View,
+            parent: RecyclerView,
+            state: RecyclerView.State
+        ) {
+            val position = parent.getChildAdapterPosition(view)
+            if (needsDividerBelow(position)) {
+                outRect.bottom = dividerHeightPx
+            }
+        }
+
+        override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+            for (i in 0 until parent.childCount) {
+                val child = parent.getChildAt(i)
+                val position = parent.getChildAdapterPosition(child)
+                if (needsDividerBelow(position)) {
+                    val top = child.bottom.toFloat()
+                    val bottom = top + dividerHeightPx
+                    c.drawRect(
+                        insetStartPx.toFloat(),
+                        top,
+                        (parent.width - parent.paddingEnd - insetEndPx).toFloat(),
+                        bottom,
+                        paint
+                    )
+                }
+            }
+        }
+
+        private fun needsDividerBelow(position: Int): Boolean {
+            if (position == RecyclerView.NO_POSITION) return false
+            if (adapter.getItemViewType(position) != TodoListAdapter.VIEW_TYPE_ITEM) return false
+            val nextPosition = position + 1
+            if (nextPosition >= adapter.itemCount) return false
+            return adapter.getItemViewType(nextPosition) == TodoListAdapter.VIEW_TYPE_ITEM
+        }
     }
 
     private fun renderState(state: TodoListState) {
