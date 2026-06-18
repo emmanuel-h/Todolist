@@ -24,10 +24,6 @@
         android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <include
-            android:id="@+id/inlineAddRow"
-            layout="@layout/item_todo_inline_add" />
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"

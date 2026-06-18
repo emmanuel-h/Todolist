@@ -54,7 +54,7 @@ class IconOnlyUiTest {
         val parent = FrameLayout(themedContext)
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
             as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 1)
+        adapter.onBindViewHolder(holder, 2)
 
         val label = holder.itemView.findViewById<MaterialTextView>(R.id.textDividerLabel)
         val labelText = label.text.toString()
@@ -72,7 +72,7 @@ class IconOnlyUiTest {
         val parent = FrameLayout(themedContext)
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
             as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 1)
+        adapter.onBindViewHolder(holder, 2)
 
         val label = holder.itemView.findViewById<MaterialTextView>(R.id.textDividerLabel)
         assertEquals("1", label.text.toString())
@@ -89,7 +89,7 @@ class IconOnlyUiTest {
         val parent = FrameLayout(themedContext)
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
             as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 1)
+        adapter.onBindViewHolder(holder, 2)
 
         val label = holder.itemView.findViewById<MaterialTextView>(R.id.textDividerLabel)
         val labelText = label.text.toString().lowercase()

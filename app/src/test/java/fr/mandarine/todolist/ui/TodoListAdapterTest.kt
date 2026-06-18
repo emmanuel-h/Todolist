@@ -46,29 +46,44 @@ class TodoListAdapterTest {
     }
 
     @Test
-    fun `should return items size when getItemCount is called with items`() {
+    fun `should return item count plus one for inline add row when active items exist`() {
         val items = listOf(
             TodoItem("1", "Buy milk", "list-1"),
             TodoItem("2", "Call dentist", "list-1")
         )
         adapter.submitList(items, emptyList())
 
-        assertEquals(2, adapter.itemCount)
+        assertEquals(3, adapter.itemCount)
     }
 
     @Test
-    fun `should return zero when getItemCount is called with empty list`() {
+    fun `should return one for inline add row when list is empty`() {
         adapter.submitList(emptyList(), emptyList())
 
-        assertEquals(0, adapter.itemCount)
+        assertEquals(1, adapter.itemCount)
     }
 
     @Test
-    fun `should return VIEW_TYPE_ITEM for item positions`() {
+    fun `should return VIEW_TYPE_ITEM for active item positions`() {
         val items = listOf(TodoItem("1", "Buy milk", "list-1"))
         adapter.submitList(items, emptyList())
 
         assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
+    }
+
+    @Test
+    fun `should return VIEW_TYPE_INLINE_ADD at position after all active items`() {
+        val items = listOf(TodoItem("1", "Buy milk", "list-1"))
+        adapter.submitList(items, emptyList())
+
+        assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, adapter.getItemViewType(1))
+    }
+
+    @Test
+    fun `should return VIEW_TYPE_INLINE_ADD at position zero when no active items exist`() {
+        adapter.submitList(emptyList(), emptyList())
+
+        assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, adapter.getItemViewType(0))
     }
 
     @Test
@@ -79,12 +94,20 @@ class TodoListAdapterTest {
     }
 
     @Test
+    fun `should create inline add view holder for VIEW_TYPE_INLINE_ADD`() {
+        val parent = FrameLayout(themedContext)
+        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_INLINE_ADD)
+        assertEquals(TodoListAdapter.InlineAddViewHolder::class.java, holder.javaClass)
+    }
+
+    @Test
     fun `should not include divider row when only active items exist`() {
         val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
         adapter.submitList(activeItems, emptyList())
 
-        assertEquals(1, adapter.itemCount)
+        assertEquals(2, adapter.itemCount)
         assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
+        assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, adapter.getItemViewType(1))
     }
 
     @Test
@@ -92,20 +115,22 @@ class TodoListAdapterTest {
         val completedItems = listOf(TodoItem("1", "Buy milk", "list-1", isCompleted = true, completedAt = 1000L))
         adapter.submitList(emptyList(), completedItems)
 
-        assertEquals(1, adapter.itemCount)
-        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
+        assertEquals(2, adapter.itemCount)
+        assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, adapter.getItemViewType(0))
+        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(1))
     }
 
     @Test
-    fun `should include divider row between active and completed items when both sections are non-empty`() {
+    fun `should include divider row between inline add and completed items when both sections are non-empty`() {
         val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
         val completedItems = listOf(TodoItem("2", "Call dentist", "list-1", isCompleted = true, completedAt = 1000L))
         adapter.submitList(activeItems, completedItems)
 
-        assertEquals(3, adapter.itemCount)
+        assertEquals(4, adapter.itemCount)
         assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(0))
-        assertEquals(TodoListAdapter.VIEW_TYPE_DIVIDER, adapter.getItemViewType(1))
-        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(2))
+        assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, adapter.getItemViewType(1))
+        assertEquals(TodoListAdapter.VIEW_TYPE_DIVIDER, adapter.getItemViewType(2))
+        assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(3))
     }
 
     @Test
@@ -119,7 +144,7 @@ class TodoListAdapterTest {
 
         val parent = FrameLayout(themedContext)
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER) as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 1)
+        adapter.onBindViewHolder(holder, 2)
 
         val label = holder.itemView.findViewById<com.google.android.material.textview.MaterialTextView>(fr.mandarine.todolist.R.id.textDividerLabel)
         assertEquals("2", label.text.toString())
@@ -151,7 +176,7 @@ class TodoListAdapterTest {
         val item = TodoItem("item-2", "Buy milk", "list-1", isCompleted = true, completedAt = 1000L)
         adapter.submitList(emptyList(), listOf(item))
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_ITEM) as TodoListAdapter.ItemViewHolder
-        adapter.onBindViewHolder(holder, 0)
+        adapter.onBindViewHolder(holder, 1)
 
         holder.itemView.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
 
@@ -286,7 +311,7 @@ class TodoListAdapterTest {
         val item = TodoItem("item-1", "Done item", "list-1", isCompleted = true, completedAt = 1000L)
         adapter.submitList(emptyList(), listOf(item))
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_ITEM) as TodoListAdapter.ItemViewHolder
-        adapter.onBindViewHolder(holder, 0)
+        adapter.onBindViewHolder(holder, 1)
 
         val titleView = holder.itemView.findViewById<MaterialTextView>(R.id.textTitle)
         assertEquals(0.5f, titleView.alpha, 0.01f)
@@ -325,5 +350,51 @@ class TodoListAdapterTest {
         val parent = FrameLayout(themedContext)
         val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_ITEM)
         assertNotNull(holder.itemView.findViewById<MaterialButton>(R.id.btnEdit))
+    }
+
+    @Test
+    fun `should invoke onSubmitInlineAdd when inline add edit text has non-blank title and IME Done is triggered`() {
+        val parent = FrameLayout(themedContext)
+        var submitted = ""
+        adapter.onSubmitInlineAdd = { title -> submitted = title }
+        adapter.submitList(emptyList(), emptyList())
+        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_INLINE_ADD) as TodoListAdapter.InlineAddViewHolder
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.editText.setText("Buy milk")
+        holder.editText.onEditorAction(EditorInfo.IME_ACTION_DONE)
+
+        assertEquals("Buy milk", submitted)
+    }
+
+    @Test
+    fun `should not invoke onSubmitInlineAdd when inline add edit text has blank title`() {
+        val parent = FrameLayout(themedContext)
+        var called = false
+        adapter.onSubmitInlineAdd = { called = true }
+        adapter.submitList(emptyList(), emptyList())
+        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_INLINE_ADD) as TodoListAdapter.InlineAddViewHolder
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.editText.setText("   ")
+        holder.editText.onEditorAction(EditorInfo.IME_ACTION_DONE)
+
+        assertFalse(called)
+    }
+
+    @Test
+    fun `should always include inline add row in rows regardless of list state`() {
+        adapter.submitList(emptyList(), emptyList())
+        val emptyHasInlineAdd = (0 until adapter.itemCount).any {
+            adapter.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_INLINE_ADD
+        }
+
+        adapter.submitList(listOf(TodoItem("1", "A", "l")), emptyList())
+        val activeHasInlineAdd = (0 until adapter.itemCount).any {
+            adapter.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_INLINE_ADD
+        }
+
+        assertTrue(emptyHasInlineAdd)
+        assertTrue(activeHasInlineAdd)
     }
 }

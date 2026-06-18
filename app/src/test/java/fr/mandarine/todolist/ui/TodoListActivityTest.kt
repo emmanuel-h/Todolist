@@ -52,6 +52,7 @@ class TodoListActivityTest {
     }
 
     private fun addItemViaInlineRow(activity: TodoListActivity, title: String) {
+        layoutRecyclerView(activity.recyclerView())
         val editText = activity.inlineAddEditTextInternal
         editText.setText(title)
         editText.onEditorAction(EditorInfo.IME_ACTION_DONE)
@@ -59,6 +60,7 @@ class TodoListActivityTest {
     }
 
     private fun addItemViaSubmitButton(activity: TodoListActivity, title: String) {
+        layoutRecyclerView(activity.recyclerView())
         val editText = activity.inlineAddEditTextInternal
         val submitButton = editText.rootView.findViewById<MaterialButton>(R.id.btnInlineSubmit)
         editText.setText(title)
@@ -76,12 +78,13 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show zero items in recycler when no todos have been added`() {
+    fun `should show only inline add row in recycler when no todos have been added`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
+                assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, rv.adapter!!.getItemViewType(0))
             }
         }
     }
@@ -108,13 +111,13 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show one item in recycler after one todo is added`() {
+    fun `should show two rows in recycler after one todo is added`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
                 addItemViaInlineRow(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(1, rv.adapter!!.itemCount)
+                assertEquals(2, rv.adapter!!.itemCount)
             }
         }
     }
@@ -128,7 +131,7 @@ class TodoListActivityTest {
                 addItemViaInlineRow(activity, "Walk the dog")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(3, rv.adapter!!.itemCount)
+                assertEquals(4, rv.adapter!!.itemCount)
             }
         }
     }
@@ -140,7 +143,7 @@ class TodoListActivityTest {
                 addItemViaInlineRow(activity, "   ")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
@@ -152,7 +155,7 @@ class TodoListActivityTest {
                 addItemViaInlineRow(activity, "")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
@@ -174,7 +177,7 @@ class TodoListActivityTest {
                     rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_DIVIDER
                 }
                 assertFalse(hasDivider)
-                assertEquals(1, rv.adapter!!.itemCount)
+                assertEquals(2, rv.adapter!!.itemCount)
             }
         }
     }
@@ -189,7 +192,8 @@ class TodoListActivityTest {
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
-                assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, rv.adapter!!.getItemViewType(0))
+                // After toggle: [InlineAdd(0), Completed(1)]
+                assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, rv.adapter!!.getItemViewType(1))
             }
         }
     }
@@ -201,7 +205,7 @@ class TodoListActivityTest {
                 addItemViaSubmitButton(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(1, rv.adapter!!.itemCount)
+                assertEquals(2, rv.adapter!!.itemCount)
             }
         }
     }
@@ -213,7 +217,7 @@ class TodoListActivityTest {
                 addItemViaSubmitButton(activity, "   ")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
@@ -406,13 +410,13 @@ class TodoListActivityTest {
                 addItemViaInlineRow(activity, "Buy milk")
                 val rv = activity.recyclerView()
                 layoutRecyclerView(rv)
-                assertEquals(1, rv.adapter!!.itemCount)
+                assertEquals(2, rv.adapter!!.itemCount)
 
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnDelete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
 
-                assertEquals(0, rv.adapter!!.itemCount)
+                assertEquals(1, rv.adapter!!.itemCount)
             }
         }
     }
@@ -575,12 +579,15 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show inline add row pinned above recycler view`() {
+    fun `should show inline add row inside recycler view`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
-                val inlineAddRow = activity.findViewById<View>(R.id.inlineAddRow)
-                assertNotNull(inlineAddRow)
-                assertEquals(View.VISIBLE, inlineAddRow.visibility)
+                val rv = activity.recyclerView()
+                layoutRecyclerView(rv)
+                val hasInlineAdd = (0 until rv.adapter!!.itemCount).any {
+                    rv.adapter!!.getItemViewType(it) == TodoListAdapter.VIEW_TYPE_INLINE_ADD
+                }
+                assertTrue(hasInlineAdd)
             }
         }
     }

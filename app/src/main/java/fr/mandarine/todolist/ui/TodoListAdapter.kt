@@ -26,12 +26,16 @@ class TodoListAdapter(
     sealed class ListRow {
         data class Item(val todo: TodoItem) : ListRow()
         data class Divider(val completedCount: Int) : ListRow()
+        data object InlineAdd : ListRow()
     }
+
+    var onSubmitInlineAdd: ((String) -> Unit)? = null
 
     private var rows: List<ListRow> = emptyList()
 
     companion object {
         const val VIEW_TYPE_ITEM = 0
+        const val VIEW_TYPE_INLINE_ADD = 1
         const val VIEW_TYPE_DIVIDER = 2
     }
 
@@ -57,6 +61,7 @@ class TodoListAdapter(
     ): List<ListRow> {
         val result = mutableListOf<ListRow>()
         activeItems.forEach { result += ListRow.Item(it) }
+        result += ListRow.InlineAdd
         if (activeItems.isNotEmpty() && completedItems.isNotEmpty()) {
             result += ListRow.Divider(completedItems.size)
         }
@@ -69,11 +74,17 @@ class TodoListAdapter(
     override fun getItemViewType(position: Int): Int =
         when (rows[position]) {
             is ListRow.Item -> VIEW_TYPE_ITEM
+            is ListRow.InlineAdd -> VIEW_TYPE_INLINE_ADD
             is ListRow.Divider -> VIEW_TYPE_DIVIDER
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
         when (viewType) {
+            VIEW_TYPE_INLINE_ADD -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_todo_inline_add, parent, false)
+                InlineAddViewHolder(view)
+            }
             VIEW_TYPE_DIVIDER -> {
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.item_todo_divider, parent, false)
@@ -89,6 +100,7 @@ class TodoListAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
             is ListRow.Item -> (holder as ItemViewHolder).bind(row.todo, onToggle, onDelete, onEdit, onStartDrag)
+            is ListRow.InlineAdd -> (holder as InlineAddViewHolder).bind(onSubmitInlineAdd)
             is ListRow.Divider -> (holder as DividerViewHolder).bind(row.completedCount)
         }
     }
@@ -201,6 +213,61 @@ class TodoListAdapter(
             titleView.visibility = View.VISIBLE
             editTitleInline.setOnEditorActionListener(null)
             editTitleInline.setOnFocusChangeListener(null)
+        }
+    }
+
+    class InlineAddViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val ghostRow: View = view.findViewById(R.id.ghostRow)
+        private val expandedRow: View = view.findViewById(R.id.expandedRow)
+        internal val editText: TextInputEditText = view.findViewById(R.id.editInlineAdd)
+        private val submitButton: MaterialButton = view.findViewById(R.id.btnInlineSubmit)
+        private var keepExpanded = false
+
+        fun bind(onSubmit: ((String) -> Unit)?) {
+            val startExpanded = keepExpanded
+            keepExpanded = false
+            showExpanded(startExpanded)
+            if (startExpanded) {
+                editText.post { editText.requestFocus() }
+            }
+
+            fun trySubmit() {
+                val title = editText.text?.toString().orEmpty()
+                if (title.isNotBlank()) {
+                    keepExpanded = true
+                    onSubmit?.invoke(title)
+                    editText.text?.clear()
+                }
+            }
+
+            editText.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    trySubmit()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            submitButton.setOnClickListener { trySubmit() }
+
+            editText.setOnFocusChangeListener { _, hasFocus ->
+                showExpanded(hasFocus)
+                if (hasFocus) {
+                    val imm = editText.context.getSystemService(InputMethodManager::class.java)
+                    imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+                }
+            }
+
+            ghostRow.setOnClickListener {
+                showExpanded(true)
+                editText.requestFocus()
+            }
+        }
+
+        private fun showExpanded(expanded: Boolean) {
+            ghostRow.visibility = if (expanded) View.GONE else View.VISIBLE
+            expandedRow.visibility = if (expanded) View.VISIBLE else View.GONE
         }
     }
 

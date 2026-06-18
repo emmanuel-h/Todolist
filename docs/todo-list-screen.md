@@ -1,7 +1,7 @@
 # Todo List Screen
 
 ## What it does
-Displays the items belonging to a single todo list in a RecyclerView. The user adds new items via an inline text field pinned at the bottom of the list; tapping outside the field dismisses the keyboard. Each item row has three action buttons: toggle complete/uncomplete, edit, and delete. Tapping edit (or double-tapping the title) makes the title editable in place; delete removes the item immediately with no confirmation. → see `edit-delete-todo.md` for full delete/edit details.
+Displays the items belonging to a single todo list in a RecyclerView. The user adds new items via an inline text field pinned at the bottom of the screen (below the RecyclerView); tapping outside the field dismisses the keyboard. Each item row has three action buttons: toggle complete/uncomplete, edit, and delete. Tapping edit (or double-tapping the title) makes the title editable in place; delete removes the item immediately with no confirmation. → see `edit-delete-todo.md` for full delete/edit details.
 
 ## Architecture
 - **Layers**: domain, presentation, ui
@@ -27,7 +27,7 @@ Displays the items belonging to a single todo list in a RecyclerView. The user a
 - `app/src/main/java/fr/mandarine/todolist/presentation/TodoListViewModel.kt` — ViewModel wiring state to use cases
 - `app/src/main/java/fr/mandarine/todolist/ui/TodoListActivity.kt` — host activity; reads `LIST_ID` + `LIST_NAME` from intent extras; shows edit dialog
 - `app/src/main/java/fr/mandarine/todolist/ui/TodoListAdapter.kt` — two view types: `TODO_ITEM` and `DIVIDER`; `ItemViewHolder` has three action buttons; the inline-add row is no longer an adapter item (→ see `inline-add-ux-polish.md`)
-- `app/src/main/res/layout/activity_todo_list.xml` — vertical `LinearLayout` below `AppBarLayout`; pinned inline-add row at top, `RecyclerView` + empty state below (→ see `inline-add-ux-polish.md`)
+- `app/src/main/res/layout/activity_todo_list.xml` — vertical `LinearLayout` below `AppBarLayout`; `FrameLayout` (RecyclerView + watermark + empty-state icon) fills remaining height, pinned inline-add row at bottom (→ see `add-item-bottom-insert.md`)
 - `app/src/main/res/layout/item_todo.xml` — title text + three icon buttons (toggle, edit, delete); no checkbox
 - `app/src/main/res/layout/item_todo_inline_add.xml` — TextInputEditText + send icon
 - `app/src/main/res/layout/dialog_edit_item.xml` — TextInputEditText for title editing in AlertDialog

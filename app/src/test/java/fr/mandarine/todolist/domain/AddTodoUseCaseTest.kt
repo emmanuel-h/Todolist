@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.domain
 
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -57,5 +58,39 @@ class AddTodoUseCaseTest {
         val defaultUseCase = AddTodoUseCase(repository)
         val result = defaultUseCase("Default id test", "list-1")
         assertTrue(result.id.isNotBlank())
+    }
+
+    @Test
+    fun `should assign position 0 when list has no active items`() {
+        every { repository.getAllByListId("list-1") } returns emptyList()
+        val result = useCase("Buy milk", "list-1")
+        assertEquals(0, result.position)
+    }
+
+    @Test
+    fun `should assign position equal to active item count when active items already exist`() {
+        every { repository.getAllByListId("list-1") } returns listOf(
+            TodoItem("e1", "Existing", "list-1", position = 0),
+            TodoItem("e2", "Also existing", "list-1", position = 1)
+        )
+        val result = useCase("Buy milk", "list-1")
+        assertEquals(2, result.position)
+    }
+
+    @Test
+    fun `should not count completed items toward the insertion position`() {
+        every { repository.getAllByListId("list-1") } returns listOf(
+            TodoItem("e1", "Active", "list-1", position = 0),
+            TodoItem("e2", "Completed", "list-1", isCompleted = true, completedAt = 1000L, position = 1)
+        )
+        val result = useCase("Buy milk", "list-1")
+        assertEquals(1, result.position)
+    }
+
+    @Test
+    fun `should query existing items to determine the insertion position`() {
+        every { repository.getAllByListId("list-1") } returns emptyList()
+        useCase("Buy milk", "list-1")
+        verify { repository.getAllByListId("list-1") }
     }
 }

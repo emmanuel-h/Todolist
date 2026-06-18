@@ -8,7 +8,8 @@ class AddTodoUseCase(
 ) {
     operator fun invoke(title: String, listId: String): TodoItem {
         require(title.isNotBlank())
-        val item = TodoItem(id = generateId(), title = title, listId = listId)
+        val position = repository.getAllByListId(listId).filter { !it.isCompleted }.size
+        val item = TodoItem(id = generateId(), title = title, listId = listId, position = position)
         repository.add(item)
         return item
     }

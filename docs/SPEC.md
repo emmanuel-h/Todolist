@@ -74,7 +74,7 @@ TodoListsActivity  ("My Lists")
 **Create a list**
 - Tap the FAB → dialog: text field (hint "List name") + Cancel / Create buttons
 - Create is a no-op if the field is blank
-- On confirm: new list appended at the bottom (insertion order)
+- On confirm: new list inserted at the top
 
 **Open a list**
 - Tap anywhere on a list row → navigates to Screen 2 for that list
@@ -90,7 +90,7 @@ TodoListsActivity  ("My Lists")
 **Reorder lists** — _not yet implemented · [#6](https://github.com/emmanuel-h/Todolist/issues/6)_
 - Long-press-and-drag a row to reorder
 - Explicit position persists across restarts
-- New lists are always appended at the bottom
+- New lists are always inserted at the top
 
 ### Must NOT happen
 - Navigating into a deleted list

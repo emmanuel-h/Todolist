@@ -53,6 +53,7 @@ class TodoListDragReorderTest {
     }
 
     private fun addItem(activity: TodoListActivity, title: String) {
+        layoutRecyclerView(activity.recyclerViewInternal)
         val editText = activity.inlineAddEditTextInternal
         editText.setText(title)
         editText.onEditorAction(EditorInfo.IME_ACTION_DONE)
@@ -84,8 +85,9 @@ class TodoListDragReorderTest {
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
-                val firstItem = rv.getChildAt(0)!!
-                val handle = firstItem.findViewById<ImageView>(R.id.dragHandle)
+                // After toggle: [InlineAdd(0), Completed(1)]
+                val completedItem = rv.getChildAt(1)!!
+                val handle = completedItem.findViewById<ImageView>(R.id.dragHandle)
                 assertNotNull(handle)
                 assertEquals(View.INVISIBLE, handle.visibility)
             }
@@ -103,8 +105,9 @@ class TodoListDragReorderTest {
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
+                // After toggle: [Active2(0), InlineAdd(1), Divider(2), Active1_completed(3)]
                 val activeItem = rv.getChildAt(0)!!
-                val completedItem = rv.getChildAt(2)!!
+                val completedItem = rv.getChildAt(3)!!
                 val activeHandle = activeItem.findViewById<ImageView>(R.id.dragHandle)
                 val completedHandle = completedItem.findViewById<ImageView>(R.id.dragHandle)
                 assertEquals(View.INVISIBLE, completedHandle.visibility)
@@ -200,7 +203,8 @@ class TodoListDragReorderTest {
                 val adapter = rv.adapter as TodoListAdapter
                 val activeCount = adapter.activeItemCount()
                 assertEquals(1, activeCount)
-                val completedPosition = activeCount + 1
+                // Rows: [Active(0), InlineAdd(1), Divider(2), Completed(3)]
+                val completedPosition = activeCount + 2
                 assertEquals(TodoListAdapter.VIEW_TYPE_ITEM, adapter.getItemViewType(completedPosition))
             }
         }
@@ -233,12 +237,15 @@ class TodoListDragReorderTest {
                 addItem(activity, "Task A")
                 val rv = activity.recyclerViewInternal
                 layoutRecyclerView(rv)
+                // [TaskA(0), InlineAdd(1)] → toggle TaskA
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
-                rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
+                // [InlineAdd(0), TaskA_completed(1)] → uncomplete TaskA
+                rv.getChildAt(1)!!.findViewById<MaterialButton>(R.id.btnToggleComplete).performClick()
                 activity.refreshListForTest()
                 layoutRecyclerView(rv)
+                // [TaskA(0), InlineAdd(1)]
                 val handle = rv.getChildAt(0)!!.findViewById<ImageView>(R.id.dragHandle)
                 assertEquals(View.VISIBLE, handle.visibility)
             }
