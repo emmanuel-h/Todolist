@@ -21,3 +21,4 @@
 - [Create List — Insert at Top](create-list-top-insert.md) — newly created lists are inserted at position 0, pushing existing lists down; drag-to-reorder remains the only subsequent reordering mechanism
 - [Lists Screen Watermark Icon](lists-screen-watermark.md) — permanent 200dp/alpha=0.15 background watermark plus empty-state 120dp overlay using ic_format_list_bulleted, matching the dual-layer pattern of the items screen
 - [All-Done List Status](all-done-list-status.md) — lists screen highlights fully-completed lists with colorSecondaryContainer background and strikethrough on the list name; empty lists never trigger the treatment
+- [List Item Count Badges](list-item-count-badges.md) — each list row shows active and completed item counts as two pill-shaped badges (e.g. "3 / 2"); empty lists show "0 / 0"

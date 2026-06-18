@@ -7,7 +7,12 @@ class GetTodoListsWithStatusUseCase(
     operator fun invoke(): List<TodoListSummary> =
         todoListRepository.getAll().map { list ->
             val items = todoRepository.getAllByListId(list.id)
-            TodoListSummary(list, isAllDone(items))
+            var completedCount = 0
+            for (item in items) {
+                if (item.isCompleted) completedCount++
+            }
+            val activeCount = items.size - completedCount
+            TodoListSummary(list, isAllDone(items), activeCount, completedCount)
         }
 
     private fun isAllDone(items: List<TodoItem>): Boolean {

@@ -379,4 +379,5 @@ class TodoListsAdapterTest {
         val holder = adapter.onCreateViewHolder(parent, TodoListsAdapter.VIEW_TYPE_DIVIDER)
         assertEquals(TodoListsAdapter.DividerViewHolder::class.java, holder.javaClass)
     }
+
 }

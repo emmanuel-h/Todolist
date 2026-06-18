@@ -95,6 +95,8 @@ class TodoListsAdapter(
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val card: MaterialCardView = view as MaterialCardView
         private val nameView: MaterialTextView = view.findViewById(R.id.textListName)
+        private val activeCountBadge: MaterialTextView = view.findViewById(R.id.badgeActiveCount)
+        private val completedCountBadge: MaterialTextView = view.findViewById(R.id.badgeCompletedCount)
         private val deleteButton: MaterialButton = view.findViewById(R.id.btnDeleteList)
         private val editButton: MaterialButton = view.findViewById(R.id.btnEditList)
         val dragHandle: ImageView = view.findViewById(R.id.dragHandleList)
@@ -108,6 +110,8 @@ class TodoListsAdapter(
         ) {
             val list = summary.list
             nameView.text = list.name
+            activeCountBadge.text = summary.activeCount.toString()
+            completedCountBadge.text = summary.completedCount.toString()
             itemView.setOnClickListener { onListClick(list) }
             editButton.setOnClickListener { onRenameClick(list) }
             deleteButton.setOnClickListener { onDeleteClick(list) }

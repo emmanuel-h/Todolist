@@ -134,4 +134,5 @@ class GetTodoListsWithStatusUseCaseTest {
         assertEquals(list1, result[0].list)
         assertEquals(list2, result[1].list)
     }
+
 }
