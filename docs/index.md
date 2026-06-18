@@ -24,3 +24,4 @@
 - [List Item Count Badges](list-item-count-badges.md) — each list row shows active and completed item counts as two pill-shaped badges (e.g. "3 / 2"); empty lists show "0 / 0"
 - [Inset Item Dividers](inset-item-dividers.md) — 1dp inset dividers between consecutive item rows on Screen 2; skips rows adjacent to the section-header; aligns with title text by insetting 52dp past the drag handle
 - [Add Item — Insert at Bottom](add-item-bottom-insert.md) — new items appended at the end of the active section (position = active count); lists still insert at top; SPEC updated to reflect both behaviors consistently
+- [Inline List Create — IME Key Submit Fix](inline-list-ime-submit.md) — extends the inline list-name field to accept IME_ACTION_UNSPECIFIED and KEYCODE_ENTER in addition to IME_ACTION_DONE so all keyboards commit the new list on their primary action key

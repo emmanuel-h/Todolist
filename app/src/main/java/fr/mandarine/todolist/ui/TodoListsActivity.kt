@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -147,8 +148,13 @@ class TodoListsActivity : AppCompatActivity() {
             }
         }
 
-        editText.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
+        editText.setOnEditorActionListener { _, actionId, event ->
+            val isDone = actionId == EditorInfo.IME_ACTION_DONE
+            val isUnspecified = actionId == EditorInfo.IME_ACTION_UNSPECIFIED
+            val isEnterKey = event != null &&
+                event.keyCode == KeyEvent.KEYCODE_ENTER &&
+                event.action == KeyEvent.ACTION_DOWN
+            if (isDone || isUnspecified || isEnterKey) {
                 trySubmit()
                 true
             } else {
@@ -243,6 +249,12 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal fun cancelInlineRowForTest() {
         inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineCancel).performClick()
+    }
+
+    internal fun triggerImeActionForTest(actionId: Int) {
+        inlineAddRowInternal
+            .findViewById<TextInputEditText>(R.id.editListInlineAdd)
+            .onEditorAction(actionId)
     }
 
     internal fun typeInRenameDialogForTest(text: String) {

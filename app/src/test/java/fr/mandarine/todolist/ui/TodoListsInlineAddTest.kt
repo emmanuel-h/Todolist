@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui
 
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -191,6 +192,90 @@ class TodoListsInlineAddTest {
             createListViaInlineRow(scenario, "Personal")
             scenario.onActivity { activity ->
                 assertEquals(3, activity.recyclerViewLists().adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should add list when valid name is submitted via IME_ACTION_DONE`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.tapFab()
+                activity.typeInInlineRowForTest("Personal")
+                activity.triggerImeActionForTest(EditorInfo.IME_ACTION_DONE)
+            }
+            scenario.onActivity { activity ->
+                assertEquals(1, activity.recyclerViewLists().adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should add list when valid name is submitted via IME_ACTION_UNSPECIFIED`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.tapFab()
+                activity.typeInInlineRowForTest("Personal")
+                activity.triggerImeActionForTest(EditorInfo.IME_ACTION_UNSPECIFIED)
+            }
+            scenario.onActivity { activity ->
+                assertEquals(1, activity.recyclerViewLists().adapter!!.itemCount)
+            }
+        }
+    }
+
+    @Test
+    fun `should hide inline add row after IME submission`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.tapFab()
+                activity.typeInInlineRowForTest("Personal")
+                activity.triggerImeActionForTest(EditorInfo.IME_ACTION_UNSPECIFIED)
+            }
+            scenario.onActivity { activity ->
+                assertEquals(View.GONE, activity.inlineAddRowInternal.visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should not add list when blank and IME_ACTION_DONE is triggered`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.tapFab()
+                activity.triggerImeActionForTest(EditorInfo.IME_ACTION_DONE)
+            }
+            scenario.onActivity { activity ->
+                assertEquals(0, activity.recyclerViewLists().adapter!!.itemCount)
+                assertEquals(View.VISIBLE, activity.inlineAddRowInternal.visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should not add list when blank and IME_ACTION_UNSPECIFIED is triggered`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.tapFab()
+                activity.triggerImeActionForTest(EditorInfo.IME_ACTION_UNSPECIFIED)
+            }
+            scenario.onActivity { activity ->
+                assertEquals(0, activity.recyclerViewLists().adapter!!.itemCount)
+                assertEquals(View.VISIBLE, activity.inlineAddRowInternal.visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `should not submit when an unrelated IME action is triggered`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.tapFab()
+                activity.typeInInlineRowForTest("Ignored")
+                activity.triggerImeActionForTest(EditorInfo.IME_ACTION_NEXT)
+            }
+            scenario.onActivity { activity ->
+                assertEquals(0, activity.recyclerViewLists().adapter!!.itemCount)
             }
         }
     }
