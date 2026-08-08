@@ -123,7 +123,16 @@ tasks.register<JavaExec>("pitest") {
         args(
             "--reportDir", layout.buildDirectory.dir("reports/pitest").get().asFile.absolutePath,
             "--targetClasses", "fr.mandarine.todolist.domain.*,fr.mandarine.todolist.data.*,fr.mandarine.todolist.presentation.*",
-            "--excludedClasses", "*Test,*Tests,*_Impl,*_Impl\$*,fr.mandarine.todolist.data.TodoDatabase,fr.mandarine.todolist.data.TodoDatabase\$*",
+            "--excludedClasses", "*Test,*Tests,*_Impl,*_Impl\$*," +
+                "fr.mandarine.todolist.data.TodoDatabase,fr.mandarine.todolist.data.TodoDatabase\$*," +
+                "fr.mandarine.todolist.data.AndroidListNotifier,fr.mandarine.todolist.data.AndroidListNotifier\$*," +
+                "fr.mandarine.todolist.data.AndroidNotificationScheduler,fr.mandarine.todolist.data.AndroidNotificationScheduler\$*," +
+                "fr.mandarine.todolist.data.BootCompletedReceiver," +
+                "fr.mandarine.todolist.data.DailyNotificationReceiver",
+            "--excludedTestClasses", "fr.mandarine.todolist.data.AndroidListNotifierTest," +
+                "fr.mandarine.todolist.data.AndroidNotificationSchedulerTest," +
+                "fr.mandarine.todolist.data.BootCompletedReceiverTest," +
+                "fr.mandarine.todolist.data.DailyNotificationReceiverTest",
             "--targetTests", "fr.mandarine.todolist.*",
             "--sourceDirs", "${projectDir}/src/main/java",
             "--classPathFile", classpathFile.absolutePath,

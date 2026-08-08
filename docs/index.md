@@ -27,3 +27,4 @@
 - [Inline List Create — IME Key Submit Fix](inline-list-ime-submit.md) — extends the inline list-name field to accept IME_ACTION_UNSPECIFIED and KEYCODE_ENTER in addition to IME_ACTION_DONE so all keyboards commit the new list on their primary action key
 - [List Target Date](list-target-date.md) — optional informational target date per list, settable at creation and via rename dialog, displayed below the list name with elapsed-date muting; does not affect sort order
 - [List Due Date](list-due-date.md) — optional deadline per list with three-tier overdue tinting (future/today/overdue); mutually exclusive with the target date; enforced in the domain layer
+- [Daily Notifications](daily-notifications.md) — 08:00 alarm fires one notification per list whose due date is today or target date is tomorrow; deep-links into the list; POST_NOTIFICATIONS requested once on API 33+

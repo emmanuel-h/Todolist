@@ -223,12 +223,33 @@ There is no checkbox. The strikethrough + 50% alpha is the sole visual indicator
 
 ---
 
+## Daily notifications — _implemented · [#12](https://github.com/emmanuel-h/Todolist/issues/12)_
+
+Every day at 08:00 the app posts one Android notification per list that qualifies:
+
+| Condition | Notification text |
+|-----------|-------------------|
+| List has a **due date set to today** | "Due today" |
+| List has a **target date set to tomorrow** | "Scheduled for tomorrow" |
+
+- Each notification's title is the list name; tapping it deep-links into that list's screen.
+- Notifications are posted on a dedicated channel ("Reminders").
+- The 08:00 alarm is scheduled via `AlarmManager` (exact, idle-permitting).
+- After firing, the alarm reschedules itself for the next day at 08:00.
+- On device reboot (`BOOT_COMPLETED`) the alarm is rescheduled automatically.
+- Lists with no due date and no target date, or whose date does not match the above conditions, produce no notification.
+
+### Must NOT happen
+- A notification fired for a list whose date does not qualify.
+- The daily alarm lost permanently after device reboot.
+
+---
+
 ## Out of scope
 
 The following will not be added:
 
 - User accounts, sync, or cloud backup
-- Reminders or notifications
 - Priority levels or tags
 - Rich text in titles
 - Sharing lists

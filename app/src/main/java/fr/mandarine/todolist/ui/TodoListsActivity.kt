@@ -2,7 +2,9 @@ package fr.mandarine.todolist.ui
 
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.KeyEvent
@@ -11,6 +13,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +25,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.data.AndroidNotificationScheduler
 import fr.mandarine.todolist.data.RoomTodoListRepository
 import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.TodoDatabase
@@ -133,12 +137,24 @@ class TodoListsActivity : AppCompatActivity() {
         itemTouchHelperInternal = ItemTouchHelper(touchCallback)
         itemTouchHelperInternal!!.attachToRecyclerView(recyclerViewInternal)
 
+        AndroidNotificationScheduler(this).scheduleNextDailyCheck()
+
         wireInlineAddRow()
 
         refreshLists()
 
         fab.setOnClickListener {
             showInlineAddRow()
+        }
+
+        val requestNotificationPermission = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) {}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
