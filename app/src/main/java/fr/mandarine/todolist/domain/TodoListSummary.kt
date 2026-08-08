@@ -6,5 +6,7 @@ data class TodoListSummary(
     val activeCount: Int = 0,
     val completedCount: Int = 0,
     val isTargetDateElapsed: Boolean = false,
-    val showTargetYear: Boolean = false
+    val showTargetYear: Boolean = false,
+    val dueDateStatus: DueDateStatus? = null,
+    val showDueDateYear: Boolean = false
 )

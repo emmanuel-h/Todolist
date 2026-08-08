@@ -23,8 +23,8 @@ class TodoListsViewModel(
             return TodoListsState.Content(activeSummaries, doneSummaries)
         }
 
-    fun createList(name: String, targetDate: LocalDate? = null) {
-        createTodoListUseCase(name, targetDate)
+    fun createList(name: String, targetDate: LocalDate? = null, dueDate: LocalDate? = null) {
+        createTodoListUseCase(name, targetDate, dueDate)
     }
 
     fun submitInlineInput(name: String): Boolean {
@@ -37,9 +37,9 @@ class TodoListsViewModel(
         deleteTodoListUseCase(todoListId)
     }
 
-    fun editList(todoListId: String, newName: String, targetDate: LocalDate?) {
+    fun editList(todoListId: String, newName: String, targetDate: LocalDate?, dueDate: LocalDate? = null) {
         if (newName.isBlank()) return
-        editTodoListUseCase(todoListId, newName, targetDate)
+        editTodoListUseCase(todoListId, newName, targetDate, dueDate)
     }
 
     fun reorderLists(fromIndex: Int, toIndex: Int) {

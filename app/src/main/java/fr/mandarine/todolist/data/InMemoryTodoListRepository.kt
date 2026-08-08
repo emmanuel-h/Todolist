@@ -32,6 +32,13 @@ class InMemoryTodoListRepository : TodoListRepository {
         }
     }
 
+    override fun updateDueDate(todoListId: String, dueDate: LocalDate?) {
+        val index = lists.indexOfFirst { it.id == todoListId }
+        if (index >= 0) {
+            lists[index] = lists[index].copy(dueDate = dueDate)
+        }
+    }
+
     override fun reorder(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) return
         val sorted = lists.sortedBy { it.position }.toMutableList()

@@ -8,5 +8,6 @@ data class TodoListEntity(
     @PrimaryKey val id: String,
     val name: String,
     val position: Int = 0,
-    val targetDate: Long? = null
+    val targetDate: Long? = null,
+    val dueDate: Long? = null
 )

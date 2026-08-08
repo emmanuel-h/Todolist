@@ -27,53 +27,114 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Date row: mode toggle (kind) + boxed date-picker trigger + clear -->
     <LinearLayout
-        android:id="@+id/layoutDialogDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:contentDescription="@string/set_target_date"
-        android:focusable="true"
+        android:layout_marginTop="8dp"
         android:gravity="center_vertical"
-        android:minHeight="48dp"
-        android:orientation="horizontal"
-        android:paddingVertical="4dp">
+        android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/iconDialogTargetDate"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="4dp"
-            android:importantForAccessibility="no"
-            app:srcCompat="@drawable/ic_event"
-            app:tint="?attr/colorPrimary" />
+        <!-- Segmented toggle: calendar = target date, alarm = due date -->
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleDateKind"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleSelection="true">
 
-        <ImageView
-            android:id="@+id/iconDateAddAffordance"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginEnd="8dp"
-            android:importantForAccessibility="no"
-            app:srcCompat="@drawable/ic_add"
-            app:tint="?attr/colorPrimary" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleTargetDate"
+                style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:paddingLeft="0dp"
+                android:paddingRight="0dp"
+                android:contentDescription="@string/set_target_date"
+                app:icon="@drawable/ic_event"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="20dp" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/textDialogTargetDate"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleDueDate"
+                style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:paddingLeft="0dp"
+                android:paddingRight="0dp"
+                android:contentDescription="@string/set_due_date"
+                app:icon="@drawable/ic_alarm"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="20dp" />
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Boxed date-picker trigger: tap to open DatePickerDialog -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/layoutDateBox"
+            style="@style/Widget.Material3.CardView.Outlined"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:visibility="gone"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurface" />
+            android:clickable="true"
+            android:contentDescription="@string/set_target_date"
+            android:focusable="true"
+            app:cardElevation="0dp"
+            app:cardCornerRadius="4dp">
 
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:gravity="center"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/iconDateAddAffordance"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/ic_add"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textDialogDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:visibility="gone"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="?attr/colorOnSurface" />
+
+            </FrameLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Clear: visible only when a date is set; leaves mode unchanged -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDialogClearDate"
             style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="@string/clear_target_date"
+            android:contentDescription="@string/clear_due_date"
             android:visibility="gone"
             app:icon="@drawable/ic_close"
             app:iconTint="?attr/colorOnSurfaceVariant" />

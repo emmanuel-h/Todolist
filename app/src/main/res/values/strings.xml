@@ -32,4 +32,6 @@
     <string name="rename_list">Save list name</string>
     <string name="set_target_date">Set target date</string>
     <string name="clear_target_date">Clear target date</string>
+    <string name="set_due_date">Set due date</string>
+    <string name="clear_due_date">Clear due date</string>
 </resources>

@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [TodoListEntity::class, TodoItemEntity::class], version = 6, exportSchema = false)
+@Database(entities = [TodoListEntity::class, TodoItemEntity::class], version = 7, exportSchema = false)
 abstract class TodoDatabase : RoomDatabase() {
     abstract fun todoListDao(): TodoListDao
     abstract fun todoItemDao(): TodoItemDao
@@ -43,6 +43,12 @@ abstract class TodoDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE todo_lists ADD COLUMN dueDate INTEGER")
+            }
+        }
+
         @Volatile
         private var instance: TodoDatabase? = null
 
@@ -53,7 +59,7 @@ abstract class TodoDatabase : RoomDatabase() {
                     TodoDatabase::class.java,
                     "todo_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .allowMainThreadQueries()
                     .build()
                     .also { instance = it }

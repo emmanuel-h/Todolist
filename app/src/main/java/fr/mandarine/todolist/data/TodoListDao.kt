@@ -21,6 +21,9 @@ interface TodoListDao {
     @Query("UPDATE todo_lists SET targetDate = :targetDate WHERE id = :id")
     fun updateTargetDate(id: String, targetDate: Long?)
 
+    @Query("UPDATE todo_lists SET dueDate = :dueDate WHERE id = :id")
+    fun updateDueDate(id: String, dueDate: Long?)
+
     @Query("UPDATE todo_lists SET position = :position WHERE id = :id")
     fun updatePosition(id: String, position: Int)
 

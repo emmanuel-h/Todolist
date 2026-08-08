@@ -18,7 +18,15 @@ class GetTodoListsWithStatusUseCase(
             val activeCount = items.size - completedCount
             val isElapsed = list.targetDate != null && list.targetDate.isBefore(today)
             val showYear = list.targetDate != null && list.targetDate.year != today.year
-            TodoListSummary(list, isAllDone(items), activeCount, completedCount, isElapsed, showYear)
+            val dueDateStatus = list.dueDate?.let { d ->
+                when {
+                    d.isBefore(today) -> DueDateStatus.OVERDUE
+                    d == today -> DueDateStatus.TODAY
+                    else -> DueDateStatus.FUTURE
+                }
+            }
+            val showDueDateYear = list.dueDate != null && list.dueDate.year != today.year
+            TodoListSummary(list, isAllDone(items), activeCount, completedCount, isElapsed, showYear, dueDateStatus, showDueDateYear)
         }
     }
 

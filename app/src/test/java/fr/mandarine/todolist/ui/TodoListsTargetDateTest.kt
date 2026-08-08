@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.TodoDatabase
@@ -369,7 +370,7 @@ class TodoListsTargetDateTest {
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 val dateText = activity.currentDialogView
-                    ?.findViewById<MaterialTextView>(R.id.textDialogTargetDate)
+                    ?.findViewById<MaterialTextView>(R.id.textDialogDate)
                 assertTrue(
                     "Dialog date text should be non-empty when date is set",
                     dateText?.text?.isNotEmpty() == true
@@ -379,22 +380,25 @@ class TodoListsTargetDateTest {
     }
 
     @Test
-    fun `should show add icon in dialog date row when no date is set`() {
+    fun `should show both toggle buttons in dialog date row when no date is set`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.createListWithDateForTest("Work", null)
             }
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
-                val addIcon = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDateAddAffordance)
-                assertEquals(View.VISIBLE, addIcon?.visibility)
+                val targetBtn = activity.currentDialogView
+                    ?.findViewById<MaterialButton>(R.id.btnToggleTargetDate)
+                val dueBtn = activity.currentDialogView
+                    ?.findViewById<MaterialButton>(R.id.btnToggleDueDate)
+                assertEquals(View.VISIBLE, targetBtn?.visibility)
+                assertEquals(View.VISIBLE, dueBtn?.visibility)
             }
         }
     }
 
     @Test
-    fun `should hide add icon in dialog date row when date is set`() {
+    fun `should check target toggle button when list has a target date`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             val targetDate = LocalDate.of(2099, 3, 15)
             scenario.onActivity { activity ->
@@ -402,30 +406,31 @@ class TodoListsTargetDateTest {
             }
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
-                val addIcon = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDateAddAffordance)
-                assertEquals(View.GONE, addIcon?.visibility)
+                val toggle = activity.currentDialogView
+                    ?.findViewById<MaterialButtonToggleGroup>(R.id.toggleDateKind)
+                assertEquals(R.id.btnToggleTargetDate, toggle?.checkedButtonId)
             }
         }
     }
 
     @Test
-    fun `should show calendar icon in dialog date row even when no date is set`() {
+    fun `should show target toggle button when no date is set`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.createListWithDateForTest("Work", null)
             }
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
-                val calendarIcon = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDialogTargetDate)
-                assertEquals(View.VISIBLE, calendarIcon?.visibility)
+                val targetBtn = activity.currentDialogView
+                    ?.findViewById<MaterialButton>(R.id.btnToggleTargetDate)
+                assertNotNull("Target toggle button must exist in rename dialog", targetBtn)
+                assertEquals(View.VISIBLE, targetBtn?.visibility)
             }
         }
     }
 
     @Test
-    fun `should show calendar icon in dialog date row when date is set`() {
+    fun `should show target toggle button when target date is set`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             val targetDate = LocalDate.of(2099, 3, 15)
             scenario.onActivity { activity ->
@@ -433,9 +438,10 @@ class TodoListsTargetDateTest {
             }
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
-                val calendarIcon = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDialogTargetDate)
-                assertEquals(View.VISIBLE, calendarIcon?.visibility)
+                val targetBtn = activity.currentDialogView
+                    ?.findViewById<MaterialButton>(R.id.btnToggleTargetDate)
+                assertNotNull("Target toggle button must exist in rename dialog", targetBtn)
+                assertEquals(View.VISIBLE, targetBtn?.visibility)
             }
         }
     }
@@ -449,7 +455,7 @@ class TodoListsTargetDateTest {
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 val dateText = activity.currentDialogView
-                    ?.findViewById<MaterialTextView>(R.id.textDialogTargetDate)
+                    ?.findViewById<MaterialTextView>(R.id.textDialogDate)
                 assertEquals(View.GONE, dateText?.visibility)
             }
         }
@@ -465,31 +471,29 @@ class TodoListsTargetDateTest {
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
                 val dateText = activity.currentDialogView
-                    ?.findViewById<MaterialTextView>(R.id.textDialogTargetDate)
+                    ?.findViewById<MaterialTextView>(R.id.textDialogDate)
                 assertEquals(View.VISIBLE, dateText?.visibility)
             }
         }
     }
 
     @Test
-    fun `should keep calendar icon visible and toggle add icon when date is set in rename dialog`() {
+    fun `should keep both toggle buttons visible when target date is set in rename dialog`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.createListWithDateForTest("Work", null)
             }
             tapEditButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
-                val calendarIcon = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDialogTargetDate)
-                val addIconBefore = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDateAddAffordance)
-                assertEquals("Calendar always visible before date set", View.VISIBLE, calendarIcon?.visibility)
-                assertEquals("Add icon visible before date set", View.VISIBLE, addIconBefore?.visibility)
+                val targetBtn = activity.currentDialogView
+                    ?.findViewById<MaterialButton>(R.id.btnToggleTargetDate)
+                val dueBtn = activity.currentDialogView
+                    ?.findViewById<MaterialButton>(R.id.btnToggleDueDate)
+                assertEquals("Calendar toggle visible before date set", View.VISIBLE, targetBtn?.visibility)
+                assertEquals("Alarm toggle visible before date set", View.VISIBLE, dueBtn?.visibility)
                 activity.setRenameTargetDateForTest(LocalDate.of(2099, 8, 20))
-                val addIconAfter = activity.currentDialogView
-                    ?.findViewById<android.widget.ImageView>(R.id.iconDateAddAffordance)
-                assertEquals("Calendar always visible after date set", View.VISIBLE, calendarIcon?.visibility)
-                assertEquals("Add icon hidden after date set", View.GONE, addIconAfter?.visibility)
+                assertEquals("Calendar toggle visible after date set", View.VISIBLE, targetBtn?.visibility)
+                assertEquals("Alarm toggle visible after date set", View.VISIBLE, dueBtn?.visibility)
             }
         }
     }

@@ -57,6 +57,15 @@
             app:iconTint="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnListInlineDueDate"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/set_due_date"
+            app:icon="@drawable/ic_alarm"
+            app:iconTint="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnListInlineSubmit"
             style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="48dp"

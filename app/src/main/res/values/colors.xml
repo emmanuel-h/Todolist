@@ -56,4 +56,7 @@
     <color name="md_theme_dark_inverseOnSurface">#313033</color>
     <color name="md_theme_dark_inversePrimary">#6750A4</color>
 
+    <color name="md_theme_light_warning">#B45309</color>
+    <color name="md_theme_dark_warning">#F59E0B</color>
+
 </resources>

@@ -85,14 +85,24 @@ TodoListsActivity  ("My Lists")
 - On confirm with a blank name or on cancel: dialog dismisses, original name is unchanged
 
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
-- At creation: tap the calendar icon in the inline add row → `DatePickerDialog` → selected date attaches to the new list
-- On an existing list: open the rename dialog → tap the date row to open `DatePickerDialog`; tap the clear button (visible only when a date is set) to remove it
+- At creation: tap the calendar icon in the inline add row → `DatePickerDialog` → selected date attaches to the new list; selecting a target date clears any selected due date
+- On an existing list: open the rename dialog → the calendar toggle button (`btnToggleTargetDate`) is checked by default when no date is set; tap the boxed date field (`layoutDateBox`) to open `DatePickerDialog`; the clear button (visible only when a date is set) removes the date without changing the toggle selection; switching the toggle to due-date mode moves the existing date across to the due-date kind
 - The date is displayed on a second line of the list row, below the list name, with a calendar icon
 - Dates in the past are shown with `colorOnSurfaceVariant` tint (muted); future dates use `colorPrimary` tint
 - The year is shown only when the target date falls in a different year from the current year
 - Date format uses ICU `getBestDateTimePattern` with skeleton `EEEdMMM` / `EEEdMMMy` for locale-correct output with zero string resources
 - The target date is purely informational — it does not affect list sort order
-- `colorError` tint is reserved for due dates (issue #8) and must never be applied to target dates
+- `colorError` tint must never be applied to target dates; it is reserved exclusively for overdue due dates
+- **Mutual exclusion with due date**: a list may have EITHER a target date OR a due date, never both; enforced in `TodoList.init` and in the create/edit use cases via `require`
+
+**Set a due date on a list** — _implemented · [#8](https://github.com/emmanuel-h/Todolist/issues/8)_
+- At creation: tap the alarm icon in the inline add row → `DatePickerDialog` → selected date attaches as due date; selecting a due date clears any selected target date
+- On an existing list: open the rename dialog → select the alarm toggle button (`btnToggleDueDate`); tap the boxed date field (`layoutDateBox`) to open `DatePickerDialog`; the clear button removes the due date without changing the toggle selection; switching the toggle to target-date mode moves the existing date across; the two toggle buttons share a single dialog — the kind set is always the currently checked button. Note: the inline add row opens the picker directly on icon tap (different from the dialog, by design)
+- The due date is displayed on a second line of the list row (alarm icon + formatted date), below any target date line
+- Three-tier tinting based on the current date via the `Clock` abstraction: FUTURE → `colorPrimary`, TODAY → `colorWarning`, OVERDUE → `colorError`
+- `colorWarning` is a custom theme attribute (`#B45309` light / `#F59E0B` dark), declared in `attrs.xml`
+- The year is shown only when the due date falls in a different year from the current year
+- The due date does not affect list sort order; overdue status is signalled by tint only
 
 **Delete a list**
 - Tap the delete icon on a row → confirmation dialog → on confirm, list and all its items
@@ -218,7 +228,6 @@ There is no checkbox. The strikethrough + 50% alpha is the sole visual indicator
 The following will not be added:
 
 - User accounts, sync, or cloud backup
-- Due dates with overdue/deadline semantics — _not yet implemented · [#8](https://github.com/emmanuel-h/Todolist/issues/8)_ (target dates per list are implemented; due-date error tint with `colorError` is reserved for this future feature)
 - Reminders or notifications
 - Priority levels or tags
 - Rich text in titles

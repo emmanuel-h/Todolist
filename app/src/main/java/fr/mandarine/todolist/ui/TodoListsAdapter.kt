@@ -14,6 +14,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import java.time.LocalDate
@@ -114,6 +115,9 @@ class TodoListsAdapter(
         private val layoutTargetDate: LinearLayout = view.findViewById(R.id.layoutTargetDate)
         private val iconTargetDate: ImageView = view.findViewById(R.id.iconTargetDate)
         private val textTargetDate: MaterialTextView = view.findViewById(R.id.textTargetDate)
+        private val layoutDueDate: LinearLayout = view.findViewById(R.id.layoutDueDate)
+        private val iconDueDate: ImageView = view.findViewById(R.id.iconDueDate)
+        private val textDueDate: MaterialTextView = view.findViewById(R.id.textDueDate)
 
         fun bind(
             summary: TodoListSummary,
@@ -137,6 +141,7 @@ class TodoListsAdapter(
             }
             applyAllDoneStyle(summary.allDone)
             bindTargetDate(summary)
+            bindDueDate(summary)
         }
 
         private fun bindTargetDate(summary: TodoListSummary) {
@@ -155,6 +160,24 @@ class TodoListsAdapter(
             }
             iconTargetDate.imageTintList = ColorStateList.valueOf(tint)
             textTargetDate.setTextColor(tint)
+        }
+
+        private fun bindDueDate(summary: TodoListSummary) {
+            val dueDate = summary.list.dueDate
+            if (dueDate == null || summary.dueDateStatus == null) {
+                layoutDueDate.visibility = View.GONE
+                return
+            }
+            layoutDueDate.visibility = View.VISIBLE
+            val locale = Locale.getDefault(Locale.Category.FORMAT)
+            textDueDate.text = formatTargetDate(dueDate, summary.showDueDateYear, locale)
+            val tint = when (summary.dueDateStatus) {
+                DueDateStatus.FUTURE -> resolveColor(com.google.android.material.R.attr.colorPrimary)
+                DueDateStatus.TODAY -> resolveColor(fr.mandarine.todolist.R.attr.colorWarning)
+                DueDateStatus.OVERDUE -> resolveColor(com.google.android.material.R.attr.colorError)
+            }
+            iconDueDate.imageTintList = ColorStateList.valueOf(tint)
+            textDueDate.setTextColor(tint)
         }
 
         private fun resolveColor(attr: Int): Int {

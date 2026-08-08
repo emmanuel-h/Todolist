@@ -12,12 +12,13 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
                 entity.id,
                 entity.name,
                 entity.position,
-                entity.targetDate?.let { LocalDate.ofEpochDay(it) }
+                entity.targetDate?.let { LocalDate.ofEpochDay(it) },
+                entity.dueDate?.let { LocalDate.ofEpochDay(it) }
             )
         }
 
     override fun add(todoList: TodoList) {
-        dao.insert(TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay()))
+        dao.insert(TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay()))
     }
 
     override fun delete(todoListId: String) {
@@ -30,6 +31,10 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
 
     override fun updateTargetDate(todoListId: String, targetDate: LocalDate?) {
         dao.updateTargetDate(todoListId, targetDate?.toEpochDay())
+    }
+
+    override fun updateDueDate(todoListId: String, dueDate: LocalDate?) {
+        dao.updateDueDate(todoListId, dueDate?.toEpochDay())
     }
 
     override fun reorder(fromIndex: Int, toIndex: Int) {
