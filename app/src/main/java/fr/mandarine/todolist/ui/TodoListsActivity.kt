@@ -1,12 +1,16 @@
 package fr.mandarine.todolist.ui
 
+import android.app.DatePickerDialog
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,6 +19,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.data.RoomTodoListRepository
 import fr.mandarine.todolist.data.RoomTodoRepository
@@ -24,9 +29,12 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import fr.mandarine.todolist.domain.SystemClock
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
+import java.time.LocalDate
+import java.util.Locale
 
 class TodoListsActivity : AppCompatActivity() {
 
@@ -39,6 +47,8 @@ class TodoListsActivity : AppCompatActivity() {
     internal var itemTouchHelperInternal: ItemTouchHelper? = null
 
     private var dragFromIndex: Int = -1
+    private var selectedInlineDate: LocalDate? = null
+    internal var selectedRenameDate: LocalDate? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +61,7 @@ class TodoListsActivity : AppCompatActivity() {
             CreateTodoListUseCase(todoListRepository),
             DeleteTodoListUseCase(todoListRepository, todoRepository),
             EditTodoListUseCase(todoListRepository),
-            GetTodoListsWithStatusUseCase(todoListRepository, todoRepository),
+            GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, SystemClock()),
             ReorderTodoListsUseCase(todoListRepository)
         )
 
@@ -138,14 +148,18 @@ class TodoListsActivity : AppCompatActivity() {
         val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
         val submitButton = inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineSubmit)
         val cancelButton = inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineCancel)
+        val dateButton = inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineDate)
 
         fun trySubmit() {
             val name = editText.text?.toString().orEmpty()
-            if (viewModel.submitInlineInput(name)) {
-                editText.text?.clear()
-                hideInlineAddRow()
-                refreshLists()
-            }
+            if (name.isBlank()) return
+            viewModel.createList(name, selectedInlineDate)
+            selectedInlineDate = null
+            dateButton.setIconResource(R.drawable.ic_event_add)
+            updateInlineDateButtonTint(dateButton, hasDate = false)
+            editText.text?.clear()
+            hideInlineAddRow()
+            refreshLists()
         }
 
         editText.setOnEditorActionListener { _, actionId, event ->
@@ -165,9 +179,38 @@ class TodoListsActivity : AppCompatActivity() {
         submitButton.setOnClickListener { trySubmit() }
 
         cancelButton.setOnClickListener {
+            selectedInlineDate = null
+            dateButton.setIconResource(R.drawable.ic_event_add)
+            updateInlineDateButtonTint(dateButton, hasDate = false)
             editText.text?.clear()
             hideInlineAddRow()
         }
+
+        dateButton.setOnClickListener {
+            val current = selectedInlineDate ?: LocalDate.now()
+            DatePickerDialog(
+                this,
+                { _, year, month, dayOfMonth ->
+                    selectedInlineDate = LocalDate.of(year, month + 1, dayOfMonth)
+                    dateButton.setIconResource(R.drawable.ic_event)
+                    updateInlineDateButtonTint(dateButton, hasDate = true)
+                },
+                current.year,
+                current.monthValue - 1,
+                current.dayOfMonth
+            ).show()
+        }
+    }
+
+    private fun updateInlineDateButtonTint(button: MaterialButton, hasDate: Boolean) {
+        val attr = if (hasDate) {
+            com.google.android.material.R.attr.colorPrimary
+        } else {
+            com.google.android.material.R.attr.colorOnSurfaceVariant
+        }
+        val typedValue = TypedValue()
+        theme.resolveAttribute(attr, typedValue, true)
+        button.iconTint = ColorStateList.valueOf(typedValue.data)
     }
 
     private fun showInlineAddRow() {
@@ -195,17 +238,40 @@ class TodoListsActivity : AppCompatActivity() {
     }
 
     private fun showRenameDialog(list: TodoList) {
+        selectedRenameDate = list.targetDate
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_rename_list, null)
         currentDialogView = dialogView
         val input = dialogView.findViewById<TextInputEditText>(R.id.editDialogRenameList)
         input.setText(list.name)
+
+        updateRenameDateDisplay()
+
+        dialogView.findViewById<View>(R.id.layoutDialogDate).setOnClickListener {
+            val current = selectedRenameDate ?: LocalDate.now()
+            DatePickerDialog(
+                this,
+                { _, year, month, dayOfMonth ->
+                    selectedRenameDate = LocalDate.of(year, month + 1, dayOfMonth)
+                    updateRenameDateDisplay()
+                },
+                current.year,
+                current.monthValue - 1,
+                current.dayOfMonth
+            ).show()
+        }
+
+        dialogView.findViewById<MaterialButton>(R.id.btnDialogClearDate).setOnClickListener {
+            selectedRenameDate = null
+            updateRenameDateDisplay()
+        }
+
         val dialog = MaterialAlertDialogBuilder(this)
             .setView(dialogView)
             .create()
         dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
             val newName = input.text.toString()
             if (newName.isNotBlank()) {
-                viewModel.editList(list.id, newName)
+                viewModel.editList(list.id, newName, selectedRenameDate)
                 refreshLists()
                 dialog.dismiss()
             }
@@ -214,6 +280,25 @@ class TodoListsActivity : AppCompatActivity() {
             dialog.dismiss()
         }
         dialog.show()
+    }
+
+    internal fun updateRenameDateDisplay() {
+        val dialogView = currentDialogView ?: return
+        val addIcon = dialogView.findViewById<ImageView>(R.id.iconDateAddAffordance) ?: return
+        val dateText = dialogView.findViewById<MaterialTextView>(R.id.textDialogTargetDate) ?: return
+        val clearButton = dialogView.findViewById<MaterialButton>(R.id.btnDialogClearDate) ?: return
+        val date = selectedRenameDate
+        if (date != null) {
+            addIcon.visibility = View.GONE
+            val locale = Locale.getDefault(Locale.Category.FORMAT)
+            dateText.text = TodoListsAdapter.formatTargetDate(date, showYear = true, locale)
+            dateText.visibility = View.VISIBLE
+            clearButton.visibility = View.VISIBLE
+        } else {
+            addIcon.visibility = View.VISIBLE
+            dateText.visibility = View.GONE
+            clearButton.visibility = View.GONE
+        }
     }
 
     private fun showDeleteConfirmation(list: TodoList) {
@@ -273,6 +358,32 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal fun commitReorderForTest(fromIndex: Int, toIndex: Int) {
         viewModel.reorderLists(fromIndex, toIndex)
+        refreshLists()
+    }
+
+    internal fun setInlineDateForTest(date: LocalDate?) {
+        selectedInlineDate = date
+        val dateButton = inlineAddRowInternal.findViewById<MaterialButton>(R.id.btnListInlineDate)
+        if (date != null) {
+            dateButton.setIconResource(R.drawable.ic_event)
+            updateInlineDateButtonTint(dateButton, hasDate = true)
+        } else {
+            dateButton.setIconResource(R.drawable.ic_event_add)
+            updateInlineDateButtonTint(dateButton, hasDate = false)
+        }
+    }
+
+    internal fun setRenameTargetDateForTest(date: LocalDate?) {
+        selectedRenameDate = date
+        updateRenameDateDisplay()
+    }
+
+    internal fun clearRenameDateForTest() {
+        currentDialogView?.findViewById<MaterialButton>(R.id.btnDialogClearDate)?.performClick()
+    }
+
+    internal fun createListWithDateForTest(name: String, date: LocalDate?) {
+        viewModel.createList(name, date)
         refreshLists()
     }
 

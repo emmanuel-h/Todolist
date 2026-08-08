@@ -7,10 +7,11 @@ import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalDate
 import org.junit.Before
 import org.junit.Test
 
-class TodoListsViewModelEditTest {
+class TodoListsViewModelTargetDateTest {
 
     private lateinit var createTodoListUseCase: CreateTodoListUseCase
     private lateinit var deleteTodoListUseCase: DeleteTodoListUseCase
@@ -36,30 +37,50 @@ class TodoListsViewModelEditTest {
     }
 
     @Test
-    fun `should delegate editList to use case with correct id and name`() {
+    fun `should pass target date to use case when createList is called with a date`() {
+        val targetDate = LocalDate.of(2027, 6, 22)
+
+        viewModel.createList("Groceries", targetDate)
+
+        verify { createTodoListUseCase("Groceries", targetDate) }
+    }
+
+    @Test
+    fun `should pass null target date to use case when createList is called without a date`() {
+        viewModel.createList("Groceries", null)
+
+        verify { createTodoListUseCase("Groceries", null) }
+    }
+
+    @Test
+    fun `should pass target date to use case when editList is called with a date`() {
+        val targetDate = LocalDate.of(2027, 6, 22)
+
+        viewModel.editList("list-1", "Groceries", targetDate)
+
+        verify { editTodoListUseCase("list-1", "Groceries", targetDate) }
+    }
+
+    @Test
+    fun `should pass null target date to use case when editList is called with null`() {
         viewModel.editList("list-1", "Groceries", null)
 
         verify { editTodoListUseCase("list-1", "Groceries", null) }
     }
 
     @Test
-    fun `should delegate editList with another id and name`() {
-        viewModel.editList("list-42", "Work tasks", null)
+    fun `should not call editTodoListUseCase when name is blank even with target date`() {
+        val targetDate = LocalDate.of(2027, 6, 22)
 
-        verify { editTodoListUseCase("list-42", "Work tasks", null) }
-    }
-
-    @Test
-    fun `should not call use case when name is blank`() {
-        viewModel.editList("list-1", "   ", null)
+        viewModel.editList("list-1", "   ", targetDate)
 
         verify(exactly = 0) { editTodoListUseCase(any(), any(), any()) }
     }
 
     @Test
-    fun `should not call use case when name is empty`() {
-        viewModel.editList("list-1", "", null)
+    fun `should use null as default target date when createList is called with name only`() {
+        viewModel.createList("Groceries")
 
-        verify(exactly = 0) { editTodoListUseCase(any(), any(), any()) }
+        verify { createTodoListUseCase("Groceries", null) }
     }
 }

@@ -47,7 +47,7 @@ class TodoListsViewModelInlineAddTest {
         val result = viewModel.submitInlineInput("Groceries")
 
         assertTrue(result)
-        verify { createTodoListUseCase("Groceries") }
+        verify { createTodoListUseCase("Groceries", null) }
     }
 
     @Test
@@ -55,7 +55,7 @@ class TodoListsViewModelInlineAddTest {
         val result = viewModel.submitInlineInput("   ")
 
         assertFalse(result)
-        verify(exactly = 0) { createTodoListUseCase(any()) }
+        verify(exactly = 0) { createTodoListUseCase(any(), any()) }
     }
 
     @Test
@@ -63,7 +63,7 @@ class TodoListsViewModelInlineAddTest {
         val result = viewModel.submitInlineInput("")
 
         assertFalse(result)
-        verify(exactly = 0) { createTodoListUseCase(any()) }
+        verify(exactly = 0) { createTodoListUseCase(any(), any()) }
     }
 
     @Test
@@ -83,6 +83,6 @@ class TodoListsViewModelInlineAddTest {
     fun `should delegate submitInlineInput with trimmed name to use case`() {
         viewModel.submitInlineInput("Work")
 
-        verify { createTodoListUseCase("Work") }
+        verify { createTodoListUseCase("Work", null) }
     }
 }

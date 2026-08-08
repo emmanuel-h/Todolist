@@ -1,3 +1,10 @@
 package fr.mandarine.todolist.domain
 
-data class TodoList(val id: String, val name: String, val position: Int = 0)
+import java.time.LocalDate
+
+data class TodoList(
+    val id: String,
+    val name: String,
+    val position: Int = 0,
+    val targetDate: LocalDate? = null
+)

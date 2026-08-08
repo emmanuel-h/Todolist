@@ -30,4 +30,6 @@
     <string name="drag_handle">Drag to reorder</string>
     <string name="edit_list">Edit list name</string>
     <string name="rename_list">Save list name</string>
+    <string name="set_target_date">Set target date</string>
+    <string name="clear_target_date">Clear target date</string>
 </resources>

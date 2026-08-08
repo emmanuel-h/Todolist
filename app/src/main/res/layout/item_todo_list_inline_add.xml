@@ -48,6 +48,15 @@
             android:textColor="?attr/colorOnSurface" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnListInlineDate"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/set_target_date"
+            app:icon="@drawable/ic_event_add"
+            app:iconTint="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnListInlineSubmit"
             style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="48dp"

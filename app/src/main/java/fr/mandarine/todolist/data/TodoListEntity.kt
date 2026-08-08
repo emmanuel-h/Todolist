@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class TodoListEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val position: Int = 0
+    val position: Int = 0,
+    val targetDate: Long? = null
 )

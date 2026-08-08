@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui
 
+import android.content.res.ColorStateList
 import android.graphics.Paint
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -7,6 +8,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -14,6 +16,9 @@ import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class TodoListsAdapter(
     private val onListClick: (TodoList) -> Unit,
@@ -30,6 +35,12 @@ class TodoListsAdapter(
     companion object {
         const val VIEW_TYPE_ITEM = 0
         const val VIEW_TYPE_DIVIDER = 2
+
+        fun formatTargetDate(date: LocalDate, showYear: Boolean, locale: Locale): String {
+            val skeleton = if (showYear) "EEEdMMMy" else "EEEdMMM"
+            val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
+            return date.format(DateTimeFormatter.ofPattern(pattern, locale))
+        }
     }
 
     private var rows: List<ListRow> = emptyList()
@@ -100,6 +111,9 @@ class TodoListsAdapter(
         private val deleteButton: MaterialButton = view.findViewById(R.id.btnDeleteList)
         private val editButton: MaterialButton = view.findViewById(R.id.btnEditList)
         val dragHandle: ImageView = view.findViewById(R.id.dragHandleList)
+        private val layoutTargetDate: LinearLayout = view.findViewById(R.id.layoutTargetDate)
+        private val iconTargetDate: ImageView = view.findViewById(R.id.iconTargetDate)
+        private val textTargetDate: MaterialTextView = view.findViewById(R.id.textTargetDate)
 
         fun bind(
             summary: TodoListSummary,
@@ -122,6 +136,31 @@ class TodoListsAdapter(
                 false
             }
             applyAllDoneStyle(summary.allDone)
+            bindTargetDate(summary)
+        }
+
+        private fun bindTargetDate(summary: TodoListSummary) {
+            val targetDate = summary.list.targetDate
+            if (targetDate == null) {
+                layoutTargetDate.visibility = View.GONE
+                return
+            }
+            layoutTargetDate.visibility = View.VISIBLE
+            val locale = Locale.getDefault(Locale.Category.FORMAT)
+            textTargetDate.text = formatTargetDate(targetDate, summary.showTargetYear, locale)
+            val tint = if (summary.isTargetDateElapsed) {
+                resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)
+            } else {
+                resolveColor(com.google.android.material.R.attr.colorPrimary)
+            }
+            iconTargetDate.imageTintList = ColorStateList.valueOf(tint)
+            textTargetDate.setTextColor(tint)
+        }
+
+        private fun resolveColor(attr: Int): Int {
+            val typedValue = TypedValue()
+            itemView.context.theme.resolveAttribute(attr, typedValue, true)
+            return typedValue.data
         }
 
         private fun applyAllDoneStyle(allDone: Boolean) {

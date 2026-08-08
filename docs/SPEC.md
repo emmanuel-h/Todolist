@@ -79,9 +79,20 @@ TodoListsActivity  ("My Lists")
 **Open a list**
 - Tap anywhere on a list row → navigates to Screen 2 for that list
 
-**Edit a list name** — _not yet implemented · [#4](https://github.com/emmanuel-h/Todolist/issues/4)_
-- Long-press a row → dialog pre-filled with the current name + Cancel / Save
-- On confirm: row label updates immediately; items and position are unaffected
+**Edit a list name** — _implemented · [#4](https://github.com/emmanuel-h/Todolist/issues/4)_
+- Tap the pencil icon (dimmed, left of the list name) → dialog pre-filled with the current name + icon-only Cancel / Save
+- On confirm with a non-blank name: row label updates immediately; items and position are unaffected
+- On confirm with a blank name or on cancel: dialog dismisses, original name is unchanged
+
+**Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
+- At creation: tap the calendar icon in the inline add row → `DatePickerDialog` → selected date attaches to the new list
+- On an existing list: open the rename dialog → tap the date row to open `DatePickerDialog`; tap the clear button (visible only when a date is set) to remove it
+- The date is displayed on a second line of the list row, below the list name, with a calendar icon
+- Dates in the past are shown with `colorOnSurfaceVariant` tint (muted); future dates use `colorPrimary` tint
+- The year is shown only when the target date falls in a different year from the current year
+- Date format uses ICU `getBestDateTimePattern` with skeleton `EEEdMMM` / `EEEdMMMy` for locale-correct output with zero string resources
+- The target date is purely informational — it does not affect list sort order
+- `colorError` tint is reserved for due dates (issue #8) and must never be applied to target dates
 
 **Delete a list**
 - Tap the delete icon on a row → confirmation dialog → on confirm, list and all its items
@@ -207,7 +218,8 @@ There is no checkbox. The strikethrough + 50% alpha is the sole visual indicator
 The following will not be added:
 
 - User accounts, sync, or cloud backup
-- Due dates or reminders
+- Due dates with overdue/deadline semantics — _not yet implemented · [#8](https://github.com/emmanuel-h/Todolist/issues/8)_ (target dates per list are implemented; due-date error tint with `colorError` is reserved for this future feature)
+- Reminders or notifications
 - Priority levels or tags
 - Rich text in titles
 - Sharing lists

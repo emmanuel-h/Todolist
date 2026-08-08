@@ -5,6 +5,7 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import java.time.LocalDate
 
 class TodoListsViewModel(
     private val createTodoListUseCase: CreateTodoListUseCase,
@@ -22,13 +23,13 @@ class TodoListsViewModel(
             return TodoListsState.Content(activeSummaries, doneSummaries)
         }
 
-    fun createList(name: String) {
-        createTodoListUseCase(name)
+    fun createList(name: String, targetDate: LocalDate? = null) {
+        createTodoListUseCase(name, targetDate)
     }
 
     fun submitInlineInput(name: String): Boolean {
         if (name.isBlank()) return false
-        createTodoListUseCase(name)
+        createTodoListUseCase(name, null)
         return true
     }
 
@@ -36,9 +37,9 @@ class TodoListsViewModel(
         deleteTodoListUseCase(todoListId)
     }
 
-    fun editList(todoListId: String, newName: String) {
+    fun editList(todoListId: String, newName: String, targetDate: LocalDate?) {
         if (newName.isBlank()) return
-        editTodoListUseCase(todoListId, newName)
+        editTodoListUseCase(todoListId, newName, targetDate)
     }
 
     fun reorderLists(fromIndex: Int, toIndex: Int) {

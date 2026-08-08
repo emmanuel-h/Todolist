@@ -18,7 +18,7 @@ class GetTodoListsWithStatusUseCaseTest {
     fun setUp() {
         todoListRepository = mockk()
         todoRepository = mockk()
-        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository)
+        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, Clock { 0L })
     }
 
     @Test

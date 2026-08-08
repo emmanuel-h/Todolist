@@ -2,14 +2,22 @@ package fr.mandarine.todolist.data
 
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListRepository
+import java.time.LocalDate
 
 class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository {
 
     override fun getAll(): List<TodoList> =
-        dao.getAll().map { TodoList(it.id, it.name, it.position) }
+        dao.getAll().map { entity ->
+            TodoList(
+                entity.id,
+                entity.name,
+                entity.position,
+                entity.targetDate?.let { LocalDate.ofEpochDay(it) }
+            )
+        }
 
     override fun add(todoList: TodoList) {
-        dao.insert(TodoListEntity(todoList.id, todoList.name, todoList.position))
+        dao.insert(TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay()))
     }
 
     override fun delete(todoListId: String) {
@@ -18,6 +26,10 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
 
     override fun updateName(todoListId: String, name: String) {
         dao.updateName(todoListId, name)
+    }
+
+    override fun updateTargetDate(todoListId: String, targetDate: LocalDate?) {
+        dao.updateTargetDate(todoListId, targetDate?.toEpochDay())
     }
 
     override fun reorder(fromIndex: Int, toIndex: Int) {

@@ -121,7 +121,7 @@ class TodoListsViewModelTest {
     fun `should delegate createList to use case with correct name`() {
         viewModel.createList("Groceries")
 
-        verify { createTodoListUseCase("Groceries") }
+        verify { createTodoListUseCase("Groceries", null) }
     }
 
     @Test
