@@ -3,6 +3,26 @@ plugins {
     alias(libs.plugins.kotlin.ksp)
 }
 
+val releaseKeystoreFile: String? =
+    findProperty("RELEASE_KEYSTORE_FILE")?.toString()
+        ?: System.getenv("RELEASE_KEYSTORE_FILE")
+val releaseKeystorePassword: String? =
+    findProperty("RELEASE_KEYSTORE_PASSWORD")?.toString()
+        ?: System.getenv("RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? =
+    findProperty("RELEASE_KEY_ALIAS")?.toString()
+        ?: System.getenv("RELEASE_KEY_ALIAS")
+val releaseKeyPassword: String? =
+    findProperty("RELEASE_KEY_PASSWORD")?.toString()
+        ?: System.getenv("RELEASE_KEY_PASSWORD")
+
+val hasSigningConfig = listOf(
+    releaseKeystoreFile,
+    releaseKeystorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).none { it.isNullOrBlank() }
+
 android {
     namespace = "fr.mandarine.todolist"
     compileSdk {
@@ -21,13 +41,31 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    if (hasSigningConfig) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseKeystoreFile!!)
+                storePassword = releaseKeystorePassword!!
+                keyAlias = releaseKeyAlias!!
+                keyPassword = releaseKeyPassword!!
+            }
+        }
+    }
+
     buildTypes {
         debug {
             enableUnitTestCoverage = true
         }
         release {
-            optimization {
-                enable = false
+            signingConfig = signingConfigs.findByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            ndk {
+                debugSymbolLevel = "FULL"
             }
         }
     }

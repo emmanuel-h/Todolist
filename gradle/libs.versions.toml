@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.1"
+agp = "9.3.1"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -13,7 +13,7 @@ pitestTool = "1.17.3"
 robolectric = "4.13"
 androidxTestCore = "1.6.1"
 room = "2.6.1"
-ksp = "2.2.10-2.0.2"
+ksp = "2.3.6"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
