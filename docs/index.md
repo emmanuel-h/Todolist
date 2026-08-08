@@ -28,3 +28,4 @@
 - [List Target Date](list-target-date.md) — optional informational target date per list, settable at creation and via rename dialog, displayed below the list name with elapsed-date muting; does not affect sort order
 - [List Due Date](list-due-date.md) — optional deadline per list with three-tier overdue tinting (future/today/overdue); mutually exclusive with the target date; enforced in the domain layer
 - [Daily Notifications](daily-notifications.md) — 08:00 alarm fires one notification per list whose due date is today or target date is tomorrow; deep-links into the list; POST_NOTIFICATIONS requested once on API 33+
+- [App Icons](app-icons.md) — custom checklist launcher icon (brand-purple background, white foreground) replacing the template asset; adaptive icon with monochrome layer for themed-icon mode; 512×512 Play Store asset
