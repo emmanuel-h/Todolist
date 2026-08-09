@@ -1,0 +1,32 @@
+Une liste de tâches qui se fait oublier.
+
+To Do List repose sur une idée simple : une application assez épurée n'a pas besoin de s'expliquer. Aucun menu à apprendre, aucun libellé qui encombre l'écran, aucun tutoriel à subir. Chaque action tient dans une icône évidente. Vous ouvrez, vous touchez, c'est fait.
+
+CE QUE VOUS POUVEZ FAIRE
+
+• Gardez autant de listes distinctes que nécessaire — Courses, Week-end, Lectures, ce qui rythme votre semaine
+• Ajoutez un élément en un seul geste, directement depuis la liste, sans changer d'écran
+• Cochez vos tâches et regardez-les rejoindre une section « terminé » qui tient le compte
+• Renommez ou supprimez n'importe quelle liste ou tâche, avec une confirmation avant toute perte
+• Réorganisez listes et tâches par glisser-déposer, dans l'ordre qui vous convient
+• Les listes achevées s'écartent d'elles-mêmes : il ne reste sous vos yeux que ce qui compte encore
+
+DATES ET RAPPELS
+
+Donnez à une liste une date prévue, quand vous comptez vous y mettre, ou une date d'échéance, quand elle doit vraiment être terminée. Chacune s'affiche directement sur la liste : vous voyez ce qui arrive sans rien ouvrir.
+
+Chaque matin, l'application passe vos listes en revue et vous rappelle discrètement celles qui arrivent à échéance dans la journée et celles que vous aviez prévues pour le lendemain. Une notification, une fois par jour, uniquement s'il y a quelque chose à dire. Si vous préférez ne pas être dérangé, refusez la permission de notification : tout le reste continue de fonctionner à l'identique.
+
+CONÇUE POUR SE FAIRE DISCRÈTE
+
+• Thèmes clair et sombre, alignés sur le réglage de votre système
+• Material Design 3 de bout en bout, pour une application qui a sa place sur votre téléphone
+• Aucun compte, aucune inscription, aucune adresse e-mail
+• Aucune publicité, aucun traceur, aucune analyse d'usage
+• Aucune permission Internet : l'application ne peut envoyer vos données nulle part, faute d'accès au réseau
+
+VOS DONNÉES RESTENT LES VÔTRES
+
+Vos listes vivent dans une base privée sur votre appareil, et nulle part ailleurs. Nous ne les voyons jamais. La seule copie susceptible de quitter votre téléphone est la sauvegarde Android vers votre propre Google Drive, que vous maîtrisez dans les réglages de votre appareil et à laquelle nous n'avons pas accès.
+
+Compatible avec Android 7.0 et versions ultérieures.

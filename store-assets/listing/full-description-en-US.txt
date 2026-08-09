@@ -1,0 +1,32 @@
+A to-do list that gets out of your way.
+
+To Do List is built around one idea: if an app is simple enough, it does not need to explain itself. There are no menus to learn, no labels cluttering the screen, no onboarding to sit through. Every action is a single, obvious icon. You open it, you tap, it works.
+
+WHAT YOU CAN DO
+
+• Keep as many separate lists as you need — Groceries, Weekend trip, Reading list, whatever fits your week
+• Add items in a single tap, straight from the list, without opening a new screen
+• Check things off and watch them drop into a completed section that keeps count
+• Rename or delete any list or item, with a confirmation before anything is lost
+• Drag lists and tasks by their handle to put them in the order that makes sense to you
+• Lists you have finished move aside on their own, so what is left is what still needs doing
+
+DATES AND REMINDERS
+
+Give a list a target date when you plan to get to it, or a due date when it genuinely has to be done. Each shows at a glance on the list, so you can see what is coming without opening anything.
+
+Every morning the app checks your lists and quietly reminds you about the ones due that day and the ones you planned for tomorrow. One notification, once a day, only when there is something to say. If you would rather not be reminded at all, decline the notification permission — everything else keeps working exactly the same.
+
+BUILT TO STAY OUT OF THE WAY
+
+• Light and dark themes that follow your system setting
+• Material Design 3 throughout, so it looks like it belongs on your phone
+• No account, no sign-up, no email address
+• No ads, no trackers, no analytics
+• No internet permission at all — the app cannot send your data anywhere, because it cannot reach the network
+
+YOUR DATA STAYS YOURS
+
+Your lists live in a private database on your device and nowhere else. We never see them. The only copy that can leave your phone is Android's own backup to your personal Google Drive, which you control in your device settings and which we cannot access.
+
+Works on Android 7.0 and later.
