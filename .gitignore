@@ -10,3 +10,7 @@
 local.properties
 .claude/settings.local.json
 /org/
+
+# Keystore files — never commit signing keys to source control
+*.jks
+*.keystore
