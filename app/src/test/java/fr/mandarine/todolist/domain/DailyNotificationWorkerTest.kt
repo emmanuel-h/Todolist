@@ -12,12 +12,11 @@ class DailyNotificationWorkerTest {
     private val repository: TodoListRepository = mockk()
     private val computeUseCase: ComputePendingNotificationsUseCase = mockk()
     private val listNotifier: ListNotifier = mockk(relaxed = true)
-    private val scheduler: NotificationScheduler = mockk(relaxed = true)
     private lateinit var worker: DailyNotificationWorker
 
     @Before
     fun setUp() {
-        worker = DailyNotificationWorker(repository, computeUseCase, listNotifier, scheduler)
+        worker = DailyNotificationWorker(repository, computeUseCase, listNotifier)
     }
 
     @Test
@@ -45,14 +44,6 @@ class DailyNotificationWorkerTest {
         every { computeUseCase(listOf(list)) } returns notifications
         worker.execute()
         verify { listNotifier.postNotifications(notifications) }
-    }
-
-    @Test
-    fun `should reschedule next check when execute is called`() {
-        every { repository.getAll() } returns emptyList()
-        every { computeUseCase(emptyList()) } returns emptyList()
-        worker.execute()
-        verify { scheduler.scheduleNextDailyCheck() }
     }
 
     @Test

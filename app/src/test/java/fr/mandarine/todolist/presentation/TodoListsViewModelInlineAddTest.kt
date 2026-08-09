@@ -9,6 +9,7 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,6 +32,7 @@ class TodoListsViewModelInlineAddTest {
         deleteTodoListUseCase = mockk(relaxed = true)
         editTodoListUseCase = mockk(relaxed = true)
         getTodoListsWithStatusUseCase = mockk()
+        every { getTodoListsWithStatusUseCase() } returns emptyList()
         reorderTodoListsUseCase = mockk(relaxed = true)
         every { getTodoListsWithStatusUseCase() } returns emptyList()
         viewModel = TodoListsViewModel(
@@ -38,7 +40,8 @@ class TodoListsViewModelInlineAddTest {
             deleteTodoListUseCase,
             editTodoListUseCase,
             getTodoListsWithStatusUseCase,
-            reorderTodoListsUseCase
+            reorderTodoListsUseCase,
+            Dispatchers.Unconfined
         )
     }
 
@@ -74,7 +77,7 @@ class TodoListsViewModelInlineAddTest {
 
         viewModel.submitInlineInput("Groceries")
 
-        val content = viewModel.state as TodoListsState.Content
+        val content = currentState() as TodoListsState.Content
         assertEquals(listOf(summary), content.activeSummaries)
         assertEquals(emptyList<TodoListSummary>(), content.doneSummaries)
     }
@@ -84,5 +87,10 @@ class TodoListsViewModelInlineAddTest {
         viewModel.submitInlineInput("Work")
 
         verify { createTodoListUseCase("Work", null) }
+    }
+
+    private fun currentState(): TodoListsState {
+        viewModel.refresh()
+        return viewModel.state.value
     }
 }

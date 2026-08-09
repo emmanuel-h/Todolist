@@ -2,6 +2,7 @@ package fr.mandarine.todolist.data
 
 import fr.mandarine.todolist.domain.Clock
 import fr.mandarine.todolist.domain.SystemClock
+import fr.mandarine.todolist.domain.TodoCounts
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoRepository
 
@@ -13,6 +14,9 @@ class RoomTodoRepository(
     override fun getAllByListId(listId: String): List<TodoItem> =
         dao.getAllByListId(listId).map { TodoItem(it.id, it.title, it.listId, it.completed, it.completedAt, it.position) }
 
+    override fun countsByList(): List<TodoCounts> =
+        dao.countsByList().map { TodoCounts(it.listId, it.activeCount, it.completedCount) }
+
     override fun add(item: TodoItem) {
         dao.insert(TodoItemEntity(item.id, item.title, item.listId, item.isCompleted, item.completedAt, item.position))
     }
@@ -21,7 +25,16 @@ class RoomTodoRepository(
         val entity = dao.getById(todoId) ?: return
         val nowCompleted = !entity.completed
         val completedAt = if (nowCompleted) clock.now() else null
-        dao.updateCompleted(todoId, nowCompleted, completedAt)
+        val position = if (nowCompleted) entity.position else activeCountIn(entity.listId)
+        dao.updateCompletedAndPosition(todoId, nowCompleted, completedAt, position)
+    }
+
+    private fun activeCountIn(listId: String): Int {
+        var count = 0
+        for (item in dao.getAllByListId(listId)) {
+            if (!item.completed) count++
+        }
+        return count
     }
 
     override fun delete(todoId: String) {
@@ -45,8 +58,6 @@ class RoomTodoRepository(
         if (activeItems.isEmpty()) return
         val item = activeItems.removeAt(fromIndex)
         activeItems.add(toIndex, item)
-        for (position in activeItems.indices) {
-            dao.updatePosition(activeItems[position].id, position)
-        }
+        dao.updatePositions(activeItems.map { it.id })
     }
 }

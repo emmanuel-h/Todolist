@@ -1,8 +1,10 @@
 package fr.mandarine.todolist.data
 
+import fr.mandarine.todolist.FakeClock
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.domain.Clock
+import fr.mandarine.todolist.domain.TodoCounts
 import fr.mandarine.todolist.domain.TodoItem
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -21,8 +23,7 @@ class RoomTodoRepositoryTest {
 
     private lateinit var database: TodoDatabase
     private lateinit var repository: RoomTodoRepository
-    private var clockTime = 1000L
-    private val clock = Clock { clockTime }
+    private val clock = FakeClock(nowMillis = 1000L)
 
     @Before
     fun setUp() {
@@ -116,7 +117,7 @@ class RoomTodoRepositoryTest {
 
     @Test
     fun `should set completedAt to clock time when toggle is called on an incomplete item`() {
-        clockTime = 9000L
+        clock.nowMillis = 9000L
         repository.add(TodoItem("1", "Item 1", "list-1"))
         repository.toggle("1")
         assertEquals(9000L, repository.getAllByListId("list-1").first().completedAt)
@@ -151,5 +152,37 @@ class RoomTodoRepositoryTest {
         repository.add(TodoItem("1", "Item 1", "list-1"))
         repository.toggle("non-existent")
         assertFalse(repository.getAllByListId("list-1").first().isCompleted)
+    }
+
+    @Test
+    fun `should keep position when toggle completes an item`() {
+        repository.add(TodoItem("1", "Item 1", "list-1", position = 3))
+        repository.toggle("1")
+        assertEquals(3, repository.getAllByListId("list-1").first().position)
+    }
+
+    @Test
+    fun `should append reopened item after active items when toggle is called on a completed item`() {
+        repository.add(TodoItem("a", "Active A", "list-1", position = 0))
+        repository.add(TodoItem("b", "Active B", "list-1", position = 1))
+        repository.add(TodoItem("done", "Done", "list-1", isCompleted = true, completedAt = 500L, position = 0))
+        repository.toggle("done")
+        val reopened = repository.getAllByListId("list-1").first { it.id == "done" }
+        assertEquals(2, reopened.position)
+    }
+
+    @Test
+    fun `should return counts grouped by list`() {
+        repository.add(TodoItem("1", "A", "list-1"))
+        repository.add(TodoItem("2", "B", "list-1", isCompleted = true, completedAt = 500L))
+        repository.add(TodoItem("3", "C", "list-2"))
+        val counts = repository.countsByList().associateBy { it.listId }
+        assertEquals(TodoCounts("list-1", 1, 1), counts["list-1"])
+        assertEquals(TodoCounts("list-2", 1, 0), counts["list-2"])
+    }
+
+    @Test
+    fun `should return no counts when there are no items`() {
+        assertTrue(repository.countsByList().isEmpty())
     }
 }

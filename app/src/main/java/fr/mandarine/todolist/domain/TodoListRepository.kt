@@ -5,10 +5,8 @@ import java.time.LocalDate
 interface TodoListRepository {
     fun getAll(): List<TodoList>
     fun add(todoList: TodoList)
+    fun addAtTop(todoList: TodoList)
     fun delete(todoListId: String)
-    fun updateName(todoListId: String, name: String)
-    fun updateTargetDate(todoListId: String, targetDate: LocalDate?)
-    fun updateDueDate(todoListId: String, dueDate: LocalDate?)
+    fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?)
     fun reorder(fromIndex: Int, toIndex: Int)
-    fun shiftAllPositionsUp()
 }

@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.domain
 
+import fr.mandarine.todolist.FakeClock
 import io.mockk.every
 import io.mockk.mockk
 import java.time.LocalDate
@@ -17,7 +18,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     private lateinit var useCase: GetTodoListsWithStatusUseCase
 
     private val todayEpochDay = 100L
-    private val todayMillis = todayEpochDay * 86_400_000L
     private val today = LocalDate.ofEpochDay(todayEpochDay)
     private val yesterday = LocalDate.ofEpochDay(todayEpochDay - 1)
     private val tomorrow = LocalDate.ofEpochDay(todayEpochDay + 1)
@@ -26,14 +26,14 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     fun setUp() {
         todoListRepository = mockk()
         todoRepository = mockk()
-        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, Clock { todayMillis })
+        every { todoRepository.countsByList() } returns emptyList()
+        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, FakeClock(todayDate = today))
     }
 
     @Test
     fun `should return null dueDateStatus when due date is null`() {
         val list = TodoList("list-1", "Groceries", dueDate = null)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -44,7 +44,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     fun `should return OVERDUE dueDateStatus when due date is in the past`() {
         val list = TodoList("list-1", "Groceries", dueDate = yesterday)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -55,7 +54,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     fun `should return TODAY dueDateStatus when due date is today`() {
         val list = TodoList("list-1", "Groceries", dueDate = today)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -66,7 +64,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     fun `should return FUTURE dueDateStatus when due date is in the future`() {
         val list = TodoList("list-1", "Groceries", dueDate = tomorrow)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -80,10 +77,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
         val listFuture = TodoList("list-3", "Future", dueDate = tomorrow)
         val listNone = TodoList("list-4", "NoDueDate", dueDate = null)
         every { todoListRepository.getAll() } returns listOf(listOverdue, listToday, listFuture, listNone)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
-        every { todoRepository.getAllByListId("list-2") } returns emptyList()
-        every { todoRepository.getAllByListId("list-3") } returns emptyList()
-        every { todoRepository.getAllByListId("list-4") } returns emptyList()
 
         val result = useCase()
 
@@ -97,7 +90,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     fun `should return showDueDateYear false when due date is null`() {
         val list = TodoList("list-1", "Groceries", dueDate = null)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -109,7 +101,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
         val sameYear = LocalDate.ofEpochDay(todayEpochDay + 30)
         val list = TodoList("list-1", "Groceries", dueDate = sameYear)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -121,7 +112,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
         val differentYear = today.withYear(today.year + 1)
         val list = TodoList("list-1", "Groceries", dueDate = differentYear)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -133,7 +123,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
         val pastYear = today.withYear(today.year - 1)
         val list = TodoList("list-1", "Groceries", dueDate = pastYear)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -147,8 +136,6 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
         val listA = TodoList("list-1", "SameYear", dueDate = sameYear)
         val listB = TodoList("list-2", "DiffYear", dueDate = diffYear)
         every { todoListRepository.getAll() } returns listOf(listA, listB)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
-        every { todoRepository.getAllByListId("list-2") } returns emptyList()
 
         val result = useCase()
 
@@ -159,9 +146,8 @@ class GetTodoListsWithStatusUseCaseDueDateTest {
     @Test
     fun `should return OVERDUE dueDateStatus even when all items are done`() {
         val list = TodoList("list-1", "Groceries", dueDate = yesterday)
-        val item = TodoItem("item-1", "Milk", "list-1", isCompleted = true, completedAt = 1000L)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 0, 1))
 
         val result = useCase()
 

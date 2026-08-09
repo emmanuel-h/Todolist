@@ -2,182 +2,139 @@ package fr.mandarine.todolist.data
 
 import android.app.Notification
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import androidx.core.app.NotificationChannelCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import fr.mandarine.todolist.R
+import android.content.ComponentName
+import androidx.test.core.app.ApplicationProvider
+import fr.mandarine.todolist.TodoListApplication
 import fr.mandarine.todolist.domain.ListNotification
 import fr.mandarine.todolist.domain.TodoList
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
-import io.mockk.verify
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
+import fr.mandarine.todolist.ui.TodoListActivity
+import fr.mandarine.todolist.ui.TodoListsActivity
 import java.time.LocalDate
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class AndroidListNotifierTest {
 
-    private val context = mockk<Context>(relaxed = true)
-    private val notificationManager = mockk<NotificationManager>(relaxed = true)
-    private val notifManagerCompat = mockk<NotificationManagerCompat>(relaxed = true)
-    private val pendingIntentMock = mockk<PendingIntent>()
-    private val builtNotification = mockk<Notification>()
-
-    @Before
-    fun setUp() {
-        every { context.getSystemService(NotificationManager::class.java) } returns notificationManager
-        every { context.getString(R.string.notification_channel_name) } returns "Reminders"
-        every { context.getString(R.string.notification_due_today) } returns "Due today"
-        every { context.getString(R.string.notification_target_tomorrow) } returns "Scheduled for tomorrow"
-
-        mockkStatic(NotificationManagerCompat::class)
-        every { NotificationManagerCompat.from(context) } returns notifManagerCompat
-
-        mockkConstructor(NotificationChannelCompat.Builder::class)
-        every {
-            anyConstructed<NotificationChannelCompat.Builder>().setName(any())
-        } answers { self as NotificationChannelCompat.Builder }
-        every {
-            anyConstructed<NotificationChannelCompat.Builder>().build()
-        } returns mockk(relaxed = true)
-
-        mockkStatic(PendingIntent::class)
-        every { PendingIntent.getActivity(any(), any(), any(), any()) } returns pendingIntentMock
-
-        mockkConstructor(Intent::class)
-        every {
-            anyConstructed<Intent>().setFlags(any<Int>())
-        } answers { self as Intent }
-        every {
-            anyConstructed<Intent>().putExtra(any<String>(), any<String>())
-        } returns mockk<Intent>()
-
-        mockkConstructor(NotificationCompat.Builder::class)
-        every {
-            anyConstructed<NotificationCompat.Builder>().setSmallIcon(R.drawable.ic_checklist)
-        } answers { self as NotificationCompat.Builder }
-        every {
-            anyConstructed<NotificationCompat.Builder>().setContentTitle(any())
-        } answers { self as NotificationCompat.Builder }
-        every {
-            anyConstructed<NotificationCompat.Builder>().setContentText(any())
-        } answers { self as NotificationCompat.Builder }
-        every {
-            anyConstructed<NotificationCompat.Builder>().setContentIntent(pendingIntentMock)
-        } answers { self as NotificationCompat.Builder }
-        every {
-            anyConstructed<NotificationCompat.Builder>().setAutoCancel(true)
-        } answers { self as NotificationCompat.Builder }
-        every { anyConstructed<NotificationCompat.Builder>().build() } returns builtNotification
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
-    }
+    private val application = ApplicationProvider.getApplicationContext<TodoListApplication>()
+    private val notificationManager = application.getSystemService(NotificationManager::class.java)
+    private val notifier = AndroidListNotifier(application)
 
     @Test
     fun `should not post any notification when list is empty`() {
-        AndroidListNotifier(context).postNotifications(emptyList())
-        verify(exactly = 0) { notificationManager.notify(any<Int>(), any<Notification>()) }
+        notifier.postNotifications(emptyList())
+
+        assertEquals(0, shadowOf(notificationManager).size())
     }
 
     @Test
     fun `should not create channel when notifications list is empty`() {
-        AndroidListNotifier(context).postNotifications(emptyList())
-        verify(exactly = 0) { notifManagerCompat.createNotificationChannel(any<NotificationChannelCompat>()) }
+        notifier.postNotifications(emptyList())
+
+        assertTrue(shadowOf(notificationManager).notificationChannels.isEmpty())
     }
 
     @Test
-    fun `should post one notification for a DueDateToday entry`() {
+    fun `should create the reminder channel when posting`() {
         val list = TodoList("list-1", "Groceries", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify(exactly = 1) { notificationManager.notify(any<Int>(), any<Notification>()) }
+
+        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+        val channels = shadowOf(notificationManager).notificationChannels
+        assertEquals(1, channels.size)
+        assertEquals(AndroidListNotifier.CHANNEL_ID, (channels.first() as android.app.NotificationChannel).id)
     }
 
     @Test
-    fun `should post one notification for a TargetDateTomorrow entry`() {
-        val list = TodoList("list-2", "Weekend", targetDate = LocalDate.now().plusDays(1))
-        AndroidListNotifier(context).postNotifications(
-            listOf(ListNotification.TargetDateTomorrow(list))
-        )
-        verify(exactly = 1) { notificationManager.notify(any<Int>(), any<Notification>()) }
+    fun `should post one notification tagged with the list id`() {
+        val list = TodoList("list-1", "Groceries", dueDate = LocalDate.now())
+
+        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+        assertEquals(1, shadowOf(notificationManager).size())
+        assertNotNull(shadowOf(notificationManager).getNotification("list-1", AndroidListNotifier.NOTIFICATION_ID))
     }
 
     @Test
     fun `should post one notification per list when multiple entries are provided`() {
         val listA = TodoList("a", "ListA", dueDate = LocalDate.now())
         val listB = TodoList("b", "ListB", targetDate = LocalDate.now().plusDays(1))
-        AndroidListNotifier(context).postNotifications(
+
+        notifier.postNotifications(
             listOf(ListNotification.DueDateToday(listA), ListNotification.TargetDateTomorrow(listB))
         )
-        verify(exactly = 2) { notificationManager.notify(any<Int>(), any<Notification>()) }
-    }
 
-    @Test
-    fun `should use list id hashCode as notification id`() {
-        val list = TodoList("my-id", "Test", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { notificationManager.notify("my-id".hashCode(), builtNotification) }
+        assertEquals(2, shadowOf(notificationManager).size())
+        assertNotNull(shadowOf(notificationManager).getNotification("a", AndroidListNotifier.NOTIFICATION_ID))
+        assertNotNull(shadowOf(notificationManager).getNotification("b", AndroidListNotifier.NOTIFICATION_ID))
     }
 
     @Test
     fun `should set list name as notification title`() {
-        val list = TodoList("1", "Groceries", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { anyConstructed<NotificationCompat.Builder>().setContentTitle("Groceries") }
+        val list = TodoList("list-1", "Groceries", dueDate = LocalDate.now())
+
+        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+        val notification = shadowOf(notificationManager).getNotification("list-1", AndroidListNotifier.NOTIFICATION_ID)
+        assertEquals("Groceries", notification.extras.getString(Notification.EXTRA_TITLE))
     }
 
     @Test
     fun `should use due-today text for DueDateToday notification`() {
-        val list = TodoList("1", "Work", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { context.getString(R.string.notification_due_today) }
-        verify { anyConstructed<NotificationCompat.Builder>().setContentText("Due today") }
+        val list = TodoList("list-1", "Work", dueDate = LocalDate.now())
+
+        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+        val notification = shadowOf(notificationManager).getNotification("list-1", AndroidListNotifier.NOTIFICATION_ID)
+        assertEquals(
+            application.getString(fr.mandarine.todolist.R.string.notification_due_today),
+            notification.extras.getString(Notification.EXTRA_TEXT)
+        )
     }
 
     @Test
     fun `should use target-tomorrow text for TargetDateTomorrow notification`() {
-        val list = TodoList("2", "Plans", targetDate = LocalDate.now().plusDays(1))
-        AndroidListNotifier(context).postNotifications(
-            listOf(ListNotification.TargetDateTomorrow(list))
+        val list = TodoList("list-2", "Plans", targetDate = LocalDate.now().plusDays(1))
+
+        notifier.postNotifications(listOf(ListNotification.TargetDateTomorrow(list)))
+
+        val notification = shadowOf(notificationManager).getNotification("list-2", AndroidListNotifier.NOTIFICATION_ID)
+        assertEquals(
+            application.getString(fr.mandarine.todolist.R.string.notification_target_tomorrow),
+            notification.extras.getString(Notification.EXTRA_TEXT)
         )
-        verify { context.getString(R.string.notification_target_tomorrow) }
-        verify { anyConstructed<NotificationCompat.Builder>().setContentText("Scheduled for tomorrow") }
     }
 
     @Test
-    fun `should create notification channel when posting non-empty list`() {
-        val list = TodoList("1", "Work", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { notifManagerCompat.createNotificationChannel(any<NotificationChannelCompat>()) }
-    }
-
-    @Test
-    fun `should put LIST_ID extra in deep link intent`() {
+    fun `should build a back stack of lists screen then list screen for the tap intent`() {
         val list = TodoList("list-42", "Test List", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { anyConstructed<Intent>().putExtra("LIST_ID", "list-42") }
+
+        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+        val notification = shadowOf(notificationManager).getNotification("list-42", AndroidListNotifier.NOTIFICATION_ID)
+        val savedIntents = shadowOf(notification.contentIntent).savedIntents
+        assertEquals(2, savedIntents.size)
+        assertEquals(ComponentName(application, TodoListsActivity::class.java), savedIntents[0].component)
+        assertEquals(ComponentName(application, TodoListActivity::class.java), savedIntents[1].component)
     }
 
     @Test
-    fun `should put LIST_NAME extra in deep link intent`() {
+    fun `should carry list id and name extras and a unique data uri in the tap intent`() {
         val list = TodoList("list-42", "Test List", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { anyConstructed<Intent>().putExtra("LIST_NAME", "Test List") }
-    }
 
-    @Test
-    fun `should use notification id as pending intent request code`() {
-        val list = TodoList("key", "Label", dueDate = LocalDate.now())
-        AndroidListNotifier(context).postNotifications(listOf(ListNotification.DueDateToday(list)))
-        verify { PendingIntent.getActivity(any(), "key".hashCode(), any(), any()) }
+        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+        val notification = shadowOf(notificationManager).getNotification("list-42", AndroidListNotifier.NOTIFICATION_ID)
+        val tapIntent = shadowOf(notification.contentIntent).savedIntents.last()
+        assertEquals("list-42", tapIntent.getStringExtra("LIST_ID"))
+        assertEquals("Test List", tapIntent.getStringExtra("LIST_NAME"))
+        assertEquals("todolist://list/list-42", tapIntent.data.toString())
     }
 }

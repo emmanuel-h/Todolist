@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.data
 
+import fr.mandarine.todolist.FakeClock
 import fr.mandarine.todolist.domain.Clock
+import fr.mandarine.todolist.domain.TodoCounts
 import fr.mandarine.todolist.domain.TodoItem
 import io.mockk.every
 import io.mockk.mockk
@@ -16,8 +18,7 @@ class RoomTodoRepositoryUnitTest {
 
     private lateinit var dao: TodoItemDao
     private lateinit var repository: RoomTodoRepository
-    private var clockTime = 1000L
-    private val clock = Clock { clockTime }
+    private val clock = FakeClock(nowMillis = 1000L)
 
     @Before
     fun setUp() {
@@ -103,27 +104,43 @@ class RoomTodoRepositoryUnitTest {
     }
 
     @Test
-    fun `should call updateCompleted with true and clock time via dao when toggle is called on inactive item`() {
-        clockTime = 7000L
-        every { dao.updateCompleted("item-1", true, 7000L) } returns Unit
-        every { dao.getById("item-1") } returns TodoItemEntity("item-1", "Item 1", "list-1", completed = false)
+    fun `should complete item keeping its position via dao when toggle is called on inactive item`() {
+        clock.nowMillis = 7000L
+        every { dao.updateCompletedAndPosition("item-1", true, 7000L, 3) } returns Unit
+        every { dao.getById("item-1") } returns TodoItemEntity("item-1", "Item 1", "list-1", completed = false, position = 3)
         repository.toggle("item-1")
-        verify { dao.updateCompleted("item-1", true, 7000L) }
+        verify { dao.updateCompletedAndPosition("item-1", true, 7000L, 3) }
     }
 
     @Test
-    fun `should call updateCompleted with false and null via dao when toggle is called on completed item`() {
-        every { dao.updateCompleted("item-1", false, null) } returns Unit
+    fun `should reopen item at end of active items via dao when toggle is called on completed item`() {
+        every { dao.updateCompletedAndPosition("item-1", false, null, 2) } returns Unit
         every { dao.getById("item-1") } returns TodoItemEntity("item-1", "Item 1", "list-1", completed = true, completedAt = 1000L)
+        every { dao.getAllByListId("list-1") } returns listOf(
+            TodoItemEntity("a", "Active A", "list-1", completed = false, position = 0),
+            TodoItemEntity("b", "Active B", "list-1", completed = false, position = 1),
+            TodoItemEntity("item-1", "Item 1", "list-1", completed = true, completedAt = 1000L)
+        )
         repository.toggle("item-1")
-        verify { dao.updateCompleted("item-1", false, null) }
+        verify { dao.updateCompletedAndPosition("item-1", false, null, 2) }
+    }
+
+    @Test
+    fun `should reopen item at position zero when it is the only item in the list`() {
+        every { dao.updateCompletedAndPosition("item-1", false, null, 0) } returns Unit
+        every { dao.getById("item-1") } returns TodoItemEntity("item-1", "Item 1", "list-1", completed = true, completedAt = 1000L)
+        every { dao.getAllByListId("list-1") } returns listOf(
+            TodoItemEntity("item-1", "Item 1", "list-1", completed = true, completedAt = 1000L)
+        )
+        repository.toggle("item-1")
+        verify { dao.updateCompletedAndPosition("item-1", false, null, 0) }
     }
 
     @Test
     fun `should do nothing when toggle is called for non-existent id`() {
         every { dao.getById("non-existent") } returns null
         repository.toggle("non-existent")
-        verify(exactly = 0) { dao.updateCompleted(any(), any(), any()) }
+        verify(exactly = 0) { dao.updateCompletedAndPosition(any(), any(), any(), any()) }
     }
 
     @Test
@@ -145,5 +162,11 @@ class RoomTodoRepositoryUnitTest {
         every { dao.updateTitle("item-1", "New title") } returns Unit
         repository.updateTitle("item-1", "New title")
         verify { dao.updateTitle("item-1", "New title") }
+    }
+
+    @Test
+    fun `should map dao count rows to domain counts`() {
+        every { dao.countsByList() } returns listOf(TodoCountsRow("list-1", 2, 3))
+        assertEquals(listOf(TodoCounts("list-1", 2, 3)), repository.countsByList())
     }
 }

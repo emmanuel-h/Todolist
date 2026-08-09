@@ -55,7 +55,7 @@ class TodoListsTargetDateTest {
             RuntimeEnvironment.getApplication(),
             R.style.Theme_ToDoList
         )
-        db = TodoDatabase.getInstance(ApplicationProvider.getApplicationContext())
+        db = databaseRule.database
     }
 
     @After

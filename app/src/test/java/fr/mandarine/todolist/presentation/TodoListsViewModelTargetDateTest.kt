@@ -5,7 +5,9 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import io.mockk.verify
 import java.time.LocalDate
 import org.junit.Before
@@ -32,7 +34,8 @@ class TodoListsViewModelTargetDateTest {
             deleteTodoListUseCase,
             editTodoListUseCase,
             getTodoListsWithStatusUseCase,
-            reorderTodoListsUseCase
+            reorderTodoListsUseCase,
+            Dispatchers.Unconfined
         )
     }
 
@@ -82,5 +85,10 @@ class TodoListsViewModelTargetDateTest {
         viewModel.createList("Groceries")
 
         verify { createTodoListUseCase("Groceries", null) }
+    }
+
+    private fun currentState(): TodoListsState {
+        viewModel.refresh()
+        return viewModel.state.value
     }
 }

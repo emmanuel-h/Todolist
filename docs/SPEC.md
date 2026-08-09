@@ -232,16 +232,22 @@ Every day at 08:00 the app posts one Android notification per list that qualifie
 | List has a **due date set to today** | "Due today" |
 | List has a **target date set to tomorrow** | "Scheduled for tomorrow" |
 
-- Each notification's title is the list name; tapping it deep-links into that list's screen.
-- Notifications are posted on a dedicated channel ("Reminders").
-- The 08:00 alarm is scheduled via `AlarmManager` (exact, idle-permitting).
-- After firing, the alarm reschedules itself for the next day at 08:00.
-- On device reboot (`BOOT_COMPLETED`) the alarm is rescheduled automatically.
+- Each notification's title is the list name; tapping it deep-links into that list's screen
+  with the lists screen beneath it in the back stack (`TaskStackBuilder` with the manifest parent).
+- Notifications are posted on a dedicated channel ("Reminders"), tagged by list id so two lists
+  never overwrite each other's notification.
+- The daily 08:00 check runs as a WorkManager unique `PeriodicWorkRequest`
+  (`daily_notification_check`, `ExistingPeriodicWorkPolicy.KEEP`), enqueued on app launch with an
+  initial delay to the next local 08:00. WorkManager persists it across reboots and crashes —
+  no `BOOT_COMPLETED` receiver is needed.
+- "Today" is evaluated in the device's local timezone via `Clock.today()`.
 - Lists with no due date and no target date, or whose date does not match the above conditions, produce no notification.
+- Opening a list that has since been deleted (e.g. from a stale notification) finishes the screen
+  immediately (`TodoListState.NotFound`).
 
 ### Must NOT happen
 - A notification fired for a list whose date does not qualify.
-- The daily alarm lost permanently after device reboot.
+- The daily check lost permanently after device reboot.
 
 ---
 

@@ -17,16 +17,16 @@ class RoomTodoListRepositoryEditTest {
     }
 
     @Test
-    fun `should call dao updateName when updateName is called`() {
-        repository.updateName("1", "Supermarket")
+    fun `should call dao update when update is called`() {
+        repository.update("1", "Supermarket", null, null)
 
-        verify { dao.updateName("1", "Supermarket") }
+        verify { dao.update("1", "Supermarket", null, null) }
     }
 
     @Test
-    fun `should call dao updateName with another id and name`() {
-        repository.updateName("list-42", "Work tasks")
+    fun `should call dao update with another id and name`() {
+        repository.update("list-42", "Work tasks", null, null)
 
-        verify { dao.updateName("list-42", "Work tasks") }
+        verify { dao.update("list-42", "Work tasks", null, null) }
     }
 }

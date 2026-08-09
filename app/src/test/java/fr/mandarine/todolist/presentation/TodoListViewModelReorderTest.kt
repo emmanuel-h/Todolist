@@ -3,12 +3,15 @@ package fr.mandarine.todolist.presentation
 import fr.mandarine.todolist.domain.AddTodoUseCase
 import fr.mandarine.todolist.domain.DeleteTodoUseCase
 import fr.mandarine.todolist.domain.EditTodoUseCase
+import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -22,6 +25,7 @@ class TodoListViewModelReorderTest {
     private lateinit var deleteTodoUseCase: DeleteTodoUseCase
     private lateinit var editTodoUseCase: EditTodoUseCase
     private lateinit var reorderTodosUseCase: ReorderTodosUseCase
+    private lateinit var getTodoListsUseCase: GetTodoListsUseCase
     private lateinit var viewModel: TodoListViewModel
 
     @Before
@@ -32,6 +36,8 @@ class TodoListViewModelReorderTest {
         deleteTodoUseCase = mockk(relaxed = true)
         editTodoUseCase = mockk(relaxed = true)
         reorderTodosUseCase = mockk(relaxed = true)
+        getTodoListsUseCase = mockk()
+        every { getTodoListsUseCase() } returns listOf(TodoList("list-1", "List"))
         every { getTodosUseCase("list-1") } returns emptyList()
         viewModel = TodoListViewModel(
             addTodoUseCase,
@@ -40,7 +46,9 @@ class TodoListViewModelReorderTest {
             deleteTodoUseCase,
             editTodoUseCase,
             reorderTodosUseCase,
-            listId = "list-1"
+            getTodoListsUseCase,
+            listId = "list-1",
+            dispatcher = Dispatchers.Unconfined
         )
         viewModel.refresh()
     }

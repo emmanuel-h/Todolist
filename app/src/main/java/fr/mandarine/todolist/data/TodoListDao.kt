@@ -3,6 +3,7 @@ package fr.mandarine.todolist.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 
 @Dao
 interface TodoListDao {
@@ -15,18 +16,23 @@ interface TodoListDao {
     @Query("DELETE FROM todo_lists WHERE id = :id")
     fun deleteById(id: String)
 
-    @Query("UPDATE todo_lists SET name = :name WHERE id = :id")
-    fun updateName(id: String, name: String)
-
-    @Query("UPDATE todo_lists SET targetDate = :targetDate WHERE id = :id")
-    fun updateTargetDate(id: String, targetDate: Long?)
-
-    @Query("UPDATE todo_lists SET dueDate = :dueDate WHERE id = :id")
-    fun updateDueDate(id: String, dueDate: Long?)
+    @Query("UPDATE todo_lists SET name = :name, targetDate = :targetDate, dueDate = :dueDate WHERE id = :id")
+    fun update(id: String, name: String, targetDate: Long?, dueDate: Long?)
 
     @Query("UPDATE todo_lists SET position = :position WHERE id = :id")
     fun updatePosition(id: String, position: Int)
 
     @Query("UPDATE todo_lists SET position = position + 1")
     fun incrementAllPositions()
+
+    @Transaction
+    fun insertAtTop(todoList: TodoListEntity) {
+        incrementAllPositions()
+        insert(todoList)
+    }
+
+    @Transaction
+    fun updatePositions(orderedIds: List<String>) {
+        orderedIds.forEachIndexed { index, id -> updatePosition(id, index) }
+    }
 }

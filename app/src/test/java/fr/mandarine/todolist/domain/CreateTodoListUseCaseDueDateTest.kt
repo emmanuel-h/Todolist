@@ -49,7 +49,7 @@ class CreateTodoListUseCaseDueDateTest {
 
         val result = useCase("Groceries", dueDate = dueDate)
 
-        verify { repository.add(result) }
+        verify { repository.addAtTop(result) }
     }
 
     @Test
@@ -78,7 +78,7 @@ class CreateTodoListUseCaseDueDateTest {
 
         runCatching { useCase("Groceries", targetDate = targetDate, dueDate = dueDate) }
 
-        verify(exactly = 0) { repository.add(any()) }
+        verify(exactly = 0) { repository.addAtTop(any()) }
     }
 
     @Test

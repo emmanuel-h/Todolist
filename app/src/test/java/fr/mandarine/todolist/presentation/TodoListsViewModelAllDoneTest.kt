@@ -9,6 +9,7 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -30,6 +31,7 @@ class TodoListsViewModelAllDoneTest {
         deleteTodoListUseCase = mockk(relaxed = true)
         editTodoListUseCase = mockk(relaxed = true)
         getTodoListsWithStatusUseCase = mockk()
+        every { getTodoListsWithStatusUseCase() } returns emptyList()
         reorderTodoListsUseCase = mockk(relaxed = true)
         every { getTodoListsWithStatusUseCase() } returns emptyList()
         viewModel = TodoListsViewModel(
@@ -37,7 +39,8 @@ class TodoListsViewModelAllDoneTest {
             deleteTodoListUseCase,
             editTodoListUseCase,
             getTodoListsWithStatusUseCase,
-            reorderTodoListsUseCase
+            reorderTodoListsUseCase,
+            Dispatchers.Unconfined
         )
     }
 
@@ -45,7 +48,7 @@ class TodoListsViewModelAllDoneTest {
     fun `should return empty state when there are no lists`() {
         every { getTodoListsWithStatusUseCase() } returns emptyList()
 
-        assertEquals(TodoListsState.Empty, viewModel.state)
+        assertEquals(TodoListsState.Empty, currentState())
     }
 
     @Test
@@ -54,7 +57,7 @@ class TodoListsViewModelAllDoneTest {
         val summary = TodoListSummary(list, allDone = false)
         every { getTodoListsWithStatusUseCase() } returns listOf(summary)
 
-        val state = viewModel.state as TodoListsState.Content
+        val state = currentState() as TodoListsState.Content
         assertEquals(listOf(summary), state.activeSummaries)
         assertEquals(emptyList<TodoListSummary>(), state.doneSummaries)
     }
@@ -65,7 +68,7 @@ class TodoListsViewModelAllDoneTest {
         val summary = TodoListSummary(list, allDone = false)
         every { getTodoListsWithStatusUseCase() } returns listOf(summary)
 
-        val state = viewModel.state as TodoListsState.Content
+        val state = currentState() as TodoListsState.Content
         assertFalse(state.activeSummaries[0].allDone)
     }
 
@@ -75,7 +78,7 @@ class TodoListsViewModelAllDoneTest {
         val summary = TodoListSummary(list, allDone = true)
         every { getTodoListsWithStatusUseCase() } returns listOf(summary)
 
-        val state = viewModel.state as TodoListsState.Content
+        val state = currentState() as TodoListsState.Content
         assertTrue(state.doneSummaries[0].allDone)
     }
 
@@ -87,8 +90,13 @@ class TodoListsViewModelAllDoneTest {
         val summaryB = TodoListSummary(listB, allDone = false)
         every { getTodoListsWithStatusUseCase() } returns listOf(summaryA, summaryB)
 
-        val state = viewModel.state as TodoListsState.Content
+        val state = currentState() as TodoListsState.Content
         assertTrue(state.doneSummaries[0].allDone)
         assertFalse(state.activeSummaries[0].allDone)
+    }
+
+    private fun currentState(): TodoListsState {
+        viewModel.refresh()
+        return viewModel.state.value
     }
 }

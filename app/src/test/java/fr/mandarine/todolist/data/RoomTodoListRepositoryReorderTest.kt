@@ -29,9 +29,7 @@ class RoomTodoListRepositoryReorderTest {
 
         repository.reorder(0, 2)
 
-        verify { dao.updatePosition("2", 0) }
-        verify { dao.updatePosition("3", 1) }
-        verify { dao.updatePosition("1", 2) }
+        verify { dao.updatePositions(listOf("2", "3", "1")) }
     }
 
     @Test
@@ -44,13 +42,11 @@ class RoomTodoListRepositoryReorderTest {
 
         repository.reorder(2, 0)
 
-        verify { dao.updatePosition("3", 0) }
-        verify { dao.updatePosition("1", 1) }
-        verify { dao.updatePosition("2", 2) }
+        verify { dao.updatePositions(listOf("3", "1", "2")) }
     }
 
     @Test
-    fun `should not call updatePosition when fromIndex equals toIndex`() {
+    fun `should not call updatePositions when fromIndex equals toIndex`() {
         every { dao.getAll() } returns listOf(
             TodoListEntity("1", "First", position = 0),
             TodoListEntity("2", "Second", position = 1)
@@ -58,7 +54,7 @@ class RoomTodoListRepositoryReorderTest {
 
         repository.reorder(0, 0)
 
-        verify(exactly = 0) { dao.updatePosition(any(), any()) }
+        verify(exactly = 0) { dao.updatePositions(any()) }
     }
 
     @Test
@@ -67,7 +63,7 @@ class RoomTodoListRepositoryReorderTest {
 
         repository.reorder(0, 1)
 
-        verify(exactly = 0) { dao.updatePosition(any(), any()) }
+        verify(exactly = 0) { dao.updatePositions(any()) }
     }
 
     @Test
@@ -80,9 +76,7 @@ class RoomTodoListRepositoryReorderTest {
 
         repository.reorder(0, 2)
 
-        verify { dao.updatePosition("2", 0) }
-        verify { dao.updatePosition("3", 1) }
-        verify { dao.updatePosition("1", 2) }
+        verify { dao.updatePositions(listOf("2", "3", "1")) }
     }
 
     @Test

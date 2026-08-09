@@ -29,7 +29,7 @@ class TodoListsDragReorderTest {
 
     @Before
     fun setUp() {
-        db = TodoDatabase.getInstance(ApplicationProvider.getApplicationContext())
+        db = databaseRule.database
     }
 
     @After

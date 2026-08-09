@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.domain
 
+import fr.mandarine.todolist.FakeClock
 import io.mockk.every
 import io.mockk.mockk
 import java.time.LocalDate
@@ -15,7 +16,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     private lateinit var useCase: GetTodoListsWithStatusUseCase
 
     private val todayEpochDay = 100L
-    private val todayMillis = todayEpochDay * 86_400_000L
     private val today = LocalDate.ofEpochDay(todayEpochDay)
     private val yesterday = LocalDate.ofEpochDay(todayEpochDay - 1)
     private val tomorrow = LocalDate.ofEpochDay(todayEpochDay + 1)
@@ -24,14 +24,14 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     fun setUp() {
         todoListRepository = mockk()
         todoRepository = mockk()
-        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, Clock { todayMillis })
+        every { todoRepository.countsByList() } returns emptyList()
+        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, FakeClock(todayDate = LocalDate.ofEpochDay(todayEpochDay)))
     }
 
     @Test
     fun `should return isTargetDateElapsed false when target date is null`() {
         val list = TodoList("list-1", "Groceries", targetDate = null)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -42,7 +42,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     fun `should return isTargetDateElapsed false when target date is today`() {
         val list = TodoList("list-1", "Groceries", targetDate = today)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -53,7 +52,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     fun `should return isTargetDateElapsed false when target date is in the future`() {
         val list = TodoList("list-1", "Groceries", targetDate = tomorrow)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -64,7 +62,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     fun `should return isTargetDateElapsed true when target date is in the past`() {
         val list = TodoList("list-1", "Groceries", targetDate = yesterday)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -77,9 +74,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
         val listNull = TodoList("list-2", "NullDate", targetDate = null)
         val listFuture = TodoList("list-3", "Future", targetDate = tomorrow)
         every { todoListRepository.getAll() } returns listOf(listPast, listNull, listFuture)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
-        every { todoRepository.getAllByListId("list-2") } returns emptyList()
-        every { todoRepository.getAllByListId("list-3") } returns emptyList()
 
         val result = useCase()
 
@@ -91,9 +85,8 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     @Test
     fun `should return isTargetDateElapsed false when list has no target date and items exist`() {
         val list = TodoList("list-1", "Groceries", targetDate = null)
-        val item = TodoItem("item-1", "Milk", "list-1", isCompleted = false)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 1, 0))
 
         val result = useCase()
 
@@ -103,9 +96,8 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     @Test
     fun `should return isTargetDateElapsed true for past date even when all items are done`() {
         val list = TodoList("list-1", "Groceries", targetDate = yesterday)
-        val item = TodoItem("item-1", "Milk", "list-1", isCompleted = true, completedAt = 1000L)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 0, 1))
 
         val result = useCase()
 
@@ -116,7 +108,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
     fun `should return showTargetYear false when target date is null`() {
         val list = TodoList("list-1", "Groceries", targetDate = null)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -128,7 +119,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
         val sameYear = LocalDate.ofEpochDay(todayEpochDay + 30)
         val list = TodoList("list-1", "Groceries", targetDate = sameYear)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -140,7 +130,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
         val differentYear = today.withYear(today.year + 1)
         val list = TodoList("list-1", "Groceries", targetDate = differentYear)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -152,7 +141,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
         val pastYear = today.withYear(today.year - 1)
         val list = TodoList("list-1", "Groceries", targetDate = pastYear)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -166,8 +154,6 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
         val listA = TodoList("list-1", "SameYear", targetDate = sameYear)
         val listB = TodoList("list-2", "DiffYear", targetDate = diffYear)
         every { todoListRepository.getAll() } returns listOf(listA, listB)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
-        every { todoRepository.getAllByListId("list-2") } returns emptyList()
 
         val result = useCase()
 

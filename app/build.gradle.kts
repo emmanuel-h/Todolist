@@ -116,7 +116,15 @@ tasks.register<JavaExec>("pitest") {
         val androidJar = File(System.getenv("ANDROID_HOME") ?: "${System.getProperty("user.home")}/Android/Sdk")
             .resolve("platforms/android-36.1/android.jar")
 
-        val rcp = configurations["debugUnitTestRuntimeClasspath"].files
+        val rcp = configurations["debugUnitTestRuntimeClasspath"]
+            .incoming
+            .artifactView {
+                attributes {
+                    attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar")
+                }
+                lenient(true)
+            }
+            .files
             .filter { it.extension == "jar" }
 
         val byteBuddyAgent = rcp.first { it.name.startsWith("byte-buddy-agent") }
@@ -134,14 +142,24 @@ tasks.register<JavaExec>("pitest") {
             "--excludedClasses", "*Test,*Tests,*_Impl,*_Impl\$*," +
                 "fr.mandarine.todolist.data.TodoDatabase,fr.mandarine.todolist.data.TodoDatabase\$*," +
                 "fr.mandarine.todolist.data.AndroidListNotifier,fr.mandarine.todolist.data.AndroidListNotifier\$*," +
-                "fr.mandarine.todolist.data.AndroidNotificationScheduler,fr.mandarine.todolist.data.AndroidNotificationScheduler\$*," +
-                "fr.mandarine.todolist.data.BootCompletedReceiver," +
-                "fr.mandarine.todolist.data.DailyNotificationReceiver",
-            "--excludedTestClasses", "fr.mandarine.todolist.data.AndroidListNotifierTest," +
-                "fr.mandarine.todolist.data.AndroidNotificationSchedulerTest," +
-                "fr.mandarine.todolist.data.BootCompletedReceiverTest," +
-                "fr.mandarine.todolist.data.DailyNotificationReceiverTest",
+                "fr.mandarine.todolist.data.WorkManagerNotificationScheduler,fr.mandarine.todolist.data.WorkManagerNotificationScheduler\$*," +
+                "fr.mandarine.todolist.data.TodoItemDao,fr.mandarine.todolist.data.TodoItemDao\$*," +
+                "fr.mandarine.todolist.data.TodoListDao,fr.mandarine.todolist.data.TodoListDao\$*",
+            "--excludedTestClasses", "fr.mandarine.todolist.ui.*," +
+                "fr.mandarine.todolist.AppContainerTest," +
+                "fr.mandarine.todolist.DailyNotificationWorkTest," +
+                "fr.mandarine.todolist.data.AndroidListNotifierTest," +
+                "fr.mandarine.todolist.data.RoomTodoListRepositoryTargetDateTest," +
+                "fr.mandarine.todolist.data.RoomTodoListRepositoryTest," +
+                "fr.mandarine.todolist.data.RoomTodoRepositoryTest," +
+                "fr.mandarine.todolist.data.TodoDatabaseTest," +
+                "fr.mandarine.todolist.data.TodoItemDaoPositionsTest," +
+                "fr.mandarine.todolist.data.TodoListDaoIncrementTest," +
+                "fr.mandarine.todolist.data.WorkManagerNotificationSchedulerTest",
             "--targetTests", "fr.mandarine.todolist.*",
+            "--mutators", "CONDITIONALS_BOUNDARY,INCREMENTS,INVERT_NEGS,MATH,NEGATE_CONDITIONALS," +
+                "VOID_METHOD_CALLS,EMPTY_RETURNS,FALSE_RETURNS,TRUE_RETURNS,PRIMITIVE_RETURNS",
+            "--avoidCallsTo", "java.util.logging,org.apache.log4j,org.slf4j,org.apache.commons.logging,kotlin.jvm.internal,kotlin.ResultKt,kotlin.collections.CollectionsKt",
             "--sourceDirs", "${projectDir}/src/main/java",
             "--classPathFile", classpathFile.absolutePath,
             "--jvmArgs", "-javaagent:${byteBuddyAgent.absolutePath}",
@@ -160,7 +178,11 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
@@ -169,6 +191,7 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.espresso.core)
     testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
     pitestRuntime(libs.pitest.commandline)

@@ -56,4 +56,27 @@ class TodoListDaoIncrementTest {
         assertEquals(2, entities[1].position)
         assertEquals(3, entities[2].position)
     }
+
+    @Test
+    fun `should insert new entity at position zero and shift others when insertAtTop is called`() {
+        dao.insert(TodoListEntity("1", "First", position = 0))
+        dao.insert(TodoListEntity("2", "Second", position = 1))
+
+        dao.insertAtTop(TodoListEntity("3", "New", position = 0))
+
+        val entities = dao.getAll()
+        assertEquals(listOf("3", "1", "2"), entities.map { it.id })
+        assertEquals(listOf(0, 1, 2), entities.map { it.position })
+    }
+
+    @Test
+    fun `should write sequential positions when updatePositions is called with ordered ids`() {
+        dao.insert(TodoListEntity("1", "First", position = 0))
+        dao.insert(TodoListEntity("2", "Second", position = 1))
+        dao.insert(TodoListEntity("3", "Third", position = 2))
+
+        dao.updatePositions(listOf("2", "3", "1"))
+
+        assertEquals(listOf("2", "3", "1"), dao.getAll().map { it.id })
+    }
 }

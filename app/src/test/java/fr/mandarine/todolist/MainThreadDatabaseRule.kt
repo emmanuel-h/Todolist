@@ -3,34 +3,32 @@ package fr.mandarine.todolist
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.data.TodoDatabase
-import fr.mandarine.todolist.ui.AppExecutors
+import fr.mandarine.todolist.domain.NotificationScheduler
+import kotlinx.coroutines.Dispatchers
 import org.junit.rules.ExternalResource
-import java.util.concurrent.Executor
 
 class MainThreadDatabaseRule : ExternalResource() {
 
-    private lateinit var database: TodoDatabase
-    private lateinit var previousExecutor: Executor
+    lateinit var database: TodoDatabase
+        private set
+    private lateinit var previousContainer: AppContainer
 
     override fun before() {
-        previousExecutor = AppExecutors.database
-        AppExecutors.database = Executor { command -> command.run() }
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            TodoDatabase::class.java
-        ).allowMainThreadQueries().build()
-        installSingleton(database)
+        val application = ApplicationProvider.getApplicationContext<TodoListApplication>()
+        database = Room.inMemoryDatabaseBuilder(application, TodoDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        previousContainer = application.container
+        application.container = AppContainer(
+            application,
+            databaseFactory = { database },
+            schedulerFactory = { NotificationScheduler { } },
+            databaseDispatcher = Dispatchers.Unconfined
+        )
     }
 
     override fun after() {
-        AppExecutors.database = previousExecutor
-        installSingleton(null)
+        ApplicationProvider.getApplicationContext<TodoListApplication>().container = previousContainer
         database.close()
-    }
-
-    private fun installSingleton(instance: TodoDatabase?) {
-        val field = TodoDatabase::class.java.declaredFields.first { it.name == "instance" }
-        field.isAccessible = true
-        field.set(null, instance)
     }
 }

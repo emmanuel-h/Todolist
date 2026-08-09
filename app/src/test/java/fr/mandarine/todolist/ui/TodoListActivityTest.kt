@@ -40,7 +40,7 @@ class TodoListActivityTest {
 
     @Before
     fun setUp() {
-        db = TodoDatabase.getInstance(ApplicationProvider.getApplicationContext())
+        db = databaseRule.database
         db.todoListDao().insert(TodoListEntity("test-list-id", "Test List"))
     }
 
@@ -615,4 +615,16 @@ class TodoListActivityTest {
     }
 
     private fun TodoListActivity.recyclerView() = recyclerViewInternal
+
+    @Test
+    fun `should finish when launched for a list that does not exist`() {
+        val intent = Intent(ApplicationProvider.getApplicationContext(), TodoListActivity::class.java)
+            .putExtra("LIST_ID", "deleted-list-id")
+            .putExtra("LIST_NAME", "Deleted")
+        ActivityScenario.launch<TodoListActivity>(intent).use { scenario ->
+            scenario.onActivity { activity ->
+                assertTrue(activity.isFinishing)
+            }
+        }
+    }
 }

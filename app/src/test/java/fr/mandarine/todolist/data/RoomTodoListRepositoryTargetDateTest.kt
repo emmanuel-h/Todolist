@@ -50,21 +50,21 @@ class RoomTodoListRepositoryTargetDateTest {
     }
 
     @Test
-    fun `should persist targetDate when updateTargetDate is called`() {
+    fun `should persist targetDate when update is called`() {
         val targetDate = LocalDate.of(2027, 6, 22)
         repository.add(TodoList("1", "Groceries"))
 
-        repository.updateTargetDate("1", targetDate)
+        repository.update("1", "Groceries", targetDate, null)
 
         assertEquals(targetDate, repository.getAll().first().targetDate)
     }
 
     @Test
-    fun `should clear targetDate when updateTargetDate is called with null`() {
+    fun `should clear targetDate when update is called with null`() {
         val targetDate = LocalDate.of(2027, 6, 22)
         repository.add(TodoList("1", "Groceries", targetDate = targetDate))
 
-        repository.updateTargetDate("1", null)
+        repository.update("1", "Groceries", null, null)
 
         assertNull(repository.getAll().first().targetDate)
     }
@@ -75,7 +75,7 @@ class RoomTodoListRepositoryTargetDateTest {
         repository.add(TodoList("1", "Groceries"))
         repository.add(TodoList("2", "Work"))
 
-        repository.updateTargetDate("1", targetDate)
+        repository.update("1", "Groceries", targetDate, null)
 
         assertEquals(targetDate, repository.getAll()[0].targetDate)
         assertNull(repository.getAll()[1].targetDate)

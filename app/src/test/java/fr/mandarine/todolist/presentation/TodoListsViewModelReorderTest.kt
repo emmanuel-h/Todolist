@@ -9,6 +9,7 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -35,7 +36,8 @@ class TodoListsViewModelReorderTest {
             deleteTodoListUseCase,
             editTodoListUseCase,
             getTodoListsWithStatusUseCase,
-            reorderTodoListsUseCase
+            reorderTodoListsUseCase,
+            Dispatchers.Unconfined
         )
     }
 
@@ -70,8 +72,13 @@ class TodoListsViewModelReorderTest {
 
         viewModel.reorderLists(1, 0)
 
-        val content = viewModel.state as TodoListsState.Content
+        val content = currentState() as TodoListsState.Content
         assertEquals(listOf(summary1, summary2), content.activeSummaries)
         assertEquals(emptyList<TodoListSummary>(), content.doneSummaries)
+    }
+
+    private fun currentState(): TodoListsState {
+        viewModel.refresh()
+        return viewModel.state.value
     }
 }

@@ -18,17 +18,17 @@ class EditTodoListUseCaseTest {
     }
 
     @Test
-    fun `should delegate updateName to repository with given id and name`() {
+    fun `should delegate update to repository with given id and name`() {
         useCase("list-1", "Groceries", null)
 
-        verify { repository.updateName("list-1", "Groceries") }
+        verify { repository.update("list-1", "Groceries", null, null) }
     }
 
     @Test
-    fun `should delegate updateName to repository with another id and name`() {
+    fun `should delegate update to repository with another id and name`() {
         useCase("list-42", "Work tasks", null)
 
-        verify { repository.updateName("list-42", "Work tasks") }
+        verify { repository.update("list-42", "Work tasks", null, null) }
     }
 
     @Test
@@ -49,6 +49,6 @@ class EditTodoListUseCaseTest {
     fun `should not call repository when name is blank`() {
         runCatching { useCase("list-1", "   ", null) }
 
-        verify(exactly = 0) { repository.updateName(any(), any()) }
+        verify(exactly = 0) { repository.update("list-1", "   ", null, null) }
     }
 }

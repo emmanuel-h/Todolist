@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -40,9 +41,31 @@ class TodoListAdapter(
     }
 
     fun submitList(activeItems: List<TodoItem>, completedItems: List<TodoItem>) {
-        rows = buildRows(activeItems, completedItems)
-        @Suppress("NotifyDataSetChanged")
-        notifyDataSetChanged()
+        val newRows = buildRows(activeItems, completedItems)
+        val diff = DiffUtil.calculateDiff(RowDiffCallback(rows, newRows))
+        rows = newRows
+        diff.dispatchUpdatesTo(this)
+    }
+
+    private class RowDiffCallback(
+        private val oldRows: List<ListRow>,
+        private val newRows: List<ListRow>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldRows.size
+        override fun getNewListSize(): Int = newRows.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            val old = oldRows[oldItemPosition]
+            val new = newRows[newItemPosition]
+            return when {
+                old is ListRow.Item && new is ListRow.Item -> old.todo.id == new.todo.id
+                old is ListRow.InlineAdd && new is ListRow.InlineAdd -> true
+                else -> old is ListRow.Divider && new is ListRow.Divider
+            }
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+            oldRows[oldItemPosition] == newRows[newItemPosition]
     }
 
     fun activeItemCount(): Int = rows.count { it is ListRow.Item && !(it as ListRow.Item).todo.isCompleted }

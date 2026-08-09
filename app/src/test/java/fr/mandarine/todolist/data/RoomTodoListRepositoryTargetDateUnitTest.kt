@@ -22,28 +22,28 @@ class RoomTodoListRepositoryTargetDateUnitTest {
     }
 
     @Test
-    fun `should call dao updateTargetDate with epoch day when updateTargetDate is called with a date`() {
+    fun `should call dao update with epoch day when update is called with a date`() {
         val targetDate = LocalDate.of(2027, 6, 22)
 
-        repository.updateTargetDate("1", targetDate)
+        repository.update("1", "Groceries", targetDate, null)
 
-        verify { dao.updateTargetDate("1", targetDate.toEpochDay()) }
+        verify { dao.update("1", "Groceries", targetDate.toEpochDay(), null) }
     }
 
     @Test
-    fun `should call dao updateTargetDate with null when updateTargetDate is called with null`() {
-        repository.updateTargetDate("1", null)
+    fun `should call dao update with null when update is called with null`() {
+        repository.update("1", "Groceries", null, null)
 
-        verify { dao.updateTargetDate("1", null) }
+        verify { dao.update("1", "Groceries", null, null) }
     }
 
     @Test
-    fun `should call dao updateTargetDate with another id and date`() {
+    fun `should call dao update with another id and date`() {
         val targetDate = LocalDate.of(2026, 1, 15)
 
-        repository.updateTargetDate("list-42", targetDate)
+        repository.update("list-42", "Work", targetDate, null)
 
-        verify { dao.updateTargetDate("list-42", targetDate.toEpochDay()) }
+        verify { dao.update("list-42", "Work", targetDate.toEpochDay(), null) }
     }
 
     @Test

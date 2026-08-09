@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.domain
 
+import fr.mandarine.todolist.FakeClock
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -16,14 +17,14 @@ class GetTodoListsWithStatusUseCaseCountTest {
     fun setUp() {
         todoListRepository = mockk()
         todoRepository = mockk()
-        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, Clock { 0L })
+        every { todoRepository.countsByList() } returns emptyList()
+        useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, FakeClock())
     }
 
     @Test
     fun `should return zero activeCount and zero completedCount for list with no items`() {
         val list = TodoList("list-1", "Groceries")
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns emptyList()
 
         val result = useCase()
 
@@ -34,9 +35,8 @@ class GetTodoListsWithStatusUseCaseCountTest {
     @Test
     fun `should return activeCount one and zero completedCount for list with single active item`() {
         val list = TodoList("list-1", "Groceries")
-        val item = TodoItem("item-1", "Milk", "list-1", isCompleted = false)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 1, 0))
 
         val result = useCase()
 
@@ -47,11 +47,8 @@ class GetTodoListsWithStatusUseCaseCountTest {
     @Test
     fun `should return correct activeCount and zero completedCount for list with multiple active items`() {
         val list = TodoList("list-1", "Groceries")
-        val item1 = TodoItem("item-1", "Milk", "list-1", isCompleted = false)
-        val item2 = TodoItem("item-2", "Bread", "list-1", isCompleted = false)
-        val item3 = TodoItem("item-3", "Eggs", "list-1", isCompleted = false)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item1, item2, item3)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 3, 0))
 
         val result = useCase()
 
@@ -62,9 +59,8 @@ class GetTodoListsWithStatusUseCaseCountTest {
     @Test
     fun `should return zero activeCount and completedCount one for list with single completed item`() {
         val list = TodoList("list-1", "Groceries")
-        val item = TodoItem("item-1", "Milk", "list-1", isCompleted = true, completedAt = 1000L)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 0, 1))
 
         val result = useCase()
 
@@ -75,10 +71,8 @@ class GetTodoListsWithStatusUseCaseCountTest {
     @Test
     fun `should return zero activeCount and correct completedCount for list with multiple completed items`() {
         val list = TodoList("list-1", "Groceries")
-        val item1 = TodoItem("item-1", "Milk", "list-1", isCompleted = true, completedAt = 1000L)
-        val item2 = TodoItem("item-2", "Bread", "list-1", isCompleted = true, completedAt = 2000L)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(item1, item2)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 0, 2))
 
         val result = useCase()
 
@@ -89,13 +83,8 @@ class GetTodoListsWithStatusUseCaseCountTest {
     @Test
     fun `should return correct activeCount and completedCount for list with mixed items`() {
         val list = TodoList("list-1", "Groceries")
-        val active1 = TodoItem("item-1", "Milk", "list-1", isCompleted = false)
-        val active2 = TodoItem("item-2", "Bread", "list-1", isCompleted = false)
-        val active3 = TodoItem("item-3", "Eggs", "list-1", isCompleted = false)
-        val completed1 = TodoItem("item-4", "Butter", "list-1", isCompleted = true, completedAt = 1000L)
-        val completed2 = TodoItem("item-5", "Coffee", "list-1", isCompleted = true, completedAt = 2000L)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(active1, active2, active3, completed1, completed2)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 3, 2))
 
         val result = useCase()
 
@@ -107,11 +96,11 @@ class GetTodoListsWithStatusUseCaseCountTest {
     fun `should compute activeCount and completedCount independently for each list`() {
         val listA = TodoList("list-a", "Groceries")
         val listB = TodoList("list-b", "Work")
-        val activeA = TodoItem("item-1", "Milk", "list-a", isCompleted = false)
-        val completedB = TodoItem("item-2", "Report", "list-b", isCompleted = true, completedAt = 1000L)
         every { todoListRepository.getAll() } returns listOf(listA, listB)
-        every { todoRepository.getAllByListId("list-a") } returns listOf(activeA)
-        every { todoRepository.getAllByListId("list-b") } returns listOf(completedB)
+        every { todoRepository.countsByList() } returns listOf(
+            TodoCounts("list-a", 1, 0),
+            TodoCounts("list-b", 0, 1)
+        )
 
         val result = useCase()
 
@@ -124,11 +113,8 @@ class GetTodoListsWithStatusUseCaseCountTest {
     @Test
     fun `should return activeCount two and completedCount one for list with two active and one completed`() {
         val list = TodoList("list-1", "Tasks")
-        val active1 = TodoItem("item-1", "Task A", "list-1", isCompleted = false)
-        val active2 = TodoItem("item-2", "Task B", "list-1", isCompleted = false)
-        val completed = TodoItem("item-3", "Task C", "list-1", isCompleted = true, completedAt = 500L)
         every { todoListRepository.getAll() } returns listOf(list)
-        every { todoRepository.getAllByListId("list-1") } returns listOf(active1, active2, completed)
+        every { todoRepository.countsByList() } returns listOf(TodoCounts("list-1", 2, 1))
 
         val result = useCase()
 

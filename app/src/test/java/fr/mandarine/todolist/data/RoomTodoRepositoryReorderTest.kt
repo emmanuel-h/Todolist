@@ -4,7 +4,6 @@ import fr.mandarine.todolist.domain.TodoItem
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.verifyOrder
 import org.junit.Before
 import org.junit.Test
 
@@ -29,9 +28,7 @@ class RoomTodoRepositoryReorderTest {
 
         repository.reorder("list-1", 0, 2)
 
-        verify { dao.updatePosition("2", 0) }
-        verify { dao.updatePosition("3", 1) }
-        verify { dao.updatePosition("1", 2) }
+        verify { dao.updatePositions(listOf("2", "3", "1")) }
     }
 
     @Test
@@ -44,13 +41,11 @@ class RoomTodoRepositoryReorderTest {
 
         repository.reorder("list-1", 2, 0)
 
-        verify { dao.updatePosition("3", 0) }
-        verify { dao.updatePosition("1", 1) }
-        verify { dao.updatePosition("2", 2) }
+        verify { dao.updatePositions(listOf("3", "1", "2")) }
     }
 
     @Test
-    fun `should not call updatePosition when fromIndex equals toIndex`() {
+    fun `should not call updatePositions when fromIndex equals toIndex`() {
         every { dao.getAllByListId("list-1") } returns listOf(
             TodoItemEntity("1", "First", "list-1", position = 0),
             TodoItemEntity("2", "Second", "list-1", position = 1)
@@ -58,7 +53,7 @@ class RoomTodoRepositoryReorderTest {
 
         repository.reorder("list-1", 0, 0)
 
-        verify(exactly = 0) { dao.updatePosition(any(), any()) }
+        verify(exactly = 0) { dao.updatePositions(any()) }
     }
 
     @Test
@@ -71,9 +66,7 @@ class RoomTodoRepositoryReorderTest {
 
         repository.reorder("list-1", 0, 1)
 
-        verify { dao.updatePosition("2", 0) }
-        verify { dao.updatePosition("1", 1) }
-        verify(exactly = 0) { dao.updatePosition("3", any()) }
+        verify { dao.updatePositions(listOf("2", "1")) }
     }
 
     @Test
@@ -82,7 +75,7 @@ class RoomTodoRepositoryReorderTest {
 
         repository.reorder("list-empty", 0, 1)
 
-        verify(exactly = 0) { dao.updatePosition(any(), any()) }
+        verify(exactly = 0) { dao.updatePositions(any()) }
     }
 
     @Test
@@ -95,9 +88,7 @@ class RoomTodoRepositoryReorderTest {
 
         repository.reorder("list-1", 0, 2)
 
-        verify { dao.updatePosition("2", 0) }
-        verify { dao.updatePosition("3", 1) }
-        verify { dao.updatePosition("1", 2) }
+        verify { dao.updatePositions(listOf("2", "3", "1")) }
     }
 
     @Test

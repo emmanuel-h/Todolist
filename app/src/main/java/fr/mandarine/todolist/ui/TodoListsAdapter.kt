@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -47,9 +48,30 @@ class TodoListsAdapter(
     private var rows: List<ListRow> = emptyList()
 
     fun submitList(activeSummaries: List<TodoListSummary>, doneSummaries: List<TodoListSummary>) {
-        rows = buildRows(activeSummaries, doneSummaries)
-        @Suppress("NotifyDataSetChanged")
-        notifyDataSetChanged()
+        val newRows = buildRows(activeSummaries, doneSummaries)
+        val diff = DiffUtil.calculateDiff(RowDiffCallback(rows, newRows))
+        rows = newRows
+        diff.dispatchUpdatesTo(this)
+    }
+
+    private class RowDiffCallback(
+        private val oldRows: List<ListRow>,
+        private val newRows: List<ListRow>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldRows.size
+        override fun getNewListSize(): Int = newRows.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            val old = oldRows[oldItemPosition]
+            val new = newRows[newItemPosition]
+            return when {
+                old is ListRow.Item && new is ListRow.Item -> old.summary.list.id == new.summary.list.id
+                else -> old is ListRow.Divider && new is ListRow.Divider
+            }
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+            oldRows[oldItemPosition] == newRows[newItemPosition]
     }
 
     fun activeItemCount(): Int = rows.count { it is ListRow.Item && !(it as ListRow.Item).summary.allDone }

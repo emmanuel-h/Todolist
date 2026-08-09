@@ -2,7 +2,7 @@ package fr.mandarine.todolist.domain
 
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verifyOrder
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -36,22 +36,16 @@ class CreateTodoListUseCaseTopInsertTest {
     }
 
     @Test
-    fun `should call shiftAllPositionsUp before add when repository has existing lists`() {
+    fun `should insert at top when repository has existing lists`() {
         every { repository.getAll() } returns listOf(TodoList("1", "First", 0))
         val result = useCase("New")
-        verifyOrder {
-            repository.shiftAllPositionsUp()
-            repository.add(result)
-        }
+        verify { repository.addAtTop(result) }
     }
 
     @Test
-    fun `should call shiftAllPositionsUp before add when repository is empty`() {
+    fun `should insert at top when repository is empty`() {
         every { repository.getAll() } returns emptyList()
         val result = useCase("New")
-        verifyOrder {
-            repository.shiftAllPositionsUp()
-            repository.add(result)
-        }
+        verify { repository.addAtTop(result) }
     }
 }

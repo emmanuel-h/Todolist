@@ -34,7 +34,7 @@ class CreateTodoListUseCaseTest {
     @Test
     fun `should add list to repository when name is valid`() {
         val result = useCase("Groceries")
-        verify { repository.add(result) }
+        verify { repository.addAtTop(result) }
     }
 
     @Test(expected = IllegalArgumentException::class)

@@ -8,33 +8,28 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
 
     override fun getAll(): List<TodoList> =
         dao.getAll().map { entity ->
-            TodoList(
-                entity.id,
-                entity.name,
-                entity.position,
-                entity.targetDate?.let { LocalDate.ofEpochDay(it) },
-                entity.dueDate?.let { LocalDate.ofEpochDay(it) }
-            )
+            val dueDate = entity.dueDate?.let { LocalDate.ofEpochDay(it) }
+            val targetDate = if (dueDate == null) entity.targetDate?.let { LocalDate.ofEpochDay(it) } else null
+            TodoList(entity.id, entity.name, entity.position, targetDate, dueDate)
         }
 
     override fun add(todoList: TodoList) {
-        dao.insert(TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay()))
+        dao.insert(toEntity(todoList))
     }
+
+    override fun addAtTop(todoList: TodoList) {
+        dao.insertAtTop(toEntity(todoList))
+    }
+
+    private fun toEntity(todoList: TodoList) =
+        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay())
 
     override fun delete(todoListId: String) {
         dao.deleteById(todoListId)
     }
 
-    override fun updateName(todoListId: String, name: String) {
-        dao.updateName(todoListId, name)
-    }
-
-    override fun updateTargetDate(todoListId: String, targetDate: LocalDate?) {
-        dao.updateTargetDate(todoListId, targetDate?.toEpochDay())
-    }
-
-    override fun updateDueDate(todoListId: String, dueDate: LocalDate?) {
-        dao.updateDueDate(todoListId, dueDate?.toEpochDay())
+    override fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?) {
+        dao.update(todoListId, name, targetDate?.toEpochDay(), dueDate?.toEpochDay())
     }
 
     override fun reorder(fromIndex: Int, toIndex: Int) {
@@ -43,12 +38,6 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
         if (sorted.isEmpty()) return
         val item = sorted.removeAt(fromIndex)
         sorted.add(toIndex, item)
-        for (position in sorted.indices) {
-            dao.updatePosition(sorted[position].id, position)
-        }
-    }
-
-    override fun shiftAllPositionsUp() {
-        dao.incrementAllPositions()
+        dao.updatePositions(sorted.map { it.id })
     }
 }

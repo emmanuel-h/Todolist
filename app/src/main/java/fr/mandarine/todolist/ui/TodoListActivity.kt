@@ -9,39 +9,35 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.textfield.TextInputEditText
 import fr.mandarine.todolist.R
-import fr.mandarine.todolist.data.RoomTodoRepository
-import fr.mandarine.todolist.data.TodoDatabase
+import fr.mandarine.todolist.TodoListApplication
 import fr.mandarine.todolist.domain.AddTodoUseCase
 import fr.mandarine.todolist.domain.DeleteTodoUseCase
 import fr.mandarine.todolist.domain.EditTodoUseCase
+import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
+import kotlinx.coroutines.launch
 
 class TodoListActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: TodoListViewModel
+    internal lateinit var viewModel: TodoListViewModel
     private lateinit var adapter: TodoListAdapter
     private lateinit var watermark: ImageView
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var itemTouchHelperInternal: ItemTouchHelper
-
-    internal val inlineAddEditTextInternal: TextInputEditText
-        get() {
-            for (i in 0 until recyclerViewInternal.childCount) {
-                val holder = recyclerViewInternal.getChildViewHolder(recyclerViewInternal.getChildAt(i))
-                if (holder is TodoListAdapter.InlineAddViewHolder) return holder.editText
-            }
-            error("InlineAdd ViewHolder not found — call layoutRecyclerView() before accessing this")
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,36 +51,35 @@ class TodoListActivity : AppCompatActivity() {
         val listName = intent.getStringExtra("LIST_NAME") ?: getString(R.string.app_name)
         supportActionBar?.title = listName
 
-        val db = TodoDatabase.getInstance(this)
-        val todoRepository = RoomTodoRepository(db.todoItemDao())
-        viewModel = TodoListViewModel(
-            AddTodoUseCase(todoRepository),
-            GetTodosUseCase(todoRepository),
-            ToggleTodoUseCase(todoRepository),
-            DeleteTodoUseCase(todoRepository),
-            EditTodoUseCase(todoRepository),
-            ReorderTodosUseCase(todoRepository),
-            listId = listId
-        )
+        val container = (application as TodoListApplication).container
+        val todoRepository = container.todoRepository
+        viewModel = ViewModelProvider(
+            this,
+            viewModelFactory {
+                TodoListViewModel(
+                    AddTodoUseCase(todoRepository),
+                    GetTodosUseCase(todoRepository),
+                    ToggleTodoUseCase(todoRepository),
+                    DeleteTodoUseCase(todoRepository),
+                    EditTodoUseCase(todoRepository),
+                    ReorderTodosUseCase(todoRepository),
+                    GetTodoListsUseCase(container.todoListRepository),
+                    listId = listId,
+                    dispatcher = container.databaseDispatcher
+                )
+            }
+        )[TodoListViewModel::class.java]
 
         watermark = findViewById(R.id.imageWatermark)
 
         adapter = TodoListAdapter(
-            onToggle = { todoId ->
-                applyAndRender { viewModel.toggleTodo(todoId) }
-            },
-            onDelete = { todoId ->
-                applyAndRender { viewModel.deleteTodo(todoId) }
-            },
-            onEdit = { todoId, newTitle ->
-                applyAndRender { viewModel.editTodo(todoId, newTitle) }
-            },
-            onStartDrag = { holder ->
-                itemTouchHelperInternal.startDrag(holder)
-            }
+            onToggle = { todoId -> viewModel.toggleTodo(todoId) },
+            onDelete = { todoId -> viewModel.deleteTodo(todoId) },
+            onEdit = { todoId, newTitle -> viewModel.editTodo(todoId, newTitle) },
+            onStartDrag = { holder -> itemTouchHelperInternal.startDrag(holder) }
         )
         adapter.onSubmitInlineAdd = { title ->
-            applyAndRender { viewModel.submitInlineInput(title) }
+            viewModel.submitInlineInput(title)
         }
 
         recyclerViewInternal = findViewById(R.id.recyclerView)
@@ -95,15 +90,16 @@ class TodoListActivity : AppCompatActivity() {
         itemTouchHelperInternal = ItemTouchHelper(buildDragCallback())
         itemTouchHelperInternal.attachToRecyclerView(recyclerViewInternal)
 
-        applyAndRender { viewModel.refresh() }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { renderState(it) }
+            }
+        }
     }
 
-    private fun applyAndRender(action: () -> Unit) {
-        AppExecutors.database.execute {
-            action()
-            val state = viewModel.state.value
-            runOnUiThread { renderState(state) }
-        }
+    override fun onResume() {
+        super.onResume()
+        viewModel.refresh()
     }
 
     private fun buildDragCallback(): ItemTouchHelper.Callback =
@@ -111,7 +107,7 @@ class TodoListActivity : AppCompatActivity() {
             ItemTouchHelper.UP or ItemTouchHelper.DOWN,
             0
         ) {
-            private var dragFromIndex: Int = RecyclerView.NO_ID.toInt()
+            private var dragFromIndex: Int = RecyclerView.NO_POSITION
 
             override fun getMovementFlags(
                 recyclerView: RecyclerView,
@@ -119,7 +115,7 @@ class TodoListActivity : AppCompatActivity() {
             ): Int {
                 if (viewHolder.itemViewType != TodoListAdapter.VIEW_TYPE_ITEM) return 0
                 val position = viewHolder.bindingAdapterPosition
-                if (position == RecyclerView.NO_ID.toInt()) return 0
+                if (position == RecyclerView.NO_POSITION) return 0
                 val isActive = position < adapter.activeItemCount()
                 return if (isActive) {
                     makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0)
@@ -139,7 +135,7 @@ class TodoListActivity : AppCompatActivity() {
                 if (toPos < 0 || toPos >= activeCount) return false
                 if (target.itemViewType != TodoListAdapter.VIEW_TYPE_ITEM) return false
                 adapter.moveItem(fromPos, toPos)
-                if (dragFromIndex == RecyclerView.NO_ID.toInt()) {
+                if (dragFromIndex == RecyclerView.NO_POSITION) {
                     dragFromIndex = fromPos
                 }
                 return true
@@ -148,17 +144,20 @@ class TodoListActivity : AppCompatActivity() {
             override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
                 super.onSelectedChanged(viewHolder, actionState)
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    dragFromIndex = viewHolder?.bindingAdapterPosition ?: RecyclerView.NO_ID.toInt()
+                    dragFromIndex = viewHolder?.bindingAdapterPosition ?: RecyclerView.NO_POSITION
                 }
             }
 
             override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                 super.clearView(recyclerView, viewHolder)
                 val toIndex = viewHolder.bindingAdapterPosition
-                if (dragFromIndex != RecyclerView.NO_ID.toInt() && toIndex != RecyclerView.NO_ID.toInt() && dragFromIndex != toIndex) {
-                    applyAndRender { viewModel.reorderTodos(dragFromIndex, toIndex) }
+                if (dragFromIndex != RecyclerView.NO_POSITION &&
+                    toIndex != RecyclerView.NO_POSITION &&
+                    dragFromIndex != toIndex
+                ) {
+                    viewModel.reorderTodos(dragFromIndex, toIndex)
                 }
-                dragFromIndex = RecyclerView.NO_ID.toInt()
+                dragFromIndex = RecyclerView.NO_POSITION
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
@@ -196,10 +195,6 @@ class TodoListActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
-    }
-
-    internal fun refreshListForTest() {
-        applyAndRender { viewModel.refresh() }
     }
 
     private inner class InsetItemDivider : RecyclerView.ItemDecoration() {
@@ -262,6 +257,7 @@ class TodoListActivity : AppCompatActivity() {
 
     private fun renderState(state: TodoListState) {
         when (state) {
+            is TodoListState.NotFound -> finish()
             is TodoListState.Empty -> {
                 adapter.submitList(emptyList(), emptyList())
                 watermark.alpha = 0.15f

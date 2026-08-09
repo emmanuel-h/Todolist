@@ -19,47 +19,46 @@ class EditTodoListUseCaseTargetDateTest {
     }
 
     @Test
-    fun `should call updateTargetDate with given date when target date is provided`() {
+    fun `should update with given target date when target date is provided`() {
         val targetDate = LocalDate.of(2027, 6, 22)
 
         useCase("list-1", "Groceries", targetDate)
 
-        verify { repository.updateTargetDate("list-1", targetDate) }
+        verify { repository.update("list-1", "Groceries", targetDate, null) }
     }
 
     @Test
-    fun `should call updateTargetDate with null when target date is null`() {
+    fun `should update with null target date when target date is null`() {
         useCase("list-1", "Groceries", null)
 
-        verify { repository.updateTargetDate("list-1", null) }
+        verify { repository.update("list-1", "Groceries", null, null) }
     }
 
     @Test
-    fun `should call both updateName and updateTargetDate when editing a list`() {
+    fun `should update name and target date in a single repository call`() {
         val targetDate = LocalDate.of(2027, 6, 22)
 
         useCase("list-1", "Groceries", targetDate)
 
-        verify { repository.updateName("list-1", "Groceries") }
-        verify { repository.updateTargetDate("list-1", targetDate) }
+        verify(exactly = 1) { repository.update("list-1", "Groceries", targetDate, null) }
     }
 
     @Test
-    fun `should call updateTargetDate with another id and date`() {
+    fun `should update with another id and date`() {
         val targetDate = LocalDate.of(2026, 1, 15)
 
         useCase("list-42", "Work", targetDate)
 
-        verify { repository.updateTargetDate("list-42", targetDate) }
+        verify { repository.update("list-42", "Work", targetDate, null) }
     }
 
     @Test
-    fun `should not call updateTargetDate when name is blank`() {
+    fun `should not update when name is blank`() {
         val targetDate = LocalDate.of(2027, 1, 1)
 
         runCatching { useCase("list-1", "   ", targetDate) }
 
-        verify(exactly = 0) { repository.updateTargetDate(any(), any()) }
+        verify(exactly = 0) { repository.update("list-1", "   ", targetDate, null) }
     }
 
     @Test

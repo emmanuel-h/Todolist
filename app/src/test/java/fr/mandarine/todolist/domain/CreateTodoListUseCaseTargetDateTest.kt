@@ -48,7 +48,7 @@ class CreateTodoListUseCaseTargetDateTest {
 
         val result = useCase("Groceries", targetDate)
 
-        verify { repository.add(result) }
+        verify { repository.addAtTop(result) }
     }
 
     @Test

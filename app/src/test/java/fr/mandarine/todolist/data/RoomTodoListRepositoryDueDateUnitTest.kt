@@ -22,28 +22,28 @@ class RoomTodoListRepositoryDueDateUnitTest {
     }
 
     @Test
-    fun `should call dao updateDueDate with epoch day when updateDueDate is called with a date`() {
+    fun `should call dao update with epoch day when update is called with a date`() {
         val dueDate = LocalDate.of(2027, 6, 22)
 
-        repository.updateDueDate("1", dueDate)
+        repository.update("1", "Groceries", null, dueDate)
 
-        verify { dao.updateDueDate("1", dueDate.toEpochDay()) }
+        verify { dao.update("1", "Groceries", null, dueDate.toEpochDay()) }
     }
 
     @Test
-    fun `should call dao updateDueDate with null when updateDueDate is called with null`() {
-        repository.updateDueDate("1", null)
+    fun `should call dao update with null when update is called with null`() {
+        repository.update("1", "Groceries", null, null)
 
-        verify { dao.updateDueDate("1", null) }
+        verify { dao.update("1", "Groceries", null, null) }
     }
 
     @Test
-    fun `should call dao updateDueDate with another id and date`() {
+    fun `should call dao update with another id and date`() {
         val dueDate = LocalDate.of(2026, 1, 15)
 
-        repository.updateDueDate("list-42", dueDate)
+        repository.update("list-42", "Work", null, dueDate)
 
-        verify { dao.updateDueDate("list-42", dueDate.toEpochDay()) }
+        verify { dao.update("list-42", "Work", null, dueDate.toEpochDay()) }
     }
 
     @Test
@@ -79,5 +79,19 @@ class RoomTodoListRepositoryDueDateUnitTest {
         repository.add(TodoList("1", "Groceries"))
 
         verify { dao.insert(TodoListEntity("1", "Groceries", 0, null, null)) }
+    }
+
+    @Test
+    fun `should drop targetDate and keep dueDate when entity has both dates set`() {
+        val targetDate = LocalDate.of(2027, 6, 22)
+        val dueDate = LocalDate.of(2027, 7, 1)
+        every { dao.getAll() } returns listOf(
+            TodoListEntity("1", "Groceries", 0, targetDate.toEpochDay(), dueDate.toEpochDay())
+        )
+
+        val result = repository.getAll()
+
+        assertNull(result[0].targetDate)
+        assertEquals(dueDate, result[0].dueDate)
     }
 }

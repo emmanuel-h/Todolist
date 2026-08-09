@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.domain
 
+import fr.mandarine.todolist.FakeClock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,7 +11,7 @@ class ComputePendingNotificationsUseCaseTest {
     private val today = LocalDate.of(2026, 6, 15)
     private val tomorrow = today.plusDays(1)
     private val yesterday = today.minusDays(1)
-    private val clock = Clock { today.toEpochDay() * 86_400_000L }
+    private val clock = FakeClock(todayDate = today)
     private val useCase = ComputePendingNotificationsUseCase(clock)
 
     @Test

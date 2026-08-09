@@ -19,56 +19,37 @@ class EditTodoListUseCaseDueDateTest {
     }
 
     @Test
-    fun `should call updateDueDate with given date when due date is provided`() {
+    fun `should update with given due date when due date is provided`() {
         val dueDate = LocalDate.of(2027, 6, 22)
 
         useCase("list-1", "Groceries", targetDate = null, dueDate = dueDate)
 
-        verify { repository.updateDueDate("list-1", dueDate) }
+        verify { repository.update("list-1", "Groceries", null, dueDate) }
     }
 
     @Test
-    fun `should call updateDueDate with null when due date is null`() {
+    fun `should update with null due date when due date is null`() {
         useCase("list-1", "Groceries", targetDate = null, dueDate = null)
 
-        verify { repository.updateDueDate("list-1", null) }
+        verify { repository.update("list-1", "Groceries", null, null) }
     }
 
     @Test
-    fun `should call updateName and updateDueDate when editing with due date`() {
-        val dueDate = LocalDate.of(2027, 6, 22)
-
-        useCase("list-1", "Groceries", targetDate = null, dueDate = dueDate)
-
-        verify { repository.updateName("list-1", "Groceries") }
-        verify { repository.updateDueDate("list-1", dueDate) }
-    }
-
-    @Test
-    fun `should call updateTargetDate with null when due date is provided`() {
-        val dueDate = LocalDate.of(2027, 6, 22)
-
-        useCase("list-1", "Groceries", targetDate = null, dueDate = dueDate)
-
-        verify { repository.updateTargetDate("list-1", null) }
-    }
-
-    @Test
-    fun `should call updateDueDate with null when target date is provided`() {
+    fun `should clear due date when target date is provided`() {
         val targetDate = LocalDate.of(2027, 6, 22)
 
         useCase("list-1", "Groceries", targetDate = targetDate, dueDate = null)
 
-        verify { repository.updateDueDate("list-1", null) }
+        verify { repository.update("list-1", "Groceries", targetDate, null) }
     }
 
     @Test
-    fun `should call updateDueDate with another id and date`() {
+    fun `should update with another id and due date`() {
         val dueDate = LocalDate.of(2026, 1, 15)
 
         useCase("list-42", "Work", targetDate = null, dueDate = dueDate)
 
-        verify { repository.updateDueDate("list-42", dueDate) }
+        verify { repository.update("list-42", "Work", null, dueDate) }
     }
 
     @Test
@@ -82,12 +63,12 @@ class EditTodoListUseCaseDueDateTest {
     }
 
     @Test
-    fun `should not call updateDueDate when name is blank`() {
+    fun `should not update when name is blank`() {
         val dueDate = LocalDate.of(2027, 1, 1)
 
         runCatching { useCase("list-1", "   ", targetDate = null, dueDate = dueDate) }
 
-        verify(exactly = 0) { repository.updateDueDate(any(), any()) }
+        verify(exactly = 0) { repository.update("list-1", "   ", null, dueDate) }
     }
 
     @Test
@@ -98,20 +79,19 @@ class EditTodoListUseCaseDueDateTest {
     }
 
     @Test
-    fun `should not call repository when both target date and due date are non-null`() {
+    fun `should not update when both target date and due date are non-null`() {
         val targetDate = LocalDate.of(2027, 6, 22)
         val dueDate = LocalDate.of(2027, 7, 1)
 
         runCatching { useCase("list-1", "Groceries", targetDate = targetDate, dueDate = dueDate) }
 
-        verify(exactly = 0) { repository.updateDueDate(any(), any()) }
-        verify(exactly = 0) { repository.updateTargetDate(any(), any()) }
+        verify(exactly = 0) { repository.update("list-1", "Groceries", targetDate, dueDate) }
     }
 
     @Test
     fun `should use null as default due date when not provided`() {
         useCase("list-1", "Groceries", targetDate = null)
 
-        verify { repository.updateDueDate("list-1", null) }
+        verify { repository.update("list-1", "Groceries", null, null) }
     }
 }

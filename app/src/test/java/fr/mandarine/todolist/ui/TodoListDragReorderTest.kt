@@ -33,7 +33,7 @@ class TodoListDragReorderTest {
 
     @Before
     fun setUp() {
-        db = TodoDatabase.getInstance(ApplicationProvider.getApplicationContext())
+        db = databaseRule.database
         db.todoListDao().insert(TodoListEntity("test-list-id", "Test List"))
     }
 

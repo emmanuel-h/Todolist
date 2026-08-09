@@ -13,8 +13,7 @@ class CreateTodoListUseCase(
             "A list cannot have both a target date and a due date"
         }
         val todoList = TodoList(id = generateId(), name = name, position = 0, targetDate = targetDate, dueDate = dueDate)
-        repository.shiftAllPositionsUp()
-        repository.add(todoList)
+        repository.addAtTop(todoList)
         return todoList
     }
 }

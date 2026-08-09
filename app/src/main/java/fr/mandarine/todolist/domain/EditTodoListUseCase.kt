@@ -8,8 +8,6 @@ class EditTodoListUseCase(private val repository: TodoListRepository) {
         require(targetDate == null || dueDate == null) {
             "A list cannot have both a target date and a due date"
         }
-        repository.updateName(todoListId, name)
-        repository.updateTargetDate(todoListId, targetDate)
-        repository.updateDueDate(todoListId, dueDate)
+        repository.update(todoListId, name, targetDate, dueDate)
     }
 }
