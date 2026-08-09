@@ -6,4 +6,7 @@
     <dimen name="inline_add_leading_spacer">44dp</dimen>
     <!-- Collapsed ghost-row height — slimmer than the full 56dp item row. -->
     <dimen name="inline_add_ghost_height">40dp</dimen>
+    <!-- Horizontal inset that caps list content width on large screens so rows
+         stay readable instead of stretching edge to edge. Zero on handsets. -->
+    <dimen name="list_horizontal_inset">0dp</dimen>
 </resources>

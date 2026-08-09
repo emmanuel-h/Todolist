@@ -43,6 +43,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
+                android:paddingStart="@dimen/list_horizontal_inset"
+                android:paddingEnd="@dimen/list_horizontal_inset"
                 android:paddingTop="8dp"
                 android:paddingBottom="88dp" />
 
