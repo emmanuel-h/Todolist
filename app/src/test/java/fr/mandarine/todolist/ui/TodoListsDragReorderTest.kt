@@ -1,5 +1,7 @@
 package fr.mandarine.todolist.ui
 
+import fr.mandarine.todolist.MainThreadDatabaseRule
+import org.junit.Rule
 import android.view.View
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
@@ -19,6 +21,9 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class TodoListsDragReorderTest {
+
+    @get:Rule
+    val databaseRule = MainThreadDatabaseRule()
 
     private lateinit var db: TodoDatabase
 

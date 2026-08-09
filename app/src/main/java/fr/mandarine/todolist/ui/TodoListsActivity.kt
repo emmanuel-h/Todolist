@@ -127,8 +127,7 @@ class TodoListsActivity : AppCompatActivity() {
                 super.clearView(rv, viewHolder)
                 val to = viewHolder.bindingAdapterPosition
                 if (dragFromIndex >= 0 && dragFromIndex != to) {
-                    viewModel.reorderLists(dragFromIndex, to)
-                    refreshLists()
+                    applyAndRender { viewModel.reorderLists(dragFromIndex, to) }
                 }
                 dragFromIndex = -1
             }
@@ -181,11 +180,10 @@ class TodoListsActivity : AppCompatActivity() {
         fun trySubmit() {
             val name = editText.text?.toString().orEmpty()
             if (name.isBlank()) return
-            viewModel.createList(name, selectedInlineDate, selectedInlineDueDate)
+            applyAndRender { viewModel.createList(name, selectedInlineDate, selectedInlineDueDate) }
             resetInlineDateButtons()
             editText.text?.clear()
             hideInlineAddRow()
-            refreshLists()
         }
 
         editText.setOnEditorActionListener { _, actionId, event ->
@@ -348,8 +346,7 @@ class TodoListsActivity : AppCompatActivity() {
         dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
             val newName = input.text.toString()
             if (newName.isNotBlank()) {
-                viewModel.editList(list.id, newName, selectedRenameDate, selectedRenameDueDate)
-                refreshLists()
+                applyAndRender { viewModel.editList(list.id, newName, selectedRenameDate, selectedRenameDueDate) }
                 dialog.dismiss()
             }
         }
@@ -397,8 +394,7 @@ class TodoListsActivity : AppCompatActivity() {
             .setView(dialogView)
             .create()
         dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
-            viewModel.deleteList(list.id)
-            refreshLists()
+            applyAndRender { viewModel.deleteList(list.id) }
             dialog.dismiss()
         }
         dialogView.findViewById<MaterialButton>(R.id.btnDialogCancel).setOnClickListener {
@@ -446,8 +442,7 @@ class TodoListsActivity : AppCompatActivity() {
     }
 
     internal fun commitReorderForTest(fromIndex: Int, toIndex: Int) {
-        viewModel.reorderLists(fromIndex, toIndex)
-        refreshLists()
+        applyAndRender { viewModel.reorderLists(fromIndex, toIndex) }
     }
 
     internal fun setInlineDateForTest(date: LocalDate?) {
@@ -508,13 +503,11 @@ class TodoListsActivity : AppCompatActivity() {
     }
 
     internal fun createListWithDateForTest(name: String, date: LocalDate?) {
-        viewModel.createList(name, date)
-        refreshLists()
+        applyAndRender { viewModel.createList(name, date) }
     }
 
     internal fun createListWithDueDateForTest(name: String, dueDate: LocalDate?) {
-        viewModel.createList(name, null, dueDate)
-        refreshLists()
+        applyAndRender { viewModel.createList(name, null, dueDate) }
     }
 
     private fun openList(list: TodoList) {
@@ -525,7 +518,19 @@ class TodoListsActivity : AppCompatActivity() {
     }
 
     private fun refreshLists() {
-        when (val s = viewModel.state) {
+        applyAndRender { }
+    }
+
+    private fun applyAndRender(action: () -> Unit) {
+        AppExecutors.database.execute {
+            action()
+            val state = viewModel.state
+            runOnUiThread { renderLists(state) }
+        }
+    }
+
+    private fun renderLists(state: TodoListsState) {
+        when (val s = state) {
             is TodoListsState.Empty -> {
                 adapter.submitList(emptyList(), emptyList())
                 if (inlineAddRowInternal.visibility != View.VISIBLE) {

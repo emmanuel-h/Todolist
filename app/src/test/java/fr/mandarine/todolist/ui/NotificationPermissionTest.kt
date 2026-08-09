@@ -1,5 +1,7 @@
 package fr.mandarine.todolist.ui
 
+import fr.mandarine.todolist.MainThreadDatabaseRule
+import org.junit.Rule
 import android.Manifest
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -15,6 +17,9 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NotificationPermissionTest {
+
+    @get:Rule
+    val databaseRule = MainThreadDatabaseRule()
 
     @Test
     fun `should request POST_NOTIFICATIONS permission on Android 13+ when not yet granted`() {

@@ -18,8 +18,12 @@ class TodoListViewModel(
     private val reorderTodosUseCase: ReorderTodosUseCase,
     private val listId: String
 ) {
-    private val _state = MutableStateFlow(buildState())
+    private val _state = MutableStateFlow<TodoListState>(TodoListState.Empty)
     val state: StateFlow<TodoListState> = _state
+
+    fun refresh() {
+        _state.value = buildState()
+    }
 
     fun addTodo(title: String) {
         addTodoUseCase(title, listId)

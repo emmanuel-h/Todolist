@@ -71,24 +71,20 @@ class TodoListActivity : AppCompatActivity() {
 
         adapter = TodoListAdapter(
             onToggle = { todoId ->
-                viewModel.toggleTodo(todoId)
-                renderState(viewModel.state.value)
+                applyAndRender { viewModel.toggleTodo(todoId) }
             },
             onDelete = { todoId ->
-                viewModel.deleteTodo(todoId)
-                renderState(viewModel.state.value)
+                applyAndRender { viewModel.deleteTodo(todoId) }
             },
             onEdit = { todoId, newTitle ->
-                viewModel.editTodo(todoId, newTitle)
-                renderState(viewModel.state.value)
+                applyAndRender { viewModel.editTodo(todoId, newTitle) }
             },
             onStartDrag = { holder ->
                 itemTouchHelperInternal.startDrag(holder)
             }
         )
         adapter.onSubmitInlineAdd = { title ->
-            viewModel.submitInlineInput(title)
-            renderState(viewModel.state.value)
+            applyAndRender { viewModel.submitInlineInput(title) }
         }
 
         recyclerViewInternal = findViewById(R.id.recyclerView)
@@ -99,7 +95,15 @@ class TodoListActivity : AppCompatActivity() {
         itemTouchHelperInternal = ItemTouchHelper(buildDragCallback())
         itemTouchHelperInternal.attachToRecyclerView(recyclerViewInternal)
 
-        renderState(viewModel.state.value)
+        applyAndRender { viewModel.refresh() }
+    }
+
+    private fun applyAndRender(action: () -> Unit) {
+        AppExecutors.database.execute {
+            action()
+            val state = viewModel.state.value
+            runOnUiThread { renderState(state) }
+        }
     }
 
     private fun buildDragCallback(): ItemTouchHelper.Callback =
@@ -152,8 +156,7 @@ class TodoListActivity : AppCompatActivity() {
                 super.clearView(recyclerView, viewHolder)
                 val toIndex = viewHolder.bindingAdapterPosition
                 if (dragFromIndex != RecyclerView.NO_ID.toInt() && toIndex != RecyclerView.NO_ID.toInt() && dragFromIndex != toIndex) {
-                    viewModel.reorderTodos(dragFromIndex, toIndex)
-                    renderState(viewModel.state.value)
+                    applyAndRender { viewModel.reorderTodos(dragFromIndex, toIndex) }
                 }
                 dragFromIndex = RecyclerView.NO_ID.toInt()
             }
@@ -196,7 +199,7 @@ class TodoListActivity : AppCompatActivity() {
     }
 
     internal fun refreshListForTest() {
-        renderState(viewModel.state.value)
+        applyAndRender { viewModel.refresh() }
     }
 
     private inner class InsetItemDivider : RecyclerView.ItemDecoration() {

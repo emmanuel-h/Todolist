@@ -42,6 +42,7 @@ class TodoListViewModelReorderTest {
             reorderTodosUseCase,
             listId = "list-1"
         )
+        viewModel.refresh()
     }
 
     @Test

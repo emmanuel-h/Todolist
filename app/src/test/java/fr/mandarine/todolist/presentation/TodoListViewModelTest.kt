@@ -44,6 +44,7 @@ class TodoListViewModelTest {
             reorderTodosUseCase,
             listId = "list-1"
         )
+        viewModel.refresh()
     }
 
     @Test
@@ -58,6 +59,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         assertTrue(viewModel.state.value is TodoListState.Content)
     }
@@ -69,6 +71,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(items, content.activeItems)
@@ -83,6 +86,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(active), content.activeItems)
@@ -97,6 +101,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(second, first), content.completedItems)
@@ -110,6 +115,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         val content = viewModel.state.value as TodoListState.Content
         assertTrue(content.activeItems.isEmpty())
@@ -123,6 +129,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals("list-1", content.activeItems.first().listId)
@@ -207,6 +214,7 @@ class TodoListViewModelTest {
         viewModel = TodoListViewModel(
             addTodoUseCase, getTodosUseCase, toggleTodoUseCase, deleteTodoUseCase, editTodoUseCase, reorderTodosUseCase, listId = "list-1"
         )
+        viewModel.refresh()
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(item1, item2, item3), content.activeItems)

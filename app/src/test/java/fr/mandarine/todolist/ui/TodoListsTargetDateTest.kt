@@ -1,5 +1,7 @@
 package fr.mandarine.todolist.ui
 
+import fr.mandarine.todolist.MainThreadDatabaseRule
+import org.junit.Rule
 import android.content.Context
 import android.util.TypedValue
 import android.view.ContextThemeWrapper
@@ -33,6 +35,9 @@ import java.util.Locale
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class TodoListsTargetDateTest {
+
+    @get:Rule
+    val databaseRule = MainThreadDatabaseRule()
 
     private lateinit var adapter: TodoListsAdapter
     private lateinit var themedContext: Context
