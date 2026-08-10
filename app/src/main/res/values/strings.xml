@@ -35,6 +35,4 @@
     <string name="set_due_date">Set due date</string>
     <string name="clear_due_date">Clear due date</string>
     <string name="notification_channel_name">Reminders</string>
-    <string name="notification_due_today">Due today</string>
-    <string name="notification_target_tomorrow">Scheduled for tomorrow</string>
 </resources>

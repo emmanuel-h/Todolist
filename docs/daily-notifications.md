@@ -30,7 +30,7 @@ At 08:00 every morning the app fires one Android notification per list whose due
 - `app/src/main/java/fr/mandarine/todolist/ui/TodoListsActivity.kt` — schedules first daily alarm in `onCreate`; requests `POST_NOTIFICATIONS` once on API 33+
 - `app/src/main/AndroidManifest.xml` — declares both receivers, `RECEIVE_BOOT_COMPLETED` and `POST_NOTIFICATIONS` uses-permission, `SCHEDULE_EXACT_ALARM`
 - `app/src/main/res/drawable/ic_checklist.xml` — removed `android:tint="?attr/…"` from vector root so the drawable is safe as a notification small icon
-- `app/src/main/res/values/strings.xml` — added `notification_channel_name`, `notification_due_today`, `notification_target_tomorrow`
+- `app/src/main/res/values/strings.xml` — added `notification_channel_name` (the channel is the only place a localized word appears; notification bodies are language-free)
 - `app/build.gradle.kts` — extended Pitest `--excludedClasses` / `--excludedTestClasses` for the four Android-framework data classes
 - `docs/SPEC.md` — daily notifications section added; "Reminders or notifications" removed from "Out of scope"
 - `app/src/test/java/fr/mandarine/todolist/domain/ComputePendingNotificationsUseCaseTest.kt` — 10 tests; due-date-today, target-date-tomorrow, boundary edge cases
@@ -52,6 +52,7 @@ At 08:00 every morning the app fires one Android notification per list whose due
 - The `AndroidNotificationScheduler` uses `setAndAllowWhileIdle` (not `setExact`) so the alarm fires even in Doze mode, at the cost of potentially a few minutes of drift.
 - The data-layer classes (`AndroidListNotifier`, `AndroidNotificationScheduler`, `BootCompletedReceiver`, `DailyNotificationReceiver`) are excluded from Pitest because they depend on Android framework singletons that cannot be replaced without instrumented tests.
 - `POST_NOTIFICATIONS` is requested at most once; if denied the app never re-requests and shows no rationale UI, in keeping with the icon-only UI rule.
+- The notification body contains no words: ⏰ + the due date for `DueDateToday`, 📅 + the target date for `TargetDateTomorrow`, with the date rendered through `DateFormat.getBestDateTimePattern(locale, "dM")` so day/month order follows the device's format locale.
 
 ## UI
 - **Screen(s)**: `TodoListsActivity` (permission request + initial alarm scheduling only; no new UI elements)

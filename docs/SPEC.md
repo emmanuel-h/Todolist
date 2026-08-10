@@ -227,10 +227,14 @@ There is no checkbox. The strikethrough + 50% alpha is the sole visual indicator
 
 Every day at 08:00 the app posts one Android notification per list that qualifies:
 
-| Condition | Notification text |
+| Condition | Notification body |
 |-----------|-------------------|
-| List has a **due date set to today** | "Due today" |
-| List has a **target date set to tomorrow** | "Scheduled for tomorrow" |
+| List has a **due date set to today** | ⏰ followed by the due date in the locale's numeric day/month order (e.g. "⏰ 10/08") |
+| List has a **target date set to tomorrow** | 📅 followed by the target date in the locale's numeric day/month order (e.g. "📅 11/08") |
+
+The body contains no words in any language — the emoji mirrors the in-app iconography
+(alarm = due date, calendar = target date) and the date is formatted via
+`DateFormat.getBestDateTimePattern` with the `dM` skeleton for the device's format locale.
 
 - Each notification's title is the list name; tapping it deep-links into that list's screen
   with the lists screen beneath it in the back stack (`TaskStackBuilder` with the manifest parent).

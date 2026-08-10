@@ -10,6 +10,7 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.TodoListActivity
 import fr.mandarine.todolist.ui.TodoListsActivity
 import java.time.LocalDate
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -87,29 +88,49 @@ class AndroidListNotifierTest {
     }
 
     @Test
-    fun `should use due-today text for DueDateToday notification`() {
-        val list = TodoList("list-1", "Work", dueDate = LocalDate.now())
+    fun `should show alarm emoji with numeric due date for DueDateToday notification`() {
+        withLocale(Locale.US) {
+            val list = TodoList("list-1", "Work", dueDate = LocalDate.of(2026, 8, 10))
 
-        notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+            notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
 
-        val notification = shadowOf(notificationManager).getNotification("list-1", AndroidListNotifier.NOTIFICATION_ID)
-        assertEquals(
-            application.getString(fr.mandarine.todolist.R.string.notification_due_today),
-            notification.extras.getString(Notification.EXTRA_TEXT)
-        )
+            val notification = shadowOf(notificationManager).getNotification("list-1", AndroidListNotifier.NOTIFICATION_ID)
+            assertEquals("⏰ 8/10", notification.extras.getString(Notification.EXTRA_TEXT))
+        }
     }
 
     @Test
-    fun `should use target-tomorrow text for TargetDateTomorrow notification`() {
-        val list = TodoList("list-2", "Plans", targetDate = LocalDate.now().plusDays(1))
+    fun `should show calendar emoji with numeric target date for TargetDateTomorrow notification`() {
+        withLocale(Locale.US) {
+            val list = TodoList("list-2", "Plans", targetDate = LocalDate.of(2026, 8, 11))
 
-        notifier.postNotifications(listOf(ListNotification.TargetDateTomorrow(list)))
+            notifier.postNotifications(listOf(ListNotification.TargetDateTomorrow(list)))
 
-        val notification = shadowOf(notificationManager).getNotification("list-2", AndroidListNotifier.NOTIFICATION_ID)
-        assertEquals(
-            application.getString(fr.mandarine.todolist.R.string.notification_target_tomorrow),
-            notification.extras.getString(Notification.EXTRA_TEXT)
-        )
+            val notification = shadowOf(notificationManager).getNotification("list-2", AndroidListNotifier.NOTIFICATION_ID)
+            assertEquals("📅 8/11", notification.extras.getString(Notification.EXTRA_TEXT))
+        }
+    }
+
+    @Test
+    fun `should order day before month in notification date when format locale does`() {
+        withLocale(Locale.FRANCE) {
+            val list = TodoList("list-1", "Travail", dueDate = LocalDate.of(2026, 8, 10))
+
+            notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
+
+            val notification = shadowOf(notificationManager).getNotification("list-1", AndroidListNotifier.NOTIFICATION_ID)
+            assertEquals("⏰ 10/08", notification.extras.getString(Notification.EXTRA_TEXT))
+        }
+    }
+
+    private fun withLocale(locale: Locale, block: () -> Unit) {
+        val previous = Locale.getDefault(Locale.Category.FORMAT)
+        Locale.setDefault(Locale.Category.FORMAT, locale)
+        try {
+            block()
+        } finally {
+            Locale.setDefault(Locale.Category.FORMAT, previous)
+        }
     }
 
     @Test

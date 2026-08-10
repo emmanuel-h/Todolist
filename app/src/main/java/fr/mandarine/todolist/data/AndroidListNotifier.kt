@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.text.format.DateFormat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -13,6 +14,8 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.ListNotification
 import fr.mandarine.todolist.domain.ListNotifier
 import fr.mandarine.todolist.ui.TodoListActivity
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class AndroidListNotifier(private val context: Context) : ListNotifier {
 
@@ -47,15 +50,24 @@ class AndroidListNotifier(private val context: Context) : ListNotifier {
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_checklist)
             .setContentTitle(list.name)
-            .setContentText(context.getString(notificationText(notification)))
+            .setContentText(contentText(notification))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
     }
 
-    private fun notificationText(notification: ListNotification): Int = when (notification) {
-        is ListNotification.DueDateToday -> R.string.notification_due_today
-        is ListNotification.TargetDateTomorrow -> R.string.notification_target_tomorrow
+    private fun contentText(notification: ListNotification): String {
+        val emoji = when (notification) {
+            is ListNotification.DueDateToday -> "⏰"
+            is ListNotification.TargetDateTomorrow -> "📅"
+        }
+        val date = when (notification) {
+            is ListNotification.DueDateToday -> requireNotNull(notification.list.dueDate)
+            is ListNotification.TargetDateTomorrow -> requireNotNull(notification.list.targetDate)
+        }
+        val locale = Locale.getDefault(Locale.Category.FORMAT)
+        val pattern = DateFormat.getBestDateTimePattern(locale, "dM")
+        return emoji + " " + date.format(DateTimeFormatter.ofPattern(pattern, locale))
     }
 
     companion object {
