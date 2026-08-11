@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config
 class TodoListsAdapterTest {
 
     private lateinit var onListClick: (TodoList) -> Unit
-    private lateinit var onDeleteClick: (TodoList) -> Unit
+    private lateinit var onDeleteConfirmed: (TodoList) -> Unit
     private lateinit var onRenameClick: (TodoList) -> Unit
     private lateinit var onDragStart: (androidx.recyclerview.widget.RecyclerView.ViewHolder) -> Unit
     private lateinit var adapter: TodoListsAdapter
@@ -37,12 +37,12 @@ class TodoListsAdapterTest {
     @Before
     fun setUp() {
         onListClick = mockk(relaxed = true)
-        onDeleteClick = mockk(relaxed = true)
+        onDeleteConfirmed = mockk(relaxed = true)
         onRenameClick = mockk(relaxed = true)
         onDragStart = mockk(relaxed = true)
         adapter = TodoListsAdapter(
             onListClick = onListClick,
-            onDeleteClick = onDeleteClick,
+            onDeleteConfirmed = onDeleteConfirmed,
             onRenameClick = onRenameClick,
             onDragStart = onDragStart
         )
@@ -263,7 +263,7 @@ class TodoListsAdapterTest {
     }
 
     @Test
-    fun `should invoke onDeleteClick with correct TodoList when delete button is clicked`() {
+    fun `should not invoke onDeleteConfirmed when delete button is clicked once`() {
         val list = TodoList("list-1", "Groceries")
         adapter.submitList(listOf(TodoListSummary(list, allDone = false)), emptyList())
         val holder = createItemHolder()
@@ -271,7 +271,112 @@ class TodoListsAdapterTest {
 
         holder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
 
-        verify { onDeleteClick(list) }
+        verify(exactly = 0) { onDeleteConfirmed(list) }
+    }
+
+    @Test
+    fun `should show confirm strip and hide row content when delete button is clicked`() {
+        val list = TodoList("list-1", "Groceries")
+        adapter.submitList(listOf(TodoListSummary(list, allDone = false)), emptyList())
+        val holder = createItemHolder()
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals(View.VISIBLE, holder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).visibility)
+        assertEquals(View.INVISIBLE, holder.itemView.findViewById<View>(R.id.layoutListRowContent).visibility)
+    }
+
+    @Test
+    fun `should show list name in delete confirm strip when armed`() {
+        val list = TodoList("list-1", "Groceries")
+        adapter.submitList(listOf(TodoListSummary(list, allDone = false)), emptyList())
+        val holder = createItemHolder()
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        adapter.onBindViewHolder(holder, 0)
+
+        val nameInStrip = holder.itemView.findViewById<MaterialTextView>(R.id.textDeleteConfirmName)
+        assertEquals("Groceries", nameInStrip.text.toString())
+    }
+
+    @Test
+    fun `should invoke onDeleteConfirmed with correct TodoList when confirm button is clicked after arming`() {
+        val list = TodoList("list-1", "Groceries")
+        adapter.submitList(listOf(TodoListSummary(list, allDone = false)), emptyList())
+        val holder = createItemHolder()
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        holder.itemView.findViewById<View>(R.id.btnDeleteConfirm).performClick()
+
+        verify { onDeleteConfirmed(list) }
+    }
+
+    @Test
+    fun `should hide confirm strip and keep list when cancel button is clicked after arming`() {
+        val list = TodoList("list-1", "Groceries")
+        adapter.submitList(listOf(TodoListSummary(list, allDone = false)), emptyList())
+        val holder = createItemHolder()
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        holder.itemView.findViewById<View>(R.id.btnDeleteCancel).performClick()
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals(View.GONE, holder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).visibility)
+        assertEquals(View.VISIBLE, holder.itemView.findViewById<View>(R.id.layoutListRowContent).visibility)
+        verify(exactly = 0) { onDeleteConfirmed(list) }
+    }
+
+    @Test
+    fun `should hide confirm strip when strip background is clicked after arming`() {
+        val list = TodoList("list-1", "Groceries")
+        adapter.submitList(listOf(TodoListSummary(list, allDone = false)), emptyList())
+        val holder = createItemHolder()
+        adapter.onBindViewHolder(holder, 0)
+
+        holder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        holder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).performClick()
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals(View.GONE, holder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).visibility)
+        verify(exactly = 0) { onDeleteConfirmed(list) }
+    }
+
+    @Test
+    fun `should disarm first row when delete button on another row is clicked`() {
+        val first = TodoList("list-1", "Groceries")
+        val second = TodoList("list-2", "Work")
+        adapter.submitList(
+            listOf(TodoListSummary(first, allDone = false), TodoListSummary(second, allDone = false)),
+            emptyList()
+        )
+        val firstHolder = createItemHolder()
+        adapter.onBindViewHolder(firstHolder, 0)
+        val secondHolder = createItemHolder()
+        adapter.onBindViewHolder(secondHolder, 1)
+
+        firstHolder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        secondHolder.itemView.findViewById<View>(R.id.btnDeleteList).performClick()
+        adapter.onBindViewHolder(firstHolder, 0)
+        adapter.onBindViewHolder(secondHolder, 1)
+
+        assertEquals(View.GONE, firstHolder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).visibility)
+        assertEquals(View.VISIBLE, secondHolder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).visibility)
+    }
+
+    @Test
+    fun `should do nothing when cancelDeleteConfirm is called while no row is armed`() {
+        adapter.submitList(listOf(activeSummary("1", "Groceries")), emptyList())
+
+        adapter.cancelDeleteConfirm()
+
+        val holder = createItemHolder()
+        adapter.onBindViewHolder(holder, 0)
+        assertEquals(View.GONE, holder.itemView.findViewById<View>(R.id.layoutDeleteConfirm).visibility)
     }
 
     @Test

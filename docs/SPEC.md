@@ -105,8 +105,12 @@ TodoListsActivity  ("My Lists")
 - The due date does not affect list sort order; overdue status is signalled by tint only
 
 **Delete a list**
-- Tap the delete icon on a row → confirmation dialog → on confirm, list and all its items
-  are permanently removed (no undo)
+- Tap the delete icon on a row → the row morphs in place into an error-tinted confirm strip
+  — no dialog; the list name stays visible in place and the cancel ✕ / confirm ✓ buttons
+  slide in from the right (24dp travel + fade, ✓ staggered 50ms behind ✕)
+- Confirm (✓) → list and all its items are permanently removed (no undo)
+- Cancel (✕) or a tap on the strip background reverts the row; arming a different row's
+  delete disarms the first
 
 **Reorder lists** — _not yet implemented · [#6](https://github.com/emmanuel-h/Todolist/issues/6)_
 - Long-press-and-drag a row to reorder

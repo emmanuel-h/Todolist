@@ -88,7 +88,7 @@ class TodoListsActivity : AppCompatActivity() {
 
         adapter = TodoListsAdapter(
             onListClick = { list -> openList(list) },
-            onDeleteClick = { list -> showDeleteConfirmation(list) },
+            onDeleteConfirmed = { list -> viewModel.deleteList(list.id) },
             onRenameClick = { list -> showRenameDialog(list) },
             onDragStart = { holder -> itemTouchHelperInternal?.startDrag(holder) }
         )
@@ -416,22 +416,6 @@ class TodoListsActivity : AppCompatActivity() {
             addIcon.visibility = View.VISIBLE
             clearButton.visibility = View.GONE
         }
-    }
-
-    private fun showDeleteConfirmation(list: TodoList) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_list, null)
-        currentDialogView = dialogView
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .create()
-        dialogView.findViewById<MaterialButton>(R.id.btnDialogConfirm).setOnClickListener {
-            viewModel.deleteList(list.id)
-            dialog.dismiss()
-        }
-        dialogView.findViewById<MaterialButton>(R.id.btnDialogCancel).setOnClickListener {
-            dialog.dismiss()
-        }
-        dialog.show()
     }
 
     private fun openList(list: TodoList) {

@@ -12,7 +12,7 @@ Strips all decorative and navigational text labels from both screens: the Screen
 - `app/src/main/res/layout/activity_todo_lists.xml` — removed AppBarLayout + MaterialToolbar entirely; empty-state icon enlarged from 72dp to 120dp; empty-state text views removed
 - `app/src/main/res/layout/activity_todo_list.xml` — empty-state icon enlarged from 72dp to 120dp; empty-state text views removed
 - `app/src/main/res/layout/dialog_create_list.xml` — replaced text confirm/cancel buttons with icon-only ImageButton views (check + close icons)
-- `app/src/main/res/layout/dialog_delete_list.xml` — new custom delete-list dialog layout with icon-only confirm (check) and cancel (close) buttons
+- `app/src/main/res/layout/item_todo_list.xml` — in-row delete confirm strip (`layoutDeleteConfirm`) with icon-only confirm (check) and cancel (close) buttons; replaced the earlier `dialog_delete_list.xml` dialog
 - `app/src/main/res/layout/dialog_edit_item.xml` — added `android:hint` to TextInputLayout for accessibility labelling (UI agent fix)
 - `app/src/main/res/drawable/ic_close.xml` — new close/cancel icon vector drawable
 - `app/src/main/res/values/strings.xml` — `completed_section_header` changed from `"Completed (%d)"` to `"%d"`; `add_item_ghost_hint` changed from "Add an item…" to "…"
@@ -29,10 +29,10 @@ Strips all decorative and navigational text labels from both screens: the Screen
 - Dialog confirm/cancel actions are `ImageButton` views, not `MaterialButton` text buttons; do not replace them with text-bearing buttons.
 - Empty states on both screens are icon-only (120dp illustration, no text views); do not add headline or subheadline text.
 - Ghost row hint is `"…"` — do not restore "Add an item…" or any other text.
-- The `dialog_delete_list.xml` layout must be inflated for delete confirmations; `MaterialAlertDialogBuilder` with default text buttons must not be used for list-level dialogs.
+- Delete confirmation is the in-row confirm strip in `item_todo_list.xml` (`layoutDeleteConfirm`), not a dialog; `MaterialAlertDialogBuilder` with default text buttons must not be used for list-level dialogs.
 - Internal test helpers (`openCreateDialogForTest`, `confirmDialogForTest`, `cancelCurrentDialogForTest`) exist on `TodoListsActivity` solely to allow unit tests to drive dialogs without Espresso button-id selectors; do not remove them.
 
 ## UI
 - **Screen(s)**: `TodoListsActivity`, `TodoListActivity`
-- **Layout file(s)**: `res/layout/activity_todo_lists.xml`, `res/layout/activity_todo_list.xml`, `res/layout/dialog_create_list.xml`, `res/layout/dialog_delete_list.xml`, `res/layout/dialog_edit_item.xml`
+- **Layout file(s)**: `res/layout/activity_todo_lists.xml`, `res/layout/activity_todo_list.xml`, `res/layout/dialog_create_list.xml`, `res/layout/item_todo_list.xml`, `res/layout/dialog_edit_item.xml`
 - **Design decisions**: Icon-only dialogs use a custom inflated view rather than the standard `MaterialAlertDialogBuilder` positive/negative button API, since that API only supports text labels. The 120dp empty-state icon size was chosen to remain visually prominent without text context. Removing the Screen 1 toolbar eliminates the "My Lists" string entirely while preserving the user's own list name on Screen 2 (user data, not a translated label).

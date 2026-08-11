@@ -37,4 +37,4 @@ The home screen shows all todo lists; the user can create a new list via a FAB d
 ## UI
 - **Screen(s)**: `TodoListsActivity` (launcher)
 - **Layout file(s)**: `res/layout/activity_todo_lists.xml`, `res/layout/item_todo_list.xml`, `res/layout/dialog_create_list.xml`
-- **Design decisions**: Delete is intentionally on long-press rather than a swipe to reduce accidental deletions; a confirmation dialog is shown before any list is removed.
+- **Design decisions**: Delete is intentionally on long-press rather than a swipe to reduce accidental deletions; the row morphs into an in-row confirm strip (✕ / ✓) before any list is removed.

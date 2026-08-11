@@ -27,7 +27,7 @@ class TodoListsAdapterCountTest {
     fun setUp() {
         adapter = TodoListsAdapter(
             onListClick = mockk(relaxed = true),
-            onDeleteClick = mockk(relaxed = true),
+            onDeleteConfirmed = mockk(relaxed = true),
             onRenameClick = mockk(relaxed = true),
             onDragStart = mockk(relaxed = true)
         )

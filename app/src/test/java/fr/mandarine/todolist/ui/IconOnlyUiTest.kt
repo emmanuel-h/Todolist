@@ -146,22 +146,22 @@ class IconOnlyUiTest {
     }
 
     @Test
-    fun `should have confirm icon button in delete list dialog layout`() {
+    fun `should have icon-only confirm button in list row delete confirm strip`() {
         val parent = FrameLayout(themedContext)
-        val dialogView = LayoutInflater.from(themedContext)
-            .inflate(R.layout.dialog_delete_list, parent, false)
+        val rowView = LayoutInflater.from(themedContext)
+            .inflate(R.layout.item_todo_list, parent, false)
 
-        val confirmBtn = dialogView.findViewById<android.view.View>(R.id.btnDialogConfirm)
-        assertNotNull("Expected btnDialogConfirm to exist in dialog_delete_list layout", confirmBtn)
+        val confirmBtn = rowView.findViewById<android.widget.ImageButton>(R.id.btnDeleteConfirm)
+        assertNotNull("Expected btnDeleteConfirm to exist in item_todo_list layout", confirmBtn)
     }
 
     @Test
-    fun `should have cancel icon button in delete list dialog layout`() {
+    fun `should have icon-only cancel button in list row delete confirm strip`() {
         val parent = FrameLayout(themedContext)
-        val dialogView = LayoutInflater.from(themedContext)
-            .inflate(R.layout.dialog_delete_list, parent, false)
+        val rowView = LayoutInflater.from(themedContext)
+            .inflate(R.layout.item_todo_list, parent, false)
 
-        val cancelBtn = dialogView.findViewById<android.view.View>(R.id.btnDialogCancel)
-        assertNotNull("Expected btnDialogCancel to exist in dialog_delete_list layout", cancelBtn)
+        val cancelBtn = rowView.findViewById<android.widget.ImageButton>(R.id.btnDeleteCancel)
+        assertNotNull("Expected btnDeleteCancel to exist in item_todo_list layout", cancelBtn)
     }
 }

@@ -107,7 +107,7 @@ class TodoListsActivityTest {
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
             }
-            deleteFirstListViaDialog(scenario)
+            deleteFirstListViaConfirmStrip(scenario)
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
                 assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
@@ -121,7 +121,8 @@ class TodoListsActivityTest {
             createListViaInlineRow(scenario, "Work")
             tapDeleteButtonOnFirstRow(scenario)
             scenario.onActivity { activity ->
-                activity.cancelCurrentDialogForTest()
+                activity.recyclerView().getChildAt(0)!!
+                    .findViewById<View>(R.id.btnDeleteCancel).performClick()
             }
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
@@ -303,10 +304,11 @@ class TodoListsActivityTest {
         }
     }
 
-    private fun deleteFirstListViaDialog(scenario: ActivityScenario<TodoListsActivity>) {
+    private fun deleteFirstListViaConfirmStrip(scenario: ActivityScenario<TodoListsActivity>) {
         tapDeleteButtonOnFirstRow(scenario)
         scenario.onActivity { activity ->
-            activity.confirmDialogForTest()
+            activity.recyclerView().getChildAt(0)!!
+                .findViewById<View>(R.id.btnDeleteConfirm).performClick()
         }
     }
 

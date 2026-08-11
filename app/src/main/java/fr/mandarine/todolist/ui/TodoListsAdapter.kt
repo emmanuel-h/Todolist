@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.DiffUtil
@@ -24,7 +25,7 @@ import java.util.Locale
 
 class TodoListsAdapter(
     private val onListClick: (TodoList) -> Unit,
-    private val onDeleteClick: (TodoList) -> Unit,
+    private val onDeleteConfirmed: (TodoList) -> Unit,
     private val onRenameClick: (TodoList) -> Unit,
     private val onDragStart: (RecyclerView.ViewHolder) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -37,6 +38,7 @@ class TodoListsAdapter(
     companion object {
         const val VIEW_TYPE_ITEM = 0
         const val VIEW_TYPE_DIVIDER = 2
+        private const val PAYLOAD_DELETE_CONFIRM = "delete-confirm"
 
         fun formatTargetDate(date: LocalDate, showYear: Boolean, locale: Locale): String {
             val skeleton = if (showYear) "EEEdMMMy" else "EEEdMMM"
@@ -46,6 +48,30 @@ class TodoListsAdapter(
     }
 
     private var rows: List<ListRow> = emptyList()
+    private var confirmingDeleteListId: String? = null
+
+    private fun armDeleteConfirm(list: TodoList) {
+        val previousId = confirmingDeleteListId
+        confirmingDeleteListId = list.id
+        previousId?.let { notifyRowChanged(it) }
+        notifyRowChanged(list.id)
+    }
+
+    fun cancelDeleteConfirm() {
+        val armedId = confirmingDeleteListId ?: return
+        confirmingDeleteListId = null
+        notifyRowChanged(armedId)
+    }
+
+    private fun confirmDelete(list: TodoList) {
+        confirmingDeleteListId = null
+        onDeleteConfirmed(list)
+    }
+
+    private fun notifyRowChanged(listId: String) {
+        val index = rows.indexOfFirst { it is ListRow.Item && it.summary.list.id == listId }
+        if (index >= 0) notifyItemChanged(index, PAYLOAD_DELETE_CONFIRM)
+    }
 
     fun submitList(activeSummaries: List<TodoListSummary>, doneSummaries: List<TodoListSummary>) {
         val newRows = buildRows(activeSummaries, doneSummaries)
@@ -119,9 +145,34 @@ class TodoListsAdapter(
             }
         }
 
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        val row = rows[position]
+        if (payloads.contains(PAYLOAD_DELETE_CONFIRM) && holder is ViewHolder && row is ListRow.Item) {
+            holder.applyDeleteConfirmState(
+                isConfirmingDelete = row.summary.list.id == confirmingDeleteListId,
+                animate = true
+            )
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
-            is ListRow.Item -> (holder as ViewHolder).bind(row.summary, onListClick, onDeleteClick, onRenameClick, onDragStart)
+            is ListRow.Item -> (holder as ViewHolder).bind(
+                row.summary,
+                row.summary.list.id == confirmingDeleteListId,
+                onListClick,
+                onRenameClick,
+                onDragStart,
+                onDeleteArm = ::armDeleteConfirm,
+                onDeleteCancel = ::cancelDeleteConfirm,
+                onDeleteConfirm = ::confirmDelete
+            )
             is ListRow.Divider -> (holder as DividerViewHolder).bind(row.doneCount)
         }
     }
@@ -133,6 +184,11 @@ class TodoListsAdapter(
         private val completedCountBadge: MaterialTextView = view.findViewById(R.id.badgeCompletedCount)
         private val deleteButton: MaterialButton = view.findViewById(R.id.btnDeleteList)
         private val editButton: MaterialButton = view.findViewById(R.id.btnEditList)
+        private val rowContent: View = view.findViewById(R.id.layoutListRowContent)
+        private val deleteConfirmStrip: View = view.findViewById(R.id.layoutDeleteConfirm)
+        private val deleteConfirmNameView: MaterialTextView = view.findViewById(R.id.textDeleteConfirmName)
+        private val deleteCancelButton: ImageButton = view.findViewById(R.id.btnDeleteCancel)
+        private val deleteConfirmButton: ImageButton = view.findViewById(R.id.btnDeleteConfirm)
         val dragHandle: ImageView = view.findViewById(R.id.dragHandleList)
         private val layoutTargetDate: LinearLayout = view.findViewById(R.id.layoutTargetDate)
         private val iconTargetDate: ImageView = view.findViewById(R.id.iconTargetDate)
@@ -143,18 +199,26 @@ class TodoListsAdapter(
 
         fun bind(
             summary: TodoListSummary,
+            isConfirmingDelete: Boolean,
             onListClick: (TodoList) -> Unit,
-            onDeleteClick: (TodoList) -> Unit,
             onRenameClick: (TodoList) -> Unit,
-            onDragStart: (RecyclerView.ViewHolder) -> Unit
+            onDragStart: (RecyclerView.ViewHolder) -> Unit,
+            onDeleteArm: (TodoList) -> Unit,
+            onDeleteCancel: () -> Unit,
+            onDeleteConfirm: (TodoList) -> Unit
         ) {
             val list = summary.list
             nameView.text = list.name
             activeCountBadge.text = summary.activeCount.toString()
             completedCountBadge.text = summary.completedCount.toString()
+            deleteConfirmNameView.text = list.name
+            applyDeleteConfirmState(isConfirmingDelete, animate = false)
             itemView.setOnClickListener { onListClick(list) }
             editButton.setOnClickListener { onRenameClick(list) }
-            deleteButton.setOnClickListener { onDeleteClick(list) }
+            deleteButton.setOnClickListener { onDeleteArm(list) }
+            deleteConfirmStrip.setOnClickListener { onDeleteCancel() }
+            deleteCancelButton.setOnClickListener { onDeleteCancel() }
+            deleteConfirmButton.setOnClickListener { onDeleteConfirm(list) }
             dragHandle.setOnTouchListener { _, event ->
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                     onDragStart(this)
@@ -200,6 +264,60 @@ class TodoListsAdapter(
             }
             iconDueDate.imageTintList = ColorStateList.valueOf(tint)
             textDueDate.setTextColor(tint)
+        }
+
+        fun applyDeleteConfirmState(isConfirmingDelete: Boolean, animate: Boolean) {
+            rowContent.visibility = if (isConfirmingDelete) View.INVISIBLE else View.VISIBLE
+            deleteConfirmStrip.animate().cancel()
+            if (isConfirmingDelete) {
+                deleteConfirmStrip.visibility = View.VISIBLE
+                if (animate) {
+                    deleteConfirmStrip.alpha = 0f
+                    deleteConfirmStrip.animate().alpha(1f).setDuration(150L).start()
+                    slideConfirmActionsIn()
+                } else {
+                    deleteConfirmStrip.alpha = 1f
+                    resetConfirmActions()
+                }
+            } else {
+                if (animate && deleteConfirmStrip.visibility == View.VISIBLE) {
+                    deleteConfirmStrip.animate()
+                        .alpha(0f)
+                        .setDuration(120L)
+                        .withEndAction {
+                            deleteConfirmStrip.visibility = View.GONE
+                            deleteConfirmStrip.alpha = 1f
+                        }
+                        .start()
+                } else {
+                    deleteConfirmStrip.visibility = View.GONE
+                    deleteConfirmStrip.alpha = 1f
+                }
+                resetConfirmActions()
+            }
+        }
+
+        private fun slideConfirmActionsIn() {
+            val travel = 24 * itemView.resources.displayMetrics.density
+            listOf(deleteCancelButton, deleteConfirmButton).forEachIndexed { index, button ->
+                button.animate().cancel()
+                button.translationX = travel
+                button.alpha = 0f
+                button.animate()
+                    .translationX(0f)
+                    .alpha(1f)
+                    .setStartDelay(index * 50L)
+                    .setDuration(200L)
+                    .start()
+            }
+        }
+
+        private fun resetConfirmActions() {
+            listOf(deleteCancelButton, deleteConfirmButton).forEach { button ->
+                button.animate().cancel()
+                button.translationX = 0f
+                button.alpha = 1f
+            }
         }
 
         private fun resolveColor(attr: Int): Int {

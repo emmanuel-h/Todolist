@@ -29,7 +29,7 @@ Replaces the modal dialog for new-list creation with an ephemeral inline entry r
 - The text field hint uses `"…"` (not a word); do not replace it with a label string.
 - The inline row background uses `?attr/colorSurfaceContainerHigh`; do not replace it with a hardcoded colour.
 - Button layout within the row is fixed as cancel-left, confirm-right; do not swap them.
-- `dialog_delete_list.xml` (icon-only delete confirmation) is unaffected — only list creation was changed.
+- Delete confirmation (the in-row confirm strip in `item_todo_list.xml`) is unaffected — only list creation was changed.
 
 ## UI
 - **Screen(s)**: `TodoListsActivity`
