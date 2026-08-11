@@ -157,34 +157,34 @@ class TodoListsInlineAddTest {
     }
 
     @Test
-    fun `should hide empty-state illustration when inline add is active`() {
+    fun `should keep prominent watermark when inline add is active with no lists`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.tapFab()
-                assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
+                assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
             }
         }
     }
 
     @Test
-    fun `should restore empty-state illustration after cancel when no lists exist`() {
+    fun `should keep prominent watermark after cancel when no lists exist`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.tapFab()
                 activity.cancelInlineRowForTest()
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
+                assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
             }
         }
     }
 
     @Test
-    fun `should not show empty-state after cancel when lists exist`() {
+    fun `should dim watermark after cancel when lists exist`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             createListViaInlineRow(scenario, "Work")
             scenario.onActivity { activity ->
                 activity.tapFab()
                 activity.cancelInlineRowForTest()
-                assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
+                assertEquals(0.08f, activity.findViewById<View>(R.id.imageWatermark).alpha)
             }
         }
     }

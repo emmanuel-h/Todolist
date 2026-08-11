@@ -46,7 +46,7 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
-    private lateinit var emptyLayout: View
+    private lateinit var watermark: ImageView
     private lateinit var fab: FloatingActionButton
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var inlineAddRowInternal: View
@@ -82,7 +82,7 @@ class TodoListsActivity : AppCompatActivity() {
             }
         )[TodoListsViewModel::class.java]
 
-        emptyLayout = findViewById(R.id.layoutEmptyLists)
+        watermark = findViewById(R.id.imageWatermark)
         fab = findViewById(R.id.fabAddList)
         inlineAddRowInternal = findViewById(R.id.inlineAddListRow)
 
@@ -287,7 +287,6 @@ class TodoListsActivity : AppCompatActivity() {
         val divider = findViewById<View>(R.id.inlineAddListDivider)
         divider.visibility = View.VISIBLE
         fab.visibility = View.GONE
-        emptyLayout.visibility = View.GONE
         val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
         editText.requestFocus()
         val imm = getSystemService(InputMethodManager::class.java)
@@ -446,13 +445,11 @@ class TodoListsActivity : AppCompatActivity() {
         when (val s = state) {
             is TodoListsState.Empty -> {
                 adapter.submitList(emptyList(), emptyList())
-                if (inlineAddRowInternal.visibility != View.VISIBLE) {
-                    emptyLayout.visibility = View.VISIBLE
-                }
+                watermark.alpha = 0.15f
             }
             is TodoListsState.Content -> {
                 adapter.submitList(s.activeSummaries, s.doneSummaries)
-                emptyLayout.visibility = View.GONE
+                watermark.alpha = 0.08f
             }
         }
     }

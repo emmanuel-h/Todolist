@@ -3,7 +3,6 @@ package fr.mandarine.todolist.ui
 import android.content.Context
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
@@ -108,14 +107,12 @@ class IconOnlyUiTest {
     }
 
     @Test
-    fun `should not contain any text views in the empty state of lists screen`() {
+    fun `should have a single watermark icon as the empty state of lists screen`() {
         val parent = FrameLayout(themedContext)
         val contentView = LayoutInflater.from(themedContext)
             .inflate(R.layout.activity_todo_lists, parent, false)
-        val emptyLayout = contentView.findViewById<ViewGroup>(R.id.layoutEmptyLists)
-
-        val textViewCount = countTextViews(emptyLayout)
-        assertEquals("Empty state in lists screen should have no visible text views", 0, textViewCount)
+        val watermark = contentView.findViewById<android.widget.ImageView>(R.id.imageWatermark)
+        assertNotNull("Watermark icon must exist in lists screen layout", watermark)
     }
 
     @Test
@@ -166,16 +163,5 @@ class IconOnlyUiTest {
 
         val cancelBtn = dialogView.findViewById<android.view.View>(R.id.btnDialogCancel)
         assertNotNull("Expected btnDialogCancel to exist in dialog_delete_list layout", cancelBtn)
-    }
-
-    private fun countTextViews(viewGroup: ViewGroup?): Int {
-        if (viewGroup == null) return 0
-        var count = 0
-        for (i in 0 until viewGroup.childCount) {
-            val child = viewGroup.getChildAt(i)
-            if (child is MaterialTextView) count++
-            if (child is ViewGroup) count += countTextViews(child)
-        }
-        return count
     }
 }

@@ -41,11 +41,11 @@ class TodoListsActivityTest {
     }
 
     @Test
-    fun `should show empty state when no lists have been created`() {
+    fun `should show prominent watermark when no lists have been created`() {
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
+                assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
             }
         }
     }
@@ -56,7 +56,7 @@ class TodoListsActivityTest {
             createListViaInlineRow(scenario, "Work")
             scenario.onActivity { activity ->
                 assertEquals(1, activity.recyclerView().adapter!!.itemCount)
-                assertEquals(View.GONE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
+                assertEquals(0.08f, activity.findViewById<View>(R.id.imageWatermark).alpha)
             }
         }
     }
@@ -110,7 +110,7 @@ class TodoListsActivityTest {
             deleteFirstListViaDialog(scenario)
             scenario.onActivity { activity ->
                 assertEquals(0, activity.recyclerView().adapter!!.itemCount)
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.layoutEmptyLists).visibility)
+                assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
             }
         }
     }
