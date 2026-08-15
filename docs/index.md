@@ -30,3 +30,4 @@
 - [Daily Notifications](daily-notifications.md) — 08:00 alarm fires one notification per list whose due date is today or target date is tomorrow; deep-links into the list; POST_NOTIFICATIONS requested once on API 33+
 - [App Icons](app-icons.md) — custom checklist launcher icon (brand-purple background, white foreground) replacing the template asset; adaptive icon with monochrome layer for themed-icon mode; 512×512 Play Store asset
 - [First-Launch Tutorial](first-launch-tutorial.md) — phantom-hand overlay plays a five-scene scripted tour on first launch; teaches ON-vs-BEFORE date distinction in scene 2; bottom-center progress pill; dimmed replay button; ⇥ glyph on all due-date rows; crash-safe and skippable
+- [Date Kind Wording](date-kind-wording.md) — scoped exception to the icon-only rule: translated caption under the date-kind toggle and inside the tutorial scene 2 pill to distinguish target ("to do on this day") from due ("finish before this day")

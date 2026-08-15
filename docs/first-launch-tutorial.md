@@ -45,6 +45,7 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 - `app/src/test/java/fr/mandarine/todolist/ui/TutorialReplayUiTest.kt` — 3 Robolectric tests covering replay visibility, tap behaviour, and hide-while-row-open invariant
 
 ## Invariants & contracts
+- The soft keyboard is hidden (`hideKeyboard()` → `hideSoftInputFromWindow`) immediately after every phantom typing beat, so it never covers the caption pill or later choreography. It must hide the IME **without clearing focus** — clearing focus would collapse the items-screen inline add row (`InlineAddViewHolder`'s focus listener) and break scene 3.
 - The seen flag is written by `StartTutorialUseCase` **before** the overlay appears; a crash during the tour will never cause the tutorial to re-run.
 - The demo list id is written by `SaveDemoListIdUseCase` immediately after the demo list is created; `CleanupAbandonedTutorialUseCase` runs on every launch to delete any leftover.
 - Skip and finish both delete the demo list and call `FinishTutorialUseCase` to clear the persisted id.
@@ -52,10 +53,10 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 - `replay()` transitions `Hidden` or `Dismissed` → `ReadyToStart`; it is a no-op when state is already `ReadyToStart` or `Active`. It does NOT touch the seen flag — the automatic first-launch tutorial still fires exactly once ever.
 - `btnReplayTutorial` must be hidden (`GONE`) while the inline create row is open (it would overlap the row's submit button) and restored to `VISIBLE` when the row closes.
 - Progress dots in the skip pill: `ReadyToStart` = 1 dot filled; `Active(step)` = `step.ordinal + 1` dots filled (out of 5). Dots must never exceed 5 regardless of enum size.
-- Scene 2 (`SET_DUE_DATE`): the demo taps the due-date icon and picks tomorrow via the real `DatePickerDialog`, then submits. (An earlier ON/BEFORE vignette experiment was removed: it read as a stepper; the target/due semantic teaching moves to a planned wording feature.)
+- Scene 2 (`SET_DUE_DATE`): extended with two beats that teach the target/due distinction — beat 1 hovers over the calendar icon and shows `tutorialCaptionPill` with "📅 " + `date_kind_target_caption`; beat 2 moves to the alarm icon and switches the caption to "⏰ " + `date_kind_due_caption`, then the existing `DatePickerDialog` choreography picks tomorrow; the caption pill fades out after the date is picked. → see `date-kind-wording.md` for the caption pill implementation and the scoped exception to the icon-only rule.
 - The notification banner rests below the status-bar inset so it is never clipped by the system bar.
 - `iconDueDateLimit` (`ic_tab_right`) is rendered **only** on due-date lines, never on target-date lines.
-- Demo strings ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals in `TutorialOverlayController`; they must never be placed in string resources (preserves the icon-only-UI rule — → see `icon-only-ui.md`).
+- Demo strings ("🛒 Groceries", "🍎 Apples", "🥖 Bread") and the emoji prefixes in the scene 2 caption ("📅 ", "⏰ ") are Kotlin literals in `TutorialOverlayController`; they must never be placed in string resources (preserves the icon-only-UI rule — → see `icon-only-ui.md`). The caption body text itself (`date_kind_target_caption`, `date_kind_due_caption`) is a deliberate, scoped exception → see `date-kind-wording.md`.
 - The overlay's views (hand cursor, banner) carry `importantForAccessibility="no"`; only the skip button is accessible.
 - The skip button uses `@string/cancel` as its `contentDescription`; it must carry no visible text label.
 - Drag in scene 4 is faked via `adapter.moveItem()` followed by `viewModel.reorderTodos()` — no `ItemTouchHelper` simulation.

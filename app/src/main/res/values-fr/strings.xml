@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="date_kind_target_caption">À faire ce jour-là</string>
+    <string name="date_kind_due_caption">À terminer avant ce jour</string>
+</resources>

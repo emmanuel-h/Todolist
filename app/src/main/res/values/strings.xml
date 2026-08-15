@@ -36,4 +36,6 @@
     <string name="clear_due_date">Clear due date</string>
     <string name="notification_channel_name">Reminders</string>
     <string name="replay_tutorial">Replay tutorial</string>
+    <string name="date_kind_target_caption">To do on this day</string>
+    <string name="date_kind_due_caption">Finish before this day</string>
 </resources>

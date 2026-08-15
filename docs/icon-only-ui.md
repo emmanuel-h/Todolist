@@ -23,6 +23,7 @@ Strips all decorative and navigational text labels from both screens: the Screen
 - `app/src/test/java/fr/mandarine/todolist/ui/TodoListsActivityTest.kt` — dialog interactions rewritten to use internal test helper methods instead of `android.R.id.button1/button2` Espresso selectors
 
 ## Invariants & contracts
+- **Scoped exception**: `date_kind_target_caption` and `date_kind_due_caption` are translated string resources that appear as a visible caption in the rename dialog and as a tutorial pill caption. This is the only authorised deviation from the no-visible-text rule; it does not permit adding text elsewhere → see `date-kind-wording.md`.
 - The Screen 1 toolbar is gone — do not reintroduce `AppBarLayout`, `MaterialToolbar`, or `setSupportActionBar` in `TodoListsActivity`.
 - The list name shown on Screen 2 (`TodoListActivity`) is user data, not a UI label; it must remain visible.
 - `DividerViewHolder.bind()` must use `completedCount.toString()` — never reintroduce the `"Completed (%d)"` format string.

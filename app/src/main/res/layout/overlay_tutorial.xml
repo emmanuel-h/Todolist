@@ -39,6 +39,29 @@
         android:importantForAccessibility="no" />
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/tutorialCaptionPill"
+        style="@style/Widget.Material3.CardView.Elevated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="148dp"
+        android:importantForAccessibility="no"
+        android:visibility="invisible"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tutorialCaptionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:padding="14dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/tutorialProgressPill"
         style="@style/Widget.Material3.CardView.Elevated"
         android:layout_width="wrap_content"

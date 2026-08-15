@@ -12,6 +12,7 @@ items that can be checked off. All data persists across restarts via Room/SQLite
 - No headline or body text in any empty-state layout — icon only.
 - Text-field hints use `"…"` rather than a descriptive label.
 - Dynamic content (list names, item titles entered by the user) is exempt.
+- **Scoped exception — date-kind wording** (_[#30](https://github.com/emmanuel-h/Todolist/issues/30)_): the 📅 target vs ⏰ due distinction ("to do ON that day" vs "finish BEFORE that day") proved unteachable through icons alone after three wordless iterations. Two locale-translated strings — `date_kind_target_caption` ("To do on this day") and `date_kind_due_caption` ("Finish before this day"), with French in `values-fr/` — may appear in exactly two places: the caption line under the date-kind toggle in the edit-list dialog, and the tutorial's caption pill. No other static words are permitted anywhere, and these strings are deliberately exempt from `IconOnlyUiTest`.
 
 This principle overrides any contradictory suggestion from a UI agent or the wireframes below.
 
@@ -98,6 +99,7 @@ TodoListsActivity  ("My Lists")
 **Set a due date on a list** — _implemented · [#8](https://github.com/emmanuel-h/Todolist/issues/8)_
 - At creation: tap the alarm icon in the inline add row → `DatePickerDialog` → selected date attaches as due date; selecting a due date clears any selected target date
 - On an existing list: open the rename dialog → select the alarm toggle button (`btnToggleDueDate`); tap the boxed date field (`layoutDateBox`) to open `DatePickerDialog`; the clear button removes the due date without changing the toggle selection; switching the toggle to target-date mode moves the existing date across; the two toggle buttons share a single dialog — the kind set is always the currently checked button. Note: the inline add row opens the picker directly on icon tap (different from the dialog, by design)
+- A caption line (`textDateKindCaption`) below the toggle row spells out the checked kind — "To do on this day" (📅) or "Finish before this day" (⏰) — reflecting the initial selection when the dialog opens and updating on every kind switch (scoped icon-only exception · [#30](https://github.com/emmanuel-h/Todolist/issues/30)); the toggle buttons themselves stay icon-only
 - The due date is displayed on a second line of the list row (alarm icon + formatted date), below any target date line
 - Three-tier tinting based on the current date via the `Clock` abstraction: FUTURE → `colorPrimary`, TODAY → `colorWarning`, OVERDUE → `colorError`
 - `colorWarning` is a custom theme attribute (`#B45309` light / `#F59E0B` dark), declared in `attrs.xml`
@@ -265,7 +267,7 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 On the very first launch of `TodoListsActivity` a full-screen phantom-hand overlay plays a five-scene scripted tour using the real screens and real data operations:
 
 1. Taps the FAB and types "🛒 Groceries" into the inline create row.
-2. Taps the due-date icon, picks tomorrow via the real `DatePickerDialog`, submits, then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
+2. Hovers the target-date icon while a caption pill above the progress pill shows "📅 To do on this day" (without opening the picker), then moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow via the real `DatePickerDialog`, submits (the caption fades out once the date is picked), then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
 3. Opens the list and adds "🍎 Apples" and "🥖 Bread".
 4. Completes an item, restores it, drags it back to the top by the handle, then completes both items.
 5. Returns to the lists screen, deletes the demo list via the in-row confirm strip, and fades out leaving the app empty.
@@ -276,12 +278,12 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 
 **Crash safety**: the seen flag is persisted the moment the demo starts. The demo list id is persisted until cleanup, so a killed-mid-demo leftover is deleted on next launch by `CleanupAbandonedTutorialUseCase`, which runs on every launch.
 
-**Demo strings** ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals — no string resources are introduced, preserving the icon-only-UI rule.
+**Demo strings** ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals — no string resources are introduced, preserving the icon-only-UI rule. The caption pill is the one sanctioned exception ([#30](https://github.com/emmanuel-h/Todolist/issues/30)): it displays the two `date_kind_*_caption` string resources shared with the edit-list dialog, with the 📅/⏰ emoji prefixes added as Kotlin literals.
 
 ### Must NOT happen
 - Tutorial reappearing after the first launch has started it (seen flag is written before the overlay appears).
 - The demo list surviving a skip or a mid-demo kill (cleanup runs on next launch).
-- Static text introduced anywhere in resources by the tutorial (demo strings are Kotlin-only).
+- Static text introduced anywhere in resources by the tutorial (demo strings are Kotlin-only; the two `date_kind_*_caption` resources shared with the edit-list dialog are the sole sanctioned exception · [#30](https://github.com/emmanuel-h/Todolist/issues/30)).
 - `replay()` resetting the seen flag or allowing the automatic first-launch tutorial to fire a second time.
 - `iconDueDateLimit` appearing on target-date rows.
 

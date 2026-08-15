@@ -8,6 +8,7 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.ColorUtils
@@ -40,6 +41,8 @@ class TutorialOverlayController(
     private var handView: View? = null
     private var bannerCard: MaterialCardView? = null
     private var bannerText: MaterialTextView? = null
+    private var captionPill: MaterialCardView? = null
+    private var captionText: MaterialTextView? = null
     private var sceneJob: Job? = null
     private var dots: List<View> = emptyList()
     private var primaryColor: Int = 0
@@ -53,6 +56,8 @@ class TutorialOverlayController(
         handView = inflated.findViewById(R.id.tutorialHand)
         bannerCard = inflated.findViewById(R.id.tutorialBannerCard)
         bannerText = inflated.findViewById(R.id.tutorialBannerText)
+        captionPill = inflated.findViewById(R.id.tutorialCaptionPill)
+        captionText = inflated.findViewById(R.id.tutorialCaptionText)
         val skipButton = inflated.findViewById<View>(R.id.btnTutorialSkip)
 
         primaryColor = resolveAttrColor(activity, com.google.android.material.R.attr.colorPrimary)
@@ -86,6 +91,8 @@ class TutorialOverlayController(
         handView = null
         bannerCard = null
         bannerText = null
+        captionPill = null
+        captionText = null
         dots = emptyList()
     }
 
@@ -165,6 +172,7 @@ class TutorialOverlayController(
     private suspend fun runScenesOneAndTwo(activity: TodoListsActivity) {
         val inlineRow = activity.inlineAddRowInternal
         val editText = inlineRow.findViewById<TextInputEditText>(R.id.editListInlineAdd)
+        val dateButton = inlineRow.findViewById<MaterialButton>(R.id.btnListInlineDate)
         val dueDateButton = inlineRow.findViewById<MaterialButton>(R.id.btnListInlineDueDate)
         val submitButton = inlineRow.findViewById<MaterialButton>(R.id.btnListInlineSubmit)
         val fab = activity.fab
@@ -180,10 +188,16 @@ class TutorialOverlayController(
         glideHandTo(editText, 400)
         delay(300)
         typeText(editText, "🛒 Groceries")
+        hideKeyboard(editText)
         delay(600)
 
+        glideHandTo(dateButton, 500)
+        showCaptionPill("📅 " + activity.getString(R.string.date_kind_target_caption))
+        delay(1800)
+
         glideHandTo(dueDateButton, 500)
-        delay(400)
+        updateCaptionPill("⏰ " + activity.getString(R.string.date_kind_due_caption))
+        delay(1500)
         tapAnim()
         dueDateButton.performClick()
         delay(1400)
@@ -197,6 +211,7 @@ class TutorialOverlayController(
         } else {
             activity.onInlineDueDatePicked(tomorrow)
         }
+        hideCaptionPill()
         delay(600)
 
         glideHandTo(submitButton, 400)
@@ -266,6 +281,7 @@ class TutorialOverlayController(
         val submitButton = holder.itemView.findViewById<MaterialButton>(R.id.btnInlineSubmit)
 
         typeText(editText, "🍎 Apples")
+        hideKeyboard(editText)
         delay(400)
         if (submitButton != null) {
             glideHandTo(submitButton, 300)
@@ -276,6 +292,7 @@ class TutorialOverlayController(
         delay(900)
 
         typeText(editText, "🥖 Bread")
+        hideKeyboard(editText)
         delay(400)
         if (submitButton != null) {
             glideHandTo(submitButton, 300)
@@ -453,6 +470,40 @@ class TutorialOverlayController(
         }
     }
 
+    // ── Caption pill helpers ──
+
+    private suspend fun showCaptionPill(text: String) {
+        val pill = captionPill ?: return
+        val tv = captionText ?: return
+        tv.text = text
+        tv.alpha = 1f
+        pill.alpha = 0f
+        pill.visibility = View.VISIBLE
+        animateAlpha(pill, 1f, 300)
+    }
+
+    private suspend fun updateCaptionPill(text: String) {
+        val tv = captionText ?: return
+        animateAlpha(tv, 0f, 150)
+        tv.text = text
+        animateAlpha(tv, 1f, 150)
+    }
+
+    private suspend fun hideCaptionPill() {
+        val pill = captionPill ?: return
+        animateAlpha(pill, 0f, 300)
+        pill.visibility = View.INVISIBLE
+    }
+
+    private suspend fun animateAlpha(view: View, target: Float, duration: Long) {
+        suspendCancellableCoroutine { cont ->
+            val anim = view.animate().alpha(target).setDuration(duration)
+                .withEndAction { if (cont.isActive) cont.resume(Unit) }
+            cont.invokeOnCancellation { anim.cancel() }
+            anim.start()
+        }
+    }
+
     // ── Fade out and detach ──
 
     private suspend fun fadeOutAndDetach() {
@@ -516,6 +567,11 @@ class TutorialOverlayController(
             delay(80)
             editText.text?.append(char)
         }
+    }
+
+    private fun hideKeyboard(view: View) {
+        view.context.getSystemService(InputMethodManager::class.java)
+            .hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private fun resolveAttrColor(activity: AppCompatActivity, attrRes: Int): Int {

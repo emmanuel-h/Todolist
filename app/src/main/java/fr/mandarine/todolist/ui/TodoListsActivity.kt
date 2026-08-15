@@ -456,9 +456,13 @@ class TodoListsActivity : AppCompatActivity() {
         val addIcon = dialogView.findViewById<android.widget.ImageView>(R.id.iconDateAddAffordance) ?: return
         val dateText = dialogView.findViewById<MaterialTextView>(R.id.textDialogDate) ?: return
         val clearButton = dialogView.findViewById<MaterialButton>(R.id.btnDialogClearDate) ?: return
+        val captionView = dialogView.findViewById<MaterialTextView>(R.id.textDateKindCaption) ?: return
         val isTargetMode = toggleGroup.checkedButtonId == R.id.btnToggleTargetDate
         dateBox.contentDescription = getString(
             if (isTargetMode) R.string.set_target_date else R.string.set_due_date
+        )
+        captionView.text = getString(
+            if (isTargetMode) R.string.date_kind_target_caption else R.string.date_kind_due_caption
         )
         val date = selectedRenameDate ?: selectedRenameDueDate
         if (date != null) {
