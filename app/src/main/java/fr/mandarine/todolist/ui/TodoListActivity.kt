@@ -8,6 +8,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -29,6 +30,8 @@ import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
+import fr.mandarine.todolist.presentation.TutorialUiState
+import fr.mandarine.todolist.presentation.TutorialViewModel
 import kotlinx.coroutines.launch
 
 class TodoListActivity : AppCompatActivity() {
@@ -38,6 +41,14 @@ class TodoListActivity : AppCompatActivity() {
     private lateinit var watermark: ImageView
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var itemTouchHelperInternal: ItemTouchHelper
+
+    private lateinit var tutorialViewModel: TutorialViewModel
+    private lateinit var tutorialController: TutorialOverlayController
+    internal val tutorialBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            tutorialController.onSkipRequested()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +81,8 @@ class TodoListActivity : AppCompatActivity() {
             }
         )[TodoListViewModel::class.java]
 
+        tutorialViewModel = container.tutorialViewModel
+
         watermark = findViewById(R.id.imageWatermark)
 
         adapter = TodoListAdapter(
@@ -95,11 +108,30 @@ class TodoListActivity : AppCompatActivity() {
                 viewModel.state.collect { renderState(it) }
             }
         }
+
+        onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
+
+        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
+        tutorialController.attachToActivity(this)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                tutorialViewModel.uiState.collect { state ->
+                    tutorialBackCallback.isEnabled = state is TutorialUiState.Active
+                    tutorialController.handleState(state, this@TodoListActivity)
+                }
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        tutorialController.detachFromActivity()
     }
 
     private fun buildDragCallback(): ItemTouchHelper.Callback =

@@ -13,6 +13,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -38,6 +39,8 @@ import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
+import fr.mandarine.todolist.presentation.TutorialUiState
+import fr.mandarine.todolist.presentation.TutorialViewModel
 import java.time.LocalDate
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -47,17 +50,29 @@ class TodoListsActivity : AppCompatActivity() {
     internal lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
     private lateinit var watermark: ImageView
-    private lateinit var fab: FloatingActionButton
+    internal lateinit var fab: FloatingActionButton
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var inlineAddRowInternal: View
     internal var itemTouchHelperInternal: ItemTouchHelper? = null
     internal var currentDialogView: View? = null
 
     private var dragFromIndex: Int = -1
+    private var notificationPermissionRequested = false
     internal var selectedInlineDate: LocalDate? = null
     internal var selectedInlineDueDate: LocalDate? = null
     internal var selectedRenameDate: LocalDate? = null
     internal var selectedRenameDueDate: LocalDate? = null
+
+    internal var lastShownDueDatePicker: DatePickerDialog? = null
+    private lateinit var replayButton: MaterialButton
+
+    private lateinit var tutorialViewModel: TutorialViewModel
+    private lateinit var tutorialController: TutorialOverlayController
+    internal val tutorialBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            tutorialController.onSkipRequested()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +96,8 @@ class TodoListsActivity : AppCompatActivity() {
                 )
             }
         )[TodoListsViewModel::class.java]
+
+        tutorialViewModel = container.tutorialViewModel
 
         watermark = findViewById(R.id.imageWatermark)
         fab = findViewById(R.id.fabAddList)
@@ -160,20 +177,54 @@ class TodoListsActivity : AppCompatActivity() {
             showInlineAddRow()
         }
 
+        onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
+
+        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
+        tutorialController.attachToActivity(this)
+
+        replayButton = findViewById(R.id.btnReplayTutorial)
+        replayButton.setOnClickListener { tutorialViewModel.replay() }
+
         val requestNotificationPermission = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) {}
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                tutorialViewModel.uiState.collect { state ->
+                    tutorialBackCallback.isEnabled = state is TutorialUiState.ReadyToStart ||
+                        state is TutorialUiState.Active
+                    tutorialController.handleState(state, this@TodoListsActivity)
+                    if (state is TutorialUiState.Dismissed && !notificationPermissionRequested) {
+                        notificationPermissionRequested = true
+                        maybeRequestNotificationPermission(requestNotificationPermission)
+                    }
+                }
+            }
+        }
+
+        tutorialViewModel.initialize()
+    }
+
+    private fun maybeRequestNotificationPermission(
+        launcher: androidx.activity.result.ActivityResultLauncher<String>
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
         ) {
-            requestNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        tutorialController.detachFromActivity()
     }
 
     private fun wireInlineAddRow() {
@@ -216,7 +267,7 @@ class TodoListsActivity : AppCompatActivity() {
 
         dateButton.setOnClickListener {
             val current = selectedInlineDate ?: LocalDate.now()
-            DatePickerDialog(
+            val picker = DatePickerDialog(
                 this,
                 { _, year, month, dayOfMonth ->
                     onInlineTargetDatePicked(LocalDate.of(year, month + 1, dayOfMonth))
@@ -224,12 +275,13 @@ class TodoListsActivity : AppCompatActivity() {
                 current.year,
                 current.monthValue - 1,
                 current.dayOfMonth
-            ).show()
+            )
+            picker.show()
         }
 
         dueDateButton.setOnClickListener {
             val current = selectedInlineDueDate ?: LocalDate.now()
-            DatePickerDialog(
+            val picker = DatePickerDialog(
                 this,
                 { _, year, month, dayOfMonth ->
                     onInlineDueDatePicked(LocalDate.of(year, month + 1, dayOfMonth))
@@ -237,7 +289,9 @@ class TodoListsActivity : AppCompatActivity() {
                 current.year,
                 current.monthValue - 1,
                 current.dayOfMonth
-            ).show()
+            )
+            lastShownDueDatePicker = picker
+            picker.show()
         }
     }
 
@@ -287,6 +341,7 @@ class TodoListsActivity : AppCompatActivity() {
         val divider = findViewById<View>(R.id.inlineAddListDivider)
         divider.visibility = View.VISIBLE
         fab.visibility = View.GONE
+        replayButton.visibility = View.GONE
         val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
         editText.requestFocus()
         val imm = getSystemService(InputMethodManager::class.java)
@@ -298,6 +353,7 @@ class TodoListsActivity : AppCompatActivity() {
         val divider = findViewById<View>(R.id.inlineAddListDivider)
         divider.visibility = View.GONE
         fab.visibility = View.VISIBLE
+        replayButton.visibility = View.VISIBLE
         val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
         editText.clearFocus()
         val imm = getSystemService(InputMethodManager::class.java)
@@ -397,7 +453,7 @@ class TodoListsActivity : AppCompatActivity() {
         val dialogView = currentDialogView ?: return
         val toggleGroup = dialogView.findViewById<MaterialButtonToggleGroup>(R.id.toggleDateKind) ?: return
         val dateBox = dialogView.findViewById<androidx.cardview.widget.CardView>(R.id.layoutDateBox) ?: return
-        val addIcon = dialogView.findViewById<ImageView>(R.id.iconDateAddAffordance) ?: return
+        val addIcon = dialogView.findViewById<android.widget.ImageView>(R.id.iconDateAddAffordance) ?: return
         val dateText = dialogView.findViewById<MaterialTextView>(R.id.textDialogDate) ?: return
         val clearButton = dialogView.findViewById<MaterialButton>(R.id.btnDialogClearDate) ?: return
         val isTargetMode = toggleGroup.checkedButtonId == R.id.btnToggleTargetDate

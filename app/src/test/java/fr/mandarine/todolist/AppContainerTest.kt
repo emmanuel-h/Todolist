@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.data.AndroidListNotifier
 import fr.mandarine.todolist.data.RoomTodoListRepository
 import fr.mandarine.todolist.data.RoomTodoRepository
+import fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository
 import fr.mandarine.todolist.data.WorkManagerNotificationScheduler
 import fr.mandarine.todolist.domain.SystemClock
 import org.junit.Assert.assertTrue
@@ -33,5 +34,10 @@ class AppContainerTest {
     @Test
     fun `should expose a system clock`() {
         assertTrue(application.container.clock is SystemClock)
+    }
+
+    @Test
+    fun `should wire shared preferences tutorial state repository by default`() {
+        assertTrue(application.container.tutorialStateRepository is SharedPreferencesTutorialStateRepository)
     }
 }

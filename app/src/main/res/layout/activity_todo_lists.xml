@@ -41,10 +41,22 @@
             android:clipToPadding="false"
             android:paddingStart="@dimen/list_horizontal_inset"
             android:paddingEnd="@dimen/list_horizontal_inset"
-            android:paddingTop="8dp"
+            android:paddingTop="64dp"
             android:paddingBottom="88dp" />
 
     </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnReplayTutorial"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="8dp"
+        android:alpha="0.38"
+        android:contentDescription="@string/replay_tutorial"
+        app:icon="@drawable/ic_replay"
+        app:iconTint="?attr/colorOnSurface" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddList"

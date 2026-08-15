@@ -91,7 +91,7 @@ TodoListsActivity  ("My Lists")
 - Dates in the past are shown with `colorOnSurfaceVariant` tint (muted); future dates use `colorPrimary` tint
 - The year is shown only when the target date falls in a different year from the current year
 - Date format uses ICU `getBestDateTimePattern` with skeleton `EEEdMMM` / `EEEdMMMy` for locale-correct output with zero string resources
-- The target date is purely informational — it does not affect list sort order
+- The target date is purely informational — it signals "do this ON that specific day" (a milestone, not a deadline); it does not affect list sort order
 - `colorError` tint must never be applied to target dates; it is reserved exclusively for overdue due dates
 - **Mutual exclusion with due date**: a list may have EITHER a target date OR a due date, never both; enforced in `TodoList.init` and in the create/edit use cases via `require`
 
@@ -102,7 +102,8 @@ TodoListsActivity  ("My Lists")
 - Three-tier tinting based on the current date via the `Clock` abstraction: FUTURE → `colorPrimary`, TODAY → `colorWarning`, OVERDUE → `colorError`
 - `colorWarning` is a custom theme attribute (`#B45309` light / `#F59E0B` dark), declared in `attrs.xml`
 - The year is shown only when the due date falls in a different year from the current year
-- The due date does not affect list sort order; overdue status is signalled by tint only
+- The due date means "finish BEFORE/BY that day" (a hard deadline); overdue status is signalled by tint only; it does not affect list sort order
+- A 12dp arrow-to-limit glyph (`ic_tab_right`, view id `iconDueDateLimit`) is displayed between the alarm icon and the date text on every due-date row, tinted with the same three-tier color as the rest of the line; it must never appear on target-date rows
 
 **Delete a list**
 - Tap the delete icon on a row → the row morphs in place into an error-tinted confirm strip
@@ -112,7 +113,7 @@ TodoListsActivity  ("My Lists")
 - Cancel (✕) or a tap on the strip background reverts the row; arming a different row's
   delete disarms the first
 
-**Reorder lists** — _not yet implemented · [#6](https://github.com/emmanuel-h/Todolist/issues/6)_
+**Reorder lists** — _implemented · [#6](https://github.com/emmanuel-h/Todolist/issues/6)_
 - Long-press-and-drag a row to reorder
 - Explicit position persists across restarts
 - New lists are always inserted at the top
@@ -193,15 +194,15 @@ There is no checkbox. The strikethrough + 50% alpha is the sole visual indicator
 - Tap [↩] or double-tap anywhere on the row → item moves to the bottom of the active section
 - No memory of original position
 
-**Edit an item title** — _not yet implemented · [#3](https://github.com/emmanuel-h/Todolist/issues/3)_
+**Edit an item title** — _implemented · [#3](https://github.com/emmanuel-h/Todolist/issues/3)_
 - Tap [✎] → dialog pre-filled with the current title + Cancel / Save
 - On confirm: row label updates immediately; completion state and position are preserved
 
-**Delete an item** — _not yet implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2)_
+**Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2)_
 - Tap [🗑] → item is permanently removed immediately
 - No confirmation dialog, no undo
 
-**Reorder active items** — _not yet implemented · [#5](https://github.com/emmanuel-h/Todolist/issues/5)_
+**Reorder active items** — _implemented · [#5](https://github.com/emmanuel-h/Todolist/issues/5)_
 - Long-press-and-drag an active item row to reorder within the active section
 - Completed items cannot be manually reordered (always ordered by completion time)
 - Explicit position persists across restarts
@@ -256,6 +257,33 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 ### Must NOT happen
 - A notification fired for a list whose date does not qualify.
 - The daily check lost permanently after device reboot.
+
+---
+
+## First-launch tutorial — _implemented · [#29](https://github.com/emmanuel-h/Todolist/issues/29)_
+
+On the very first launch of `TodoListsActivity` a full-screen phantom-hand overlay plays a five-scene scripted tour using the real screens and real data operations:
+
+1. Taps the FAB and types "🛒 Groceries" into the inline create row.
+2. Taps the due-date icon, picks tomorrow via the real `DatePickerDialog`, submits, then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
+3. Opens the list and adds "🍎 Apples" and "🥖 Bread".
+4. Completes an item, restores it, drags it back to the top by the handle, then completes both items.
+5. Returns to the lists screen, deletes the demo list via the in-row confirm strip, and fades out leaving the app empty.
+
+**Skip control**: a bottom-center floating elevated pill containing 5 progress dots (filled up to the current scene) and a ✕ skip button; on the items screen it floats above the pinned inline add bar (88dp bottom margin). The back gesture also cancels. Both cancel paths delete the demo list and prevent the tutorial from ever showing again automatically.
+
+**Replay**: a dimmed (38% alpha) circular-arrow button (`btnReplayTutorial`) is pinned top-right of the lists screen at all times. Tap calls `TutorialViewModel.replay()`, which transitions `Hidden`/`Dismissed` → `ReadyToStart`; no-op while already `ReadyToStart` or `Active`. Does NOT touch the seen flag — the automatic tutorial still shows exactly once ever. The button hides (`GONE`) while the inline create row is open and reappears when the row closes.
+
+**Crash safety**: the seen flag is persisted the moment the demo starts. The demo list id is persisted until cleanup, so a killed-mid-demo leftover is deleted on next launch by `CleanupAbandonedTutorialUseCase`, which runs on every launch.
+
+**Demo strings** ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals — no string resources are introduced, preserving the icon-only-UI rule.
+
+### Must NOT happen
+- Tutorial reappearing after the first launch has started it (seen flag is written before the overlay appears).
+- The demo list surviving a skip or a mid-demo kill (cleanup runs on next launch).
+- Static text introduced anywhere in resources by the tutorial (demo strings are Kotlin-only).
+- `replay()` resetting the seen flag or allowing the automatic first-launch tutorial to fire a second time.
+- `iconDueDateLimit` appearing on target-date rows.
 
 ---
 

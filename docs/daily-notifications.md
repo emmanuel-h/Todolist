@@ -1,7 +1,7 @@
 # Daily Notifications
 
 ## What it does
-At 08:00 every morning the app fires one Android notification per list whose due date is today or whose target date is tomorrow. Tapping a notification deep-links directly into that list's detail screen. On Android 13+ the `POST_NOTIFICATIONS` permission is requested once on first launch; if denied the app continues silently.
+At 08:00 every morning the app fires one Android notification per list whose due date is today or whose target date is tomorrow. Tapping a notification deep-links directly into that list's detail screen. On Android 13+ the `POST_NOTIFICATIONS` permission is requested once, after the first-launch tutorial has finished or been skipped (immediately on later launches); if denied the app continues silently.
 
 ## Architecture
 - **Layers**: domain, data, ui (presentation layer unchanged)
@@ -27,7 +27,7 @@ At 08:00 every morning the app fires one Android notification per list whose due
 - `app/src/main/java/fr/mandarine/todolist/data/AndroidNotificationScheduler.kt` — `AlarmManager` implementation; schedules exact alarm at next 08:00; excluded from Pitest
 - `app/src/main/java/fr/mandarine/todolist/data/BootCompletedReceiver.kt` — reschedules alarm on device reboot; excluded from Pitest
 - `app/src/main/java/fr/mandarine/todolist/data/DailyNotificationReceiver.kt` — alarm entry point; manually wires all dependencies; excluded from Pitest
-- `app/src/main/java/fr/mandarine/todolist/ui/TodoListsActivity.kt` — schedules first daily alarm in `onCreate`; requests `POST_NOTIFICATIONS` once on API 33+
+- `app/src/main/java/fr/mandarine/todolist/ui/TodoListsActivity.kt` — schedules first daily alarm in `onCreate`; requests `POST_NOTIFICATIONS` once on API 33+, deferred until the tutorial state reaches Dismissed so the system dialog never overlaps the first-launch tour
 - `app/src/main/AndroidManifest.xml` — declares both receivers, `RECEIVE_BOOT_COMPLETED` and `POST_NOTIFICATIONS` uses-permission, `SCHEDULE_EXACT_ALARM`
 - `app/src/main/res/drawable/ic_checklist.xml` — removed `android:tint="?attr/…"` from vector root so the drawable is safe as a notification small icon
 - `app/src/main/res/values/strings.xml` — added `notification_channel_name` (the channel is the only place a localized word appears; notification bodies are language-free)

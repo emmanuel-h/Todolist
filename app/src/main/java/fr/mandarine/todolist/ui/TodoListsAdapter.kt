@@ -195,6 +195,7 @@ class TodoListsAdapter(
         private val textTargetDate: MaterialTextView = view.findViewById(R.id.textTargetDate)
         private val layoutDueDate: LinearLayout = view.findViewById(R.id.layoutDueDate)
         private val iconDueDate: ImageView = view.findViewById(R.id.iconDueDate)
+        private val iconDueDateLimit: ImageView = view.findViewById(R.id.iconDueDateLimit)
         private val textDueDate: MaterialTextView = view.findViewById(R.id.textDueDate)
 
         fun bind(
@@ -263,6 +264,7 @@ class TodoListsAdapter(
                 DueDateStatus.OVERDUE -> resolveColor(com.google.android.material.R.attr.colorError)
             }
             iconDueDate.imageTintList = ColorStateList.valueOf(tint)
+            iconDueDateLimit.imageTintList = ColorStateList.valueOf(tint)
             textDueDate.setTextColor(tint)
         }
 
