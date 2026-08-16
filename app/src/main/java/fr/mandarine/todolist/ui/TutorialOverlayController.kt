@@ -103,6 +103,9 @@ class TutorialOverlayController(
     }
 
     fun handleState(state: TutorialUiState, activity: AppCompatActivity) {
+        if (state is TutorialUiState.ReadyToStart && overlayView == null) {
+            attachToActivity(activity)
+        }
         updateProgressDots(state)
         when (state) {
             TutorialUiState.Hidden -> {}
@@ -192,7 +195,7 @@ class TutorialOverlayController(
         delay(600)
 
         glideHandTo(dateButton, 500)
-        showCaptionPill("📅 " + activity.getString(R.string.date_kind_target_caption))
+        showCaptionPill("📅 " + activity.getString(R.string.date_kind_target_caption), inlineRow)
         delay(1800)
 
         glideHandTo(dueDateButton, 500)
@@ -472,11 +475,18 @@ class TutorialOverlayController(
 
     // ── Caption pill helpers ──
 
-    private suspend fun showCaptionPill(text: String) {
+    private suspend fun showCaptionPill(text: String, anchor: View) {
         val pill = captionPill ?: return
         val tv = captionText ?: return
+        val overlay = overlayView ?: return
         tv.text = text
         tv.alpha = 1f
+        val anchorLoc = IntArray(2)
+        anchor.getLocationOnScreen(anchorLoc)
+        val ovLoc = IntArray(2)
+        overlay.getLocationOnScreen(ovLoc)
+        val gap = 12 * overlay.resources.displayMetrics.density
+        pill.translationY = (anchorLoc[1] - ovLoc[1] + anchor.height) + gap
         pill.alpha = 0f
         pill.visibility = View.VISIBLE
         animateAlpha(pill, 1f, 300)

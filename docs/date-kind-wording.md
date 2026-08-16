@@ -5,7 +5,7 @@ Adds a single translated caption line in two places — under the date-kind togg
 
 ## Architecture
 - **Layers**: ui only (no domain, data, or ViewModel changes)
-- **Key types**: no new types; `TutorialOverlayController` gains `captionPill`/`captionText` fields and `showCaptionPill(text)` / `hideCaptionPill()` suspend helpers
+- **Key types**: no new types; `TutorialOverlayController` gains `captionPill`/`captionText` fields and `showCaptionPill(text, anchor)` / `updateCaptionPill(text)` / `hideCaptionPill()` suspend helpers
 - **Async contract**: caption visibility is driven by the existing suspend scene functions in `TutorialOverlayController`; no new flows
 
 ## Files
@@ -14,7 +14,7 @@ Adds a single translated caption line in two places — under the date-kind togg
 - `app/src/main/res/layout/dialog_rename_list.xml` — added `textDateKindCaption` `MaterialTextView` (`textAppearanceBodySmall`, `colorOnSurfaceVariant`) between the toggle+date row and the cancel/confirm row
 - `app/src/main/java/fr/mandarine/todolist/ui/TodoListsActivity.kt` — `updateRenameDateDisplay()` sets `textDateKindCaption` to `date_kind_target_caption` or `date_kind_due_caption` based on the checked toggle; fires on every caption-update path (dialog open, kind switch, date set/clear)
 - `app/src/main/res/layout/overlay_tutorial.xml` — added `tutorialCaptionPill` `MaterialCardView` (16dp corner radius, 148dp bottom margin, `invisible` by default, `importantForAccessibility="no"`) containing `tutorialCaptionText` `MaterialTextView`
-- `app/src/main/java/fr/mandarine/todolist/ui/TutorialOverlayController.kt` — `captionPill`/`captionText` wired in `attachToActivity()`/`detachFromActivity()`; `showCaptionPill(text)` / `hideCaptionPill()` suspend helpers; `runScenesOneAndTwo()` extended with beat 1 (hand hovers `btnListInlineDate`, caption shows "📅 " + `date_kind_target_caption`) and beat 2 (hand moves to `btnListInlineDueDate`, caption switches to "⏰ " + `date_kind_due_caption`, then existing `DatePickerDialog` choreography; caption fades out after date picked)
+- `app/src/main/java/fr/mandarine/todolist/ui/TutorialOverlayController.kt` — `captionPill`/`captionText` wired in `attachToActivity()`/`detachFromActivity()`; `showCaptionPill(text, anchor)` positions the pill just below the anchor view (the inline create row) via `translationY`; `updateCaptionPill(text)` cross-fades the text; `runScenesOneAndTwo()` extended with beat 1 (hand hovers `btnListInlineDate`, caption shows "📅 " + `date_kind_target_caption`) and beat 2 (hand moves to `btnListInlineDueDate`, caption switches to "⏰ " + `date_kind_due_caption`, then existing `DatePickerDialog` choreography; caption fades out after date picked)
 - `app/src/test/java/fr/mandarine/todolist/ui/DateKindCaptionTest.kt` — 8 Robolectric tests: target caption on dialog open with no date, due caption on open with a due-date list, toggle switch both directions, date-carry-across-kind both directions, overlay has `tutorialCaptionPill` invisible by default, overlay has `tutorialCaptionText`
 
 ## Invariants & contracts
@@ -28,4 +28,4 @@ Adds a single translated caption line in two places — under the date-kind togg
 ## UI
 - **Screen(s)**: `TodoListsActivity` (rename dialog), tutorial overlay on both activities
 - **Layout file(s)**: `res/layout/dialog_rename_list.xml`, `res/layout/overlay_tutorial.xml`
-- **Design decisions**: `textAppearanceBodySmall` with `colorOnSurfaceVariant` keeps the caption visually subordinate to the toggle buttons above it — it reads as a hint, not a label. The 148dp bottom margin on `tutorialCaptionPill` ensures it floats above the progress pill without overlap. The caption pill in the tutorial appears during scene 2 only (the date-kind teaching moment) and fades out once the date is picked, so it does not persist into later scenes.
+- **Design decisions**: `textAppearanceBodySmall` with `colorOnSurfaceVariant` keeps the caption visually subordinate to the toggle buttons above it — it reads as a hint, not a label. `tutorialCaptionPill` uses `top|center_horizontal` gravity and is positioned at runtime just below the inline create row (`showCaptionPill`'s anchor), keeping the explanation next to the icons it describes. The caption pill in the tutorial appears during scene 2 only (the date-kind teaching moment) and fades out once the date is picked, so it does not persist into later scenes.

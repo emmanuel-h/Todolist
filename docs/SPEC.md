@@ -267,7 +267,7 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 On the very first launch of `TodoListsActivity` a full-screen phantom-hand overlay plays a five-scene scripted tour using the real screens and real data operations:
 
 1. Taps the FAB and types "🛒 Groceries" into the inline create row.
-2. Hovers the target-date icon while a caption pill above the progress pill shows "📅 To do on this day" (without opening the picker), then moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow via the real `DatePickerDialog`, submits (the caption fades out once the date is picked), then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
+2. Hovers the target-date icon while a caption pill anchored just below the inline create row shows "📅 To do on this day" (without opening the picker), then moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow via the real `DatePickerDialog`, submits (the caption fades out once the date is picked), then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
 3. Opens the list and adds "🍎 Apples" and "🥖 Bread".
 4. Completes an item, restores it, drags it back to the top by the handle, then completes both items.
 5. Returns to the lists screen, deletes the demo list via the in-row confirm strip, and fades out leaving the app empty.
