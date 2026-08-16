@@ -16,6 +16,14 @@ items that can be checked off. All data persists across restarts via Room/SQLite
 
 This principle overrides any contradictory suggestion from a UI agent or the wireframes below.
 
+### Theme & surface hierarchy — _implemented · [#32](https://github.com/emmanuel-h/Todolist/issues/32)_
+
+- On Android 12+ the app follows the device's wallpaper palette via `DynamicColors.applyToActivitiesIfAvailable()`; on API 24–31 it uses a brand palette seeded from `#7C3AED` (refined violet).
+- No hex value from the stock M3 template palette (`#6750A4` family) exists in `colors.xml`.
+- The full `surfaceContainer*` token family (Lowest/Low/Container/High/Highest) is defined in both light and dark themes.
+- Depth is tonal: window background = `surfaceContainerLowest`; list item cards = `Widget.Material3.CardView.Filled` on `surfaceContainer` at `0dp` elevation; no drop shadows in the list content area.
+- The tutorial overlay retains `Widget.Material3.CardView.Elevated` at 6–8dp intentionally (it floats above a scrim).
+
 ---
 
 ## Navigation
@@ -286,6 +294,24 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 - Static text introduced anywhere in resources by the tutorial (demo strings are Kotlin-only; the two `date_kind_*_caption` resources shared with the edit-list dialog are the sole sanctioned exception · [#30](https://github.com/emmanuel-h/Todolist/issues/30)).
 - `replay()` resetting the seen flag or allowing the automatic first-launch tutorial to fire a second time.
 - `iconDueDateLimit` appearing on target-date rows.
+
+---
+
+## Planned — not yet implemented
+
+The following behaviors are agreed but not built. Each issue body carries the authoritative design (mockups + acceptance criteria); this section only records what will change so other sections can be read as "current state".
+
+**Gesture-driven rows** — _planned · [#33](https://github.com/emmanuel-h/Todolist/issues/33) · depends on #32 (now implemented)_
+- Rows show only the completion circle + title (+ dates/badges on list rows); the permanent drag/complete/edit/delete buttons disappear.
+- Swipe end→start = delete (keeps the two-step confirm strip), swipe start→end = edit, long-press = drag; identical map on both screens. Completed items: swipe-delete only.
+- Every gesture action is also exposed as a TalkBack custom action.
+- Supersedes the `≡` drag-handle wording in the reorder sections above once implemented.
+
+**Motion & haptics** — _planned · [#34](https://github.com/emmanuel-h/Todolist/issues/34) · depends on #33_
+- `MaterialContainerTransform` between the lists screen and a list; animated complete (row slides below the ✓ divider), add, and delete; haptic ticks on complete, drag pickup/drop, and swipe-confirm threshold. Respects reduced-motion settings.
+
+**Edge-to-edge** — _planned · [#35](https://github.com/emmanuel-h/Todolist/issues/35)_
+- Transparent system bars, inset-aware padding, content scrolls under the status bar behind a background-derived fade scrim.
 
 ---
 
