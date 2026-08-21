@@ -26,7 +26,7 @@ Turns the whole app into one continuous sheet of ruled loose-leaf paper: warm to
 - Deleted: `res/values-night/`
 
 ## Invariants & contracts
-- **Light-only.** No `values-night/`, a `Light` theme parent, and no `DayNight` overlay. Re-introducing `DynamicColors` would re-introduce a `DayNight` overlay and with it dark mode — do not add it back without also forcing `AppCompatDelegate.MODE_NIGHT_NO`.
+- **Light-only.** No `values-night/`, a `Light` theme parent, and no `DayNight` overlay. Re-introducing `DynamicColors` would re-introduce a `DayNight` overlay and with it dark mode — and it is no longer even reachable: phase 6 dropped the Views Material library. `PaperTheme` defines one fixed colour scheme and reads no system setting.
 - **The palette is fixed, not derived.** Paper texture must not take a device hue. Only the launcher icon is exempt; it stays brand violet (`docs/app-icons.md`).
 - `elevationOverlayEnabled` must stay `false`. The M3 elevation overlay tints raised surfaces with `colorPrimary`, which turns paper grey-blue on dialogs and the FAB.
 - Ruling is per row, never per page. A page-wide tiled ruling would drift off the baseline of a taller row (a list row with both dates is ~96dp). The cost is that ruling stops where content stops.

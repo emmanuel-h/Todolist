@@ -1,43 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-        Ink-on-paper palette. Fixed, light-only, deliberately not wallpaper-derived:
-        paper texture does not take a device hue. See docs/paper-background.md.
+        The ink-on-paper palette lives in PaperInk, not here — one source of truth,
+        and the only consumer of a colour resource left is the window it is painted
+        on before Compose draws. See docs/paper-design-system.md.
     -->
-
-    <!-- Paper -->
     <color name="paper">#FAF5EA</color>
-    <color name="paper_sheet">#FFFCF4</color>
-    <color name="paper_shade">#F5EFE1</color>
-    <color name="paper_shade_deep">#EFE7D5</color>
-    <color name="paper_sunken">#E7DEC8</color>
 
-    <!-- Ink -->
-    <color name="ink">#23282F</color>
-    <color name="ink_soft">#5C6068</color>
-    <color name="pencil">#8A8578</color>
-    <color name="ink_blue">#2E5AA8</color>
-    <color name="ink_blue_deep">#16305C</color>
-    <color name="ink_blue_pale">#DEE5F2</color>
-    <color name="ink_blue_faded">#A8C0E8</color>
-    <color name="ink_red">#A8392F</color>
-    <color name="ink_red_soft">#B4655B</color>
-    <color name="ink_red_deep">#5A1E18</color>
-    <color name="ink_red_wash">#F1DDD4</color>
-    <color name="ink_amber">#B4761E</color>
-
-    <!-- Sticky note pad (the add-list affordance) -->
-    <color name="sticky_note">#EBDCA4</color>
-    <color name="sticky_note_mid">#DCCB90</color>
-    <color name="sticky_note_back">#CBB97C</color>
-    <color name="sticky_note_edge">#B0995C</color>
-
-    <!-- Paper texture -->
-    <color name="paper_rule">#D5CCB6</color>
-    <color name="paper_grain_tint">#66000000</color>
-    <color name="paper_hole_tint">#1F000000</color>
-
-    <!-- Launcher -->
     <color name="launcher_background">#7C3AED</color>
-
 </resources>

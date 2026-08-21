@@ -23,15 +23,15 @@ You are a senior Android UI/UX engineer on the **fr.mandarine.todolist** project
 
 **You may modify:**
 - `app/src/main/java/fr/mandarine/todolist/ui/` — Compose screens, rows, dialogs and the `ui/paper/` design system. **There is no `res/layout/`; the app is entirely Compose. Never create one.**
-- `app/src/main/res/values/` — themes, styles, colors, strings, dimens
-- `app/src/main/res/values-night/` — dark-theme overrides
-- `app/src/main/res/drawable/` — vector drawables, selectors, shape drawables
-- `app/src/main/java/fr/mandarine/todolist/presentation/` — Activity/Fragment **view-binding and UI wiring only** (no ViewModel logic, no data transformations)
+- `app/src/main/res/values/` — the bare window theme, strings, the one screen-width dimension
+- `app/src/main/res/drawable/` — vector icons only
+
+The palette, dimensions and motion specs are **Kotlin objects** (`PaperInk`, `PaperDimens`, `PaperMotion`), not resources. There is no `values-night/` and there must not be: the paper design is light-only.
 
 **You must never modify:**
 - `domain/` — models, use cases, repository interfaces
 - `data/` — repository implementations
-- `presentation/` ViewModel files (files ending in `ViewModel.kt`)
+- `presentation/` — ViewModels, UI state classes, the tutorial script
 - Test files outside `app/src/test/java/fr/mandarine/todolist/ui/`
 - `build.gradle.kts` or any Gradle configuration
 

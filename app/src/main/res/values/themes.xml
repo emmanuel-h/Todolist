@@ -1,60 +1,16 @@
 <resources>
-    <style name="Theme.ToDoList" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/ink_blue</item>
-        <item name="colorOnPrimary">@color/paper</item>
-        <item name="colorPrimaryContainer">@color/ink_blue_pale</item>
-        <item name="colorOnPrimaryContainer">@color/ink_blue_deep</item>
-        <item name="colorSecondary">@color/pencil</item>
-        <item name="colorOnSecondary">@color/paper</item>
-        <item name="colorSecondaryContainer">@color/paper_shade_deep</item>
-        <item name="colorOnSecondaryContainer">@color/ink</item>
-        <item name="colorTertiary">@color/ink_soft</item>
-        <item name="colorOnTertiary">@color/paper</item>
-        <item name="colorTertiaryContainer">@color/paper_shade</item>
-        <item name="colorOnTertiaryContainer">@color/ink</item>
-        <item name="colorError">@color/ink_red</item>
-        <item name="colorOnError">@color/paper</item>
-        <item name="colorErrorContainer">@color/ink_red_wash</item>
-        <item name="colorOnErrorContainer">@color/ink_red_deep</item>
-        <item name="android:colorBackground">@color/paper</item>
-        <item name="colorOnBackground">@color/ink</item>
-        <item name="colorSurface">@color/paper</item>
-        <item name="elevationOverlayEnabled">false</item>
-        <item name="colorOnSurface">@color/ink</item>
-        <item name="colorSurfaceVariant">@color/paper_shade</item>
-        <item name="colorOnSurfaceVariant">@color/ink_soft</item>
-        <item name="colorOutline">@color/pencil</item>
-        <item name="colorOutlineVariant">@color/paper_rule</item>
-        <item name="colorSurfaceInverse">@color/ink</item>
-        <item name="colorOnSurfaceInverse">@color/paper</item>
-        <item name="colorPrimaryInverse">@color/ink_blue_faded</item>
-        <item name="colorSurfaceContainerLowest">@color/paper</item>
-        <item name="colorSurfaceContainerLow">@color/paper_shade</item>
-        <item name="colorSurfaceContainer">@color/paper_shade</item>
-        <item name="colorSurfaceContainerHigh">@color/paper_shade_deep</item>
-        <item name="colorSurfaceContainerHighest">@color/paper_sunken</item>
-        <item name="colorWarning">@color/ink_amber</item>
-        <item name="android:windowBackground">@drawable/bg_paper</item>
+    <!--
+        The app is entirely Compose: PaperTheme owns every colour and PaperSurface
+        draws the paper itself. All this theme still has to do is dress the window
+        for the frames before the first composition and keep the system bars out of
+        the way. See docs/compose-teardown.md.
+    -->
+    <style name="Theme.ToDoList" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Paper.Dialog</item>
-    </style>
-
-    <style name="ShapeAppearance.Paper.Chip" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">16dp</item>
-    </style>
-
-    <style name="ThemeOverlay.Paper.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorSurface">@color/paper_sheet</item>
-        <item name="elevationOverlayEnabled">false</item>
-        <item name="colorSurfaceContainerHigh">@color/paper_sheet</item>
-        <item name="alertDialogStyle">@style/MaterialAlertDialog.Paper</item>
-    </style>
-
-    <style name="MaterialAlertDialog.Paper" parent="MaterialAlertDialog.Material3">
-        <item name="backgroundTint">@color/paper_sheet</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Paper.Chip</item>
     </style>
 </resources>

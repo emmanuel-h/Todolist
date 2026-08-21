@@ -302,7 +302,32 @@ Two deliberate design changes, both agreed up front: the three overlay surfaces 
 
 **Risk — low**, given Phase 1.
 
-## Phase 6 — Teardown
+## Phase 6 — Teardown ✅ DONE
+
+### Outcome
+
+**Done. No View-system dependency is left in the graph.** Written up in [compose-teardown.md](compose-teardown.md). All three gates green: 843 tests, coverage report, Pitest at **368/368 mutations, 100%** — the same number as every phase before it.
+
+| | before | after |
+| --- | --- | --- |
+| release APK | 2,686,277 B | **1,690,684 B (−37.1%)** |
+| files in APK | 724 | 130 |
+| `resources.arsc` | 716,420 B | 224,296 B |
+| debug APK | 15.0 MB | 11.9 MB |
+| `res/values/themes.xml` | 69 lines | 16 |
+| `res/values/colors.xml` | 25 colours | 2 |
+| `res/values/strings.xml` | 40 strings | 27 |
+| `res/values/dimens.xml` | 5 dimensions | 1 |
+
+Three things worth knowing:
+
+- **Most of the saving was resources, not code.** `resources.arsc` fell by 492K of the 996K total. R8 had been shrinking Material's code all along; what it could not drop was the styles, attrs and theme tables the manifest still pointed at.
+- **Vector drawables carried `?attr/colorControlNormal`.** Five icons failed to link the moment appcompat left. They did not need translating — `InkIcon` and `InkIconButton` both tint from the palette, so the attribute was dead weight in every call site. Removing it is only safe *because* both defaults are palette colours; a vector added without a tint would draw white on paper.
+- **The platform theme parent does not supply system-bar behaviour.** `Theme.Material3.Light.NoActionBar` set `windowDrawsSystemBarBackgrounds` and a navigation-bar colour; `android:Theme.Material.Light.NoActionBar` sets neither, so both are now stated explicitly. Miss them and the app is edge-to-edge on API 35+ and framed on everything older.
+
+### Deviation from the plan
+
+The plan's `IconOnlyUiTest` line was already done — phase 4 converted it. The dead-resource sweep went **wider than the phase orphaned**, unlike phases 3–5: the View era left thirteen unused strings, a dead drawable and three dead dimensions behind, and the palette existed twice (`PaperInk` and `colors.xml`) with nothing reading the resource copy. Agreed before the work started.
 
 **Work**
 - drop `appcompat`, `recyclerview`, and the Views `com.google.android.material` dependency
@@ -324,10 +349,29 @@ Two deliberate design changes, both agreed up front: the three overlay surfaces 
 2. ~~**Drag reorder.**~~ **Retired in Phase 4** — both screens now hand-roll it on the shared `ui/reorder/` package. What the two ports proved is that the gesture is never the hard part; the surroundings are. Phase 3 lost a day to edge auto-scroll that only misbehaves on a device, phase 4 to a clickable ancestor swallowing the handle. Budget device time for any future drag, and never trust a green drag test alone.
 3. ~~**`IconOnlyUiTest`.**~~ **Converted in Phase 4** — every case now walks the Compose semantics tree; nothing inflates a layout. The lost assertion was **not** restored and cannot be: a decorative image draws no semantics node, so "no undecorated background illustration" has no Compose equivalent. It is replaced by pinning each empty screen to exactly the affordances it is allowed to expose — the items screen to the back arrow, the lists screen to create and replay — which fails just as loudly if something is added, but for a different reason. Worth knowing when reading the test.
 4. **Robolectric + Compose is slower.** Suite time will grow before Phase 3's hoisting shrinks it again.
-5. **APK size.** Compose adds roughly 2–3 MB before shrinking; R8 recovers much of it. Measure at Phase 6.
-6. **Paper texture as a drawn surface.** Today it is free — it is `android:windowBackground`. Drawn per-frame it is not. Cache with `drawWithCache` and watch overdraw during scroll. Both screens now draw `PaperSurface` over the window background; no scroll cost was visible on the emulator, but it is one full-screen opaque rect of overdraw per screen until `bg_paper.xml` goes in Phase 6.
+5. ~~**APK size.**~~ **Retired in Phase 6** — the fear was backwards. Compose replaced more than it added: the release APK fell 37%, from 2,686,277 to 1,690,684 bytes, and half of that was `resources.arsc` rather than code.
+6. ~~**Paper texture as a drawn surface.**~~ **Retired in Phase 6** — `drawWithCache` made it free enough that no scroll cost was ever visible on the emulator, and `bg_paper.xml` is gone, so the window is a flat colour under one drawn surface rather than a tiled layer-list under it.
 7. **The coverage gate says more than it enforces.** `includeNoLocationClasses` was missing, so every Robolectric-executed line reported as uncovered — `ui` at 0/1403 and `data` at 93/583. Fixed before Phase 3. With the report honest, the picture after Phase 4 is: `domain` and `presentation` at 100%, `data` at 489/583 where **every uncovered line is Room-generated** (`TodoDatabase_Impl`, `*Dao_Impl`, `*Dao$DefaultImpls`) — no hand-written data class is short. So `CLAUDE.md`'s claim holds for hand-written code in all three gated layers, and the honest fix is to say so, or to exclude generated classes from the report. After Phase 5 the `ui` family sits at 2,068/2,183 (95%): the activities at 262/277, `ui/tutorial` at 269/280, and the remainder in `graphicsLayer` and `drawBehind` lambdas that Robolectric never draws. That is the floor for Compose under this harness, not a gap to close.
 8. ~~**`TodoListActivity` has no test at all.**~~ **Closed in Phase 5** — `TodoListTutorialStageTest` (21 tests) takes the class from 0/106 to 103/107 and covers every `TutorialStage` action the items screen answers. The lesson stands: a screen whose only caller is the tutorial has no other test pulling on it, so the hole opens silently the moment its old activity test is deleted.
+
+---
+
+## The plan is complete
+
+All six phases are done and on `main`. What the whole thing cost and bought:
+
+| | before | after |
+| --- | --- | --- |
+| `res/layout/` | 12 files, 1,074 lines | **gone** |
+| `ui/` | 2,408 lines | 4,074 |
+| `ui/` tests | 4,401 lines | 3,970 |
+| adapters + item animators | 909 lines | 0 |
+| release APK | 2,686,277 B | 1,690,684 B |
+| Pitest | 232/232 | 368/368 |
+
+`ui/` grew by about 1,700 lines, which the plan did not predict — `ItemTouchHelper` and the four dialogs were doing more for free than the adapter arithmetic they replaced. What the migration actually bought is the thing it set out to buy: motion is now a modifier. `Modifier.animateItem` retired 249 lines of `ItemAnimator`, a completed row travels into the completed section instead of fading out and growing back, and the drop-in, the peel, the confirm-strip stagger and the phantom hand are all a few lines of `Animatable` each.
+
+The recurring lesson, in three of six phases: **the suite is green and the device is not.** Edge auto-scroll (phase 3), a clickable ancestor swallowing a drag handle (phase 4), an anchor pointing at a row that had moved below the divider (phase 4), and a missing `MonotonicFrameClock` (phase 5) were all found by installing the APK, never by a test. Budget device time for anything with a gesture or an animation in it.
 
 ## What stays true throughout
 

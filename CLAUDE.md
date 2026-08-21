@@ -41,9 +41,9 @@ Every feature must reach **100% JaCoCo line+branch coverage** and **100% Pitest 
 For any user-facing feature, run the agents in this order:
 
 1. **`developer`** — TDD logic: domain, data, ViewModel, unit tests, coverage + mutation gates
-2. **`ui`** — Polish: layouts, themes, accessibility, Material Design 3 compliance, build check
+2. **`ui`** — Polish: Compose screens and the `ui/paper/` design system, accessibility, motion, build check
 
-The `ui` agent never touches domain/data/ViewModel code. The `developer` agent never touches layout XML or theme files.
+The `ui` agent owns `ui/` and `ui/paper/` and never touches domain, data, or ViewModel code. The `developer` agent never touches `ui/`.
 
 ## Architecture
 
@@ -53,8 +53,16 @@ Three strict layers — a class must not import from a layer above it or import 
 app/src/main/java/fr/mandarine/todolist/
 ├── domain/       # Pure Kotlin: models (immutable data class), repository interfaces, use cases
 ├── data/         # Repository implementations — may use Android APIs
-└── presentation/ # ViewModels + UI state sealed classes — depends on domain only
+├── presentation/ # ViewModels + UI state sealed classes — depends on domain only
+└── ui/           # Jetpack Compose. Activities call setContent and own no views.
+    ├── paper/       # The design system: PaperInk, PaperDimens, PaperMotion, primitives
+    ├── todolist/    # Screen 2 — the items on one list
+    ├── todolists/   # Screen 1 — the page of lists
+    ├── reorder/     # Drag reorder, shared by both screens
+    └── tutorial/    # Anchor registry and the first-launch overlay
 ```
+
+**The app is entirely Compose.** There is no `res/layout/`, no View-system dependency in the graph (`appcompat`, `recyclerview` and Views `material` were dropped in the Compose migration), and no `AppCompatActivity`. The palette, dimensions and motion specs are Kotlin objects, not resources — `res/values/` holds a bare window theme, the strings, and one screen-width dimension.
 
 Test sources mirror the main layout under `app/src/test/java/fr/mandarine/todolist/`.
 

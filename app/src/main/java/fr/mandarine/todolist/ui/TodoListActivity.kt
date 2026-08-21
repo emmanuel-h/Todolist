@@ -2,9 +2,9 @@ package fr.mandarine.todolist.ui
 
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 
 private const val TYPE_CHAR_MILLIS = 80L
 
-class TodoListActivity : AppCompatActivity(), TutorialStage {
+class TodoListActivity : ComponentActivity(), TutorialStage {
 
     internal lateinit var viewModel: TodoListViewModel
     internal val screenState = TodoListScreenState()

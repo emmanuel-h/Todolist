@@ -5,11 +5,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
@@ -54,7 +54,7 @@ import kotlinx.coroutines.launch
 
 private const val TYPE_CHAR_MILLIS = 80L
 
-class TodoListsActivity : AppCompatActivity(), TutorialStage {
+class TodoListsActivity : ComponentActivity(), TutorialStage {
 
     internal lateinit var viewModel: TodoListsViewModel
     internal val screenState = TodoListsScreenState()

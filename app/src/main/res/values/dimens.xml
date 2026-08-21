@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Width of the leading spacer in the inline-add row, matching the
-         MaterialCheckBox touch target (wrap_content ~32dp) plus its end
-         margin (12dp) so the text field aligns with todo item titles. -->
-    <dimen name="inline_add_leading_spacer">44dp</dimen>
-    <!-- Collapsed ghost-row height — slimmer than the full 56dp item row. -->
-    <dimen name="inline_add_ghost_height">40dp</dimen>
     <!-- Horizontal inset that caps list content width on large screens so rows
-         stay readable instead of stretching edge to edge. Zero on handsets. -->
+         stay readable instead of stretching edge to edge. Zero on handsets. The
+         only dimension left in resources: everything else lives in PaperDimens,
+         because only this one varies by screen width. -->
     <dimen name="list_horizontal_inset">0dp</dimen>
-    <!-- Paper gutter: row content starts here and the ruling begins here. The
-         hole punches live to its left. -->
-    <dimen name="paper_gutter_width">40dp</dimen>
-    <dimen name="paper_rule_height">1dp</dimen>
 </resources>
