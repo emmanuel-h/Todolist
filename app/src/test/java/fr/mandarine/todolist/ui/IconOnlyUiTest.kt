@@ -4,14 +4,27 @@ import android.content.Context
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.widget.FrameLayout
-import com.google.android.material.textview.MaterialTextView
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithText
+import com.google.android.material.appbar.MaterialToolbar
 import fr.mandarine.todolist.R
-import fr.mandarine.todolist.domain.TodoItem
-import io.mockk.mockk
+import fr.mandarine.todolist.presentation.TodoListState
+import fr.mandarine.todolist.ui.paper.PaperTheme
+import fr.mandarine.todolist.ui.todolist.SectionDivider
+import fr.mandarine.todolist.ui.todolist.TodoListScreen
+import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -22,19 +35,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class IconOnlyUiTest {
 
-    private lateinit var adapter: TodoListAdapter
+    @get:Rule
+    val composeRule = createComposeRule()
+
     private lateinit var themedContext: Context
 
     @Before
     fun setUp() {
-        val onToggle: (String) -> Unit = mockk(relaxed = true)
-        val onDelete: (String) -> Unit = mockk(relaxed = true)
-        val onEdit: (String, String) -> Unit = mockk(relaxed = true)
-        adapter = TodoListAdapter(
-            onToggle = onToggle,
-            onDelete = onDelete,
-            onEdit = onEdit
-        )
         themedContext = ContextThemeWrapper(
             RuntimeEnvironment.getApplication(),
             R.style.Theme_ToDoList
@@ -43,67 +50,48 @@ class IconOnlyUiTest {
 
     @Test
     fun `should show only numeric count in divider label without the word Completed`() {
-        val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
-        val completedItems = listOf(
-            TodoItem("2", "Call dentist", "list-1", isCompleted = true, completedAt = 1000L),
-            TodoItem("3", "Walk the dog", "list-1", isCompleted = true, completedAt = 2000L)
-        )
-        adapter.submitList(activeItems, completedItems)
+        composeRule.setContent { PaperTheme { SectionDivider(completedCount = 2) } }
 
-        val parent = FrameLayout(themedContext)
-        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
-            as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 2)
-
-        val label = holder.itemView.findViewById<MaterialTextView>(R.id.textDividerLabel)
-        val labelText = label.text.toString()
-        assertEquals("2", labelText)
+        assertEquals(listOf("2"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
     fun `should show count of one in divider label when exactly one completed item exists`() {
-        val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
-        val completedItems = listOf(
-            TodoItem("2", "Call dentist", "list-1", isCompleted = true, completedAt = 1000L)
-        )
-        adapter.submitList(activeItems, completedItems)
+        composeRule.setContent { PaperTheme { SectionDivider(completedCount = 1) } }
 
-        val parent = FrameLayout(themedContext)
-        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
-            as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 2)
-
-        val label = holder.itemView.findViewById<MaterialTextView>(R.id.textDividerLabel)
-        assertEquals("1", label.text.toString())
+        assertEquals(listOf("1"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
     fun `should not contain the word Completed in divider label text`() {
-        val activeItems = listOf(TodoItem("1", "Buy milk", "list-1"))
-        val completedItems = listOf(
-            TodoItem("2", "Call dentist", "list-1", isCompleted = true, completedAt = 1000L)
-        )
-        adapter.submitList(activeItems, completedItems)
+        composeRule.setContent { PaperTheme { SectionDivider(completedCount = 12) } }
 
-        val parent = FrameLayout(themedContext)
-        val holder = adapter.onCreateViewHolder(parent, TodoListAdapter.VIEW_TYPE_DIVIDER)
-            as TodoListAdapter.DividerViewHolder
-        adapter.onBindViewHolder(holder, 2)
+        val labels = composeRule.onRoot().fetchSemanticsNode().staticText().map { it.lowercase() }
 
-        val label = holder.itemView.findViewById<MaterialTextView>(R.id.textDividerLabel)
-        val labelText = label.text.toString().lowercase()
-        assert(!labelText.contains("completed")) {
-            "Expected divider label to not contain 'completed' but was: '${label.text}'"
+        assert(labels.none { it.contains("completed") }) {
+            "Expected divider label to not contain 'completed' but was: $labels"
         }
     }
 
     @Test
     fun `should not contain any static text in the empty state of todo list`() {
-        val parent = FrameLayout(themedContext)
-        val contentView = LayoutInflater.from(themedContext)
-            .inflate(R.layout.activity_todo_list, parent, false)
+        composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
 
-        assertEquals(emptyList<String>(), staticTextIn(contentView))
+        assertEquals(listOf(GHOST_HINT), composeRule.onRoot().fetchSemanticsNode().staticText())
+    }
+
+    @Test
+    fun `should expose only the back affordance in the empty state of todo list`() {
+        composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
+
+        assertEquals(listOf(BACK_DESCRIPTION), composeRule.onRoot().fetchSemanticsNode().contentDescriptions())
+    }
+
+    @Test
+    fun `should show the ghost row as the only row when the list has no items`() {
+        composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
+
+        composeRule.onNodeWithText(GHOST_HINT).assertIsDisplayed()
     }
 
     @Test
@@ -116,30 +104,12 @@ class IconOnlyUiTest {
     }
 
     @Test
-    fun `should not contain a background illustration in either screen`() {
+    fun `should not contain a background illustration in the lists screen`() {
         val parent = FrameLayout(themedContext)
-        val listView = LayoutInflater.from(themedContext)
-            .inflate(R.layout.activity_todo_list, parent, false)
         val listsView = LayoutInflater.from(themedContext)
             .inflate(R.layout.activity_todo_lists, parent, false)
 
-        assertEquals(emptyList<String>(), decorativeImagesIn(listView))
         assertEquals(emptyList<String>(), decorativeImagesIn(listsView))
-    }
-
-    private fun staticTextIn(view: android.view.View): List<String> = when {
-        view is android.widget.TextView && view.text.isNotBlank() -> listOf(view.text.toString())
-        view is android.view.ViewGroup ->
-            (0 until view.childCount).flatMap { staticTextIn(view.getChildAt(it)) }
-        else -> emptyList()
-    }
-
-    private fun decorativeImagesIn(view: android.view.View): List<String> = when {
-        view is android.widget.ImageView && view.contentDescription.isNullOrBlank() ->
-            listOf(view.javaClass.simpleName)
-        view is android.view.ViewGroup ->
-            (0 until view.childCount).flatMap { decorativeImagesIn(view.getChildAt(it)) }
-        else -> emptyList()
     }
 
     @Test
@@ -148,8 +118,7 @@ class IconOnlyUiTest {
         val listsView = LayoutInflater.from(themedContext)
             .inflate(R.layout.activity_todo_lists, parent, false)
 
-        val toolbar = listsView.findViewById<android.view.View>(R.id.toolbar)
-        assertNull("Expected no toolbar in the lists screen", toolbar)
+        assertNull("Expected no toolbar in the lists screen", toolbarIn(listsView))
     }
 
     @Test
@@ -191,4 +160,55 @@ class IconOnlyUiTest {
         val cancelBtn = rowView.findViewById<android.widget.ImageButton>(R.id.btnDeleteCancel)
         assertNotNull("Expected btnDeleteCancel to exist in item_todo_list layout", cancelBtn)
     }
+
+    private fun staticTextIn(view: android.view.View): List<String> = when {
+        view is android.widget.TextView && view.text.isNotBlank() -> listOf(view.text.toString())
+        view is android.view.ViewGroup ->
+            (0 until view.childCount).flatMap { staticTextIn(view.getChildAt(it)) }
+        else -> emptyList()
+    }
+
+    private fun decorativeImagesIn(view: android.view.View): List<String> = when {
+        view is android.widget.ImageView && view.contentDescription.isNullOrBlank() ->
+            listOf(view.javaClass.simpleName)
+        view is android.view.ViewGroup ->
+            (0 until view.childCount).flatMap { decorativeImagesIn(view.getChildAt(it)) }
+        else -> emptyList()
+    }
+
+    private fun toolbarIn(view: android.view.View): MaterialToolbar? = when {
+        view is MaterialToolbar -> view
+        view is android.view.ViewGroup ->
+            (0 until view.childCount).firstNotNullOfOrNull { toolbarIn(view.getChildAt(it)) }
+        else -> null
+    }
+
+    private companion object {
+        const val GHOST_HINT = "…"
+        const val BACK_DESCRIPTION = "Navigate up"
+    }
 }
+
+@Composable
+private fun EmptyItemsScreen() {
+    TodoListScreen(
+        listName = "",
+        state = TodoListState.Empty,
+        screenState = remember { TodoListScreenState() },
+        onBack = {},
+        onToggle = {},
+        onEdit = { _, _ -> },
+        onDelete = {},
+        onSubmitInline = {},
+        onReorder = { _, _ -> }
+    )
+}
+
+internal fun SemanticsNode.staticText(): List<String> =
+    config.getOrNull(SemanticsProperties.Text).orEmpty()
+        .map { it.text }
+        .filter { it.isNotBlank() } + children.flatMap { it.staticText() }
+
+internal fun SemanticsNode.contentDescriptions(): List<String> =
+    config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+        .filter { it.isNotBlank() } + children.flatMap { it.contentDescriptions() }

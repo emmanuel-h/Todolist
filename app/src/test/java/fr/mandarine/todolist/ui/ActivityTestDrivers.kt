@@ -86,12 +86,3 @@ internal fun TodoListsActivity.clickToggleDueDateForTest() {
 internal fun TodoListActivity.refreshListForTest() {
     viewModel.refresh()
 }
-
-internal val TodoListActivity.inlineAddEditTextInternal: TextInputEditText
-    get() {
-        for (i in 0 until recyclerViewInternal.childCount) {
-            val holder = recyclerViewInternal.getChildViewHolder(recyclerViewInternal.getChildAt(i))
-            if (holder is TodoListAdapter.InlineAddViewHolder) return holder.editText
-        }
-        error("InlineAdd ViewHolder not found - call layoutRecyclerView() before accessing this")
-    }

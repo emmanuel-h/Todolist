@@ -45,6 +45,8 @@ Roughly 900 of those 2,408 lines are **deleted, not ported**:
 | `TodoListAdapter` + `TodoListsAdapter` | 660 | ~200 lines of row composables |
 | `TodoItemAnimator` + `TodoListsItemAnimator` | 249 | `Modifier.animateItem()` — nothing |
 
+**Phase 3 says this table is optimistic.** The animator half held exactly; the adapter half did not, and neither accounted for hand-rolling what `ItemTouchHelper` gave away. Screen 2 came out 99 lines heavier overall. The savings are real in layout XML and tests, not in `ui/`.
+
 ## The crux: the tutorial drives views, not state
 
 `TutorialOverlayController` (592 lines) operates the app by reaching into its view tree:
@@ -176,9 +178,38 @@ Instead of screenshots, verification is `PaperGalleryActivity` — a debug-only 
 
 **Risk — low.** Nothing depends on it. The real risk is over-building: restrict it to primitives the two screens actually need.
 
-## Phase 3 — Screen 2 (pilot)
+## Phase 3 — Screen 2 (pilot) ✅ DONE
 
 **Why Screen 2 first** — 270 lines against Screen 1's 625, no dialogs, no date pickers. But it carries the harder motion (the complete/restore cross-section animation), so it is an honest test rather than a soft one.
+
+### Outcome
+
+**Done, and the whole app still ships.** Written up in [items-screen-compose.md](items-screen-compose.md). `TodoListActivity` owns no views; `res/layout/` lost three files and `ui/` lost 473 lines of adapter and animator. All three gates green: full suite, coverage report, Pitest at **368/368 mutations, 100%** — the same number as phases 1 and 2, because the gate does not reach `ui`.
+
+| | before | after |
+| --- | --- | --- |
+| `TodoListActivity` | 352 | 225 |
+| `TodoListAdapter` | 313 | 0 |
+| `TodoItemAnimator` | 160 | 0 |
+| `ui/todolist/` | — | 904 |
+| Screen 2 layout XML | 205 | 0 |
+| **Screen 2 total** | **1,030** | **1,129** |
+| Screen 2 UI tests | 1,284 | 764 |
+
+Five things worth carrying into phase 4:
+
+- **Keying by item id is what buys the motion.** A completed row keeps its identity and springs from the active section down past the ghost row and divider on `PaperMotion.rowPlacement`. The old animator needed 160 lines to fade one row out and grow another in; this needs none. Agreed as a deliberate improvement over a faithful port before the work started.
+- **Drag reorder was hand-rolled, and it was the right call** — but not because the gesture was hard. `detectDragGestures` plus `LazyListState.layoutInfo` is about 40 lines. The value is that `DragSession`, `settleDrag`, `moved` and `autoScrollDelta` are plain Kotlin with no Compose types, so 30 unit tests cover the logic that a library would have hidden.
+- **Auto-scroll needs `canScrollBackward`/`canScrollForward`, not just an edge band.** A row resting at the top of the list is inside the top band by definition, so grabbing the first row fed negative deltas into the drag and carried the row a thousand pixels off screen. Every unit test passed throughout; only the device showed it. Budget device time for phase 4's drag too.
+- **A frame loop that runs for a whole gesture makes the screen untestable.** The first auto-scroll spun every frame while a finger was down, so `waitForIdle` never returned and no mid-drag assertion was possible. Gating the loop on the band being occupied fixed both the test and the behaviour. Related: `waitForIdle` cannot be used at all while a synthetic gesture is still open — use `mainClock.advanceTimeBy`.
+- **`clearAndSetSemantics` is not `importantForAccessibility="no"`.** It is `noHideDescendants`. Translating the divider literally hid the completed count from screen readers, and the ported icon-only test caught it.
+
+### Deviation from the plan
+
+**Screen 2 got bigger, not smaller.** The plan's arithmetic — adapter 313 → ~180, animator 160 → 0, layouts → 0 — predicted roughly 300 lines saved. It came out 99 lines heavier. The three row composables land at 317 rather than 180, and two things the plan never counted absorbed the rest: `TodoListScreenState` (82) and drag reorder (145 in `DragReorder.kt` plus its wiring), both of which exist only because the tutorial and the reorder had to keep working. `ItemTouchHelper` really was doing 190 lines of work for free.
+
+What did shrink is the part that matters: 205 lines of layout XML are gone, the UI tests halved from 1,284 to 764, and the motion got better while `TodoItemAnimator` went to zero. Expect the same shape in phase 4 — Screen 1's drag will cost what Screen 2's did, and the four dialogs will not be free either. `TodoListViewModel.animationEvents` is now unused by this screen; it stays until phase 4 retires Screen 1's animator, which still consumes the equivalent flow.
+
 
 **Work**
 - `TodoListActivity` → `setContent { TodoListScreen(…) }`
@@ -231,11 +262,12 @@ Instead of screenshots, verification is `PaperGalleryActivity` — a debug-only 
 ## Risks, ranked
 
 1. ~~**AGP 9.3.1 + built-in Kotlin + Compose compiler.**~~ **Retired in Phase 0** — the plugin applies cleanly and all three gates stay green. Replaced by a smaller one: the Compose version is capped by `compileSdk 36.1` until that is bumped, and the bump must move the Pitest `android.jar` path with it.
-2. **Drag reorder.** No first-party Compose equivalent to `ItemTouchHelper`. Hand-roll or take a dependency — decide in Phase 3.
-3. **`IconOnlyUiTest`.** It currently inflates layouts and walks the View tree for `TextView`s and untagged `ImageView`s. It must become a semantics-tree walk. The invariant matters more than the implementation — do not let it lapse during the migration.
+2. ~~**Drag reorder.**~~ **Retired in Phase 3** — hand-rolled on `detectDragGestures` and `LazyListState`, no dependency added. Replaced by a smaller one: the edge auto-scroll is the part that only misbehaves on a real device, and Screen 1 has its own drag to port in Phase 4.
+3. **`IconOnlyUiTest`.** Half-converted in Phase 3: the items-screen cases now walk the Compose semantics tree, the lists-screen cases still inflate layouts. One assertion did not survive the crossing — an `Image` with a null `contentDescription` produces no semantics node at all, so the "no undecorated background illustration" check now covers Screen 1 only. Restore it for both screens when the rest converts in Phase 4.
 4. **Robolectric + Compose is slower.** Suite time will grow before Phase 3's hoisting shrinks it again.
 5. **APK size.** Compose adds roughly 2–3 MB before shrinking; R8 recovers much of it. Measure at Phase 6.
-6. **Paper texture as a drawn surface.** Today it is free — it is `android:windowBackground`. Drawn per-frame it is not. Cache with `drawWithCache` and watch overdraw during scroll.
+6. **Paper texture as a drawn surface.** Today it is free — it is `android:windowBackground`. Drawn per-frame it is not. Cache with `drawWithCache` and watch overdraw during scroll. Phase 3 draws `PaperSurface` over the window background on Screen 2; no scroll cost was visible on the emulator, but it is one full-screen opaque rect of overdraw until `bg_paper.xml` goes in Phase 6.
+7. **The coverage gate says more than it enforces.** `includeNoLocationClasses` was missing, so every Robolectric-executed line reported as uncovered — `ui` at 0/1403 and `data` at 93/583. Fixed before Phase 3. With the report honest, `domain` and `presentation` are at 100% but `data` sits at 506/583 (Room's generated `_Impl` and the DAO `$DefaultImpls`) and `ui` at 691/1023, so `CLAUDE.md`'s blanket 100% claim is now measurably untrue rather than quietly unmeasured. Decide what the gate should say.
 
 ## What stays true throughout
 

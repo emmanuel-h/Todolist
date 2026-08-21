@@ -1,7 +1,7 @@
 # Paper Design System
 
 ## What it does
-Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, spring motion specs, and previewable primitives. It is the vocabulary phases 3–5 of the [Compose migration](compose-migration-plan.md) are written in. **No screen consumes it yet** — the app still runs entirely on Views.
+Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, spring motion specs, and previewable primitives. It is the vocabulary phases 3–5 of the [Compose migration](compose-migration-plan.md) are written in. Phase 3 is its first consumer — see [items-screen-compose.md](items-screen-compose.md).
 
 ## Architecture
 - **Layers**: `ui/paper/` only — no domain, data, or presentation logic touched. The Pitest gate (`domain`, `data`, `presentation`) is untouched: 368/368 mutations, 100%.
@@ -32,7 +32,7 @@ Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, s
 - **Icon-only holds.** The only text any primitive renders is a `CountBadge` number and the `GhostRow` hint, which is `@string/add_item_ghost_hint` — "…".
 
 ## UI
-- **Screen(s)**: none yet. `PaperGalleryActivity` (debug builds only) renders every preview on device.
+- **Screen(s)**: the items screen. `PaperGalleryActivity` (debug builds only) renders every preview on device.
 - **Design decisions**:
   - `StickyNotePad` splits the animation from the composable: `stickyNotePeelAt` / `stickyNoteSettleAt` are pure functions of progress, unit-tested without Robolectric, and the composable only feeds them an `Animatable`. The View version needed a decorative ghost view to keep the animation from blocking a synchronous test assertion; here the peeling sheet is just a second composable that exists while `peeling` is true.
   - `InkIconButton` fades its own tint when disabled. `IconButton` normally handles this through `LocalContentColor`, which an explicit `tint` overrides — so a disabled button would have looked enabled.
