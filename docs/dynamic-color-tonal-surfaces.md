@@ -23,7 +23,7 @@ On Android 12+ the app follows the device's wallpaper palette via `DynamicColors
 - The `surfaceContainer*` token family (Lowest/Low/Container/High/Highest) must remain defined in both light and dark themes so that references in `item_todo_inline_add.xml` and `item_todo_list_inline_add.xml` resolve to palette-consistent values.
 - `DynamicColors.applyToActivitiesIfAvailable()` must be called at Application scope (not per-Activity) so every activity inherits the wallpaper palette on Android 12+.
 - List item cards use `Widget.Material3.CardView.Filled` + `colorSurfaceContainer` + `0dp` elevation; do not reintroduce `Elevated` style or shadow-based depth for in-screen content.
-- The tutorial overlay (`overlay_tutorial.xml`) intentionally retains `Widget.Material3.CardView.Elevated` at 6–8dp because it is a floating layer above a scrim, not in-screen content — this is correct and must not be changed to match item cards.
+- ~~The tutorial overlay (`overlay_tutorial.xml`) intentionally retains `Widget.Material3.CardView.Elevated` at 6–8dp because it is a floating layer above a scrim, not in-screen content — this is correct and must not be changed to match item cards.~~ **No longer true** — the overlay is Compose and its three surfaces are shadowless paper slips → see [tutorial-overlay-compose.md](tutorial-overlay-compose.md). The app draws no drop shadows anywhere.
 
 ## UI
 - **Screen(s)**: `TodoListsActivity`, `TodoListActivity` (both inherit theme at Application scope)

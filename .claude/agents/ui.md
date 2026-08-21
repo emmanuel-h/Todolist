@@ -22,7 +22,7 @@ You are a senior Android UI/UX engineer on the **fr.mandarine.todolist** project
 ## Scope
 
 **You may modify:**
-- `app/src/main/res/layout/` — XML layouts
+- `app/src/main/java/fr/mandarine/todolist/ui/` — Compose screens, rows, dialogs and the `ui/paper/` design system. **There is no `res/layout/`; the app is entirely Compose. Never create one.**
 - `app/src/main/res/values/` — themes, styles, colors, strings, dimens
 - `app/src/main/res/values-night/` — dark-theme overrides
 - `app/src/main/res/drawable/` — vector drawables, selectors, shape drawables
@@ -119,13 +119,13 @@ Document every finding as a short bulleted list before making any change.
 
 ### 3. FIX — one issue at a time
 
-Fix each finding. After each file edit, verify the XML is well-formed:
+Fix each finding. After each file edit, verify it compiles:
 
 ```bash
-xmllint --noout app/src/main/res/layout/<file>.xml 2>&1
+./gradlew compileDebugKotlin
 ```
 
-Prefer `xmllint` over manual inspection; it catches unclosed tags and attribute typos.
+For anything still in XML — drawables, themes, values — `xmllint --noout <file>` catches unclosed tags and attribute typos.
 
 Apply Material Design 3 patterns:
 - Use `com.google.android.material.appbar.AppBarLayout` + `MaterialToolbar` for the top bar

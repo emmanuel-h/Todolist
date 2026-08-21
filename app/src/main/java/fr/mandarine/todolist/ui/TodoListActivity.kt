@@ -5,8 +5,11 @@ import android.provider.Settings
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -35,6 +38,8 @@ import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.reorder.moved
+import fr.mandarine.todolist.ui.tutorial.TutorialOverlay
+import fr.mandarine.todolist.ui.tutorial.TutorialOverlayController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -81,25 +86,32 @@ class TodoListActivity : AppCompatActivity(), TutorialStage {
         )[TodoListViewModel::class.java]
 
         tutorialViewModel = container.tutorialViewModel
+        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
         screenState.animationsEnabled = animationsAllowed()
 
         setContent {
             val state by viewModel.state.collectAsState()
             PaperTheme {
-                TodoListScreen(
-                    listName = listName,
-                    state = state,
-                    screenState = screenState,
-                    onBack = { onBackPressedDispatcher.onBackPressed() },
-                    onToggle = { todoId -> viewModel.toggleTodo(todoId) },
-                    onEdit = { todoId, newTitle -> viewModel.editTodo(todoId, newTitle) },
-                    onDelete = { todoId -> viewModel.deleteTodo(todoId) },
-                    onSubmitInline = { title -> viewModel.submitInlineInput(title) },
-                    onReorder = { from, to ->
-                        screenState.previewOrder = null
-                        viewModel.reorderTodos(from, to)
-                    }
-                )
+                Box(Modifier.fillMaxSize()) {
+                    TodoListScreen(
+                        listName = listName,
+                        state = state,
+                        screenState = screenState,
+                        onBack = { onBackPressedDispatcher.onBackPressed() },
+                        onToggle = { todoId -> viewModel.toggleTodo(todoId) },
+                        onEdit = { todoId, newTitle -> viewModel.editTodo(todoId, newTitle) },
+                        onDelete = { todoId -> viewModel.deleteTodo(todoId) },
+                        onSubmitInline = { title -> viewModel.submitInlineInput(title) },
+                        onReorder = { from, to ->
+                            screenState.previewOrder = null
+                            viewModel.reorderTodos(from, to)
+                        }
+                    )
+                    TutorialOverlay(
+                        state = tutorialController.overlayState,
+                        onSkip = { tutorialController.onSkipRequested() }
+                    )
+                }
             }
         }
 
@@ -112,9 +124,6 @@ class TodoListActivity : AppCompatActivity(), TutorialStage {
         }
 
         onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
-
-        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
-        tutorialController.attachToActivity(this)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -130,11 +139,6 @@ class TodoListActivity : AppCompatActivity(), TutorialStage {
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        tutorialController.detachFromActivity()
     }
 
     private fun animationsAllowed(): Boolean =

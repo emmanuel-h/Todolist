@@ -10,8 +10,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -42,6 +45,8 @@ import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.todolists.DateTarget
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
+import fr.mandarine.todolist.ui.tutorial.TutorialOverlay
+import fr.mandarine.todolist.ui.tutorial.TutorialOverlayController
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -89,6 +94,7 @@ class TodoListsActivity : AppCompatActivity(), TutorialStage {
         )[TodoListsViewModel::class.java]
 
         tutorialViewModel = container.tutorialViewModel
+        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
         screenState.animationsEnabled = animationsAllowed()
 
         container.notificationScheduler.scheduleDailyCheck()
@@ -96,24 +102,30 @@ class TodoListsActivity : AppCompatActivity(), TutorialStage {
         setContent {
             val state by viewModel.state.collectAsState()
             PaperTheme {
-                TodoListsScreen(
-                    state = state,
-                    screenState = screenState,
-                    today = clock.today(),
-                    onOpenList = { list -> openList(list) },
-                    onCreateList = { name, targetDate, dueDate ->
-                        viewModel.createList(name, targetDate, dueDate)
-                    },
-                    onRenameList = { listId, name, targetDate, dueDate ->
-                        viewModel.editList(listId, name, targetDate, dueDate)
-                    },
-                    onDeleteList = { listId -> viewModel.deleteList(listId) },
-                    onReorder = { from, to ->
-                        screenState.previewOrder = null
-                        viewModel.reorderLists(from, to)
-                    },
-                    onReplayTutorial = { tutorialViewModel.replay() }
-                )
+                Box(Modifier.fillMaxSize()) {
+                    TodoListsScreen(
+                        state = state,
+                        screenState = screenState,
+                        today = clock.today(),
+                        onOpenList = { list -> openList(list) },
+                        onCreateList = { name, targetDate, dueDate ->
+                            viewModel.createList(name, targetDate, dueDate)
+                        },
+                        onRenameList = { listId, name, targetDate, dueDate ->
+                            viewModel.editList(listId, name, targetDate, dueDate)
+                        },
+                        onDeleteList = { listId -> viewModel.deleteList(listId) },
+                        onReorder = { from, to ->
+                            screenState.previewOrder = null
+                            viewModel.reorderLists(from, to)
+                        },
+                        onReplayTutorial = { tutorialViewModel.replay() }
+                    )
+                    TutorialOverlay(
+                        state = tutorialController.overlayState,
+                        onSkip = { tutorialController.onSkipRequested() }
+                    )
+                }
             }
         }
 
@@ -126,9 +138,6 @@ class TodoListsActivity : AppCompatActivity(), TutorialStage {
         }
 
         onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
-
-        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
-        tutorialController.attachToActivity(this)
 
         val requestNotificationPermission = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -155,11 +164,6 @@ class TodoListsActivity : AppCompatActivity(), TutorialStage {
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        tutorialController.detachFromActivity()
     }
 
     private fun maybeRequestNotificationPermission(launcher: ActivityResultLauncher<String>) {
