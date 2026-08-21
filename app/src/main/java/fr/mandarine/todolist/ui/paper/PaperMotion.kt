@@ -1,0 +1,43 @@
+package fr.mandarine.todolist.ui.paper
+
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.unit.IntOffset
+
+@Immutable
+object PaperMotion {
+
+    val sheetLift: SpringSpec<Float> = spring(
+        dampingRatio = 0.42f,
+        stiffness = 1400f
+    )
+
+    val sheetSettle: SpringSpec<Float> = spring(
+        dampingRatio = 0.62f,
+        stiffness = 700f
+    )
+
+    val rowEnter: SpringSpec<Float> = spring(
+        dampingRatio = 0.85f,
+        stiffness = 500f
+    )
+
+    val rowExit: SpringSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = 800f
+    )
+
+    val rowPlacement: SpringSpec<IntOffset> = spring(
+        dampingRatio = 0.85f,
+        stiffness = 500f,
+        visibilityThreshold = IntOffset.VisibilityThreshold
+    )
+
+    val instant: SpringSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessHigh
+    )
+}

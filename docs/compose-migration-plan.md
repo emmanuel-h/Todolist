@@ -140,11 +140,33 @@ Both are now written up in `CLAUDE.md`, because any gated code will hit them:
 
 **Risk — medium.** This is real design work, not a mechanical port. It pays for itself even if the migration stops here: the tutorial script becomes unit-testable for the first time.
 
-## Phase 2 — The paper design system
+## Phase 2 — The paper design system ✅ DONE
 
 **Goal** — the vocabulary every later phase is written in.
 
-**Work** — a new `ui/paper/` package:
+### Outcome
+
+**Done, and nothing consumes it yet — by design.** Written up in [paper-design-system.md](paper-design-system.md). `ui/paper/` is 11 files: two token objects, one motion object, a theme, six primitives, and a previews file. All three gates stayed green — full suite, coverage report, and Pitest at **368/368 mutations, 100% test strength**, which is the same number as Phase 1 because the gate does not reach `ui`.
+
+Four things worth carrying into Phase 3:
+
+- **Both PNG tiles are gone.** Grain is a 64×64 tile built from a seeded `Random` — byte-identical on every call, so the paper does not shimmer between recompositions. Holes are vector circles rather than a repeated bitmap. Geometry was measured off `tile_paper_hole.png` and then verified against the running app: hole bands land on the same pixel rows (167.5, 503.5, 839.5 …) at 420dpi. The vector punches are slightly crisper than the downscaled PNG; that is the only visible difference.
+- **Tokens are `object`s, not `CompositionLocal`s.** The palette is fixed and light-only, so a swappable theme seam would only invite it to be swapped. It also costs nothing in coverage — data-class `equals`/`hashCode` never get exercised.
+- **Split the animation from the composable.** `stickyNotePeelAt` / `stickyNoteSettleAt` are pure functions of progress, unit-tested in plain JUnit; `StickyNotePad` only feeds them an `Animatable`. The View version needed a decorative ghost view so the animation would not block a synchronous test assertion — in Compose the peeling sheet is simply a second composable that exists while `peeling` is true. This is the shape to reach for whenever motion needs testing.
+- **`PaperTheme` must set `surfaceTint = Color.Transparent`.** It is the Compose equivalent of `elevationOverlayEnabled=false`; without it M3 tints raised surfaces with `colorPrimary` and paper turns grey-blue.
+
+### Two things that did not work
+
+- **`captureToImage()` does not work under Robolectric.** It goes through window capture and waits for a real redraw that never comes — every shot times out after 2 s, with or without `@GraphicsMode(NATIVE)`. Screenshot testing needs a different harness (Paparazzi or Roborazzi) if it is ever wanted. Not pursued.
+- **Robolectric-executed code contributes nothing to the JaCoCo report.** This is pre-existing, not new: the whole `ui` package reports 0/1403 lines. Only the pure-Kotlin parts of `ui/paper` (`PaperMotion`, `StickyNoteSheetState`) show coverage. The 100% line+branch claim in `CLAUDE.md` holds for `domain` and `presentation`; it has never held for `ui`. Worth deciding what to do about this before Phase 3 hoists tests down.
+
+Instead of screenshots, verification is `PaperGalleryActivity` — a debug-only activity that renders every preview on a real device. It was used to confirm the surface, both row heights, both ghost rows, the badges, the icon states, and the full peel-and-settle cycle of the sticky pad on the emulator. It is kept, because Phase 3 will want it.
+
+### Deviation from the plan
+
+`InkIcon` was not in the plan's list as a separate primitive but earns its place: it is what keeps tints coming from the palette rather than from `?attr` lookups that no longer exist. `PaperMotion` gained `rowPlacement` (an `IntOffset` spring for `Modifier.animateItem`) and `instant`, both of which Phase 3 needs.
+
+**Work** — a new `ui/paper` package:
 - `PaperTheme.kt` — the ink-on-paper palette ported to Kotlin so the theme is toolkit-independent
 - `PaperMotion.kt` — named spring specs (`sheetLift`, `sheetSettle`, `rowEnter`, `rowExit`) replacing duration-plus-easing everywhere
 - primitives: `PaperSurface` (grain and punched holes drawn via `drawWithCache`, retiring both PNG tiles), `RuledRow`, `StickyNotePad`, `InkIcon`, `CountBadge`, `GhostRow`
