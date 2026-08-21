@@ -61,9 +61,26 @@ It also spans **both** screens, so neither screen can migrate while the tutorial
 
 ---
 
-## Phase 0 — Compose in the build, nothing rendered
+## Phase 0 — Compose in the build, nothing rendered ✅ DONE
 
 **Goal** — prove AGP 9.3.1 + built-in Kotlin 2.2.10 + the Compose compiler plugin work together, before any UI depends on it.
+
+### Outcome
+
+**It works.** `org.jetbrains.kotlin.plugin.compose:2.2.10` applies cleanly alongside AGP 9's built-in Kotlin — no `org.jetbrains.kotlin.android` needed, no fallback required. All three gates stayed green: full unit suite, coverage report, and Pitest at **232/232 mutations killed, 100% test strength**.
+
+Four findings worth carrying forward:
+
+- **compileSdk pins the Compose version.** Compose BOM `2026.08.00` (compose.ui 1.12.0) requires `compileSdk 37`; this project is on `36.1`. Pinned to BOM `2026.06.01` (compose.ui 1.11.4) instead, which builds against 36.1 unchanged. `android-37.0` *is* installed locally, so the bump is available whenever it is wanted — but it is deliberately not part of Phase 0, to keep one variable in the de-risking spike.
+- **Bumping compileSdk later means touching the Pitest task.** `app/build.gradle.kts` hardcodes `platforms/android-36.1/android.jar` when it assembles the Pitest classpath. That path must move in lockstep with `compileSdk` or mutation testing silently compiles against a different SDK than the app.
+- **`createComposeRule()` is deprecated.** Use `androidx.compose.ui.test.junit4.v2.createComposeRule`. The v2 rule uses `StandardTestDispatcher` rather than `UnconfinedTestDispatcher`, so tests relying on immediate coroutine execution need explicit synchronisation. Adopt v2 from the start rather than porting later.
+- **Robolectric + Compose works, including interop.** Both a bare composable and a `ComposeView` hosted inside the real `TodoListsActivity` compose and expose a semantics tree under Robolectric. Activity-hosted tests need `MainThreadDatabaseRule`, which swaps in a no-op `NotificationScheduler` — without it `WorkManager` is uninitialised and the activity throws in `onCreate`.
+
+Rather than the throwaway `ComposeView` the plan originally called for, this landed as a permanent regression guard: `app/src/test/java/fr/mandarine/todolist/ui/ComposeToolchainTest.kt`, two tests. Phase 3 depends on exactly this working, so it is worth keeping.
+
+### Deferred to a later phase
+
+Bump `compileSdk` to 37 and Compose BOM to `2026.08.00`+, updating the Pitest `android.jar` path in the same commit. Behaviour-neutral — `targetSdk` stays 36 — but it is its own change with its own blast radius.
 
 **Work**
 - apply `org.jetbrains.kotlin.plugin.compose` at the Kotlin version (2.2.10)
@@ -161,7 +178,7 @@ Do this phase first, alone, and merge it alone. If it fails, the plan needs reth
 
 ## Risks, ranked
 
-1. **AGP 9.3.1 + built-in Kotlin + Compose compiler.** Genuinely unknown. Phase 0 exists solely to find out cheaply. Precedent: the Pitest Gradle plugin already broke on AGP 9.
+1. ~~**AGP 9.3.1 + built-in Kotlin + Compose compiler.**~~ **Retired in Phase 0** — the plugin applies cleanly and all three gates stay green. Replaced by a smaller one: the Compose version is capped by `compileSdk 36.1` until that is bumped, and the bump must move the Pitest `android.jar` path with it.
 2. **Drag reorder.** No first-party Compose equivalent to `ItemTouchHelper`. Hand-roll or take a dependency — decide in Phase 3.
 3. **`IconOnlyUiTest`.** It currently inflates layouts and walks the View tree for `TextView`s and untagged `ImageView`s. It must become a semantics-tree walk. The invariant matters more than the implementation — do not let it lapse during the migration.
 4. **Robolectric + Compose is slower.** Suite time will grow before Phase 3's hoisting shrinks it again.

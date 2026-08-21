@@ -10,6 +10,8 @@
 local.properties
 .claude/settings.local.json
 /org/
+# Kotlin compiler session/error scratch dir, created by the Compose plugin build
+.kotlin/
 
 # Keystore files — never commit signing keys to source control
 *.jks
