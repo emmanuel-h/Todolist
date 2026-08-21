@@ -3,6 +3,7 @@ package fr.mandarine.todolist.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.mandarine.todolist.domain.AddTodoUseCase
+import fr.mandarine.todolist.domain.AnimationEvent
 import fr.mandarine.todolist.domain.DeleteTodoUseCase
 import fr.mandarine.todolist.domain.EditTodoUseCase
 import fr.mandarine.todolist.domain.GetTodoListsUseCase
@@ -11,7 +12,10 @@ import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -30,26 +34,54 @@ class TodoListViewModel(
     private val _state = MutableStateFlow<TodoListState>(TodoListState.Empty)
     val state: StateFlow<TodoListState> = _state
 
+    private val _animationEvents = MutableSharedFlow<AnimationEvent>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val animationEvents: SharedFlow<AnimationEvent> = _animationEvents
+
     fun refresh() {
         applyAndPublish { }
     }
 
     fun addTodo(title: String) {
-        applyAndPublish { addTodoUseCase(title, listId) }
+        applyAndPublishWithEvent {
+            val item = addTodoUseCase(title, listId)
+            AnimationEvent.ItemAdded(item.id)
+        }
     }
 
     fun submitInlineInput(title: String): Boolean {
         if (title.isBlank()) return false
-        applyAndPublish { addTodoUseCase(title, listId) }
+        applyAndPublishWithEvent {
+            val item = addTodoUseCase(title, listId)
+            AnimationEvent.ItemAdded(item.id)
+        }
         return true
     }
 
     fun toggleTodo(todoId: String) {
-        applyAndPublish { toggleTodoUseCase(todoId) }
+        var wasCompleted = false
+        val current = state.value
+        if (current is TodoListState.Content) {
+            for (item in current.completedItems) {
+                if (item.id == todoId) {
+                    wasCompleted = true
+                    break
+                }
+            }
+        }
+        applyAndPublishWithEvent {
+            toggleTodoUseCase(todoId)
+            if (wasCompleted) AnimationEvent.ItemRestored(todoId) else AnimationEvent.ItemCompleted(todoId)
+        }
     }
 
     fun deleteTodo(todoId: String) {
-        applyAndPublish { deleteTodoUseCase(todoId) }
+        applyAndPublishWithEvent {
+            deleteTodoUseCase(todoId)
+            AnimationEvent.ItemDeleted(todoId)
+        }
     }
 
     fun editTodo(todoId: String, newTitle: String) {
@@ -63,6 +95,14 @@ class TodoListViewModel(
     private fun applyAndPublish(action: () -> Unit) {
         viewModelScope.launch(dispatcher) {
             action()
+            _state.value = buildState()
+        }
+    }
+
+    private fun applyAndPublishWithEvent(action: () -> AnimationEvent) {
+        viewModelScope.launch(dispatcher) {
+            val event = action()
+            _animationEvents.emit(event)
             _state.value = buildState()
         }
     }

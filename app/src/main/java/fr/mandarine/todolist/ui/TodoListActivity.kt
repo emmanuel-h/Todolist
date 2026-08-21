@@ -3,7 +3,10 @@ package fr.mandarine.todolist.ui
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -41,6 +44,7 @@ class TodoListActivity : AppCompatActivity() {
     private lateinit var watermark: ImageView
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var itemTouchHelperInternal: ItemTouchHelper
+    private lateinit var itemAnimator: TodoItemAnimator
 
     private lateinit var tutorialViewModel: TutorialViewModel
     private lateinit var tutorialController: TutorialOverlayController
@@ -100,8 +104,23 @@ class TodoListActivity : AppCompatActivity() {
         recyclerViewInternal.adapter = adapter
         recyclerViewInternal.addItemDecoration(InsetItemDivider())
 
+        itemAnimator = TodoItemAnimator(shouldAnimate = {
+            !tutorialViewModel.animationsSuppressed && !isReducedMotion()
+        })
+        recyclerViewInternal.itemAnimator = itemAnimator
+
         itemTouchHelperInternal = ItemTouchHelper(buildDragCallback())
         itemTouchHelperInternal.attachToRecyclerView(recyclerViewInternal)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.animationEvents.collect { event ->
+                    if (!tutorialViewModel.animationsSuppressed && !isReducedMotion()) {
+                        itemAnimator.pendingEvent = event
+                    }
+                }
+            }
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -177,6 +196,7 @@ class TodoListActivity : AppCompatActivity() {
                 super.onSelectedChanged(viewHolder, actionState)
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     dragFromIndex = viewHolder?.bindingAdapterPosition ?: RecyclerView.NO_POSITION
+                    viewHolder?.itemView?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 }
             }
 
@@ -187,6 +207,11 @@ class TodoListActivity : AppCompatActivity() {
                     toIndex != RecyclerView.NO_POSITION &&
                     dragFromIndex != toIndex
                 ) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        viewHolder.itemView.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    } else {
+                        viewHolder.itemView.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    }
                     viewModel.reorderTodos(dragFromIndex, toIndex)
                 }
                 dragFromIndex = RecyclerView.NO_POSITION
@@ -227,6 +252,15 @@ class TodoListActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
+    }
+
+    private fun isReducedMotion(): Boolean {
+        val scale = Settings.Global.getFloat(
+            contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        )
+        return scale == 0f
     }
 
     private inner class InsetItemDivider : RecyclerView.ItemDecoration() {

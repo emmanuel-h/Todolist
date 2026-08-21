@@ -1,7 +1,9 @@
 package fr.mandarine.todolist.ui
 
 import android.graphics.Paint
+import android.os.Build
 import android.view.GestureDetector
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -183,7 +185,14 @@ class TodoListAdapter(
                 consumed
             }
 
-            btnToggleComplete.setOnClickListener { onToggle(item.id) }
+            btnToggleComplete.setOnClickListener {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    btnToggleComplete.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                } else {
+                    btnToggleComplete.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                }
+                onToggle(item.id)
+            }
             btnDelete.setOnClickListener { onDelete(item.id) }
 
             btnEdit.setOnClickListener {

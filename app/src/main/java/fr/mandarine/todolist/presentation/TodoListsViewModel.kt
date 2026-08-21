@@ -2,6 +2,7 @@ package fr.mandarine.todolist.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.mandarine.todolist.domain.AnimationEvent
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
@@ -9,7 +10,10 @@ import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -25,17 +29,29 @@ class TodoListsViewModel(
     private val _state = MutableStateFlow<TodoListsState>(TodoListsState.Empty)
     val state: StateFlow<TodoListsState> = _state
 
+    private val _animationEvents = MutableSharedFlow<AnimationEvent>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val animationEvents: SharedFlow<AnimationEvent> = _animationEvents
+
     fun refresh() {
         applyAndPublish { }
     }
 
     fun createList(name: String, targetDate: LocalDate? = null, dueDate: LocalDate? = null) {
-        applyAndPublish { createTodoListUseCase(name, targetDate, dueDate) }
+        applyAndPublishWithEvent {
+            createTodoListUseCase(name, targetDate, dueDate)
+            AnimationEvent.ListAdded
+        }
     }
 
     fun submitInlineInput(name: String): Boolean {
         if (name.isBlank()) return false
-        applyAndPublish { createTodoListUseCase(name, null) }
+        applyAndPublishWithEvent {
+            createTodoListUseCase(name, null)
+            AnimationEvent.ListAdded
+        }
         return true
     }
 
@@ -55,6 +71,14 @@ class TodoListsViewModel(
     private fun applyAndPublish(action: () -> Unit) {
         viewModelScope.launch(dispatcher) {
             action()
+            _state.value = buildState()
+        }
+    }
+
+    private fun applyAndPublishWithEvent(action: () -> AnimationEvent) {
+        viewModelScope.launch(dispatcher) {
+            val event = action()
+            _animationEvents.emit(event)
             _state.value = buildState()
         }
     }

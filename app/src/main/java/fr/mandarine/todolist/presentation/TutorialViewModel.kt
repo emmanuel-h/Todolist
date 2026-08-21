@@ -8,6 +8,7 @@ import fr.mandarine.todolist.domain.SaveDemoListIdUseCase
 import fr.mandarine.todolist.domain.ShouldRunTutorialUseCase
 import fr.mandarine.todolist.domain.StartTutorialUseCase
 import fr.mandarine.todolist.domain.TutorialScript
+import fr.mandarine.todolist.domain.TutorialStep
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +61,13 @@ class TutorialViewModel(
             }
         }
     }
+
+    val animationsSuppressed: Boolean
+        get() {
+            val s = _uiState.value
+            return s is TutorialUiState.Active &&
+                (s.step == TutorialStep.OPEN_LIST || s.step == TutorialStep.COMPLETE_AND_REORDER)
+        }
 
     fun replay() {
         val current = _uiState.value

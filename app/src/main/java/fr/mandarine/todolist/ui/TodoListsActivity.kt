@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -58,6 +59,7 @@ class TodoListsActivity : AppCompatActivity() {
 
     private var dragFromIndex: Int = -1
     private var notificationPermissionRequested = false
+    private lateinit var listsItemAnimator: TodoListsItemAnimator
     internal var selectedInlineDate: LocalDate? = null
     internal var selectedInlineDueDate: LocalDate? = null
     internal var selectedRenameDate: LocalDate? = null
@@ -114,6 +116,11 @@ class TodoListsActivity : AppCompatActivity() {
         recyclerViewInternal.layoutManager = LinearLayoutManager(this)
         recyclerViewInternal.adapter = adapter
 
+        listsItemAnimator = TodoListsItemAnimator(shouldAnimate = {
+            !tutorialViewModel.animationsSuppressed && !isReducedMotion()
+        })
+        recyclerViewInternal.itemAnimator = listsItemAnimator
+
         val touchCallback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
@@ -166,6 +173,16 @@ class TodoListsActivity : AppCompatActivity() {
         container.notificationScheduler.scheduleDailyCheck()
 
         wireInlineAddRow()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.animationEvents.collect { _ ->
+                    if (!tutorialViewModel.animationsSuppressed && !isReducedMotion()) {
+                        listsItemAnimator.pendingListAdded = true
+                    }
+                }
+            }
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -476,6 +493,15 @@ class TodoListsActivity : AppCompatActivity() {
             addIcon.visibility = View.VISIBLE
             clearButton.visibility = View.GONE
         }
+    }
+
+    private fun isReducedMotion(): Boolean {
+        val scale = Settings.Global.getFloat(
+            contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        )
+        return scale == 0f
     }
 
     private fun openList(list: TodoList) {
