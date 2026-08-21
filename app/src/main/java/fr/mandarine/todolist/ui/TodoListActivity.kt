@@ -27,13 +27,19 @@ import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
+import fr.mandarine.todolist.domain.TutorialAction
+import fr.mandarine.todolist.domain.TutorialAnchor
+import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
+import fr.mandarine.todolist.presentation.TutorialBannerContent
+import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import kotlinx.coroutines.launch
 
-class TodoListActivity : AppCompatActivity() {
+class TodoListActivity : AppCompatActivity(), TutorialStage {
 
     internal lateinit var viewModel: TodoListViewModel
     private lateinit var adapter: TodoListAdapter
@@ -255,6 +261,82 @@ class TodoListActivity : AppCompatActivity() {
         )
         return scale == 0f
     }
+
+    // ── TutorialStage ──
+
+    override val screen: TutorialScreen = TutorialScreen.ITEMS
+
+    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? = when (anchor) {
+        TutorialAnchor.ItemGhostRow -> visibleGhostRow()?.tutorialBounds()
+        TutorialAnchor.SubmitItemButton -> inlineAddView(R.id.btnInlineSubmit)?.tutorialBounds()
+        is TutorialAnchor.ActiveItemToggle ->
+            toggleButtonAt(activePosition(anchor.index))?.tutorialBounds()
+        is TutorialAnchor.CompletedItemToggle ->
+            toggleButtonAt(completedPosition(anchor.index))?.tutorialBounds()
+        is TutorialAnchor.ActiveItemDragHandle ->
+            itemHolderAt(activePosition(anchor.index))?.dragHandle?.tutorialBounds()
+        is TutorialAnchor.ActiveItemRow ->
+            itemHolderAt(activePosition(anchor.index))?.itemView?.tutorialBounds()
+        else -> null
+    }
+
+    override suspend fun perform(action: TutorialAction): Boolean = when (action) {
+        TutorialAction.OpenItemAddRow -> visibleGhostRow()?.performClick() ?: false
+        is TutorialAction.TypeItemTitle -> {
+            val field = inlineAddHolder()?.editText
+            field?.typeTutorialText(action.text)
+            field != null
+        }
+        TutorialAction.SubmitItem -> inlineAddView(R.id.btnInlineSubmit)?.performClick() ?: false
+        is TutorialAction.ToggleActiveItem ->
+            toggleButtonAt(activePosition(action.index))?.performClick() ?: false
+        is TutorialAction.ToggleCompletedItem ->
+            toggleButtonAt(completedPosition(action.index))?.performClick() ?: false
+        is TutorialAction.MoveActiveItem -> {
+            adapter.moveItem(activePosition(action.from), activePosition(action.to))
+            true
+        }
+        is TutorialAction.CommitReorder -> {
+            viewModel.reorderTodos(action.from, action.to)
+            true
+        }
+        TutorialAction.NavigateBack -> {
+            tutorialBackCallback.isEnabled = false
+            onBackPressedDispatcher.onBackPressed()
+            true
+        }
+        else -> false
+    }
+
+    override suspend fun awaitDemoListId(): String? = null
+
+    override fun bannerContent(): TutorialBannerContent? = null
+
+    private fun activePosition(index: Int): Int = index
+
+    /** Completed rows sit after the active rows, the inline-add row and the divider. */
+    private fun completedPosition(index: Int): Int = adapter.activeItemCount() + 2 + index
+
+    private fun itemHolderAt(position: Int): TodoListAdapter.ItemViewHolder? =
+        recyclerViewInternal.findViewHolderForAdapterPosition(position)
+            as? TodoListAdapter.ItemViewHolder
+
+    private fun toggleButtonAt(position: Int): View? =
+        itemHolderAt(position)?.itemView?.findViewById(R.id.btnToggleComplete)
+
+    private fun inlineAddHolder(): TodoListAdapter.InlineAddViewHolder? {
+        val position = (0 until adapter.itemCount).firstOrNull { position ->
+            adapter.getItemViewType(position) == TodoListAdapter.VIEW_TYPE_INLINE_ADD
+        } ?: return null
+        return recyclerViewInternal.findViewHolderForAdapterPosition(position)
+            as? TodoListAdapter.InlineAddViewHolder
+    }
+
+    private fun inlineAddView(viewId: Int): View? =
+        inlineAddHolder()?.itemView?.findViewById(viewId)
+
+    private fun visibleGhostRow(): View? =
+        inlineAddView(R.id.ghostRow)?.takeIf { it.visibility == View.VISIBLE }
 
     private fun renderState(state: TodoListState) {
         when (state) {

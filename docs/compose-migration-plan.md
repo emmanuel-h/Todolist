@@ -95,9 +95,39 @@ Bump `compileSdk` to 37 and Compose BOM to `2026.08.00`+, updating the Pitest `a
 
 Do this phase first, alone, and merge it alone. If it fails, the plan needs rethinking and you have spent exactly one PR finding out.
 
-## Phase 1 — The tutorial drives state
+## Phase 1 — The tutorial drives state ✅ DONE
 
 **Goal** — sever `TutorialOverlayController` from view internals.
+
+### Outcome
+
+**Done, and the tutorial plays identically.** Verified end to end on the emulator after `pm clear`: all five scenes, progress dots advancing, the target→due caption switch, the notification banner, item add, complete/restore/reorder, demo-list deletion, and the `POST_NOTIFICATIONS` prompt firing only once state reaches `Dismissed`.
+
+The 592-line controller split three ways along the seams that were tangled in it:
+
+| Concern | Lands in | Toolkit-bound? |
+| --- | --- | --- |
+| The script — scene order and all pacing | `presentation/TutorialDirector.kt` | no |
+| The vocabulary — anchors and actions | `domain/TutorialAnchor.kt`, `TutorialAction.kt` | no |
+| Doing things to a screen | each activity, via `TutorialStage` | **yes — replaced per screen** |
+| Drawing the hand, caption, banner | `ui/TutorialOverlayController.kt` as `TutorialOverlay` | **yes — replaced in phase 5** |
+
+`findViewHolderForAdapterPosition`, `performClick` and adapter-position arithmetic still exist, but only inside the activity that owns those views. When a screen migrates, its `TutorialStage` implementation is rewritten and nothing else moves.
+
+Anchors and actions address rows semantically — `ActiveItemToggle(0)`, `CompletedItemToggle(0)` — so `TodoListActivity` is now the only place that knows completed rows sit at `activeItemCount() + 2 + index`.
+
+`TutorialDirector` is inside the Pitest gate and covered by 24 tests running on virtual time against a fake stage and overlay: **368/368 mutations killed, 100%**.
+
+### Deliberate behaviour change
+
+The old scene-4 drag captured `recycler.getChildAt(0)` *before* `adapter.moveItem(1, 0)` and then glided the hand to that captured view — which, after the move, is the row that got displaced *downward*. The hand therefore barely moved, contradicting the documented intent ("drag Apples to top"). It now glides to `ActiveItemRow(0)`, the actual drag destination. Revert by pointing at `ActiveItemRow(1)` if the old look is preferred.
+
+### Two Pitest gotchas found
+
+Both are now written up in `CLAUDE.md`, because any gated code will hit them:
+
+- `--excludedClasses` matched `*Test` but not the synthetic classes Kotlin generates for `runTest { … }` lambdas (`FooTest$my test$1`), so test code was being mutated. Fixed by adding `*Test$*` / `*Tests$*`; test fakes must also be nested inside the test class rather than top-level in a gated package.
+- Data-class getters survive when tests only compare whole instances, and suspend functions carry a `COROUTINE_SUSPENDED` check pitest reads as a conditional — fakes must `yield()` for it to be killable.
 
 **Work**
 - `TutorialViewModel` emits a `TutorialCommand` sealed class: `OpenInlineAdd`, `TypeText`, `PickDueDate`, `Submit`, `ToggleComplete(index)`, `DragTo(index)`

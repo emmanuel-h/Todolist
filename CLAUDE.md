@@ -70,6 +70,12 @@ Test sources mirror the main layout under `app/src/test/java/fr/mandarine/todoli
 
 The project uses a custom `JavaExec`-based `pitest` task instead of the Gradle plugin because AGP 9.x does not register `JavaPlugin` via `project.plugins.apply()`, which breaks the plugin's auto-detection. The task is defined in `app/build.gradle.kts` and invokes the Pitest CLI directly against the `debug` variant classpath.
 
+`--excludedClasses` covers `*Test$*` and `*Tests$*` as well as `*Test`/`*Tests`. Kotlin compiles a lambda inside a test method (notably `runTest { … }`) to a synthetic class like `FooTest$my test$1`, which `*Test` alone does not match — without the `$*` patterns those synthetic classes get mutated and their surviving mutants block the 100% gate. Test helper classes must be **nested inside** the test class for the same reason; a top-level `private class Fake…` in a `domain`/`data`/`presentation` test package is a mutation target.
+
+Two mutation patterns to expect when writing gated code:
+- **Data-class getters survive** if tests only compare whole instances — `equals()` reads backing fields, not getters. Assert individual properties, with values that differ from the mutant's replacement (a property that is genuinely `0` or `""` needs a test using a different value).
+- **Suspend functions** carry a state-machine `COROUTINE_SUSPENDED` check that pitest reads as a conditional. Fakes that never actually suspend leave it unkillable; make fake suspend methods call `yield()`.
+
 ## Code style
 
 - No comments; names must be self-documenting

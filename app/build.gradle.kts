@@ -144,7 +144,9 @@ tasks.register<JavaExec>("pitest") {
         args(
             "--reportDir", layout.buildDirectory.dir("reports/pitest").get().asFile.absolutePath,
             "--targetClasses", "fr.mandarine.todolist.domain.*,fr.mandarine.todolist.data.*,fr.mandarine.todolist.presentation.*",
-            "--excludedClasses", "*Test,*Tests,*_Impl,*_Impl\$*," +
+            // *Test$* / *Tests$* also cover the synthetic classes Kotlin generates for
+            // lambdas inside test methods (e.g. runTest { ... }), which plain *Test misses.
+            "--excludedClasses", "*Test,*Tests,*Test\$*,*Tests\$*,*_Impl,*_Impl\$*," +
                 "fr.mandarine.todolist.data.TodoDatabase,fr.mandarine.todolist.data.TodoDatabase\$*," +
                 "fr.mandarine.todolist.data.AndroidListNotifier,fr.mandarine.todolist.data.AndroidListNotifier\$*," +
                 "fr.mandarine.todolist.data.WorkManagerNotificationScheduler,fr.mandarine.todolist.data.WorkManagerNotificationScheduler\$*," +

@@ -18,7 +18,11 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
   - `TutorialViewModel` — `initialize()` runs cleanup then gate check; `onDemoListCreated(id)`, `advanceStep()`, `skip()`; `replay()` transitions `Hidden`/`Dismissed` → `ReadyToStart`, no-op when already `ReadyToStart` or `Active`
   - **Permission sequencing** — `TodoListsActivity` requests `POST_NOTIFICATIONS` (API 33+) only when `TutorialUiState` reaches `Dismissed`, so the system permission dialog never overlaps the tour
   - `SharedPreferencesTutorialStateRepository` — data-layer implementation backed by `SharedPreferences`
-  - `TutorialOverlayController` — attaches/detaches the overlay view from the `DecorView`; routes `TutorialUiState` to per-step `suspend` scene functions; choreographs the phantom hand via `ViewPropertyAnimator`; drives the `SET_DUE_DATE` scene's `DatePickerDialog` interaction and slides the notification banner in below the status-bar inset
+  - `TutorialAnchor` / `TutorialAction` — domain sealed classes naming *what the hand points at* and *what the screen should do*, with no reference to views
+  - `TutorialStage` — interface each screen implements: `boundsOf(anchor)`, `perform(action)`, `awaitDemoListId()`, `bannerContent()`. This is the seam that lets the script run against any UI toolkit; the activities are the View-system implementations
+  - `TutorialOverlay` — interface for the phantom-hand choreography: `glideTo`, `tap`, `grip`, `release`, caption and banner
+  - `TutorialDirector` — the five scenes as `suspend` functions, in the presentation layer. Owns all pacing and ordering; calls only `TutorialStage` and `TutorialOverlay`, never a view
+  - `TutorialOverlayController` — attaches/detaches the overlay view from the `DecorView`, renders the hand/caption/banner as the `TutorialOverlay` implementation, and hands each `TutorialUiState` to a `TutorialDirector`
 - **Async contract**: `TutorialStateRepository` methods are `suspend`; `TutorialViewModel` collects state as `StateFlow<TutorialUiState>`; scene functions in `TutorialOverlayController` are `suspend` and run sequentially inside a coroutine scope tied to the activity lifecycle
 
 ## Files
@@ -33,7 +37,15 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 - `app/src/main/java/fr/mandarine/todolist/data/SharedPreferencesTutorialStateRepository.kt` — SharedPreferences-backed implementation
 - `app/src/main/java/fr/mandarine/todolist/presentation/TutorialUiState.kt` — sealed class for overlay states
 - `app/src/main/java/fr/mandarine/todolist/presentation/TutorialViewModel.kt` — drives tutorial lifecycle; wires cleanup, gate, step advancement, skip, and replay
-- `app/src/main/java/fr/mandarine/todolist/ui/TutorialOverlayController.kt` — attaches overlay to DecorView; per-step scene coroutines; drives the due-date DatePickerDialog interaction in scene 2; drives `adapter.moveItem()` in scene 4
+- `app/src/main/java/fr/mandarine/todolist/domain/TutorialAnchor.kt` — sealed class of hand targets
+- `app/src/main/java/fr/mandarine/todolist/domain/TutorialAction.kt` — sealed class of screen actions
+- `app/src/main/java/fr/mandarine/todolist/domain/TutorialScreen.kt` — `LISTS` / `ITEMS`
+- `app/src/main/java/fr/mandarine/todolist/presentation/TutorialStage.kt` — stage interface plus `TutorialBounds` and `TutorialBannerContent`
+- `app/src/main/java/fr/mandarine/todolist/presentation/TutorialOverlay.kt` — hand/caption/banner interface and `TutorialCaption`
+- `app/src/main/java/fr/mandarine/todolist/presentation/TutorialDirector.kt` — the five scenes, all pacing, no views
+- `app/src/main/java/fr/mandarine/todolist/ui/TutorialOverlayController.kt` — attaches overlay to DecorView; renders the hand as `TutorialOverlay`; delegates scenes to `TutorialDirector`
+- `app/src/main/java/fr/mandarine/todolist/ui/TutorialStageSupport.kt` — `tutorialBounds()`, `hideTutorialKeyboard()`, `typeTutorialText()` shared by both stages
+- `app/src/test/java/fr/mandarine/todolist/presentation/TutorialDirectorTest.kt` — 24 tests driving every scene against fake stage/overlay on virtual time
 - `app/src/main/res/layout/overlay_tutorial.xml` — full-screen touch-intercepting overlay: notification banner card, phantom hand cursor ImageView, bottom-center floating elevated pill (5 progress dots + ✕ skip button)
 - `app/src/main/res/drawable/ic_replay.xml` — circular-arrow icon for the replay button
 - `app/src/main/res/drawable/ic_tab_right.xml` — 12dp arrow-to-limit glyph for due-date rows
@@ -60,7 +72,10 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 - Demo strings ("🛒 Groceries", "🍎 Apples", "🥖 Bread") and the emoji prefixes in the scene 2 caption ("📅 ", "⏰ ") are Kotlin literals in `TutorialOverlayController`; they must never be placed in string resources (preserves the icon-only-UI rule — → see `icon-only-ui.md`). The caption body text itself (`date_kind_target_caption`, `date_kind_due_caption`) is a deliberate, scoped exception → see `date-kind-wording.md`.
 - The overlay's views (hand cursor, banner) carry `importantForAccessibility="no"`; only the skip button is accessible.
 - The skip button uses `@string/cancel` as its `contentDescription`; it must carry no visible text label.
-- Drag in scene 4 is faked via `adapter.moveItem()` followed by `viewModel.reorderTodos()` — no `ItemTouchHelper` simulation.
+- Drag in scene 4 is faked via `adapter.moveItem()` followed by `viewModel.reorderTodos()` — no `ItemTouchHelper` simulation. Expressed as `MoveActiveItem` then `CommitReorder`.
+- **The director must never touch a view.** `TutorialDirector` may only call `TutorialStage` and `TutorialOverlay`. Every `findViewById`, ViewHolder lookup and adapter-position calculation belongs in the activity implementing `TutorialStage` for its own screen — that is what makes the tutorial survive the Compose migration (→ `compose-migration-plan.md`).
+- Anchors and actions address rows **semantically** (`ActiveItemToggle(0)`, `CompletedItemToggle(0)`), never by adapter position. `TodoListActivity` alone knows that completed rows sit at `activeItemCount() + 2 + index` — active rows, then the inline-add row, then the divider.
+- `TutorialStage.perform` returns `false` when the target is absent. The director treats that as fatal for the scene where the original code returned early (create row, open list, delete), and as skippable where it did not (the items ghost row).
 - The `OnBackPressedCallback` in both activities is enabled **only** while the tutorial is active (`TutorialUiState.Active`); it must be removed in `onDestroy` to avoid leaks.
 
 ## UI

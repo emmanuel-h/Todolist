@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.app.DatePickerDialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -43,15 +44,23 @@ import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.domain.TutorialAction
+import fr.mandarine.todolist.domain.TutorialAnchor
+import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
+import fr.mandarine.todolist.presentation.TutorialBannerContent
+import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import java.time.LocalDate
 import java.util.Locale
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class TodoListsActivity : AppCompatActivity() {
+class TodoListsActivity : AppCompatActivity(), TutorialStage {
 
     internal lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
@@ -609,6 +618,77 @@ class TodoListsActivity : AppCompatActivity() {
                 adapter.submitList(s.activeSummaries, s.doneSummaries)
             }
         }
+    }
+
+    // ── TutorialStage ──
+
+    override val screen: TutorialScreen = TutorialScreen.LISTS
+
+    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? = when (anchor) {
+        TutorialAnchor.CreateListButton -> fab.tutorialBounds()
+        TutorialAnchor.ListCreateRow -> inlineAddRowInternal.tutorialBounds()
+        TutorialAnchor.ListNameField -> inlineAddView(R.id.editListInlineAdd)?.tutorialBounds()
+        TutorialAnchor.TargetDateButton -> inlineAddView(R.id.btnListInlineDate)?.tutorialBounds()
+        TutorialAnchor.DueDateButton -> inlineAddView(R.id.btnListInlineDueDate)?.tutorialBounds()
+        TutorialAnchor.SubmitListButton -> inlineAddView(R.id.btnListInlineSubmit)?.tutorialBounds()
+        TutorialAnchor.FirstListRow -> firstListRow()?.tutorialBounds()
+        TutorialAnchor.DeleteListButton ->
+            firstListRow()?.findViewById<View>(R.id.btnDeleteList)?.tutorialBounds()
+        TutorialAnchor.ConfirmDeleteButton ->
+            firstListRow()?.findViewById<View>(R.id.btnDeleteConfirm)?.tutorialBounds()
+        else -> null
+    }
+
+    override suspend fun perform(action: TutorialAction): Boolean = when (action) {
+        TutorialAction.OpenListCreateRow -> fab.performClick()
+        is TutorialAction.TypeListName -> {
+            val field = inlineAddRowInternal
+                .findViewById<TextInputEditText>(R.id.editListInlineAdd)
+            field?.typeTutorialText(action.text)
+            field != null
+        }
+        TutorialAction.OpenDueDatePicker -> clickInlineAddView(R.id.btnListInlineDueDate)
+        is TutorialAction.PickDueDate -> pickDueDate(action.date)
+        TutorialAction.SubmitList -> clickInlineAddView(R.id.btnListInlineSubmit)
+        TutorialAction.OpenFirstList -> firstListRow()?.performClick() ?: false
+        TutorialAction.RequestDeleteFirstList -> clickInFirstListRow(R.id.btnDeleteList)
+        TutorialAction.ConfirmDeleteFirstList -> clickInFirstListRow(R.id.btnDeleteConfirm)
+        else -> false
+    }
+
+    override suspend fun awaitDemoListId(): String? {
+        val content = viewModel.state.first { s ->
+            s is TodoListsState.Content && s.activeSummaries.isNotEmpty()
+        } as TodoListsState.Content
+        return content.activeSummaries.firstOrNull()?.list?.id
+    }
+
+    override fun bannerContent(): TutorialBannerContent? {
+        val state = viewModel.state.value as? TodoListsState.Content ?: return null
+        val summary = state.activeSummaries.firstOrNull() ?: return null
+        return TutorialBannerContent(summary.list.name, summary.list.dueDate)
+    }
+
+    private fun firstListRow(): View? = recyclerViewInternal.getChildAt(0)
+
+    private fun inlineAddView(viewId: Int): View? = inlineAddRowInternal.findViewById(viewId)
+
+    private fun clickInlineAddView(viewId: Int): Boolean =
+        inlineAddView(viewId)?.performClick() ?: false
+
+    private fun clickInFirstListRow(viewId: Int): Boolean =
+        firstListRow()?.findViewById<View>(viewId)?.performClick() ?: false
+
+    private suspend fun pickDueDate(date: LocalDate): Boolean {
+        val picker = lastShownDueDatePicker
+        if (picker == null) {
+            onInlineDueDatePicked(date)
+            return true
+        }
+        picker.updateDate(date.year, date.monthValue - 1, date.dayOfMonth)
+        delay(600)
+        picker.getButton(DialogInterface.BUTTON_POSITIVE)?.performClick()
+        return true
     }
 
     private companion object {
