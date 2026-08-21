@@ -98,21 +98,48 @@ class IconOnlyUiTest {
     }
 
     @Test
-    fun `should not contain any text views in the empty state of todo list`() {
+    fun `should not contain any static text in the empty state of todo list`() {
         val parent = FrameLayout(themedContext)
         val contentView = LayoutInflater.from(themedContext)
             .inflate(R.layout.activity_todo_list, parent, false)
-        val watermark = contentView.findViewById<android.widget.ImageView>(R.id.imageWatermark)
-        assertNotNull("Watermark icon must exist in todo list layout", watermark)
+
+        assertEquals(emptyList<String>(), staticTextIn(contentView))
     }
 
     @Test
-    fun `should have a single watermark icon as the empty state of lists screen`() {
+    fun `should not contain any static text in the empty state of lists screen`() {
         val parent = FrameLayout(themedContext)
         val contentView = LayoutInflater.from(themedContext)
             .inflate(R.layout.activity_todo_lists, parent, false)
-        val watermark = contentView.findViewById<android.widget.ImageView>(R.id.imageWatermark)
-        assertNotNull("Watermark icon must exist in lists screen layout", watermark)
+
+        assertEquals(emptyList<String>(), staticTextIn(contentView))
+    }
+
+    @Test
+    fun `should not contain a background illustration in either screen`() {
+        val parent = FrameLayout(themedContext)
+        val listView = LayoutInflater.from(themedContext)
+            .inflate(R.layout.activity_todo_list, parent, false)
+        val listsView = LayoutInflater.from(themedContext)
+            .inflate(R.layout.activity_todo_lists, parent, false)
+
+        assertEquals(emptyList<String>(), decorativeImagesIn(listView))
+        assertEquals(emptyList<String>(), decorativeImagesIn(listsView))
+    }
+
+    private fun staticTextIn(view: android.view.View): List<String> = when {
+        view is android.widget.TextView && view.text.isNotBlank() -> listOf(view.text.toString())
+        view is android.view.ViewGroup ->
+            (0 until view.childCount).flatMap { staticTextIn(view.getChildAt(it)) }
+        else -> emptyList()
+    }
+
+    private fun decorativeImagesIn(view: android.view.View): List<String> = when {
+        view is android.widget.ImageView && view.contentDescription.isNullOrBlank() ->
+            listOf(view.javaClass.simpleName)
+        view is android.view.ViewGroup ->
+            (0 until view.childCount).flatMap { decorativeImagesIn(view.getChildAt(it)) }
+        else -> emptyList()
     }
 
     @Test

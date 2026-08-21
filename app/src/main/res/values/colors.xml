@@ -1,82 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Violet seed palette — generated from #7C3AED (primary T40, neutral C≈4, H≈265) -->
+    <!--
+        Ink-on-paper palette. Fixed, light-only, deliberately not wallpaper-derived:
+        paper texture does not take a device hue. See docs/paper-background.md.
+    -->
 
-    <!-- Light roles -->
-    <color name="md_theme_light_primary">#6D28D9</color>
-    <color name="md_theme_light_onPrimary">#FFFFFF</color>
-    <color name="md_theme_light_primaryContainer">#EDE9FE</color>
-    <color name="md_theme_light_onPrimaryContainer">#1E0458</color>
-    <color name="md_theme_light_secondary">#5B5287</color>
-    <color name="md_theme_light_onSecondary">#FFFFFF</color>
-    <color name="md_theme_light_secondaryContainer">#E5DEFF</color>
-    <color name="md_theme_light_onSecondaryContainer">#181140</color>
-    <color name="md_theme_light_tertiary">#7A4F6D</color>
-    <color name="md_theme_light_onTertiary">#FFFFFF</color>
-    <color name="md_theme_light_tertiaryContainer">#FDD7F2</color>
-    <color name="md_theme_light_onTertiaryContainer">#2E0F28</color>
-    <color name="md_theme_light_error">#B3261E</color>
-    <color name="md_theme_light_onError">#FFFFFF</color>
-    <color name="md_theme_light_errorContainer">#F9DEDC</color>
-    <color name="md_theme_light_onErrorContainer">#410E0B</color>
-    <color name="md_theme_light_background">#FEFBFF</color>
-    <color name="md_theme_light_onBackground">#1C1B24</color>
-    <color name="md_theme_light_surface">#FEFBFF</color>
-    <color name="md_theme_light_onSurface">#1C1B24</color>
-    <color name="md_theme_light_surfaceVariant">#E5DFF9</color>
-    <color name="md_theme_light_onSurfaceVariant">#49455A</color>
-    <color name="md_theme_light_outline">#7A7589</color>
-    <color name="md_theme_light_outlineVariant">#CAC4D8</color>
-    <color name="md_theme_light_inverseSurface">#312E3C</color>
-    <color name="md_theme_light_inverseOnSurface">#F5EFF9</color>
-    <color name="md_theme_light_inversePrimary">#CDB9FF</color>
+    <!-- Paper -->
+    <color name="paper">#FAF5EA</color>
+    <color name="paper_sheet">#FFFCF4</color>
+    <color name="paper_shade">#F5EFE1</color>
+    <color name="paper_shade_deep">#EFE7D5</color>
+    <color name="paper_sunken">#E7DEC8</color>
 
-    <!-- Light surface container family -->
-    <color name="md_theme_light_surfaceContainerLowest">#FEFBFF</color>
-    <color name="md_theme_light_surfaceContainerLow">#F7F2FF</color>
-    <color name="md_theme_light_surfaceContainer">#F1ECFB</color>
-    <color name="md_theme_light_surfaceContainerHigh">#EBE6F5</color>
-    <color name="md_theme_light_surfaceContainerHighest">#E5E0EF</color>
+    <!-- Ink -->
+    <color name="ink">#23282F</color>
+    <color name="ink_soft">#5C6068</color>
+    <color name="pencil">#8A8578</color>
+    <color name="ink_blue">#2E5AA8</color>
+    <color name="ink_blue_deep">#16305C</color>
+    <color name="ink_blue_pale">#DEE5F2</color>
+    <color name="ink_blue_faded">#A8C0E8</color>
+    <color name="ink_red">#A8392F</color>
+    <color name="ink_red_soft">#B4655B</color>
+    <color name="ink_red_deep">#5A1E18</color>
+    <color name="ink_red_wash">#F1DDD4</color>
+    <color name="ink_amber">#B4761E</color>
 
-    <!-- Dark roles -->
-    <color name="md_theme_dark_primary">#CDB9FF</color>
-    <color name="md_theme_dark_onPrimary">#3B0D8A</color>
-    <color name="md_theme_dark_primaryContainer">#531BAD</color>
-    <color name="md_theme_dark_onPrimaryContainer">#EDE9FE</color>
-    <color name="md_theme_dark_secondary">#C8BFFF</color>
-    <color name="md_theme_dark_onSecondary">#2E2659</color>
-    <color name="md_theme_dark_secondaryContainer">#433B70</color>
-    <color name="md_theme_dark_onSecondaryContainer">#E5DEFF</color>
-    <color name="md_theme_dark_tertiary">#F3AFDD</color>
-    <color name="md_theme_dark_onTertiary">#481E3E</color>
-    <color name="md_theme_dark_tertiaryContainer">#613454</color>
-    <color name="md_theme_dark_onTertiaryContainer">#FDD7F2</color>
-    <color name="md_theme_dark_error">#F2B8B5</color>
-    <color name="md_theme_dark_onError">#601410</color>
-    <color name="md_theme_dark_errorContainer">#8C1D18</color>
-    <color name="md_theme_dark_onErrorContainer">#F9DEDC</color>
-    <color name="md_theme_dark_background">#131118</color>
-    <color name="md_theme_dark_onBackground">#E5E0ED</color>
-    <color name="md_theme_dark_surface">#131118</color>
-    <color name="md_theme_dark_onSurface">#E5E0ED</color>
-    <color name="md_theme_dark_surfaceVariant">#484357</color>
-    <color name="md_theme_dark_onSurfaceVariant">#CAC5D8</color>
-    <color name="md_theme_dark_outline">#938DA0</color>
-    <color name="md_theme_dark_outlineVariant">#484357</color>
-    <color name="md_theme_dark_inverseSurface">#E5E0ED</color>
-    <color name="md_theme_dark_inverseOnSurface">#312E3C</color>
-    <color name="md_theme_dark_inversePrimary">#6D28D9</color>
-
-    <!-- Dark surface container family -->
-    <color name="md_theme_dark_surfaceContainerLowest">#0E0C15</color>
-    <color name="md_theme_dark_surfaceContainerLow">#1B192A</color>
-    <color name="md_theme_dark_surfaceContainer">#1F1D2E</color>
-    <color name="md_theme_dark_surfaceContainerHigh">#2A2839</color>
-    <color name="md_theme_dark_surfaceContainerHighest">#353244</color>
-
-    <!-- Custom semantic colors -->
-    <color name="md_theme_light_warning">#B45309</color>
-    <color name="md_theme_dark_warning">#F59E0B</color>
+    <!-- Paper texture -->
+    <color name="paper_rule">#D5CCB6</color>
+    <color name="paper_margin_rule">#C2564C</color>
+    <color name="paper_margin_rule_soft">#DDA79F</color>
+    <color name="paper_grain_tint">#66000000</color>
+    <color name="paper_hole_tint">#1F000000</color>
 
     <!-- Launcher -->
     <color name="launcher_background">#7C3AED</color>

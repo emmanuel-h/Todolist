@@ -156,38 +156,8 @@ class TodoListsInlineAddTest {
         }
     }
 
-    @Test
-    fun `should keep prominent watermark when inline add is active with no lists`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                activity.tapFab()
-                assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
-            }
-        }
-    }
 
-    @Test
-    fun `should keep prominent watermark after cancel when no lists exist`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                activity.tapFab()
-                activity.cancelInlineRowForTest()
-                assertEquals(0.15f, activity.findViewById<View>(R.id.imageWatermark).alpha)
-            }
-        }
-    }
 
-    @Test
-    fun `should dim watermark after cancel when lists exist`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            createListViaInlineRow(scenario, "Work")
-            scenario.onActivity { activity ->
-                activity.tapFab()
-                activity.cancelInlineRowForTest()
-                assertEquals(0.08f, activity.findViewById<View>(R.id.imageWatermark).alpha)
-            }
-        }
-    }
 
     @Test
     fun `should accumulate lists when multiple names are submitted via inline row`() {

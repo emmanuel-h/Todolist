@@ -1,5 +1,7 @@
 # Empty-State Icon Fix
 
+> **Superseded by [paper-background.md](paper-background.md).** Both empty states are now a bare page with no illustration. Kept for history.
+
 ## What it does
 Replaces the broken `ic_checklist.xml` vector drawable — which combined three unrelated paths (clipboard outline, standalone checkmark, redirect arrow) all hardcoded white — with a coherent two-path Material `assignment_turned_in`-style clipboard-with-checkmark icon tinted via `?attr/colorOnSurfaceVariant`.
 

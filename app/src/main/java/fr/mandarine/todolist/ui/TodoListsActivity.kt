@@ -13,7 +13,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.ImageView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -50,7 +49,6 @@ class TodoListsActivity : AppCompatActivity() {
 
     internal lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
-    private lateinit var watermark: ImageView
     internal lateinit var fab: FloatingActionButton
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var inlineAddRowInternal: View
@@ -101,7 +99,6 @@ class TodoListsActivity : AppCompatActivity() {
 
         tutorialViewModel = container.tutorialViewModel
 
-        watermark = findViewById(R.id.imageWatermark)
         fab = findViewById(R.id.fabAddList)
         inlineAddRowInternal = findViewById(R.id.inlineAddListRow)
 
@@ -515,11 +512,9 @@ class TodoListsActivity : AppCompatActivity() {
         when (val s = state) {
             is TodoListsState.Empty -> {
                 adapter.submitList(emptyList(), emptyList())
-                watermark.alpha = 0.15f
             }
             is TodoListsState.Content -> {
                 adapter.submitList(s.activeSummaries, s.doneSummaries)
-                watermark.alpha = 0.08f
             }
         }
     }

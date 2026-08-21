@@ -16,13 +16,32 @@ items that can be checked off. All data persists across restarts via Room/SQLite
 
 This principle overrides any contradictory suggestion from a UI agent or the wireframes below.
 
-### Theme & surface hierarchy — _implemented · [#32](https://github.com/emmanuel-h/Todolist/issues/32)_
+### Theme & surface hierarchy — _implemented · [#32](https://github.com/emmanuel-h/Todolist/issues/32) · palette superseded by the paper audit_
 
-- On Android 12+ the app follows the device's wallpaper palette via `DynamicColors.applyToActivitiesIfAvailable()`; on API 24–31 it uses a brand palette seeded from `#7C3AED` (refined violet).
+- The app is **light-only**. There is no `values-night/`, the theme parent is `Theme.Material3.Light.NoActionBar`, and no `DayNight` overlay is applied, so the system dark-mode switch cannot flip it.
+- The palette is a **fixed ink-on-paper set**, not wallpaper-derived. `DynamicColors.applyToActivitiesIfAvailable()` has been removed, reversing that half of #32; the tonal-surface half stands.
+- The M3 role tokens are mapped onto stationery colours in `values/colors.xml`: `colorPrimary` = `ink_blue` (#2E5AA8), `colorOnSurface` = `ink` (#23282F), `colorOnSurfaceVariant` = `ink_soft`, `colorOutline` = `pencil`, `colorOutlineVariant` = the ruling tone, `colorError` = `ink_red`, and every `surfaceContainer*` step is a shade of paper.
+- `elevationOverlayEnabled` is `false`. The M3 elevation overlay tints surfaces with the primary colour, which turned every raised paper surface grey-blue.
 - No hex value from the stock M3 template palette (`#6750A4` family) exists in `colors.xml`.
-- The full `surfaceContainer*` token family (Lowest/Low/Container/High/Highest) is defined in both light and dark themes.
-- Depth is tonal: window background = `surfaceContainerLowest`; list item cards = `Widget.Material3.CardView.Filled` on `surfaceContainer` at `0dp` elevation; no drop shadows in the list content area.
 - The tutorial overlay retains `Widget.Material3.CardView.Elevated` at 6–8dp intentionally (it floats above a scrim).
+
+### Paper page — _implemented_
+
+Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the content area is a flat tonal plane, and nothing floats above the page except the ＋ chip and the tutorial overlay.
+
+- `android:windowBackground` = `@drawable/bg_paper`: solid `@color/paper` + a tiled fibre grain + a punched-hole column + a double margin rule.
+- The gutter is `@dimen/paper_gutter_width` (40dp) — where row content and the ruling both start. Hole punches are centred at 16dp on a 128dp vertical pitch; the margin is a **double rule**, 2dp at 31dp and 1dp at 38dp, in paper red.
+- Ruling is drawn **per row**, not per page: `@drawable/row_rule` is the background of `item_todo.xml`, `item_todo_inline_add.xml`, and `item_todo_list.xml`, so a hairline always meets the text baseline no matter how tall the row grows. Ruling therefore stops at the last row; the page below it is bare.
+- **Both screens use the same row grammar.** List rows are not cards: they are ruled rows carrying `⠿ · ✎ · name · counts · 🗑`, matching the item rows. `MaterialCardView`, its stroke, and its elevation are gone from `item_todo_list.xml`.
+- A fully-completed list is marked by strikethrough and 50% alpha on its name only. The former `colorSecondaryContainer` row fill is gone — a coloured block does not belong on paper.
+- Item-count badges are outlined chips (transparent fill, 1dp `colorOutline` / `colorOutlineVariant` stroke), not filled pills.
+- The `AppBarLayout` and `MaterialToolbar` are transparent at `0dp` elevation and `android:statusBarColor` is transparent, so the sheet runs unbroken behind the toolbar and the status bar. The toolbar carries `paddingStart` = `@dimen/paper_toolbar_inset` (32dp) and `contentInsetStartWithNavigation` = 4dp so the navigation icon never crosses the margin rule and the title aligns with row titles at 88dp.
+- **There are no background watermark illustrations.** Both screens show a bare page when empty. `IconOnlyUiTest` asserts this: no static text and no undescribed `ImageView` in either activity layout.
+- The ＋ button is a paper chip: a `FloatingActionButton` with a 16dp rounded-square shape, `paper_sheet` fill, a 1.5dp ink outline drawn as its `android:foreground`, and 3dp elevation. It stays a `FloatingActionButton` because the tutorial scripts a tap on it.
+- Dialogs are paper slips via `ThemeOverlay.Paper.Dialog`: `paper_sheet` surface, 16dp corners, no elevation tint.
+- Grain, holes, ruling, and the margin rules are fixed colours rather than theme attributes — paper texture does not take a device hue.
+- There is no `RecyclerView.ItemDecoration` divider on the items screen; the row ruling replaced it.
+- The launcher icon is **not** part of this palette; it remains the brand-violet asset described in `docs/app-icons.md`.
 
 ---
 

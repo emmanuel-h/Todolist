@@ -7,7 +7,8 @@
     android:importantForAccessibility="no"
     android:minHeight="40dp"
     android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
+    android:paddingStart="@dimen/paper_section_inset"
+    android:paddingEnd="16dp"
     android:paddingVertical="4dp">
 
     <View

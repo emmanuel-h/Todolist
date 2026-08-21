@@ -2,11 +2,9 @@ package fr.mandarine.todolist.ui
 
 import android.content.Context
 import android.graphics.Paint
-import android.util.TypedValue
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
-import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoList
@@ -431,37 +429,7 @@ class TodoListsAdapterTest {
         assertEquals(1.0f, nameView.alpha)
     }
 
-    @Test
-    fun `should apply colorSecondaryContainer background when allDone is true`() {
-        adapter.submitList(emptyList(), listOf(doneSummary("1", "Groceries")))
-        val holder = createItemHolder()
-        adapter.onBindViewHolder(holder, 0)
 
-        val typedValue = TypedValue()
-        themedContext.theme.resolveAttribute(
-            com.google.android.material.R.attr.colorSecondaryContainer,
-            typedValue,
-            true
-        )
-        val card = holder.itemView as MaterialCardView
-        assertEquals(typedValue.data, card.cardBackgroundColor.defaultColor)
-    }
-
-    @Test
-    fun `should apply colorSurface background when allDone is false`() {
-        adapter.submitList(listOf(activeSummary("1", "Groceries")), emptyList())
-        val holder = createItemHolder()
-        adapter.onBindViewHolder(holder, 0)
-
-        val typedValue = TypedValue()
-        themedContext.theme.resolveAttribute(
-            com.google.android.material.R.attr.colorSurface,
-            typedValue,
-            true
-        )
-        val card = holder.itemView as MaterialCardView
-        assertEquals(typedValue.data, card.cardBackgroundColor.defaultColor)
-    }
 
     @Test
     fun `should expose drag handle view`() {

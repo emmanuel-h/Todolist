@@ -1,8 +1,5 @@
 package fr.mandarine.todolist.ui
 
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -10,7 +7,6 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import android.widget.ImageView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -41,7 +37,6 @@ class TodoListActivity : AppCompatActivity() {
 
     internal lateinit var viewModel: TodoListViewModel
     private lateinit var adapter: TodoListAdapter
-    private lateinit var watermark: ImageView
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var itemTouchHelperInternal: ItemTouchHelper
     private lateinit var itemAnimator: TodoItemAnimator
@@ -87,7 +82,6 @@ class TodoListActivity : AppCompatActivity() {
 
         tutorialViewModel = container.tutorialViewModel
 
-        watermark = findViewById(R.id.imageWatermark)
 
         adapter = TodoListAdapter(
             onToggle = { todoId -> viewModel.toggleTodo(todoId) },
@@ -102,7 +96,6 @@ class TodoListActivity : AppCompatActivity() {
         recyclerViewInternal = findViewById(R.id.recyclerView)
         recyclerViewInternal.layoutManager = LinearLayoutManager(this)
         recyclerViewInternal.adapter = adapter
-        recyclerViewInternal.addItemDecoration(InsetItemDivider())
 
         itemAnimator = TodoItemAnimator(shouldAnimate = {
             !tutorialViewModel.animationsSuppressed && !isReducedMotion()
@@ -263,74 +256,14 @@ class TodoListActivity : AppCompatActivity() {
         return scale == 0f
     }
 
-    private inner class InsetItemDivider : RecyclerView.ItemDecoration() {
-
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        private val dividerHeightPx: Int
-        private val insetStartPx: Int
-        private val insetEndPx: Int
-
-        init {
-            val density = resources.displayMetrics.density
-            dividerHeightPx = (1f * density).toInt().coerceAtLeast(1)
-            insetStartPx = (52f * density).toInt()
-            insetEndPx = (16f * density).toInt()
-            val typedArray = obtainStyledAttributes(
-                intArrayOf(com.google.android.material.R.attr.colorOutlineVariant)
-            )
-            paint.color = typedArray.getColor(0, android.graphics.Color.LTGRAY)
-            typedArray.recycle()
-        }
-
-        override fun getItemOffsets(
-            outRect: Rect,
-            view: View,
-            parent: RecyclerView,
-            state: RecyclerView.State
-        ) {
-            val position = parent.getChildAdapterPosition(view)
-            if (needsDividerBelow(position)) {
-                outRect.bottom = dividerHeightPx
-            }
-        }
-
-        override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
-            for (i in 0 until parent.childCount) {
-                val child = parent.getChildAt(i)
-                val position = parent.getChildAdapterPosition(child)
-                if (needsDividerBelow(position)) {
-                    val top = child.bottom.toFloat()
-                    val bottom = top + dividerHeightPx
-                    c.drawRect(
-                        insetStartPx.toFloat(),
-                        top,
-                        (parent.width - parent.paddingEnd - insetEndPx).toFloat(),
-                        bottom,
-                        paint
-                    )
-                }
-            }
-        }
-
-        private fun needsDividerBelow(position: Int): Boolean {
-            if (position == RecyclerView.NO_POSITION) return false
-            if (adapter.getItemViewType(position) != TodoListAdapter.VIEW_TYPE_ITEM) return false
-            val nextPosition = position + 1
-            if (nextPosition >= adapter.itemCount) return false
-            return adapter.getItemViewType(nextPosition) == TodoListAdapter.VIEW_TYPE_ITEM
-        }
-    }
-
     private fun renderState(state: TodoListState) {
         when (state) {
             is TodoListState.NotFound -> finish()
             is TodoListState.Empty -> {
                 adapter.submitList(emptyList(), emptyList())
-                watermark.alpha = 0.15f
             }
             is TodoListState.Content -> {
                 adapter.submitList(state.activeItems, state.completedItems)
-                watermark.alpha = 0.08f
             }
         }
     }

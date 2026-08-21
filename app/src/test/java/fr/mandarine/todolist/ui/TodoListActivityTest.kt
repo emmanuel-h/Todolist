@@ -94,26 +94,7 @@ class TodoListActivityTest {
         }
     }
 
-    @Test
-    fun `should show watermark at high alpha when no todos have been added`() {
-        launchWithListId().use { scenario ->
-            scenario.onActivity { activity ->
-                val watermark = activity.findViewById<android.widget.ImageView>(R.id.imageWatermark)
-                assertEquals(0.15f, watermark.alpha, 0.01f)
-            }
-        }
-    }
 
-    @Test
-    fun `should reduce watermark alpha after a todo is added`() {
-        launchWithListId().use { scenario ->
-            scenario.onActivity { activity ->
-                addItemViaInlineRow(activity, "Buy milk")
-                val watermark = activity.findViewById<android.widget.ImageView>(R.id.imageWatermark)
-                assertEquals(0.08f, watermark.alpha, 0.01f)
-            }
-        }
-    }
 
     @Test
     fun `should show two rows in recycler after one todo is added`() {
@@ -427,7 +408,7 @@ class TodoListActivityTest {
     }
 
     @Test
-    fun `should show watermark at high alpha after last item is deleted`() {
+    fun `should leave only the inline add row after last item is deleted`() {
         launchWithListId().use { scenario ->
             scenario.onActivity { activity ->
                 addItemViaInlineRow(activity, "Buy milk")
@@ -436,8 +417,8 @@ class TodoListActivityTest {
                 rv.getChildAt(0)!!.findViewById<MaterialButton>(R.id.btnDelete).performClick()
                 activity.refreshListForTest()
 
-                val watermark = activity.findViewById<android.widget.ImageView>(R.id.imageWatermark)
-                assertEquals(0.15f, watermark.alpha, 0.01f)
+                assertEquals(1, rv.adapter!!.itemCount)
+                assertEquals(TodoListAdapter.VIEW_TYPE_INLINE_ADD, rv.adapter!!.getItemViewType(0))
             }
         }
     }

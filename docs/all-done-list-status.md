@@ -1,5 +1,7 @@
 # All-Done List Status
 
+> **Partly superseded by [paper-background.md](paper-background.md).** The `colorSecondaryContainer` row fill is gone; a fully-completed list is marked by strikethrough and 50% alpha alone. The status logic itself is unchanged.
+
 ## What it does
 When every item in a list is completed (and the list is non-empty), the row on the lists screen receives a `colorSecondaryContainer` card background and strikethrough on the list name. When any item is incomplete — or the list is empty — the row reverts to `colorSurface` with no strikethrough.
 

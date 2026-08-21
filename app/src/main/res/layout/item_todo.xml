@@ -4,10 +4,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/row_rule"
     android:gravity="center_vertical"
     android:minHeight="56dp"
     android:orientation="horizontal"
-    android:paddingStart="4dp"
+    android:paddingStart="@dimen/paper_gutter_width"
     android:paddingEnd="4dp"
     android:paddingVertical="4dp">
 
@@ -18,7 +19,7 @@
         android:contentDescription="@string/drag_handle"
         android:padding="12dp"
         app:srcCompat="@drawable/ic_drag_handle"
-        app:tint="?attr/colorOnSurfaceVariant" />
+        app:tint="?attr/colorOutline" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/textTitle"
@@ -47,7 +48,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/item_mark_completed"
-        app:icon="@drawable/ic_check" />
+        app:icon="@drawable/ic_check"
+        app:iconTint="?attr/colorPrimary" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnEdit"
@@ -55,7 +57,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/item_edit"
-        app:icon="@drawable/ic_edit" />
+        app:icon="@drawable/ic_edit"
+        app:iconTint="?attr/colorOutline" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnDelete"
@@ -64,6 +67,6 @@
         android:layout_height="wrap_content"
         android:contentDescription="@string/item_delete"
         app:icon="@drawable/ic_delete"
-        app:iconTint="?attr/colorError" />
+        app:iconTint="@color/ink_red_soft" />
 
 </LinearLayout>

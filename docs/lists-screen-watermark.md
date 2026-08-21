@@ -1,5 +1,7 @@
 # Lists Screen Watermark Icon
 
+> **Superseded by [paper-background.md](paper-background.md).** The watermark has been removed from both screens; an empty list is now a bare page. Kept for history.
+
 ## What it does
 Applies the same dual-layer background watermark treatment to the lists screen that the items screen already has: a permanent 200dp/alpha=0.15 `ic_format_list_bulleted` icon sits behind the RecyclerView at all times, and a second 120dp instance appears centred over the empty state. The icon is visually distinct from the `ic_checklist` used on the items screen.
 

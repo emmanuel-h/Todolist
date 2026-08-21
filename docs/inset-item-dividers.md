@@ -1,5 +1,7 @@
 # Inset Item Dividers
 
+> **Superseded by [paper-background.md](paper-background.md).** The `InsetItemDivider` decoration has been removed; the per-row paper ruling (`@drawable/row_rule`) now separates item rows. This document is kept for history.
+
 ## What it does
 Draws a 1dp inset divider line between consecutive todo item rows on the items screen (Screen 2), giving visual separation within each section without cluttering the area around the section-header row.
 

@@ -1,5 +1,7 @@
 # Dynamic Color + Tonal Surfaces
 
+> **Partly superseded by [paper-background.md](paper-background.md).** Dynamic color has been removed in favour of a fixed ink-on-paper palette and the app is now light-only. The tonal-surface hierarchy it introduced still stands, remapped onto paper shades. Kept for history.
+
 ## What it does
 On Android 12+ the app follows the device's wallpaper palette via `DynamicColors`; on API 24–31 it falls back to a brand palette seeded from `#7C3AED` (refined violet). Depth is expressed through tonal surface fills instead of drop shadows: the window background uses `surfaceContainerLowest`, list item cards use `surfaceContainer` at 0dp elevation.
 

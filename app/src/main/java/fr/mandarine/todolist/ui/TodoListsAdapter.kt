@@ -13,7 +13,6 @@ import android.widget.LinearLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textview.MaterialTextView
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.DueDateStatus
@@ -178,7 +177,6 @@ class TodoListsAdapter(
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val card: MaterialCardView = view as MaterialCardView
         private val nameView: MaterialTextView = view.findViewById(R.id.textListName)
         private val activeCountBadge: MaterialTextView = view.findViewById(R.id.badgeActiveCount)
         private val completedCountBadge: MaterialTextView = view.findViewById(R.id.badgeCompletedCount)
@@ -330,23 +328,9 @@ class TodoListsAdapter(
 
         private fun applyAllDoneStyle(allDone: Boolean) {
             if (allDone) {
-                val typedValue = TypedValue()
-                itemView.context.theme.resolveAttribute(
-                    com.google.android.material.R.attr.colorSecondaryContainer,
-                    typedValue,
-                    true
-                )
-                card.setCardBackgroundColor(typedValue.data)
                 nameView.paintFlags = nameView.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
                 nameView.alpha = 0.5f
             } else {
-                val typedValue = TypedValue()
-                itemView.context.theme.resolveAttribute(
-                    com.google.android.material.R.attr.colorSurface,
-                    typedValue,
-                    true
-                )
-                card.setCardBackgroundColor(typedValue.data)
                 nameView.paintFlags = nameView.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
                 nameView.alpha = 1.0f
             }
