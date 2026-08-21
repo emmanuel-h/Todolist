@@ -1,4 +1,4 @@
-package fr.mandarine.todolist.ui.todolist
+package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -14,8 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import fr.mandarine.todolist.ui.paper.PaperDimens
-import fr.mandarine.todolist.ui.paper.PaperInk
 
 private const val LEADING_RULE_WEIGHT = 1f
 private const val TRAILING_RULE_WEIGHT = 3f

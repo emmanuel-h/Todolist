@@ -1,12 +1,9 @@
 package fr.mandarine.todolist.ui
 
-import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import fr.mandarine.todolist.MainThreadDatabaseRule
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.TodoListApplication
@@ -32,53 +29,6 @@ class TutorialReplayUiTest {
     fun markTutorialSeen() {
         val app = ApplicationProvider.getApplicationContext<TodoListApplication>()
         SharedPreferencesTutorialStateRepository(app).markTutorialSeen()
-    }
-
-    @Test
-    fun `should show replay button when tutorial is dismissed`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val replay = activity.findViewById<MaterialButton>(R.id.btnReplayTutorial)
-                assertEquals(View.VISIBLE, replay.visibility)
-            }
-        }
-    }
-
-    @Test
-    fun `should hide replay button while inline add row is open and restore it on cancel`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val replay = activity.findViewById<MaterialButton>(R.id.btnReplayTutorial)
-                activity.findViewById<FloatingActionButton>(R.id.fabAddList).performClick()
-                assertEquals(View.GONE, replay.visibility)
-
-                activity.inlineAddRowInternal
-                    .findViewById<MaterialButton>(R.id.btnListInlineCancel)
-                    .performClick()
-                assertEquals(View.VISIBLE, replay.visibility)
-            }
-        }
-    }
-
-    @Test
-    fun `should restart tutorial when replay button is tapped after dismissal`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val container =
-                    ApplicationProvider.getApplicationContext<TodoListApplication>().container
-                assertEquals(
-                    TutorialUiState.Dismissed,
-                    container.tutorialViewModel.uiState.value
-                )
-
-                activity.findViewById<MaterialButton>(R.id.btnReplayTutorial).performClick()
-
-                assertEquals(
-                    TutorialUiState.ReadyToStart,
-                    container.tutorialViewModel.uiState.value
-                )
-            }
-        }
     }
 
     @Test

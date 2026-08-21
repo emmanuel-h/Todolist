@@ -222,10 +222,43 @@ What did shrink is the part that matters: 205 lines of layout XML are gone, the 
 
 **Risk — medium**, concentrated entirely in drag reorder.
 
-## Phase 4 — Screen 1
+## Phase 4 — Screen 1 ✅ DONE
+
+### Outcome
+
+**Done, and `res/layout/` is down to `overlay_tutorial.xml`.** Written up in [lists-screen-compose.md](lists-screen-compose.md). All three gates green: 781 tests, coverage report, Pitest at **368/368 mutations, 100%** — the same number as phases 1, 2 and 3, because the gate does not reach `ui`.
+
+| | before | after |
+| --- | --- | --- |
+| `TodoListsActivity` | 705 | 295 |
+| `TodoListsAdapter` | 347 | 0 |
+| `TodoListsItemAnimator` | 89 | 0 |
+| `TutorialStageSupport` | 32 | 0 |
+| `ui/todolists/` | — | 1,193 |
+| `ui/reorder/` + `ui/tutorial/` | — | 364 (shared; ~180 moved out of `ui/todolist/`) |
+| **`ui/` total** | **3,386** | **3,841** |
+| `res/layout/` | 869 | 137 |
+| `ui/` tests | 4,454 | 3,150 |
+
+Six things worth carrying into phase 5:
+
+- **A clickable row swallows its own drag handle.** With `RuledRow(onClick = …)` on the row, `detectDragGestures` on the handle never reached its touch slop and no drag ever started. Every unit test passed; the drag test was the only thing that caught it. Fixed by moving the handle outside the row's click target. The items screen never hit this because its rows are not clickable.
+- **"The first list" is not "the first active list".** By scene 5 the demo list is finished and sits below the divider, so anchoring the tutorial to the first *active* row left it pointing at nothing and the script stalled halfway. Found on the device on the first end-to-end run, not in tests. Both the anchors and the stage now mean the first row on the page.
+- **`Modifier.animateItem` only fades.** Anything more than a fade on insert — the 16dp drop `TodoListsItemAnimator` did — has to be a per-row enter transition, and whether it plays must be latched at first composition because the flag that triggers it clears on the next frame.
+- **The tutorial's last view reach-through is gone.** Replacing `android.app.DatePickerDialog` with the Material composable removed `picker.getButton(BUTTON_POSITIVE).performClick()` — the thing Phase 1's risk note assumed was already dealt with. It was not; it was still there when Phase 4 started.
+- **Three of the "four dialogs" were dead.** `dialog_add_item`, `dialog_edit_item` and `dialog_create_list` were inflated by nothing (the last only by a test). Only `dialog_rename_list` was live.
+- **Robolectric renders the Material `DatePicker` fine.** No special handling was needed, contrary to the phase's stated risk.
+
+### Deviation from the plan
+
+**`ui/` grew by 455 lines, and Screen 1's own share grew by about 300.** The same shape as phase 3: the adapter and animator went to zero, but `TodoListsScreenState` (88), the paper dialog (242), the date picker (54) and the drag wiring cost more than they saved. What shrank is again the part that matters — 732 lines of layout XML are gone, `res/layout/` is down to one file, and the UI tests fell from 4,454 to 3,150 across the two screens.
+
+**Drag-to-peel was left out**, agreed before the work started: phase 4 was already the largest port in the plan, and the gesture has its own threshold and cancel semantics to design and verify. The pad is tap-only, as it shipped.
+
+Three deliberate design changes, all agreed up front: the rename dialog became a shadowless paper sheet rather than a faithful M3 dialog (a Material dialog surface always draws elevation, which the paper design forbids); the date picker became the Material composable in the paper palette; and the created-list drop-in was kept rather than falling back to a plain fade.
 
 **Work**
-- `TodoListsActivity` (625) → `TodoListsScreen`
+- `TodoListsActivity` (705) → `TodoListsScreen`
 - `TodoListsAdapter` (347) → row composables; `TodoListsItemAnimator` (89) deleted
 - four dialogs (288 lines of XML) → Compose `Dialog`
 - the sticky-note pad becomes the Phase 2 `StickyNotePad`, and gains drag-to-peel almost for free
@@ -262,12 +295,13 @@ What did shrink is the part that matters: 205 lines of layout XML are gone, the 
 ## Risks, ranked
 
 1. ~~**AGP 9.3.1 + built-in Kotlin + Compose compiler.**~~ **Retired in Phase 0** — the plugin applies cleanly and all three gates stay green. Replaced by a smaller one: the Compose version is capped by `compileSdk 36.1` until that is bumped, and the bump must move the Pitest `android.jar` path with it.
-2. ~~**Drag reorder.**~~ **Retired in Phase 3** — hand-rolled on `detectDragGestures` and `LazyListState`, no dependency added. Replaced by a smaller one: the edge auto-scroll is the part that only misbehaves on a real device, and Screen 1 has its own drag to port in Phase 4.
-3. **`IconOnlyUiTest`.** Half-converted in Phase 3: the items-screen cases now walk the Compose semantics tree, the lists-screen cases still inflate layouts. One assertion did not survive the crossing — an `Image` with a null `contentDescription` produces no semantics node at all, so the "no undecorated background illustration" check now covers Screen 1 only. Restore it for both screens when the rest converts in Phase 4.
+2. ~~**Drag reorder.**~~ **Retired in Phase 4** — both screens now hand-roll it on the shared `ui/reorder/` package. What the two ports proved is that the gesture is never the hard part; the surroundings are. Phase 3 lost a day to edge auto-scroll that only misbehaves on a device, phase 4 to a clickable ancestor swallowing the handle. Budget device time for any future drag, and never trust a green drag test alone.
+3. ~~**`IconOnlyUiTest`.**~~ **Converted in Phase 4** — every case now walks the Compose semantics tree; nothing inflates a layout. The lost assertion was **not** restored and cannot be: a decorative image draws no semantics node, so "no undecorated background illustration" has no Compose equivalent. It is replaced by pinning each empty screen to exactly the affordances it is allowed to expose — the items screen to the back arrow, the lists screen to create and replay — which fails just as loudly if something is added, but for a different reason. Worth knowing when reading the test.
 4. **Robolectric + Compose is slower.** Suite time will grow before Phase 3's hoisting shrinks it again.
 5. **APK size.** Compose adds roughly 2–3 MB before shrinking; R8 recovers much of it. Measure at Phase 6.
-6. **Paper texture as a drawn surface.** Today it is free — it is `android:windowBackground`. Drawn per-frame it is not. Cache with `drawWithCache` and watch overdraw during scroll. Phase 3 draws `PaperSurface` over the window background on Screen 2; no scroll cost was visible on the emulator, but it is one full-screen opaque rect of overdraw until `bg_paper.xml` goes in Phase 6.
-7. **The coverage gate says more than it enforces.** `includeNoLocationClasses` was missing, so every Robolectric-executed line reported as uncovered — `ui` at 0/1403 and `data` at 93/583. Fixed before Phase 3. With the report honest, `domain` and `presentation` are at 100% but `data` sits at 506/583 (Room's generated `_Impl` and the DAO `$DefaultImpls`) and `ui` at 691/1023, so `CLAUDE.md`'s blanket 100% claim is now measurably untrue rather than quietly unmeasured. Decide what the gate should say.
+6. **Paper texture as a drawn surface.** Today it is free — it is `android:windowBackground`. Drawn per-frame it is not. Cache with `drawWithCache` and watch overdraw during scroll. Both screens now draw `PaperSurface` over the window background; no scroll cost was visible on the emulator, but it is one full-screen opaque rect of overdraw per screen until `bg_paper.xml` goes in Phase 6.
+7. **The coverage gate says more than it enforces.** `includeNoLocationClasses` was missing, so every Robolectric-executed line reported as uncovered — `ui` at 0/1403 and `data` at 93/583. Fixed before Phase 3. With the report honest, the picture after Phase 4 is: `domain` and `presentation` at 100%, `data` at 489/583 where **every uncovered line is Room-generated** (`TodoDatabase_Impl`, `*Dao_Impl`, `*Dao$DefaultImpls`) — no hand-written data class is short. So `CLAUDE.md`'s claim holds for hand-written code in all three gated layers, and the honest fix is to say so, or to exclude generated classes from the report. `ui` sits at 228/438; that gap is Phase 5's target (`TutorialOverlayController`, 84/165) plus one hole this migration left, below.
+8. **`TodoListActivity` has no test at all.** Phase 3 deleted `TodoListActivityTest` and never replaced its `TutorialStage` coverage, leaving the class at 0/106 lines. Phase 4 closed the equivalent hole on the lists side with `TodoListsTutorialStageTest` (22 tests, driving `perform` directly and asserting screen state) — and that test is what would have caught the "first list is not the first active list" defect before the device did. The items screen deserves the same, and it is a phase-5-sized job, not a phase-4 one.
 
 ## What stays true throughout
 

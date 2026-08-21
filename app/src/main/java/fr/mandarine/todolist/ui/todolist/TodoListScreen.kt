@@ -1,12 +1,7 @@
 package fr.mandarine.todolist.ui.todolist
 
-import android.os.Build
-import android.view.HapticFeedbackConstants
-import android.view.View
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,16 +23,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,6 +42,14 @@ import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperInk
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
+import fr.mandarine.todolist.ui.paper.SectionDivider
+import fr.mandarine.todolist.ui.reorder.AutoScrollWhileDragging
+import fr.mandarine.todolist.ui.reorder.DragSession
+import fr.mandarine.todolist.ui.reorder.EdgeScroll
+import fr.mandarine.todolist.ui.reorder.orderedBy
+import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
+import fr.mandarine.todolist.ui.reorder.reorderHandle
+import fr.mandarine.todolist.ui.tutorial.tutorialAnchor
 
 private const val INLINE_ADD_KEY = "inline-add"
 private const val DIVIDER_KEY = "completed-divider"
@@ -58,8 +57,6 @@ private val TOOLBAR_HEIGHT = 56.dp
 private val TOOLBAR_TITLE_GAP = 4.dp
 private val LIST_TOP_PADDING = 4.dp
 private val LIST_BOTTOM_PADDING = 16.dp
-private val AUTO_SCROLL_EDGE = 72.dp
-private val AUTO_SCROLL_MAX_STEP = 12.dp
 
 @Composable
 fun TodoListScreen(
@@ -74,7 +71,7 @@ fun TodoListScreen(
     onReorder: (Int, Int) -> Unit
 ) {
     val content = state as? TodoListState.Content
-    val activeItems = orderActive(content?.activeItems.orEmpty(), screenState.previewOrder)
+    val activeItems = orderedBy(content?.activeItems.orEmpty(), screenState.previewOrder) { it.id }
     val completedItems = content?.completedItems.orEmpty()
     val showDivider = activeItems.isNotEmpty() && completedItems.isNotEmpty()
 
@@ -89,13 +86,7 @@ fun TodoListScreen(
         if (screenState.hideKeyboardSignal > 0) keyboard?.hide()
     }
 
-    val density = LocalDensity.current
-    val edgeScroll = remember(density) {
-        EdgeScroll(
-            edge = with(density) { AUTO_SCROLL_EDGE.toPx() },
-            maxStep = with(density) { AUTO_SCROLL_MAX_STEP.toPx() }
-        )
-    }
+    val edgeScroll = rememberEdgeScroll()
 
     AutoScrollWhileDragging(listState, session, edgeScroll)
 
@@ -200,8 +191,6 @@ private fun LazyItemScope.ActiveRow(
     onReorder: (Int, Int) -> Unit
 ) {
     val dragged = session.dragging && session.index == position
-    val view = LocalView.current
-    val latestItems = rememberUpdatedState(activeItems)
 
     val rowModifier = if (dragged) {
         Modifier
@@ -224,38 +213,20 @@ private fun LazyItemScope.ActiveRow(
             .tutorialAnchor(screenState, TutorialAnchor.ActiveItemRow(position)),
         handleModifier = Modifier
             .tutorialAnchor(screenState, TutorialAnchor.ActiveItemDragHandle(position))
-            .pointerInput(item.id) {
-                detectDragGestures(
-                    onDragStart = {
-                        val items = latestItems.value
-                        session.start(
-                            from = items.indexOfFirst { it.id == item.id },
-                            rowIds = items.map { it.id },
-                            rowHeights = activeRowHeights(listState, items)
-                        )
-                        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                    },
-                    onDrag = { change, amount ->
-                        change.consume()
-                        session.drag(amount.y)
-                        session.edgeScrolling =
-                            edgeScrollDelta(listState, session, edgeScroll) != 0f
-                    },
-                    onDragEnd = {
-                        val reorder = session.end()
-                        if (reorder == null) {
-                            screenState.previewOrder = null
-                        } else {
-                            view.performDropFeedback()
-                            onReorder(reorder.from, reorder.to)
-                        }
-                    },
-                    onDragCancel = {
-                        session.cancel()
+            .reorderHandle(
+                listState = listState,
+                session = session,
+                edgeScroll = edgeScroll,
+                id = item.id,
+                ids = activeItems.map { it.id },
+                onDrop = { reorder ->
+                    if (reorder == null) {
                         screenState.previewOrder = null
+                    } else {
+                        onReorder(reorder.from, reorder.to)
                     }
-                )
-            },
+                }
+            ),
         toggleModifier = Modifier
             .tutorialAnchor(screenState, TutorialAnchor.ActiveItemToggle(position))
     )
@@ -294,67 +265,5 @@ private fun PaperTopBar(title: String, onBack: () -> Unit) {
             style = MaterialTheme.typography.titleLarge,
             color = PaperInk.ink
         )
-    }
-}
-
-private class EdgeScroll(val edge: Float, val maxStep: Float)
-
-private fun edgeScrollDelta(
-    listState: LazyListState,
-    session: DragSession,
-    edgeScroll: EdgeScroll
-): Float {
-    val info = listState.layoutInfo
-    val dragged = info.visibleItemsInfo.firstOrNull { it.index == session.index } ?: return 0f
-    val top = dragged.offset - info.viewportStartOffset + session.offset
-    return autoScrollDelta(
-        rowTop = top,
-        rowBottom = top + dragged.size,
-        viewportHeight = (info.viewportEndOffset - info.viewportStartOffset).toFloat(),
-        edge = edgeScroll.edge,
-        maxStep = edgeScroll.maxStep,
-        canScrollUp = listState.canScrollBackward,
-        canScrollDown = listState.canScrollForward
-    )
-}
-
-/**
- * A finger held still inside the edge band must keep the list moving, so the
- * scroll is driven by frames rather than by drag events. It only spins while the
- * band is occupied — running it for the whole drag would keep the frame clock
- * busy for as long as a finger is down. Whatever it scrolls is fed back into the
- * session so the row stays under the finger and keeps swapping rows.
- */
-@Composable
-private fun AutoScrollWhileDragging(
-    listState: LazyListState,
-    session: DragSession,
-    edgeScroll: EdgeScroll
-) {
-    LaunchedEffect(session.edgeScrolling) {
-        while (session.edgeScrolling && session.dragging) {
-            withFrameNanos { }
-            val delta = edgeScrollDelta(listState, session, edgeScroll)
-            if (delta == 0f) {
-                session.edgeScrolling = false
-            } else {
-                listState.scrollBy(delta)
-                session.drag(delta)
-            }
-        }
-    }
-}
-
-private fun activeRowHeights(listState: LazyListState, items: List<TodoItem>): List<Int> {
-    val sizes = listState.layoutInfo.visibleItemsInfo.associate { it.key to it.size }
-    val fallback = sizes.values.firstOrNull() ?: 0
-    return items.map { sizes[it.id] ?: fallback }
-}
-
-private fun View.performDropFeedback() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-    } else {
-        performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
     }
 }

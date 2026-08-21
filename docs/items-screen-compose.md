@@ -3,20 +3,19 @@
 ## What it does
 Screen 2 — the items inside one list — is now Jetpack Compose. `TodoListActivity` calls `setContent` and owns no views. The arrangement is unchanged from the View version: same 40dp gutter, same per-row ruling, same six-element row. What changed is underneath, plus one deliberate motion change (see below).
 
-The lists screen is still Views. Both toolkits coexist until [phase 4](compose-migration-plan.md).
+The lists screen followed in [phase 4](lists-screen-compose.md), which also moved three of this screen's files into packages both screens share.
 
 ## Architecture
 - **Layers**: `ui/todolist/` only. Domain, data and `TodoListViewModel` are untouched — the Pitest gate is unchanged at 368/368.
 - **The screen is stateless about data.** `TodoListScreen` takes a `TodoListState` and six callbacks. Everything it owns itself lives in `TodoListScreenState`, which the activity holds so the tutorial can reach it.
-- **Drag logic is Compose-free.** `DragSession` and the functions around it are plain Kotlin, unit-tested without Robolectric.
+- **Drag logic is Compose-free.** `DragSession` and the functions around it are plain Kotlin, unit-tested without Robolectric. Phase 4 moved them to `ui/reorder/` so the lists screen could use them too.
 
 ## Files
 - `ui/todolist/TodoListScreen.kt` — top bar, `LazyColumn`, drag wiring, edge auto-scroll
 - `ui/todolist/TodoRow.kt` — one item row, including its inline title editor
 - `ui/todolist/InlineAddRow.kt` — the ghost row and its expanded form
-- `ui/todolist/SectionDivider.kt` — the two rules and the completed count
-- `ui/todolist/DragReorder.kt` — `DragSession`, `settleDrag`, `moved`, `autoScrollDelta`
-- `ui/todolist/TodoListScreenState.kt` — add-row state, edit target, staged order, tutorial anchor registry
+- `ui/todolist/TodoListScreenState.kt` — add-row state, edit target, staged order
+- `ui/paper/SectionDivider.kt`, `ui/reorder/`, `ui/tutorial/` — the divider, the drag logic and the anchor registry, all promoted out of this package in phase 4 when the lists screen needed them
 - `ui/TodoListActivity.kt` — `setContent` plus a `TutorialStage` that drives state instead of view holders
 - Tests: `DragReorderTest`, `TodoListScreenStateTest` (plain JUnit), `TodoListScreenTest` (Robolectric + Compose)
 

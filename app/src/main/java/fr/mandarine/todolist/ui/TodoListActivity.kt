@@ -34,7 +34,7 @@ import fr.mandarine.todolist.presentation.TutorialViewModel
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
-import fr.mandarine.todolist.ui.todolist.moved
+import fr.mandarine.todolist.ui.reorder.moved
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

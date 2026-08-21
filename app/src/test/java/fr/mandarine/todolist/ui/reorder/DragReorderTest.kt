@@ -1,4 +1,4 @@
-package fr.mandarine.todolist.ui.todolist
+package fr.mandarine.todolist.ui.reorder
 
 import fr.mandarine.todolist.domain.TodoItem
 import org.junit.Assert.assertEquals
@@ -284,14 +284,14 @@ class DragReorderTest {
     fun `should keep the repository order when no preview order is set`() {
         val items = listOf(item("a"), item("b"))
 
-        assertEquals(items, orderActive(items, null))
+        assertEquals(items, orderedBy(items, null) { it.id })
     }
 
     @Test
     fun `should apply the preview order when one is set`() {
         val items = listOf(item("a"), item("b"), item("c"))
 
-        val ordered = orderActive(items, listOf("c", "a", "b"))
+        val ordered = orderedBy(items, listOf("c", "a", "b")) { it.id }
 
         assertEquals(listOf("c", "a", "b"), ordered.map { it.id })
     }
@@ -300,7 +300,7 @@ class DragReorderTest {
     fun `should fall back to the repository order when the preview is stale`() {
         val items = listOf(item("a"), item("b"))
 
-        assertEquals(items, orderActive(items, listOf("a", "gone")))
+        assertEquals(items, orderedBy(items, listOf("a", "gone")) { it.id })
     }
 
     private fun scrollDelta(

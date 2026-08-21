@@ -13,7 +13,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +21,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import fr.mandarine.todolist.R
-import kotlinx.coroutines.launch
 
 private const val BACK_SHEET_ROTATION = 4f
 private const val MID_SHEET_ROTATION = 2f
@@ -55,16 +53,22 @@ fun StickyNotePad(
     reducedMotion: Boolean = false,
     painter: Painter = painterResource(R.drawable.ic_add)
 ) {
-    val scope = rememberCoroutineScope()
     val peel = remember { Animatable(STICKY_PEEL_REST) }
     val settle = remember { Animatable(STICKY_SETTLE_DONE) }
     var peeling by remember { mutableStateOf(false) }
     val previouslyTaken = remember { mutableStateOf(taken) }
 
     LaunchedEffect(taken) {
-        val returning = previouslyTaken.value && !taken && !reducedMotion
+        val was = previouslyTaken.value
         previouslyTaken.value = taken
-        if (returning) {
+        if (reducedMotion || was == taken) return@LaunchedEffect
+        if (taken) {
+            peeling = true
+            peel.snapTo(STICKY_PEEL_REST)
+            peel.animateTo(STICKY_PEEL_LIFTED, PaperMotion.sheetLift)
+            peel.animateTo(STICKY_PEEL_GONE, PaperMotion.sheetSettle)
+            peeling = false
+        } else {
             settle.snapTo(STICKY_SETTLE_START)
             settle.animateTo(STICKY_SETTLE_DONE, PaperMotion.sheetSettle)
         }
@@ -74,10 +78,10 @@ fun StickyNotePad(
         modifier = modifier.size(PaperDimens.stickyPad),
         contentAlignment = Alignment.Center
     ) {
-        StickyNoteSheetSurface(PaperInk.stickyNoteBack, BACK_SHEET_ROTATION, Modifier) {}
-        StickyNoteSheetSurface(PaperInk.stickyNoteMid, MID_SHEET_ROTATION, Modifier) {}
-
         if (!taken) {
+            StickyNoteSheetSurface(PaperInk.stickyNoteBack, BACK_SHEET_ROTATION, Modifier) {}
+            StickyNoteSheetSurface(PaperInk.stickyNoteMid, MID_SHEET_ROTATION, Modifier) {}
+
             val resting = stickyNoteSettleAt(settle.value)
             StickyNoteSheetSurface(
                 color = PaperInk.stickyNote,
@@ -88,18 +92,7 @@ fun StickyNotePad(
                         scaleY = resting.scale
                         alpha = resting.alpha
                     }
-                    .clickable {
-                        onTake()
-                        if (!reducedMotion) {
-                            peeling = true
-                            scope.launch {
-                                peel.snapTo(STICKY_PEEL_REST)
-                                peel.animateTo(STICKY_PEEL_LIFTED, PaperMotion.sheetLift)
-                                peel.animateTo(STICKY_PEEL_GONE, PaperMotion.sheetSettle)
-                                peeling = false
-                            }
-                        }
-                    }
+                    .clickable(onClick = onTake)
             ) {
                 InkIcon(
                     painter = painter,

@@ -1,4 +1,4 @@
-package fr.mandarine.todolist.ui.todolist
+package fr.mandarine.todolist.ui.reorder
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -13,9 +13,9 @@ data class Reorder(val from: Int, val to: Int)
 const val NO_DRAG_INDEX = -1
 
 /**
- * Owns a single handle drag. Rows are addressed by their index within the active
- * section only, so the completed section is unreachable by construction rather
- * than by a bounds check on every move.
+ * Owns a single handle drag. Rows are addressed by their index within the
+ * reorderable section only, so the section below it is unreachable by
+ * construction rather than by a bounds check on every move.
  */
 class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
 
@@ -117,6 +117,18 @@ fun <T> List<T>.moved(from: Int, to: Int): List<T> {
     val result = toMutableList()
     result.add(to, result.removeAt(from))
     return result
+}
+
+/**
+ * A staged order outlives the repository read that follows a drag, so it is
+ * discarded rather than trusted whenever it no longer names exactly the rows on
+ * screen — otherwise a row deleted mid-drag would vanish from the section.
+ */
+fun <T> orderedBy(items: List<T>, order: List<String>?, idOf: (T) -> String): List<T> {
+    if (order == null) return items
+    val byId = items.associateBy(idOf)
+    val ordered = order.mapNotNull { byId[it] }
+    return if (ordered.size == items.size) ordered else items
 }
 
 /**

@@ -13,14 +13,4 @@
          hole punches live to its left. -->
     <dimen name="paper_gutter_width">40dp</dimen>
     <dimen name="paper_rule_height">1dp</dimen>
-    <!-- Section-header row clears the gutter plus the ruling's own inset. -->
-    <dimen name="paper_section_inset">48dp</dimen>
-    <!-- Sticky-note pad. The pad box is oversized so the rotated sheets below the
-         top one are not clipped; each sheet stays square at the sheet size. -->
-    <dimen name="sticky_note_pad_size">72dp</dimen>
-    <dimen name="sticky_note_sheet_size">56dp</dimen>
-    <dimen name="sticky_note_corner">2dp</dimen>
-    <!-- Distance the peeled sheet travels toward the list before it fades out. -->
-    <dimen name="sticky_note_peel_travel_x">12dp</dimen>
-    <dimen name="sticky_note_peel_travel_y">28dp</dimen>
 </resources>

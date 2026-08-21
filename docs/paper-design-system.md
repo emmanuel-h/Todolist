@@ -1,7 +1,7 @@
 # Paper Design System
 
 ## What it does
-Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, spring motion specs, and previewable primitives. It is the vocabulary phases 3–5 of the [Compose migration](compose-migration-plan.md) are written in. Phase 3 is its first consumer — see [items-screen-compose.md](items-screen-compose.md).
+Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, spring motion specs, and previewable primitives. It is the vocabulary phases 3–5 of the [Compose migration](compose-migration-plan.md) are written in. Both screens now consume it — see [items-screen-compose.md](items-screen-compose.md) and [lists-screen-compose.md](lists-screen-compose.md).
 
 ## Architecture
 - **Layers**: `ui/paper/` only — no domain, data, or presentation logic touched. The Pitest gate (`domain`, `data`, `presentation`) is untouched: 368/368 mutations, 100%.
@@ -17,8 +17,10 @@ Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, s
 - `ui/paper/GhostRow.kt` — the "＋ …" add affordance
 - `ui/paper/InkIcon.kt` — `InkIcon` and `InkIconButton`, tint always taken from the palette
 - `ui/paper/CountBadge.kt` — the outlined pill with a leading glyph and a bare number
+- `ui/paper/SectionDivider.kt` — the 1:3 rules with a bare count between them
+- `ui/paper/PaperDialog.kt` — a shadowless sheet with square corners and a hairline edge
 - `ui/paper/StickyNoteSheetState.kt` — pure interpolation for the peel and settle, no Compose types
-- `ui/paper/StickyNotePad.kt` — the three-sheet pad, peel on tap, settle on return
+- `ui/paper/StickyNotePad.kt` — the three-sheet pad, peel and settle both driven by `taken`
 - `ui/paper/PaperPreviews.kt` — one `@Preview` per primitive, in populated and empty states
 - `src/debug/java/…/PaperGalleryActivity.kt` + `src/debug/AndroidManifest.xml` — the same previews on a real device
 - Tests: `PaperMotionTest`, `StickyNoteSheetStateTest` (pure JUnit), `PaperPrimitivesTest`, `PaperPreviewsTest` (Robolectric + Compose)
@@ -29,10 +31,12 @@ Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, s
 - **One `PaperSurface` per screen.** Nesting them restarts the hole sequence and the punches stop lining up. The debug gallery does exactly this, on purpose, and it shows.
 - **Ruling is per row.** `Modifier.paperRule()` draws under the row it is applied to, inset by the gutter — the same rule as the View implementation, and for the same reason (a page-wide ruling drifts off the baseline of a taller row).
 - **Motion is springs, never duration-plus-easing.** Anything that moves takes a spec from `PaperMotion`. The one thing lost in translation is that the View peel accelerated out via `AccelerateInterpolator`; a spring cannot, so the flying sheet decelerates instead.
-- **Icon-only holds.** The only text any primitive renders is a `CountBadge` number and the `GhostRow` hint, which is `@string/add_item_ghost_hint` — "…".
+- **Icon-only holds.** The only text any primitive renders is a `CountBadge` number, a `SectionDivider` count, and the `GhostRow` hint, which is `@string/add_item_ghost_hint` — "…".
+- **`PaperDialog` draws no elevation.** A Material dialog surface always does, and the paper design has no drop shadows; a hairline rule is the edge instead.
+- **The pad peels because it was taken, not because it was tapped.** Phase 4 moved the peel into the same `taken` transition that drives the settle, so the tutorial gets the animation for free by setting state. The under-sheets hide while `taken`, which is why the pad has to stay composed rather than be removed — removing it would cancel the peel mid-flight.
 
 ## UI
-- **Screen(s)**: the items screen. `PaperGalleryActivity` (debug builds only) renders every preview on device.
+- **Screen(s)**: both. `PaperGalleryActivity` (debug builds only) renders every preview on device.
 - **Design decisions**:
   - `StickyNotePad` splits the animation from the composable: `stickyNotePeelAt` / `stickyNoteSettleAt` are pure functions of progress, unit-tested without Robolectric, and the composable only feeds them an `Animatable`. The View version needed a decorative ghost view to keep the animation from blocking a synchronous test assertion; here the peeling sheet is just a second composable that exists while `peeling` is true.
   - `InkIconButton` fades its own tint when disabled. `IconButton` normally handles this through `LocalContentColor`, which an explicit `tint` overrides — so a disabled button would have looked enabled.
