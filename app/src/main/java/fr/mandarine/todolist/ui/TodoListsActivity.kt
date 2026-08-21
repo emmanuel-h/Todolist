@@ -1,5 +1,9 @@
 package fr.mandarine.todolist.ui
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,6 +15,8 @@ import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.OnBackPressedCallback
@@ -50,6 +56,8 @@ class TodoListsActivity : AppCompatActivity() {
     internal lateinit var viewModel: TodoListsViewModel
     private lateinit var adapter: TodoListsAdapter
     internal lateinit var fab: FloatingActionButton
+    private lateinit var stickyNotePeel: View
+    private lateinit var stickyNoteUnderSheets: List<View>
     internal lateinit var recyclerViewInternal: RecyclerView
     internal lateinit var inlineAddRowInternal: View
     internal var itemTouchHelperInternal: ItemTouchHelper? = null
@@ -100,6 +108,11 @@ class TodoListsActivity : AppCompatActivity() {
         tutorialViewModel = container.tutorialViewModel
 
         fab = findViewById(R.id.fabAddList)
+        stickyNotePeel = findViewById(R.id.stickyNotePeel)
+        stickyNoteUnderSheets = listOf(
+            findViewById(R.id.stickyNoteMid),
+            findViewById(R.id.stickyNoteBack)
+        )
         inlineAddRowInternal = findViewById(R.id.inlineAddListRow)
 
         adapter = TodoListsAdapter(
@@ -188,6 +201,7 @@ class TodoListsActivity : AppCompatActivity() {
         }
 
         fab.setOnClickListener {
+            peelStickyNote()
             showInlineAddRow()
         }
 
@@ -355,11 +369,19 @@ class TodoListsActivity : AppCompatActivity() {
         val divider = findViewById<View>(R.id.inlineAddListDivider)
         divider.visibility = View.VISIBLE
         fab.visibility = View.GONE
+        stickyNoteUnderSheets.forEach { it.visibility = View.GONE }
         replayButton.visibility = View.GONE
         val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
         editText.requestFocus()
-        val imm = getSystemService(InputMethodManager::class.java)
-        imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        val showKeyboard = Runnable {
+            val imm = getSystemService(InputMethodManager::class.java)
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        }
+        if (isReducedMotion()) {
+            showKeyboard.run()
+        } else {
+            editText.postDelayed(showKeyboard, STICKY_NOTE_PEEL_TOTAL_MS)
+        }
     }
 
     private fun hideInlineAddRow() {
@@ -367,6 +389,8 @@ class TodoListsActivity : AppCompatActivity() {
         val divider = findViewById<View>(R.id.inlineAddListDivider)
         divider.visibility = View.GONE
         fab.visibility = View.VISIBLE
+        stickyNoteUnderSheets.forEach { it.visibility = View.VISIBLE }
+        settleStickyNote()
         replayButton.visibility = View.VISIBLE
         val editText = inlineAddRowInternal.findViewById<TextInputEditText>(R.id.editListInlineAdd)
         editText.clearFocus()
@@ -492,6 +516,74 @@ class TodoListsActivity : AppCompatActivity() {
         }
     }
 
+    private fun peelStickyNote() {
+        if (isReducedMotion()) return
+        val sheet = stickyNotePeel
+        sheet.translationX = 0f
+        sheet.translationY = 0f
+        sheet.rotation = STICKY_NOTE_REST_ROTATION
+        sheet.scaleX = 1f
+        sheet.scaleY = 1f
+        sheet.alpha = 1f
+        sheet.visibility = View.VISIBLE
+
+        val lift = AnimatorSet().apply {
+            playTogether(
+                ObjectAnimator.ofFloat(sheet, View.SCALE_X, 1f, STICKY_NOTE_LIFT_SCALE),
+                ObjectAnimator.ofFloat(sheet, View.SCALE_Y, 1f, STICKY_NOTE_LIFT_SCALE),
+                ObjectAnimator.ofFloat(
+                    sheet, View.ROTATION, STICKY_NOTE_REST_ROTATION, STICKY_NOTE_LIFT_ROTATION
+                )
+            )
+            duration = STICKY_NOTE_LIFT_MS
+            interpolator = DecelerateInterpolator()
+        }
+        val peel = AnimatorSet().apply {
+            playTogether(
+                ObjectAnimator.ofFloat(
+                    sheet, View.TRANSLATION_X,
+                    0f, -resources.getDimension(R.dimen.sticky_note_peel_travel_x)
+                ),
+                ObjectAnimator.ofFloat(
+                    sheet, View.TRANSLATION_Y,
+                    0f, -resources.getDimension(R.dimen.sticky_note_peel_travel_y)
+                ),
+                ObjectAnimator.ofFloat(
+                    sheet, View.ROTATION, STICKY_NOTE_LIFT_ROTATION, STICKY_NOTE_PEEL_ROTATION
+                ),
+                ObjectAnimator.ofFloat(sheet, View.SCALE_X, STICKY_NOTE_LIFT_SCALE, 1f),
+                ObjectAnimator.ofFloat(sheet, View.SCALE_Y, STICKY_NOTE_LIFT_SCALE, 1f),
+                ObjectAnimator.ofFloat(sheet, View.ALPHA, 1f, 0f)
+            )
+            duration = STICKY_NOTE_PEEL_MS
+            interpolator = AccelerateInterpolator()
+        }
+        AnimatorSet().apply {
+            playSequentially(lift, peel)
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    sheet.visibility = View.GONE
+                }
+            })
+            start()
+        }
+    }
+
+    private fun settleStickyNote() {
+        if (isReducedMotion()) return
+        fab.alpha = 0f
+        fab.scaleX = STICKY_NOTE_SETTLE_SCALE
+        fab.scaleY = STICKY_NOTE_SETTLE_SCALE
+        fab.rotation = STICKY_NOTE_LIFT_ROTATION
+        fab.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .rotation(STICKY_NOTE_REST_ROTATION)
+            .setDuration(STICKY_NOTE_SETTLE_MS)
+            .setInterpolator(DecelerateInterpolator())
+    }
+
     private fun isReducedMotion(): Boolean {
         val scale = Settings.Global.getFloat(
             contentResolver,
@@ -517,5 +609,17 @@ class TodoListsActivity : AppCompatActivity() {
                 adapter.submitList(s.activeSummaries, s.doneSummaries)
             }
         }
+    }
+
+    private companion object {
+        const val STICKY_NOTE_REST_ROTATION = -1f
+        const val STICKY_NOTE_LIFT_ROTATION = -6f
+        const val STICKY_NOTE_PEEL_ROTATION = -14f
+        const val STICKY_NOTE_LIFT_SCALE = 1.08f
+        const val STICKY_NOTE_SETTLE_SCALE = 0.9f
+        const val STICKY_NOTE_LIFT_MS = 90L
+        const val STICKY_NOTE_PEEL_MS = 230L
+        const val STICKY_NOTE_PEEL_TOTAL_MS = STICKY_NOTE_LIFT_MS + STICKY_NOTE_PEEL_MS
+        const val STICKY_NOTE_SETTLE_MS = 220L
     }
 }

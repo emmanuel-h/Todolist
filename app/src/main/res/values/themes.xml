@@ -46,6 +46,11 @@
         <item name="cornerSize">16dp</item>
     </style>
 
+    <style name="ShapeAppearance.Paper.Sticky" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/sticky_note_corner</item>
+    </style>
+
     <style name="ThemeOverlay.Paper.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="colorSurface">@color/paper_sheet</item>
         <item name="elevationOverlayEnabled">false</item>

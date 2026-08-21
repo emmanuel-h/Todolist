@@ -49,18 +49,62 @@
         app:icon="@drawable/ic_replay"
         app:iconTint="?attr/colorOutline" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddList"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <FrameLayout
+        android:id="@+id/stickyNotePad"
+        android:layout_width="@dimen/sticky_note_pad_size"
+        android:layout_height="@dimen/sticky_note_pad_size"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:contentDescription="@string/add_list_fab_description"
-        android:foreground="@drawable/fab_paper_outline"
-        app:backgroundTint="@color/paper_sheet"
-        app:elevation="3dp"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Paper.Chip"
-        app:srcCompat="@drawable/ic_add"
-        app:tint="?attr/colorPrimary" />
+        android:layout_margin="8dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <View
+            android:id="@+id/stickyNoteBack"
+            android:layout_width="@dimen/sticky_note_sheet_size"
+            android:layout_height="@dimen/sticky_note_sheet_size"
+            android:layout_gravity="center"
+            android:background="@drawable/sticky_note_sheet_back"
+            android:elevation="1dp"
+            android:rotation="4" />
+
+        <View
+            android:id="@+id/stickyNoteMid"
+            android:layout_width="@dimen/sticky_note_sheet_size"
+            android:layout_height="@dimen/sticky_note_sheet_size"
+            android:layout_gravity="center"
+            android:background="@drawable/sticky_note_sheet_mid"
+            android:elevation="2dp"
+            android:rotation="2" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddList"
+            android:layout_width="@dimen/sticky_note_sheet_size"
+            android:layout_height="@dimen/sticky_note_sheet_size"
+            android:layout_gravity="center"
+            android:contentDescription="@string/add_list_fab_description"
+            android:foreground="@drawable/sticky_note_edge"
+            android:rotation="-1"
+            app:backgroundTint="@color/sticky_note"
+            app:elevation="4dp"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Paper.Sticky"
+            app:srcCompat="@drawable/ic_add"
+            app:tint="@color/ink" />
+
+        <ImageView
+            android:id="@+id/stickyNotePeel"
+            android:layout_width="@dimen/sticky_note_sheet_size"
+            android:layout_height="@dimen/sticky_note_sheet_size"
+            android:layout_gravity="center"
+            android:background="@drawable/sticky_note_sheet_top"
+            android:contentDescription="@string/add_list_fab_description"
+            android:elevation="6dp"
+            android:importantForAccessibility="no"
+            android:rotation="-1"
+            android:scaleType="center"
+            android:src="@drawable/ic_add"
+            android:tint="@color/ink"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

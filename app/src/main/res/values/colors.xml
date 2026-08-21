@@ -26,6 +26,12 @@
     <color name="ink_red_wash">#F1DDD4</color>
     <color name="ink_amber">#B4761E</color>
 
+    <!-- Sticky note pad (the add-list affordance) -->
+    <color name="sticky_note">#EBDCA4</color>
+    <color name="sticky_note_mid">#DCCB90</color>
+    <color name="sticky_note_back">#CBB97C</color>
+    <color name="sticky_note_edge">#B0995C</color>
+
     <!-- Paper texture -->
     <color name="paper_rule">#D5CCB6</color>
     <color name="paper_grain_tint">#66000000</color>

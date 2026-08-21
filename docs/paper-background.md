@@ -9,7 +9,6 @@ Turns the whole app into one continuous sheet of ruled loose-leaf paper: warm to
   - `drawable/bg_paper.xml` — layer-list used as `android:windowBackground`: paper tone → grain tile → hole tile
   - `drawable/row_rule.xml` — 1dp bottom rule inset by the gutter; the background of every row on both screens
   - `drawable/badge_pill.xml` — outlined chip (transparent fill, 1dp stroke, tinted via `backgroundTint`)
-  - `drawable/fab_paper_outline.xml` — the ＋ chip's ink border, applied as the FAB's `android:foreground`
   - `drawable-nodpi/tile_paper_grain.png` — 64×64 procedurally generated noise, tiled and tinted
   - `drawable-xxhdpi/tile_paper_hole.png` — 40dp × 128dp tile with one punched circle, tiled down the gutter
 
@@ -18,7 +17,7 @@ Turns the whole app into one continuous sheet of ruled loose-leaf paper: warm to
 - `res/values/themes.xml` — `Theme.Material3.Light.NoActionBar` base, M3 roles mapped to the palette, `elevationOverlayEnabled=false`, `ShapeAppearance.Paper.Chip`, `ThemeOverlay.Paper.Dialog`, `MaterialAlertDialog.Paper`
 - `res/values/dimens.xml` — `paper_gutter_width` (40dp), `paper_rule_height`, `paper_section_inset`, `paper_toolbar_inset`
 - `res/layout/activity_todo_list.xml` — transparent app bar, toolbar inset past the margin, watermark removed
-- `res/layout/activity_todo_lists.xml` — watermark removed, paper-chip FAB, pencil-toned replay button
+- `res/layout/activity_todo_lists.xml` — watermark removed, pencil-toned replay button (the ＋ affordance is now a sticky-note pad — see [sticky-note-fab.md](sticky-note-fab.md))
 - `res/layout/item_todo.xml`, `item_todo_inline_add.xml`, `item_todo_list.xml`, `item_todo_list_inline_add.xml` — ruled rows at the gutter, ink/pencil icon tints
 - `res/layout/item_todo_divider.xml` — section header inset to clear the gutter
 - `ui/TodoListActivity.kt`, `ui/TodoListsActivity.kt` — `InsetItemDivider` and the watermark fields/alpha logic removed
@@ -43,5 +42,5 @@ Turns the whole app into one continuous sheet of ruled loose-leaf paper: warm to
   - Two tiny PNG tiles are unavoidable: `<bitmap android:tileMode="repeat">` needs a real bitmap, and neither repeating hole punches nor fibre grain can be a stretched vector. Everything else is XML shapes.
   - The lists screen dropped its cards. Cards on paper read as floating chrome, and with dynamic color gone there was no tonal step left to justify them; ruled rows put both screens in the same rhythm.
   - A fully-completed list loses its `colorSecondaryContainer` fill and keeps only strikethrough — the paper equivalent of crossing a line out.
-  - The ＋ stays a `FloatingActionButton` rather than becoming a ghost row: the tutorial scripts a tap on it and four test classes assert on the type. It is restyled, not replaced. Its outline is a `foreground` drawable because `FloatingActionButton` has no stroke support on API 21+ (`app:borderWidth` is a no-op there).
+  - The ＋ stays a `FloatingActionButton` rather than becoming a ghost row: the tutorial scripts a tap on it and four test classes assert on the type. It is restyled, not replaced — first as a paper chip, now as a sticky-note pad ([sticky-note-fab.md](sticky-note-fab.md)). Its outline is a `foreground` drawable because `FloatingActionButton` has no stroke support on API 21+ (`app:borderWidth` is a no-op there).
   - The `InsetItemDivider` `RecyclerView.ItemDecoration` was deleted — it drew a second, differently-inset line under every pair of item rows, doubling with the ruling. See [inset-item-dividers.md](inset-item-dividers.md), now superseded.
