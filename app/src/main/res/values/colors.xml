@@ -28,8 +28,6 @@
 
     <!-- Paper texture -->
     <color name="paper_rule">#D5CCB6</color>
-    <color name="paper_margin_rule">#C2564C</color>
-    <color name="paper_margin_rule_soft">#DDA79F</color>
     <color name="paper_grain_tint">#66000000</color>
     <color name="paper_hole_tint">#1F000000</color>
 

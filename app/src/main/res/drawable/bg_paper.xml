@@ -23,22 +23,4 @@
             android:tint="@color/paper_hole_tint" />
     </item>
 
-    <item
-        android:width="@dimen/paper_margin_primary_width"
-        android:gravity="start|fill_vertical"
-        android:start="@dimen/paper_margin_primary_inset">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/paper_margin_rule" />
-        </shape>
-    </item>
-
-    <item
-        android:width="@dimen/paper_margin_secondary_width"
-        android:gravity="start|fill_vertical"
-        android:start="@dimen/paper_margin_secondary_inset">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/paper_margin_rule_soft" />
-        </shape>
-    </item>
-
 </layer-list>

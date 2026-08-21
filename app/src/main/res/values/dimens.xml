@@ -9,16 +9,12 @@
     <!-- Horizontal inset that caps list content width on large screens so rows
          stay readable instead of stretching edge to edge. Zero on handsets. -->
     <dimen name="list_horizontal_inset">0dp</dimen>
-    <!-- Paper gutter: row content starts here and the ruling begins here. Hole
-         punches and the double margin rule live to its left. -->
+    <!-- Paper gutter: row content starts here and the ruling begins here. The
+         hole punches live to its left. -->
     <dimen name="paper_gutter_width">40dp</dimen>
-    <dimen name="paper_margin_primary_inset">31dp</dimen>
-    <dimen name="paper_margin_primary_width">2dp</dimen>
-    <dimen name="paper_margin_secondary_inset">38dp</dimen>
-    <dimen name="paper_margin_secondary_width">1dp</dimen>
     <dimen name="paper_rule_height">1dp</dimen>
     <!-- Section-header row clears the gutter plus the ruling's own inset. -->
     <dimen name="paper_section_inset">48dp</dimen>
-    <!-- Toolbar padding so the navigation icon never crosses the margin. -->
+    <!-- Toolbar padding so the navigation icon never crosses the hole column. -->
     <dimen name="paper_toolbar_inset">32dp</dimen>
 </resources>
