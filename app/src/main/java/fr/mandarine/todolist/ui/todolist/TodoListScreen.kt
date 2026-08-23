@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,7 @@ import fr.mandarine.todolist.ui.paper.PaperInk
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.SectionDivider
+import fr.mandarine.todolist.ui.paper.performConfirmFeedback
 import fr.mandarine.todolist.ui.reorder.AutoScrollWhileDragging
 import fr.mandarine.todolist.ui.reorder.DragSession
 import fr.mandarine.todolist.ui.reorder.EdgeScroll
@@ -81,6 +83,11 @@ fun TodoListScreen(
     }
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val view = LocalView.current
+    val toggleWithFeedback: (String) -> Unit = { id ->
+        view.performConfirmFeedback()
+        onToggle(id)
+    }
 
     LaunchedEffect(screenState.hideKeyboardSignal) {
         if (screenState.hideKeyboardSignal > 0) keyboard?.hide()
@@ -119,7 +126,7 @@ fun TodoListScreen(
                         session = session,
                         edgeScroll = edgeScroll,
                         screenState = screenState,
-                        onToggle = onToggle,
+                        onToggle = toggleWithFeedback,
                         onEdit = onEdit,
                         onDelete = onDelete,
                         onReorder = onReorder
@@ -159,7 +166,7 @@ fun TodoListScreen(
                     TodoRow(
                         item = item,
                         editing = screenState.editingItemId == item.id,
-                        onToggle = { onToggle(item.id) },
+                        onToggle = { toggleWithFeedback(item.id) },
                         onEditRequested = { screenState.editingItemId = item.id },
                         onEditCommitted = { title -> onEdit(item.id, title) },
                         onEditDismissed = { screenState.editingItemId = null },

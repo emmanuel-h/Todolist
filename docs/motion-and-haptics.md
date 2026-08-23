@@ -1,5 +1,7 @@
 # Motion and Haptics
 
+> **Superseded.** The motion half described here — `TodoItemAnimator`, `TodoListsItemAnimator`, `TodoListAdapter` and the `ItemTouchHelper` callback — was deleted with the View system; rows now move on `LazyColumn.animateItem` with the specs in `PaperMotion` ([items-screen-compose.md](items-screen-compose.md), [lists-screen-compose.md](lists-screen-compose.md), [compose-teardown.md](compose-teardown.md)). The haptic half now lives in [haptic-feedback.md](haptic-feedback.md); the complete/restore tick was lost in the migration and restored there. The "swipe-confirm threshold" tick below was never implemented. Kept for history.
+
 ## What it does
 Row-level animations play for every item add, complete, restore, and delete on both screens; haptic ticks fire on complete, drag pickup, drag drop, and swipe-confirm threshold. All motion is suppressed when the system animator scale is off, and animation events are also suppressed during the two tutorial steps that drive a phantom hand (`OPEN_LIST`, `COMPLETE_AND_REORDER`).
 

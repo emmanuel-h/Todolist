@@ -1,8 +1,5 @@
 package fr.mandarine.todolist.ui.reorder
 
-import android.os.Build
-import android.view.HapticFeedbackConstants
-import android.view.View
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
@@ -18,6 +15,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import fr.mandarine.todolist.ui.paper.performConfirmFeedback
+import fr.mandarine.todolist.ui.paper.performPickUpFeedback
 
 private val AUTO_SCROLL_EDGE = 72.dp
 private val AUTO_SCROLL_MAX_STEP = 12.dp
@@ -64,7 +63,7 @@ fun Modifier.reorderHandle(
                     rowIds = current,
                     rowHeights = rowHeights(listState, current)
                 )
-                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                view.performPickUpFeedback()
             },
             onDrag = { change, amount ->
                 change.consume()
@@ -73,7 +72,7 @@ fun Modifier.reorderHandle(
             },
             onDragEnd = {
                 val reorder = session.end()
-                if (reorder != null) view.performDropFeedback()
+                if (reorder != null) view.performConfirmFeedback()
                 onDrop(reorder)
             },
             onDragCancel = {
@@ -134,12 +133,4 @@ private fun rowHeights(listState: LazyListState, ids: List<String>): List<Int> {
     val sizes = listState.layoutInfo.visibleItemsInfo.associate { it.key to it.size }
     val fallback = sizes.values.firstOrNull() ?: 0
     return ids.map { sizes[it] ?: fallback }
-}
-
-private fun View.performDropFeedback() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-    } else {
-        performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-    }
 }

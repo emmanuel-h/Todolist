@@ -1,12 +1,16 @@
 package fr.mandarine.todolist.ui.todolist
 
+import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.geometry.Offset
@@ -31,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -47,6 +52,7 @@ class TodoListScreenTest {
     private val submitted = mutableListOf<String>()
     private val reordered = mutableListOf<Pair<Int, Int>>()
     private var backPressed = 0
+    private var hostView: View? = null
 
     @Test
     fun `should show the list name in the top bar`() {
@@ -159,6 +165,43 @@ class TodoListScreenTest {
         composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
 
         assertEquals(listOf("1"), toggled)
+    }
+
+    @Test
+    fun `should buzz when an item is completed`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
+
+        assertEquals(HapticFeedbackConstants.CONFIRM, lastFeedback())
+    }
+
+    @Test
+    fun `should buzz when a completed item is restored`() {
+        render(content(completed = listOf(completed("2", "Milk"))))
+
+        composeRule.onNodeWithContentDescription(MARK_INCOMPLETE).performClick()
+
+        assertEquals(HapticFeedbackConstants.CONFIRM, lastFeedback())
+    }
+
+    @Test
+    fun `should buzz when a row title is double tapped`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithText("Apples").performTouchInput { doubleClick() }
+
+        assertEquals(listOf("1"), toggled)
+        assertEquals(HapticFeedbackConstants.CONFIRM, lastFeedback())
+    }
+
+    @Test
+    fun `should stay silent while no item is toggled`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
+
+        assertEquals(NO_FEEDBACK, lastFeedback())
     }
 
     @Test
@@ -315,6 +358,7 @@ class TodoListScreenTest {
 
     @Composable
     private fun Screen(state: TodoListState, listName: String) {
+        hostView = LocalView.current
         TodoListScreen(
             listName = listName,
             state = state,
@@ -327,6 +371,8 @@ class TodoListScreenTest {
             onReorder = { from, to -> reordered += from to to }
         )
     }
+
+    private fun lastFeedback(): Int = shadowOf(hostView!!).lastHapticFeedbackPerformed()
 
     private fun texts(): List<String> =
         collectText(composeRule.onRoot().fetchSemanticsNode())
@@ -379,5 +425,6 @@ class TodoListScreenTest {
         const val EDIT = "Edit item"
         const val DELETE = "Delete item"
         const val SUBMIT = "Submit new item"
+        const val NO_FEEDBACK = -1
     }
 }
