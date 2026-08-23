@@ -32,5 +32,4 @@ object PaperInk {
 
     val rule = Color(0xFFD5CCB6)
     val grain = Color(0xFF000000)
-    val hole = Color(0x1F000000)
 }

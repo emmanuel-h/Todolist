@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
@@ -44,18 +43,9 @@ fun PaperSurface(
                 val grain = ShaderBrush(
                     ImageShader(grainTile, TileMode.Repeated, TileMode.Repeated)
                 )
-                val radius = PaperDimens.holeRadius.toPx()
-                val centerX = PaperDimens.holeCenterX.toPx()
-                val period = PaperDimens.holePeriod.toPx()
-                val firstCenterY = PaperDimens.holeFirstCenterY.toPx()
                 onDrawBehind {
                     drawRect(PaperInk.paper)
                     drawRect(brush = grain, alpha = GRAIN_ALPHA)
-                    var centerY = firstCenterY
-                    while (centerY - radius < size.height) {
-                        drawCircle(PaperInk.hole, radius, Offset(centerX, centerY))
-                        centerY += period
-                    }
                 }
             },
         content = content

@@ -29,8 +29,8 @@ This principle overrides any contradictory suggestion from a UI agent or the wir
 
 Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the content area is a flat tonal plane, and nothing floats above the page except the ＋ chip and the tutorial overlay.
 
-- `android:windowBackground` = `@drawable/bg_paper`: solid `@color/paper` + a tiled fibre grain + a punched-hole column + a double margin rule.
-- The gutter is `@dimen/paper_gutter_width` (40dp) — where row content and the ruling both start. Hole punches are centred at 16dp on a 128dp vertical pitch; the margin is a **double rule**, 2dp at 31dp and 1dp at 38dp, in paper red.
+- The page is drawn by `PaperSurface`: solid paper tone + a generated fibre grain, nothing else. `android:windowBackground` is the flat `@color/paper` for the frames before the first composition.
+- The gutter is `PaperDimens.gutter` (40dp) — where row content and the ruling both start. **The gutter is bare paper**: no punched-hole column, no margin rule.
 - Ruling is drawn **per row**, not per page: `@drawable/row_rule` is the background of `item_todo.xml`, `item_todo_inline_add.xml`, and `item_todo_list.xml`, so a hairline always meets the text baseline no matter how tall the row grows. Ruling therefore stops at the last row; the page below it is bare.
 - **Both screens use the same row grammar.** List rows are not cards: they are ruled rows carrying `⠿ · ✎ · name · counts · 🗑`, matching the item rows. `MaterialCardView`, its stroke, and its elevation are gone from `item_todo_list.xml`.
 - A fully-completed list is marked by strikethrough and 50% alpha on its name only. The former `colorSecondaryContainer` row fill is gone — a coloured block does not belong on paper.
@@ -39,7 +39,7 @@ Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the 
 - **There are no background watermark illustrations.** Both screens show a bare page when empty. `IconOnlyUiTest` asserts this: no static text and no undescribed `ImageView` in either activity layout.
 - The ＋ button is a paper chip: a `FloatingActionButton` with a 16dp rounded-square shape, `paper_sheet` fill, a 1.5dp ink outline drawn as its `android:foreground`, and 3dp elevation. It stays a `FloatingActionButton` because the tutorial scripts a tap on it.
 - Dialogs are paper slips via `ThemeOverlay.Paper.Dialog`: `paper_sheet` surface, 16dp corners, no elevation tint.
-- Grain, holes, ruling, and the margin rules are fixed colours rather than theme attributes — paper texture does not take a device hue.
+- Grain, ruling, and the margin rules are fixed colours rather than theme attributes — paper texture does not take a device hue.
 - There is no `RecyclerView.ItemDecoration` divider on the items screen; the row ruling replaced it.
 - The launcher icon is **not** part of this palette; it remains the brand-violet asset described in `docs/app-icons.md`.
 

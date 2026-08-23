@@ -21,11 +21,6 @@ object PaperDimens {
     val badgeIcon = 12.dp
     val badgeMinWidth = 24.dp
 
-    val holeRadius = 5.7.dp
-    val holeCenterX = 15.8.dp
-    val holePeriod = 128.dp
-    val holeFirstCenterY = 64.dp
-
     val stickyPad = 72.dp
     val stickySheet = 56.dp
     val stickyCorner = 2.dp

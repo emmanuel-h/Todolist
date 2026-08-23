@@ -9,10 +9,10 @@ Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, s
 
 ## Files
 - `ui/paper/PaperInk.kt` — the palette from `res/values/colors.xml` as `Color` constants
-- `ui/paper/PaperDimens.kt` — the gutter, ruling, row heights, icon sizes, hole geometry, sticky-note sizes
+- `ui/paper/PaperDimens.kt` — the gutter, ruling, row heights, icon sizes, sticky-note sizes
 - `ui/paper/PaperMotion.kt` — named springs: `sheetLift`, `sheetSettle`, `rowEnter`, `rowExit`, `rowPlacement`, `instant`
 - `ui/paper/PaperTheme.kt` — `lightColorScheme` mapping the palette onto the M3 roles, mirroring `res/values/themes.xml`
-- `ui/paper/PaperSurface.kt` — paper tone, fibre grain, punched-hole gutter, drawn in one `drawWithCache`
+- `ui/paper/PaperSurface.kt` — paper tone and fibre grain, drawn in one `drawWithCache`
 - `ui/paper/RuledRow.kt` — the shared row grammar, plus a reusable `Modifier.paperRule()`
 - `ui/paper/GhostRow.kt` — the "＋ …" add affordance
 - `ui/paper/InkIcon.kt` — `InkIcon` and `InkIconButton`, tint always taken from the palette
@@ -27,8 +27,8 @@ Ports the ink-on-paper look into Jetpack Compose as a small package of tokens, s
 
 ## Invariants & contracts
 - **The palette stays fixed.** `PaperInk` is an `object`; there is no seam for wallpaper-derived or dark-mode colours. `PaperTheme` sets `surfaceTint = Color.Transparent`, the Compose equivalent of `elevationOverlayEnabled=false` — without it M3 tints raised surfaces with `colorPrimary` and paper goes grey-blue.
-- **Both PNG tiles are retired here.** Grain is a 64×64 tile generated from a seeded `Random`, so it is byte-identical on every call and the paper never shimmers between recompositions. Holes are drawn as vector circles rather than a tiled bitmap: 5.7dp radius, 15.8dp from the left edge, 128dp apart, first centre at 64dp — the geometry measured off `drawable-xxhdpi/tile_paper_hole.png`. Verified against the running app: hole bands land on the same pixel rows (167.5, 503.5, …) at 420dpi.
-- **One `PaperSurface` per screen.** Nesting them restarts the hole sequence and the punches stop lining up. The debug gallery does exactly this, on purpose, and it shows.
+- **Both PNG tiles are retired here.** Grain is a 64×64 tile generated from a seeded `Random`, so it is byte-identical on every call and the paper never shimmers between recompositions.
+- **No punched holes.** The gutter column of circles that the View background carried was drawn here as vector circles for one release, then dropped: it read as decoration down the left edge and the gutter is now bare paper. `PaperInk.hole` and the hole geometry in `PaperDimens` are gone with it — do not reintroduce them.
 - **Ruling is per row.** `Modifier.paperRule()` draws under the row it is applied to, inset by the gutter — the same rule as the View implementation, and for the same reason (a page-wide ruling drifts off the baseline of a taller row).
 - **Motion is springs, never duration-plus-easing.** Anything that moves takes a spec from `PaperMotion`. The one thing lost in translation is that the View peel accelerated out via `AccelerateInterpolator`; a spring cannot, so the flying sheet decelerates instead.
 - **Icon-only holds.** The only text any primitive renders is a `CountBadge` number, a `SectionDivider` count, and the `GhostRow` hint, which is `@string/add_item_ghost_hint` — "…".
