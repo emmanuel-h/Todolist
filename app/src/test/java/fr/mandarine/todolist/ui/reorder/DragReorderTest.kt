@@ -1,12 +1,18 @@
 package fr.mandarine.todolist.ui.reorder
 
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.TestMonotonicFrameClock
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.ui.paper.PaperMotion
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(ExperimentalTestApi::class)
 class DragReorderTest {
 
     private val uniform = listOf(100, 100, 100, 100)
@@ -301,6 +307,32 @@ class DragReorderTest {
         val items = listOf(item("a"), item("b"))
 
         assertEquals(items, orderedBy(items, listOf("a", "gone")) { it.id })
+    }
+
+    @Test
+    fun `should glide the row into its slot before it reports where it landed`() = runTest {
+        val session = DragSession { }
+        session.start(0, listOf("a", "b", "c"), uniform.take(3))
+        session.drag(60f)
+
+        val reorder = withContext(TestMonotonicFrameClock(this)) {
+            session.settle(PaperMotion.instant)
+        }
+
+        assertEquals(Reorder(0, 1), reorder)
+        assertEquals(0f, session.offset, 0.01f)
+        assertFalse(session.dragging)
+    }
+
+    @Test
+    fun `should report nothing when a settle is asked for outside a drag`() = runTest {
+        val session = DragSession { }
+
+        val reorder = withContext(TestMonotonicFrameClock(this)) {
+            session.settle(PaperMotion.instant)
+        }
+
+        assertNull(reorder)
     }
 
     private fun scrollDelta(

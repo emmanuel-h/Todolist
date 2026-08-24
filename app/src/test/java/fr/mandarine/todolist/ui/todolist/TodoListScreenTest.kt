@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -22,10 +23,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.presentation.TodoListState
+import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import org.junit.Assert.assertEquals
@@ -139,42 +143,56 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should offer a drag handle on an active row`() {
+    fun `should carry nothing on an active row but its ring`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        composeRule.onNodeWithContentDescription(DRAG_HANDLE).assertIsDisplayed()
+        assertEquals(listOf(MARK_COMPLETED, BACK), descriptions())
     }
 
     @Test
-    fun `should not offer a drag handle on a completed row`() {
-        render(content(completed = listOf(completed("2", "Milk"))))
-
-        assertTrue(descriptions().none { it == DRAG_HANDLE })
-    }
-
-    @Test
-    fun `should offer an undo affordance on a completed row`() {
+    fun `should offer the same ring on a completed row to undo it`() {
         render(content(completed = listOf(completed("2", "Milk"))))
 
         composeRule.onNodeWithContentDescription(MARK_INCOMPLETE).assertIsDisplayed()
     }
 
     @Test
-    fun `should toggle an item when its complete affordance is tapped`() {
+    fun `should toggle an item only once its ink has been drawn`() {
         render(content(active = listOf(item("1", "Apples"))))
 
         composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
+
+        assertEquals(emptyList<String>(), toggled)
+
+        inkSettles()
 
         assertEquals(listOf("1"), toggled)
     }
 
     @Test
-    fun `should buzz when an item is completed`() {
+    fun `should reverse a toggle that is tapped again before the ink lands`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
+        composeRule.mainClock.advanceTimeBy(INK_TICK_MILLIS / 2)
+        composeRule.onNodeWithContentDescription(MARK_INCOMPLETE).performClick()
+        inkSettles()
+
+        assertEquals(emptyList<String>(), toggled)
+        assertNull(screenState.pendingToggle)
+    }
+
+    @Test
+    fun `should buzz when the tick finishes drawing and not before`() {
         render(content(active = listOf(item("1", "Apples"))))
 
         composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
 
-        assertEquals(HapticFeedbackConstants.CONFIRM, lastFeedback())
+        assertEquals(NO_FEEDBACK, lastFeedback())
+
+        tickLands()
+
+        assertEquals(HapticFeedbackConstants.TOGGLE_ON, lastFeedback())
     }
 
     @Test
@@ -182,43 +200,25 @@ class TodoListScreenTest {
         render(content(completed = listOf(completed("2", "Milk"))))
 
         composeRule.onNodeWithContentDescription(MARK_INCOMPLETE).performClick()
+        tickLands()
 
-        assertEquals(HapticFeedbackConstants.CONFIRM, lastFeedback())
-    }
-
-    @Test
-    fun `should buzz when a row title is double tapped`() {
-        render(content(active = listOf(item("1", "Apples"))))
-
-        composeRule.onNodeWithText("Apples").performTouchInput { doubleClick() }
-
-        assertEquals(listOf("1"), toggled)
-        assertEquals(HapticFeedbackConstants.CONFIRM, lastFeedback())
+        assertEquals(HapticFeedbackConstants.TOGGLE_OFF, lastFeedback())
     }
 
     @Test
     fun `should stay silent while no item is toggled`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        composeRule.onNodeWithContentDescription(DELETE).performClick()
+        composeRule.onNodeWithText("Apples").performClick()
 
         assertEquals(NO_FEEDBACK, lastFeedback())
     }
 
     @Test
-    fun `should delete an item when its delete affordance is tapped`() {
+    fun `should replace the title with a prefilled field when the words are tapped`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        composeRule.onNodeWithContentDescription(DELETE).performClick()
-
-        assertEquals(listOf("1"), deleted)
-    }
-
-    @Test
-    fun `should replace the title with a prefilled field when edit is tapped`() {
-        render(content(active = listOf(item("1", "Apples"))))
-
-        composeRule.onNodeWithContentDescription(EDIT).performClick()
+        composeRule.onNodeWithText("Apples").performClick()
 
         composeRule.onNode(hasSetTextAction()).assertTextEquals("Apples")
     }
@@ -226,7 +226,7 @@ class TodoListScreenTest {
     @Test
     fun `should commit a new title when the edit field is submitted`() {
         render(content(active = listOf(item("1", "Apples"))))
-        composeRule.onNodeWithContentDescription(EDIT).performClick()
+        composeRule.onNodeWithText("Apples").performClick()
 
         composeRule.onNode(hasSetTextAction()).performTextReplacement("Pears")
         composeRule.onNode(hasSetTextAction()).performImeAction()
@@ -237,7 +237,7 @@ class TodoListScreenTest {
     @Test
     fun `should leave the title unchanged when the edit field is submitted blank`() {
         render(content(active = listOf(item("1", "Apples"))))
-        composeRule.onNodeWithContentDescription(EDIT).performClick()
+        composeRule.onNodeWithText("Apples").performClick()
 
         composeRule.onNode(hasSetTextAction()).performTextReplacement("   ")
         composeRule.onNode(hasSetTextAction()).performImeAction()
@@ -248,7 +248,7 @@ class TodoListScreenTest {
     @Test
     fun `should return to the title view after an edit is submitted`() {
         render(content(active = listOf(item("1", "Apples"))))
-        composeRule.onNodeWithContentDescription(EDIT).performClick()
+        composeRule.onNodeWithText("Apples").performClick()
 
         composeRule.onNode(hasSetTextAction()).performImeAction()
         composeRule.waitForIdle()
@@ -302,48 +302,6 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should reorder an item when its handle is dragged past a neighbour`() {
-        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
-
-        composeRule.onAllNodesWithContentDescription(DRAG_HANDLE)[0].performTouchInput {
-            down(center)
-            moveBy(Offset(0f, 400f))
-            up()
-        }
-        composeRule.waitForIdle()
-
-        assertEquals(listOf(0 to 1), reordered)
-    }
-
-    @Test
-    fun `should show the dragged row in its new place before the drag is released`() {
-        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
-
-        composeRule.onAllNodesWithContentDescription(DRAG_HANDLE)[0].performTouchInput {
-            down(center)
-            moveBy(Offset(0f, 400f))
-        }
-        composeRule.mainClock.advanceTimeBy(500L)
-
-        assertEquals(listOf("2", "1"), screenState.previewOrder)
-    }
-
-    @Test
-    fun `should drop the staged order when a drag ends where it started`() {
-        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
-
-        composeRule.onAllNodesWithContentDescription(DRAG_HANDLE)[0].performTouchInput {
-            down(center)
-            moveBy(Offset(0f, 4f))
-            up()
-        }
-        composeRule.waitForIdle()
-
-        assertNull(screenState.previewOrder)
-        assertEquals(emptyList<Pair<Int, Int>>(), reordered)
-    }
-
-    @Test
     fun `should render the preview order instead of the repository order while a drag is staged`() {
         screenState.previewOrder = listOf("2", "1")
         render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
@@ -351,7 +309,153 @@ class TodoListScreenTest {
         assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
     }
 
+    // ── Tearing a row off ─────────────────────────────────────────────────────
+
+    @Test
+    fun `should take an item off the page without writing the delete through yet`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        tearOffApples()
+
+        assertTrue(deleted.isEmpty())
+        composeRule.onNodeWithText("Apples").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should write the item delete through once the undo slip has settled away`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        tearOffApples()
+        slipSettles()
+
+        assertEquals(listOf("1"), deleted)
+    }
+
+    @Test
+    fun `should put the item back when the undo slip is tapped`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        tearOffApples()
+        composeRule.onNodeWithContentDescription(UNDO).performClick()
+        slipSettles()
+
+        assertTrue(deleted.isEmpty())
+        composeRule.onNodeWithText("Apples").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should complete an item when the row is swiped the other way`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithText("Apples").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        inkSettles()
+
+        assertEquals(listOf("1"), toggled)
+        assertTrue(deleted.isEmpty())
+    }
+
+    @Test
+    fun `should offer no undo at all while nothing has been torn off`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
+    }
+
+    // ── Reaching the gestures without one ─────────────────────────────────────
+
+    @Test
+    fun `should name every verb an active row answers to`() {
+        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
+
+        assertEquals(
+            listOf(MARK_COMPLETED, EDIT, DELETE, MOVE_DOWN),
+            verbsOf("Apples").map { it.label }
+        )
+    }
+
+    @Test
+    fun `should offer a completed row the verb that puts it back`() {
+        render(content(completed = listOf(completed("1", "Apples"))))
+
+        assertEquals(listOf(MARK_INCOMPLETE, EDIT, DELETE), verbsOf("Apples").map { it.label })
+    }
+
+    @Test
+    fun `should offer no way to move a row past either end of the page`() {
+        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
+
+        assertEquals(listOf(MOVE_DOWN), moveVerbsOf("Apples"))
+        assertEquals(listOf(MOVE_UP), moveVerbsOf("Bread"))
+    }
+
+    @Test
+    fun `should complete an item asked to complete without a gesture`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        perform("Apples", MARK_COMPLETED)
+        inkSettles()
+
+        assertEquals(listOf("1"), toggled)
+    }
+
+    @Test
+    fun `should open the editor on an item asked to be edited without a gesture`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        perform("Apples", EDIT)
+
+        assertEquals("1", screenState.editingItemId)
+    }
+
+    @Test
+    fun `should tear an item off when it is asked to be deleted without a gesture`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        perform("Apples", DELETE)
+
+        composeRule.onNodeWithText("Apples").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should reorder an item asked to move without a gesture`() {
+        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
+
+        perform("Bread", MOVE_UP)
+
+        assertEquals(listOf(1 to 0), reordered)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun verbsOf(text: String): List<CustomAccessibilityAction> =
+        composeRule.onNodeWithText(text).fetchSemanticsNode()
+            .config.getOrNull(SemanticsActions.CustomActions)
+            .orEmpty()
+
+    private fun moveVerbsOf(text: String): List<String> =
+        verbsOf(text).map { it.label }.filter { it == MOVE_UP || it == MOVE_DOWN }
+
+    private fun perform(text: String, label: String) {
+        verbsOf(text).first { it.label == label }.action()
+        composeRule.waitForIdle()
+    }
+
+    private fun tearOffApples() {
+        composeRule.onNodeWithText("Apples").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+    }
+
+    private fun slipSettles() {
+        composeRule.mainClock.advanceTimeBy(UNDO_SLIP_MILLIS + SETTLE_MILLIS)
+        composeRule.waitForIdle()
+    }
 
     private fun render(state: TodoListState, listName: String = "") {
         composeRule.setContent { PaperTheme { Screen(state, listName) } }
@@ -373,7 +477,25 @@ class TodoListScreenTest {
         )
     }
 
-    private fun lastFeedback(): Int = shadowOf(hostView!!).lastHapticFeedbackPerformed()
+    private fun lastFeedback(): Int {
+        var view: View? = hostView
+        while (view != null) {
+            val buzz = shadowOf(view).lastHapticFeedbackPerformed()
+            if (buzz != NO_FEEDBACK) return buzz
+            view = view.parent as? View
+        }
+        return NO_FEEDBACK
+    }
+
+    private fun tickLands() {
+        composeRule.mainClock.advanceTimeBy(INK_TICK_MILLIS + SETTLE_MILLIS)
+        composeRule.waitForIdle()
+    }
+
+    private fun inkSettles() {
+        composeRule.mainClock.advanceTimeBy(INK_TICK_MILLIS + INK_STRIKE_MILLIS + SETTLE_MILLIS)
+        composeRule.waitForIdle()
+    }
 
     private fun texts(): List<String> =
         collectText(composeRule.onRoot().fetchSemanticsNode())
@@ -420,12 +542,15 @@ class TodoListScreenTest {
         const val LIST_ID = "list-1"
         const val GHOST_HINT = "…"
         const val BACK = "Navigate up"
-        const val DRAG_HANDLE = "Drag to reorder"
         const val MARK_COMPLETED = "Mark item as completed"
         const val MARK_INCOMPLETE = "Mark item as incomplete"
         const val EDIT = "Edit item"
         const val DELETE = "Delete item"
+        const val MOVE_UP = "Move up"
+        const val MOVE_DOWN = "Move down"
         const val SUBMIT = "Submit new item"
+        const val UNDO = "Undo delete"
         const val NO_FEEDBACK = -1
+        const val SETTLE_MILLIS = 100L
     }
 }

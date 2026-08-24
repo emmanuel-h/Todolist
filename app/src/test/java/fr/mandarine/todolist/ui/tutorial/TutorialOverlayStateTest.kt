@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui.tutorial
 
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.ui.geometry.Offset
+import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.domain.TutorialStep
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
@@ -105,8 +106,55 @@ class TutorialOverlayStateTest {
     }
 
     @Test
-    fun `should keep the rim light while the hand is enlarged by a grip`() {
-        assertEquals(HAND_RIM_ALPHA_REST, handRimAlpha(HAND_GRIP_SCALE), 0.001f)
+    fun `should hold the hand against the page for the whole of a grip`() {
+        assertEquals(1f, handPress(HAND_GRIP_SCALE), 0.001f)
+        assertEquals(HAND_RIM_ALPHA_PRESSED, handRimAlpha(HAND_GRIP_SCALE), 0.001f)
+    }
+
+    @Test
+    fun `should read the hand as lifted while it is merely resting`() {
+        assertEquals(0f, handPress(1f), 0.001f)
+        assertEquals(0f, handPress(1.4f), 0.001f)
+    }
+
+    @Test
+    fun `should remember which anchor the hand was aimed at`() {
+        val state = TutorialOverlayState()
+
+        assertNull(state.aimedAnchor)
+
+        state.aimAt(TutorialAnchor.CreateListButton, TutorialBounds(0, 0, 10, 10))
+
+        assertEquals(TutorialAnchor.CreateListButton, state.aimedAnchor)
+    }
+
+    @Test
+    fun `should aim the hand at nothing when the anchor does not resolve`() {
+        val state = TutorialOverlayState()
+        state.aimAt(TutorialAnchor.CreateListButton, TutorialBounds(0, 0, 10, 10))
+
+        state.aimAt(TutorialAnchor.ConfirmDeleteButton, null)
+
+        assertNull(state.aimedAnchor)
+    }
+
+    @Test
+    fun `should hand back the bounds it was asked to aim at`() {
+        val state = TutorialOverlayState()
+        val bounds = TutorialBounds(left = 4, top = 5, width = 6, height = 7)
+
+        assertEquals(bounds, state.aimAt(TutorialAnchor.FirstListRow, bounds))
+        assertNull(state.aimAt(TutorialAnchor.FirstListRow, null))
+    }
+
+    @Test
+    fun `should take the hand off the page again when the tutorial begins`() = onFrames {
+        val state = TutorialOverlayState()
+        state.aimAt(TutorialAnchor.CreateListButton, TutorialBounds(0, 0, 10, 10))
+
+        state.begin()
+
+        assertNull(state.aimedAnchor)
     }
 
     @Test
@@ -150,7 +198,7 @@ class TutorialOverlayStateTest {
     }
 
     @Test
-    fun `should enlarge the hand while it grips and shrink it back on release`() = onFrames {
+    fun `should press the hand down while it grips and lift it again on release`() = onFrames {
         val state = TutorialOverlayState()
 
         state.grip()

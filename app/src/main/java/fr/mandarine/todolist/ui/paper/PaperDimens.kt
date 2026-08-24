@@ -13,8 +13,8 @@ object PaperDimens {
 
     val iconButton = 48.dp
     val iconGlyph = 24.dp
-    val badgeIcon = 12.dp
-    val badgeMinWidth = 24.dp
+    val jotGlyph = 14.dp
+    val marginColumn = 32.dp
 
     val stickyPad = 72.dp
     val stickySheet = 56.dp

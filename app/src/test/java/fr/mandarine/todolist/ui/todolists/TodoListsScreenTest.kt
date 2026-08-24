@@ -1,12 +1,16 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -15,10 +19,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.performTouchInput
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
+import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -40,6 +44,7 @@ class TodoListsScreenTest {
     private val screenState = TodoListsScreenState()
     private val created = mutableListOf<Triple<String, LocalDate?, LocalDate?>>()
     private val renamed = mutableListOf<String>()
+    private val renamedDates = mutableListOf<Pair<LocalDate?, LocalDate?>>()
     private val deleted = mutableListOf<String>()
     private val reordered = mutableListOf<Pair<Int, Int>>()
     private val opened = mutableListOf<String>()
@@ -64,21 +69,21 @@ class TodoListsScreenTest {
             )
         )
 
-        assertEquals(listOf("Groceries", "0", "0", "1", "Old", "0", "0"), texts())
+        assertEquals(listOf("Groceries", "1", "Old"), texts())
     }
 
     @Test
     fun `should not show the divider when every list is still active`() {
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        assertEquals(listOf("Groceries", "0", "0"), texts())
+        assertEquals(listOf("Groceries"), texts())
     }
 
     @Test
     fun `should not show the divider when every list is done`() {
         render(content(done = listOf(summary("1", "Old", allDone = true))))
 
-        assertEquals(listOf("Old", "0", "0"), texts())
+        assertEquals(listOf("Old"), texts())
     }
 
     @Test
@@ -270,46 +275,93 @@ class TodoListsScreenTest {
     // ── Delete ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `should arm the delete on the tapped row without deleting it`() {
+    fun `should take the list off the page without writing the delete through yet`() {
+        screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        tearOffGroceries()
 
-        assertEquals("1", screenState.confirmingDeleteListId)
         assertTrue(deleted.isEmpty())
+        composeRule.onNodeWithText("Groceries").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
     }
 
     @Test
-    fun `should delete the list when the confirm ring is tapped`() {
-        screenState.confirmingDeleteListId = "1"
+    fun `should write the delete through once the undo slip has settled away`() {
+        screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        composeRule.onNodeWithContentDescription(CONFIRM_DELETE).performClick()
+        tearOffGroceries()
+        slipSettles()
 
         assertEquals(listOf("1"), deleted)
-        assertNull(screenState.confirmingDeleteListId)
+        composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
     }
 
     @Test
-    fun `should keep the list when the delete is cancelled`() {
-        screenState.confirmingDeleteListId = "1"
+    fun `should put the list back when the undo slip is tapped`() {
+        screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        composeRule.onNodeWithContentDescription(CANCEL).performClick()
+        tearOffGroceries()
+        composeRule.onNodeWithContentDescription(UNDO).performClick()
+        slipSettles()
 
         assertTrue(deleted.isEmpty())
-        assertNull(screenState.confirmingDeleteListId)
+        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should offer no undo at all while nothing has been torn off`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
     }
 
     // ── Rename ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `should open the rename dialog on the list's own name`() {
+    fun `should open the edit surface when a list row is swiped start to end`() {
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        composeRule.onNodeWithContentDescription(EDIT_LIST).performClick()
+        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
 
-        assertEquals("Groceries", screenState.rename?.name)
+        assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
+        composeRule.onNodeWithContentDescription(SAVE_NAME).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should open the edit surface of a finished list swiped start to end`() {
+        render(content(done = listOf(summary("1", "Groceries", allDone = true))))
+
+        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+
+        assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
+    }
+
+    @Test
+    fun `should set a target date from the edit surface`() {
+        screenState.rename = RenameState.of(TodoList("1", "Groceries"))
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
+
+        assertEquals(DateTarget.RENAME, screenState.datePickerRequest?.target)
+        assertEquals(DateKind.TARGET, screenState.datePickerRequest?.kind)
+    }
+
+    @Test
+    fun `should clear the date of a list from the edit surface`() {
+        screenState.rename = RenameState.of(TodoList("1", "Groceries", targetDate = DATE))
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        composeRule.onNodeWithContentDescription(SAVE_NAME).performClick()
+
+        assertEquals(listOf(null to null), renamedDates)
+        assertNull(screenState.rename)
     }
 
     @Test
@@ -335,49 +387,86 @@ class TodoListsScreenTest {
         assertTrue(renamed.isEmpty())
     }
 
-    // ── Drag ──────────────────────────────────────────────────────────────────
+    // ── Reaching the gestures without one ─────────────────────────────────────
 
     @Test
-    fun `should stage a new order while a row is dragged down`() {
+    fun `should name every verb a list row answers to`() {
         render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
 
-        composeRule.onAllNodesWithContentDescription(DRAG_HANDLE)[0].performTouchInput {
-            down(center)
-            moveBy(Offset(0f, 400f))
-        }
-        composeRule.mainClock.advanceTimeBy(500L)
-
-        assertEquals(listOf("2", "1"), screenState.previewOrder)
+        assertEquals(
+            listOf(EDIT_NAME, DELETE_LIST, MOVE_DOWN),
+            verbsOf("Groceries").map { it.label }
+        )
     }
 
     @Test
-    fun `should commit the reorder when the dragged row is released`() {
+    fun `should offer no way to move a list past either end of the page`() {
         render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
 
-        composeRule.onAllNodesWithContentDescription(DRAG_HANDLE)[0].performTouchInput {
-            down(center)
-            moveBy(Offset(0f, 400f))
-            up()
-        }
-
-        assertEquals(listOf(0 to 1), reordered)
+        assertEquals(listOf(MOVE_DOWN), moveVerbsOf("Groceries"))
+        assertEquals(listOf(MOVE_UP), moveVerbsOf("Weekend"))
     }
 
     @Test
-    fun `should not commit a reorder when the row is released where it started`() {
+    fun `should leave a finished list nothing to reorder`() {
+        render(content(done = listOf(summary("1", "Groceries", allDone = true))))
+
+        assertEquals(listOf(EDIT_NAME, DELETE_LIST), verbsOf("Groceries").map { it.label })
+    }
+
+    @Test
+    fun `should open the name editor on a list asked to be renamed without a gesture`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        perform("Groceries", EDIT_NAME)
+
+        assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
+    }
+
+    @Test
+    fun `should tear a list off when it is asked to be deleted without a gesture`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        perform("Groceries", DELETE_LIST)
+
+        composeRule.onNodeWithText("Groceries").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should reorder a list asked to move without a gesture`() {
         render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
 
-        composeRule.onAllNodesWithContentDescription(DRAG_HANDLE)[0].performTouchInput {
-            down(center)
-            moveBy(Offset(0f, 4f))
-            up()
-        }
+        perform("Weekend", MOVE_UP)
 
-        assertTrue(reordered.isEmpty())
-        assertNull(screenState.previewOrder)
+        assertEquals(listOf(1 to 0), reordered)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun verbsOf(text: String): List<CustomAccessibilityAction> =
+        composeRule.onNodeWithText(text).fetchSemanticsNode()
+            .config.getOrNull(SemanticsActions.CustomActions)
+            .orEmpty()
+
+    private fun moveVerbsOf(text: String): List<String> =
+        verbsOf(text).map { it.label }.filter { it == MOVE_UP || it == MOVE_DOWN }
+
+    private fun perform(text: String, label: String) {
+        verbsOf(text).first { it.label == label }.action()
+        composeRule.waitForIdle()
+    }
+
+    private fun tearOffGroceries() {
+        composeRule.onNodeWithText("Groceries").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+    }
+
+    private fun slipSettles() {
+        composeRule.mainClock.advanceTimeBy(SLIP_SETTLE_MILLIS)
+        composeRule.waitForIdle()
+    }
 
     private fun render(state: TodoListsState) {
         composeRule.setContent { PaperTheme { Screen(state) } }
@@ -391,7 +480,10 @@ class TodoListsScreenTest {
             today = DATE,
             onOpenList = { opened += it.name },
             onCreateList = { name, target, due -> created += Triple(name, target, due) },
-            onRenameList = { _, name, _, _ -> renamed += name },
+            onRenameList = { _, name, target, due ->
+                renamed += name
+                renamedDates += target to due
+            },
             onDeleteList = { deleted += it },
             onReorder = { from, to -> reordered += from to to },
             onReplayTutorial = { replayed += 1 }
@@ -424,12 +516,15 @@ class TodoListsScreenTest {
         const val CREATE_LIST = "Create new list"
         const val SUBMIT = "Create list"
         const val CANCEL = "Cancel"
-        const val CONFIRM_DELETE = "Delete"
-        const val DELETE_LIST = "Delete list"
-        const val EDIT_LIST = "Edit list name"
+        const val UNDO = "Undo delete"
+        const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L
         const val SAVE_NAME = "Save list name"
         const val SET_TARGET_DATE = "Set target date"
+        const val CLEAR_TARGET_DATE = "Clear target date"
         const val SET_DUE_DATE = "Set due date"
-        const val DRAG_HANDLE = "Drag to reorder"
+        const val EDIT_NAME = "Edit list name"
+        const val DELETE_LIST = "Delete list"
+        const val MOVE_UP = "Move up"
+        const val MOVE_DOWN = "Move down"
     }
 }

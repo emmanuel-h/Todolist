@@ -1,25 +1,47 @@
 package fr.mandarine.todolist.ui.reorder
 
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.PaperMotion
+import fr.mandarine.todolist.ui.paper.paperSheetFading
 import fr.mandarine.todolist.ui.paper.performConfirmFeedback
+import fr.mandarine.todolist.ui.paper.performDropFeedback
+import fr.mandarine.todolist.ui.paper.performPassRuleFeedback
 import fr.mandarine.todolist.ui.paper.performPickUpFeedback
+import kotlinx.coroutines.launch
 
 private val AUTO_SCROLL_EDGE = 72.dp
 private val AUTO_SCROLL_MAX_STEP = 12.dp
+private val LIFT_SHADOW_RADIUS = 14.dp
+private val LIFT_SHADOW_DROP = 6.dp
+private const val LIFT_SHADOW_ALPHA = 0.22f
+private const val LIFT_SCALE = 0.02f
+private const val LIFT_TILT = 0.6f
+private const val FLAT = 0f
+private const val RAISED = 1f
 
 @Immutable
 class EdgeScroll(val edge: Float, val maxStep: Float)
@@ -39,12 +61,12 @@ fun rememberEdgeScroll(
 }
 
 /**
- * Drives one row by its handle. The row list is read through
+ * A press held on the row lifts it; the row list is read through
  * [rememberUpdatedState] because the staged order changes under the finger while
  * the same gesture is still running.
  */
 @Composable
-fun Modifier.reorderHandle(
+fun Modifier.liftToReorder(
     listState: LazyListState,
     session: DragSession,
     edgeScroll: EdgeScroll,
@@ -53,9 +75,11 @@ fun Modifier.reorderHandle(
     onDrop: (Reorder?) -> Unit
 ): Modifier {
     val view = LocalView.current
+    val scope = rememberCoroutineScope()
     val latestIds = rememberUpdatedState(ids)
+    val latestDrop = rememberUpdatedState(onDrop)
     return pointerInput(id) {
-        detectDragGestures(
+        detectDragGesturesAfterLongPress(
             onDragStart = {
                 val current = latestIds.value
                 session.start(
@@ -67,20 +91,66 @@ fun Modifier.reorderHandle(
             },
             onDrag = { change, amount ->
                 change.consume()
+                val before = session.index
                 session.drag(amount.y)
+                if (session.index != before) view.performPassRuleFeedback()
                 session.edgeScrolling = edgeScrollDelta(listState, session, edgeScroll) != 0f
             },
             onDragEnd = {
-                val reorder = session.end()
-                if (reorder != null) view.performConfirmFeedback()
-                onDrop(reorder)
+                view.performDropFeedback()
+                scope.launch {
+                    val reorder = session.settle(PaperMotion.sheetSettle)
+                    if (reorder != null) view.performConfirmFeedback()
+                    latestDrop.value(reorder)
+                }
             },
             onDragCancel = {
-                session.cancel()
-                onDrop(null)
+                scope.launch {
+                    session.settle(PaperMotion.sheetSettle)
+                    latestDrop.value(null)
+                }
             }
         )
     }
+}
+
+/**
+ * The lifted row is a slip of paper in its own right: it carries its grain and a
+ * warm shadow with it, and both are read at draw time so a drag never spends a
+ * recomposition on them.
+ */
+@Composable
+fun Modifier.liftedSlip(session: DragSession, lifted: Boolean, animated: Boolean): Modifier {
+    val palette = LocalPaperPalette.current
+    val raise = remember { Animatable(FLAT) }
+    val carried = rememberUpdatedState(lifted)
+    LaunchedEffect(lifted, animated) {
+        val target = if (lifted) RAISED else FLAT
+        if (!animated) {
+            raise.snapTo(target)
+        } else {
+            raise.animateTo(target, if (lifted) PaperMotion.slipGrip else PaperMotion.slipShadow)
+        }
+    }
+    return this
+        .zIndex(if (lifted) RAISED else FLAT)
+        .preferredFrameRate(if (lifted) FrameRateCategory.High else FrameRateCategory.Default)
+        .graphicsLayer {
+            if (carried.value) translationY = session.offset
+            val raised = raise.value
+            if (raised <= FLAT) return@graphicsLayer
+            scaleX = RAISED + LIFT_SCALE * raised
+            scaleY = scaleX
+            rotationZ = LIFT_TILT * raised * session.direction
+        }
+        .dropShadow(RectangleShape) {
+            val raised = raise.value
+            radius = LIFT_SHADOW_RADIUS.toPx() * raised
+            alpha = LIFT_SHADOW_ALPHA * raised
+            color = palette.ink
+            offset = Offset(FLAT, LIFT_SHADOW_DROP.toPx() * raised)
+        }
+        .paperSheetFading({ raise.value }, tone = palette.paperSheet)
 }
 
 /**

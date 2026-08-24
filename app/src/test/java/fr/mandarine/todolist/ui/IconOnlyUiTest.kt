@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
@@ -104,8 +105,25 @@ class IconOnlyUiTest {
         )
     }
 
+    /**
+     * The gesture map is spoken to a screen reader as a list of named verbs. None
+     * of those names may leak onto the page as a label, which is what would happen
+     * if a verb were ever wired to a `Text` instead of to `customActions`.
+     */
+    @Test
+    fun `should keep the spoken verbs of a row out of the drawn page`() {
+        composeRule.setContent { PaperTheme { OneItemScreen() } }
+
+        assertEquals(
+            listOf(LIST_NAME, ITEM_TITLE, GHOST_HINT),
+            composeRule.onRoot().fetchSemanticsNode().staticText()
+        )
+    }
+
     private companion object {
         const val GHOST_HINT = "…"
+        const val LIST_NAME = "Groceries"
+        const val ITEM_TITLE = "Apples"
         const val BACK_DESCRIPTION = "Navigate up"
         const val REPLAY_DESCRIPTION = "Replay tutorial"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
@@ -117,6 +135,21 @@ private fun EmptyItemsScreen() {
     TodoListScreen(
         listName = "",
         state = TodoListState.Empty,
+        screenState = remember { TodoListScreenState() },
+        onBack = {},
+        onToggle = {},
+        onEdit = { _, _ -> },
+        onDelete = {},
+        onSubmitInline = {},
+        onReorder = { _, _ -> }
+    )
+}
+
+@Composable
+private fun OneItemScreen() {
+    TodoListScreen(
+        listName = "Groceries",
+        state = TodoListState.Content(listOf(TodoItem("1", "Apples", "list-1")), emptyList()),
         screenState = remember { TodoListScreenState() },
         onBack = {},
         onToggle = {},

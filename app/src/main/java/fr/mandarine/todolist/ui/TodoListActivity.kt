@@ -42,6 +42,7 @@ import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.tutorial.TutorialOverlay
 import fr.mandarine.todolist.ui.tutorial.TutorialOverlayController
+import fr.mandarine.todolist.ui.tutorial.behindTutorial
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -96,24 +97,28 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
 
         setContent {
             val state by viewModel.state.collectAsState()
+            val overlayState = tutorialController.overlayState
             PaperTheme {
                 Box(Modifier.fillMaxSize()) {
-                    TodoListScreen(
-                        listName = listName,
-                        state = state,
-                        screenState = screenState,
-                        onBack = { onBackPressedDispatcher.onBackPressed() },
-                        onToggle = { todoId -> viewModel.toggleTodo(todoId) },
-                        onEdit = { todoId, newTitle -> viewModel.editTodo(todoId, newTitle) },
-                        onDelete = { todoId -> viewModel.deleteTodo(todoId) },
-                        onSubmitInline = { title -> viewModel.submitInlineInput(title) },
-                        onReorder = { from, to ->
-                            screenState.previewOrder = null
-                            viewModel.reorderTodos(from, to)
-                        }
-                    )
+                    Box(Modifier.fillMaxSize().behindTutorial(overlayState.visible)) {
+                        TodoListScreen(
+                            listName = listName,
+                            state = state,
+                            screenState = screenState,
+                            onBack = { onBackPressedDispatcher.onBackPressed() },
+                            onToggle = { todoId -> viewModel.toggleTodo(todoId) },
+                            onEdit = { todoId, newTitle -> viewModel.editTodo(todoId, newTitle) },
+                            onDelete = { todoId -> viewModel.deleteTodo(todoId) },
+                            onSubmitInline = { title -> viewModel.submitInlineInput(title) },
+                            onReorder = { from, to ->
+                                screenState.previewOrder = null
+                                viewModel.reorderTodos(from, to)
+                            }
+                        )
+                    }
                     TutorialOverlay(
-                        state = tutorialController.overlayState,
+                        state = overlayState,
+                        anchors = screenState,
                         onSkip = { tutorialController.onSkipRequested() }
                     )
                 }
@@ -162,7 +167,8 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
 
     override val screen: TutorialScreen = TutorialScreen.ITEMS
 
-    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? = screenState.boundsOf(anchor)
+    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? =
+        tutorialController.overlayState.aimAt(anchor, screenState.boundsOf(anchor))
 
     override suspend fun perform(action: TutorialAction): Boolean = when (action) {
         TutorialAction.OpenItemAddRow -> openAddRow()

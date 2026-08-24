@@ -53,13 +53,16 @@ fun PaperTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = remember(palette) { paperColorScheme(palette) }
+    val pitch = maxOf(pagePitch(PaperType.itemLine), pagePitch(PaperType.listLine))
+    val hand = rememberRuledHand(pitch)
     CompositionLocalProvider(
         LocalPaperPalette provides palette,
-        LocalPagePitch provides pagePitch()
+        LocalPagePitch provides pitch,
+        LocalRuledHand provides hand
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = PaperType.typography
+            typography = hand.typography
         ) {
             CompositionLocalProvider(
                 LocalIndication provides PaperIndication,

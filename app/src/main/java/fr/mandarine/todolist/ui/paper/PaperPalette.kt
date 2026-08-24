@@ -23,6 +23,7 @@ data class PaperPalette(
     val inkRedSoft: Color,
     val inkRedDeep: Color,
     val inkRedWash: Color,
+    val inkRedWashLit: Color,
     val inkAmber: Color,
     val stickyNote: Color,
     val stickyNoteMid: Color,
@@ -31,6 +32,14 @@ data class PaperPalette(
     val rule: Color,
     val vignette: Color
 ) {
+    val inkRest: Color get() = ink
+
+    val inkMargin: Color get() = pencil
+
+    val inkLive: Color get() = inkBlue
+
+    val inkDanger: Color get() = inkRed
+
     companion object {
         val light = PaperPalette(
             paper = Color(0xFFFAF5EA),
@@ -49,7 +58,8 @@ data class PaperPalette(
             inkRed = Color(0xFFA8392F),
             inkRedSoft = Color(0xFFB4655B),
             inkRedDeep = Color(0xFF5A1E18),
-            inkRedWash = Color(0xFFF1DDD4),
+            inkRedWash = Color(0xFFEFD7CD),
+            inkRedWashLit = Color(0xFFFAE7DF),
             inkAmber = Color(0xFF8F5D12),
             stickyNote = Color(0xFFEBDCA4),
             stickyNoteMid = Color(0xFFDCCB90),

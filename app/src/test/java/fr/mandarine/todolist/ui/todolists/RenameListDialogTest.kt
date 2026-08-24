@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -52,35 +54,45 @@ class RenameListDialogTest {
     }
 
     @Test
-    fun `should show the target caption when the dialog opens with no date`() {
+    fun `should write no caption beside the date toggles`() {
+        render(RenameState.of(TodoList("1", "Groceries", targetDate = DATE)))
+
+        composeRule.onNodeWithText(TARGET_CAPTION).assertDoesNotExist()
+        composeRule.onNodeWithText(DUE_CAPTION).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should mark the calendar toggle when the dialog opens with no date`() {
         render(RenameState.of(TodoList("1", "Groceries")))
 
-        composeRule.onNodeWithText(TARGET_CAPTION).assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].assertIsSelected()
+        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].assertIsNotSelected()
     }
 
     @Test
-    fun `should show the due caption when the dialog opens on a list with a due date`() {
+    fun `should mark the alarm toggle when the dialog opens on a list with a due date`() {
         render(RenameState.of(TodoList("1", "Groceries", dueDate = DATE)))
 
-        composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].assertIsSelected()
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].assertIsNotSelected()
     }
 
     @Test
-    fun `should switch to the due caption when the alarm toggle is tapped`() {
+    fun `should switch to a due date when the alarm toggle is tapped`() {
         render(RenameState.of(TodoList("1", "Groceries")))
 
         composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].performClick()
 
-        composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
+        assertEquals(DateKind.DUE, current().selection.kind)
     }
 
     @Test
-    fun `should switch back to the target caption when the calendar toggle is tapped`() {
+    fun `should switch back to a target date when the calendar toggle is tapped`() {
         render(RenameState.of(TodoList("1", "Groceries", dueDate = DATE)))
 
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].performClick()
 
-        composeRule.onNodeWithText(TARGET_CAPTION).assertIsDisplayed()
+        assertEquals(DateKind.TARGET, current().selection.kind)
     }
 
     @Test
@@ -125,7 +137,6 @@ class RenameListDialogTest {
         composeRule.onNodeWithContentDescription(CLEAR_DUE).performClick()
 
         assertEquals(DateKind.DUE, current().selection.kind)
-        composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
     }
 
     @Test

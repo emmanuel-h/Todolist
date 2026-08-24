@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui.tutorial
 
 import android.text.format.DateFormat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -18,9 +19,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -31,23 +37,36 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialCaption
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperType
 import fr.mandarine.todolist.ui.paper.paperSheet
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val HAND_SIZE = 52.dp
-private val HAND_RIM = 2.dp
-private const val HAND_WASH_ALPHA = 0.51f
+private val HAND_SIZE = 44.dp
+private val HAND_RIM = 1.dp
+private const val HAND_DISC_ALPHA = 0.55f
+private const val HAND_PRESS_SQUASH = 0.08f
+private const val HAND_SHADOW_ALPHA = 0.18f
+private val HAND_SHADOW_LIFTED = 10.dp
+private val HAND_SHADOW_TOUCHING = 2.dp
+private val HAND_DROP_LIFTED = 4.dp
+private val HAND_DROP_TOUCHING = 1.dp
+private const val HAND_AIM_LABEL = "handAim"
+private const val OFF_THE_PAGE = 0f
+private const val ON_THE_PAGE = 1f
 
 private val SLIP_PADDING = 16.dp
 private val CAPTION_PADDING = 14.dp
@@ -69,9 +88,18 @@ private fun Modifier.paperSlip(): Modifier {
     return paperSheet(tone = palette.paperShade).border(PaperDimens.rule, palette.rule)
 }
 
+/**
+ * The demo drives the screen underneath itself, so while it runs that screen is
+ * not something anyone may touch — nor something a screen reader may wander into
+ * and read out from under the narration.
+ */
+fun Modifier.behindTutorial(active: Boolean): Modifier =
+    if (active) semantics { hideFromAccessibility() } else this
+
 @Composable
 fun TutorialOverlay(
     state: TutorialOverlayState,
+    anchors: TutorialAnchorHost,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -93,7 +121,7 @@ fun TutorialOverlay(
             .pointerInput(Unit) { swallowTouches() }
     ) {
         state.banner?.let { BannerSlip(it, state, statusBarPx) }
-        PhantomHand(state)
+        PhantomHand(state, anchors)
         state.caption?.let { CaptionSlip(it, state) }
         ProgressSlip(
             filledDots = state.filledDots,
@@ -106,22 +134,49 @@ fun TutorialOverlay(
     }
 }
 
+/**
+ * A fingertip of paper rather than a blue wash: blue belongs to the live caret and
+ * the wet tick. It rests above the page on a warm shadow, and the shadow collapses
+ * under it as the finger comes down, so a tap reads as contact and not as a fade.
+ */
 @Composable
-private fun PhantomHand(state: TutorialOverlayState) {
-    val wash = LocalPaperPalette.current.inkBlue
-    val rimInk = LocalPaperPalette.current.inkBlueDeep
+private fun PhantomHand(state: TutorialOverlayState, anchors: TutorialAnchorHost) {
+    val palette = LocalPaperPalette.current
+    val disc = palette.paperSheet
+    val rimInk = palette.pencil
+    val shadowInk = palette.ink
+    val onPage by remember(state, anchors) {
+        derivedStateOf { state.aimedAnchor?.let { anchors.boundsOf(it) } != null }
+    }
+    val aim = animateFloatAsState(
+        targetValue = if (onPage) ON_THE_PAGE else OFF_THE_PAGE,
+        animationSpec = PaperMotion.rowExit,
+        label = HAND_AIM_LABEL
+    )
     Box(
         Modifier
             .size(HAND_SIZE)
             .graphicsLayer {
                 translationX = state.hand.value.x
                 translationY = state.hand.value.y
-                scaleX = state.handScale.value
-                scaleY = state.handScale.value
+                alpha = aim.value
+                val squash = ON_THE_PAGE - HAND_PRESS_SQUASH * handPress(state.handScale.value)
+                scaleX = squash
+                scaleY = squash
+            }
+            .dropShadow(CircleShape) {
+                val press = handPress(state.handScale.value)
+                radius = lerp(HAND_SHADOW_LIFTED, HAND_SHADOW_TOUCHING, press).toPx()
+                offset = Offset(
+                    OFF_THE_PAGE,
+                    lerp(HAND_DROP_LIFTED, HAND_DROP_TOUCHING, press).toPx()
+                )
+                alpha = HAND_SHADOW_ALPHA
+                color = shadowInk
             }
             .drawBehind {
                 val rim = HAND_RIM.toPx()
-                drawCircle(wash.copy(alpha = HAND_WASH_ALPHA))
+                drawCircle(disc.copy(alpha = HAND_DISC_ALPHA))
                 drawCircle(
                     color = rimInk.copy(alpha = handRimAlpha(state.handScale.value)),
                     radius = size.minDimension / 2f - rim / 2f,

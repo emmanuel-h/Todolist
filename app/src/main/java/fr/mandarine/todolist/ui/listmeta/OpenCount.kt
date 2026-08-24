@@ -1,0 +1,36 @@
+package fr.mandarine.todolist.ui.listmeta
+
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import fr.mandarine.todolist.R
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.LocalRuledHand
+import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.seatOnRule
+
+private const val NOTHING_LEFT = 0
+private const val NO_TALLY = ""
+private const val ONE_LINE = 1
+
+@Composable
+fun OpenCount(count: Int, modifier: Modifier = Modifier) {
+    val spoken = pluralStringResource(R.plurals.open_items, count, count)
+    Text(
+        text = if (count > NOTHING_LEFT) count.toString() else NO_TALLY,
+        modifier = modifier
+            .widthIn(min = PaperDimens.marginColumn)
+            .seatOnRule()
+            .semantics { if (count > NOTHING_LEFT) contentDescription = spoken },
+        style = LocalRuledHand.current.margin,
+        color = LocalPaperPalette.current.inkMargin,
+        textAlign = TextAlign.End,
+        softWrap = false,
+        maxLines = ONE_LINE
+    )
+}

@@ -41,6 +41,26 @@ object PaperMotion {
         stiffness = 1600f
     )
 
+    val swipeSettle: SpringSpec<Float> = spring(
+        dampingRatio = 0.8f,
+        stiffness = 380f
+    )
+
+    val tearOff: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 800f
+    )
+
+    val slipShadow: SpringSpec<Float> = spring(
+        dampingRatio = 0.6f,
+        stiffness = 800f
+    )
+
+    val slipGrip: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 1600f
+    )
+
     val pressWash: SpringSpec<Float> = spring(
         dampingRatio = 1f,
         stiffness = 1600f

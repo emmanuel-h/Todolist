@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
 import fr.mandarine.todolist.presentation.TutorialCaption
@@ -16,7 +17,7 @@ import kotlinx.coroutines.delay
 
 internal const val HAND_PARKED_Y = 4000f
 internal const val HAND_TAP_SCALE = 0.72f
-internal const val HAND_GRIP_SCALE = 1.15f
+internal const val HAND_GRIP_SCALE = HAND_TAP_SCALE
 internal const val PROGRESS_DOT_COUNT = 5
 
 private const val TAP_MILLIS = 100
@@ -45,6 +46,15 @@ class TutorialOverlayState : TutorialOverlay {
     var banner by mutableStateOf<TutorialBannerContent?>(null)
         private set
 
+    /**
+     * A beat whose control no longer exists resolves to no bounds at all, and a
+     * control can also leave under the finger that just used it. Either way the
+     * hand comes off the page rather than hovering over where the thing used to
+     * be, which is what a stale aim looked like.
+     */
+    var aimedAnchor by mutableStateOf<TutorialAnchor?>(null)
+        private set
+
     val hand = Animatable(Offset(0f, HAND_PARKED_Y), Offset.VectorConverter)
     val handScale = Animatable(1f)
     val captionAlpha = Animatable(0f)
@@ -69,6 +79,11 @@ class TutorialOverlayState : TutorialOverlay {
         originY = bounds.top
     }
 
+    fun aimAt(anchor: TutorialAnchor, bounds: TutorialBounds?): TutorialBounds? {
+        aimedAnchor = if (bounds == null) null else anchor
+        return bounds
+    }
+
     fun show() {
         visible = true
     }
@@ -82,6 +97,7 @@ class TutorialOverlayState : TutorialOverlay {
         overlayAlpha.snapTo(1f)
         caption = null
         banner = null
+        aimedAnchor = null
         visible = true
     }
 
@@ -176,13 +192,15 @@ internal fun bannerTranslationFor(
 }
 
 /**
- * The rim is a fingertip pressing the page: it darkens as the hand shrinks into a
- * tap and stays light while the hand is merely resting or gripping.
+ * How far the fingertip has come down onto the paper: the disc squashes, its
+ * shadow collapses under it and its rim darkens, all read from the one scale the
+ * script animates.
  */
-internal fun handRimAlpha(scale: Float): Float {
-    val press = ((1f - scale) / (1f - HAND_TAP_SCALE)).coerceIn(0f, 1f)
-    return HAND_RIM_ALPHA_REST + (HAND_RIM_ALPHA_PRESSED - HAND_RIM_ALPHA_REST) * press
-}
+internal fun handPress(scale: Float): Float =
+    ((1f - scale) / (1f - HAND_TAP_SCALE)).coerceIn(0f, 1f)
 
-internal const val HAND_RIM_ALPHA_REST = 0.55f
+internal fun handRimAlpha(scale: Float): Float =
+    HAND_RIM_ALPHA_REST + (HAND_RIM_ALPHA_PRESSED - HAND_RIM_ALPHA_REST) * handPress(scale)
+
+internal const val HAND_RIM_ALPHA_REST = 0.6f
 internal const val HAND_RIM_ALPHA_PRESSED = 0.9f

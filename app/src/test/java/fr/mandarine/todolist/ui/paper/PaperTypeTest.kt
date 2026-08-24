@@ -46,15 +46,26 @@ class PaperTypeTest {
     }
 
     @Test
+    fun `should trim a typed line to its glyphs so the caret is not a rule`() {
+        val entry = PaperType.itemLine.trimmedToGlyphs()
+
+        assertEquals(LineHeightStyle.Trim.Both, entry.lineHeightStyle?.trim)
+        assertEquals(LineHeightStyle.Alignment.Bottom, entry.lineHeightStyle?.alignment)
+        assertEquals(PaperType.itemLine.fontSize, entry.fontSize)
+        assertEquals(LineHeightStyle.Trim.None, PaperType.itemLine.lineHeightStyle?.trim)
+    }
+
+    @Test
     fun `should write the whole type scale in the bundled hand without tracking`() {
+        val typography = RuledHand().typography
         val scale = listOf(
-            PaperType.typography.bodyLarge,
-            PaperType.typography.bodyMedium,
-            PaperType.typography.bodySmall,
-            PaperType.typography.titleLarge,
-            PaperType.typography.titleMedium,
-            PaperType.typography.labelMedium,
-            PaperType.typography.labelSmall
+            typography.bodyLarge,
+            typography.bodyMedium,
+            typography.bodySmall,
+            typography.titleLarge,
+            typography.titleMedium,
+            typography.labelMedium,
+            typography.labelSmall
         )
 
         assertTrue(scale.all { it.fontFamily == PaperType.hand })
@@ -63,10 +74,22 @@ class PaperTypeTest {
 
     @Test
     fun `should type an item and a submitted item at the very same size`() {
-        assertEquals(
-            PaperType.typography.bodyMedium.fontSize,
-            PaperType.typography.bodyLarge.fontSize
+        val typography = RuledHand().typography
+
+        assertEquals(typography.bodyMedium.fontSize, typography.bodyLarge.fontSize)
+    }
+
+    @Test
+    fun `should hand every scale of the page the same line box so rows stay one pitch`() {
+        val hand = RuledHand(
+            itemLine = PaperType.itemLine.copy(lineHeight = 3.1f.em),
+            listLine = PaperType.listLine.copy(lineHeight = 2.8f.em),
+            margin = PaperType.margin.copy(lineHeight = 4f.em)
         )
+
+        assertEquals(hand.itemLine, hand.typography.bodyLarge)
+        assertEquals(hand.listLine, hand.typography.titleMedium)
+        assertEquals(PaperType.caption, hand.typography.labelSmall)
     }
 
     @Test

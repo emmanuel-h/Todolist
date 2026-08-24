@@ -23,6 +23,8 @@ private const val GRAIN_ALPHA = 0.35f
 private const val VIGNETTE_RADIUS_FRACTION = 0.95f
 private const val SMALLEST_RADIUS = 1f
 private const val HALF = 2f
+private const val OPAQUE = 1f
+private const val TRANSPARENT = 0f
 
 @Immutable
 internal class PaperSheetBrushes(val light: Brush, val grain: Brush, val corners: Brush)
@@ -44,10 +46,11 @@ internal fun paperSheetBrushes(
     )
 )
 
-internal fun DrawScope.drawPaperSheet(brushes: PaperSheetBrushes) {
-    drawRect(brushes.light)
-    drawRect(brushes.grain, alpha = GRAIN_ALPHA, blendMode = BlendMode.Multiply)
-    drawRect(brushes.corners)
+internal fun DrawScope.drawPaperSheet(brushes: PaperSheetBrushes, alpha: Float = OPAQUE) {
+    if (alpha <= TRANSPARENT) return
+    drawRect(brushes.light, alpha = alpha)
+    drawRect(brushes.grain, alpha = GRAIN_ALPHA * alpha, blendMode = BlendMode.Multiply)
+    drawRect(brushes.corners, alpha = alpha)
 }
 
 @Composable
@@ -60,6 +63,24 @@ fun Modifier.paperSheet(
     return this.drawWithCache {
         val brushes = paperSheetBrushes(tile, lit, tone, vignette, size)
         onDrawBehind { drawPaperSheet(brushes) }
+    }
+}
+
+/**
+ * A sheet whose opacity is read at draw time, so a row can lift off the page and
+ * lay back down without recomposing once per frame.
+ */
+@Composable
+fun Modifier.paperSheetFading(
+    opacity: () -> Float,
+    tone: Color = LocalPaperPalette.current.paperSheet,
+    lit: Color = LocalPaperPalette.current.paperSheet
+): Modifier {
+    val vignette = LocalPaperPalette.current.vignette
+    val tile = paperGrainTile(LocalDensity.current.density)
+    return this.drawWithCache {
+        val brushes = paperSheetBrushes(tile, lit, tone, vignette, size)
+        onDrawBehind { drawPaperSheet(brushes, opacity()) }
     }
 }
 

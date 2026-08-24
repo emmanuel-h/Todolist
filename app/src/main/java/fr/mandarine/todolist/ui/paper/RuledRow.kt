@@ -13,17 +13,22 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 
-fun Modifier.paperRule(color: Color): Modifier = drawWithCache {
+fun Modifier.paperRuling(pitch: Dp, color: Color): Modifier = drawWithCache {
     val thickness = PaperDimens.rule.toPx()
     val start = PaperDimens.gutter.toPx()
-    onDrawWithContent {
-        drawContent()
-        drawRect(
-            color = color,
-            topLeft = Offset(start, size.height - thickness),
-            size = Size(size.width - start, thickness)
-        )
+    val step = pitch.toPx().coerceAtLeast(thickness)
+    onDrawBehind {
+        var line = size.height - thickness
+        while (line > -thickness) {
+            drawRect(
+                color = color,
+                topLeft = Offset(start, line),
+                size = Size(size.width - start, thickness)
+            )
+            line -= step
+        }
     }
 }
 

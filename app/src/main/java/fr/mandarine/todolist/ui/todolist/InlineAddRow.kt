@@ -1,6 +1,6 @@
 package fr.mandarine.todolist.ui.todolist
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,8 +26,10 @@ import fr.mandarine.todolist.ui.paper.GhostRow
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.seatOnRule
+import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 @Composable
 fun InlineAddRow(
@@ -60,12 +62,13 @@ fun InlineAddRow(
             tint = palette.inkBlue,
             seat = IconSeat.OnRule
         )
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+        val style = MaterialTheme.typography.bodyLarge
+        OnRuleSlot(modifier = Modifier.weight(1f), alignment = Alignment.TopStart) {
             if (text.isEmpty()) {
                 Text(
                     text = stringResource(R.string.add_item_hint),
-                    modifier = Modifier.seatOnRule(MaterialTheme.typography.bodyMedium),
-                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.seatOnRule(),
+                    style = style,
                     color = palette.pencil
                 )
             }
@@ -73,7 +76,8 @@ fun InlineAddRow(
                 value = text,
                 onValueChange = onTextChange,
                 modifier = Modifier
-                    .seatOnRule(MaterialTheme.typography.bodyMedium)
+                    .fillMaxWidth()
+                    .seatOnRule()
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
@@ -82,7 +86,7 @@ fun InlineAddRow(
                             onCollapse()
                         }
                     },
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.ink),
+                textStyle = style.trimmedToGlyphs().copy(color = palette.ink),
                 singleLine = true,
                 cursorBrush = SolidColor(palette.inkBlue),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

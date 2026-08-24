@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextLayoutResult
 import kotlin.random.Random
+import kotlinx.coroutines.delay
 
+private const val NO_DELAY = 0L
 private const val STRIKE_CLEAR = 0f
 private const val STRIKE_DONE = 1f
 private const val LEAD_IN = 0.3f
@@ -45,12 +47,18 @@ class PenStrikeState internal constructor(internal val seed: Int, struck: Boolea
 }
 
 @Composable
-fun rememberPenStrike(id: String, struck: Boolean, animated: Boolean = true): PenStrikeState {
+fun rememberPenStrike(
+    id: String,
+    struck: Boolean,
+    animated: Boolean = true,
+    delayMillis: Long = NO_DELAY
+): PenStrikeState {
     val state = remember(id) { PenStrikeState(id.hashCode(), struck) }
-    LaunchedEffect(state, struck, animated) {
+    LaunchedEffect(state, struck, animated, delayMillis) {
         val target = if (struck) STRIKE_DONE else STRIKE_CLEAR
         if (state.progress.value == target) return@LaunchedEffect
         if (animated) {
+            delay(delayMillis)
             state.progress.animateTo(target, PaperMotion.penStroke)
         } else {
             state.progress.snapTo(target)

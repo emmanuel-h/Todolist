@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.ui.DeletionState
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchors
 import java.time.LocalDate
@@ -32,6 +33,8 @@ data class RenameState(
 
 class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
 
+    val deletion = DeletionState()
+
     var addRowExpanded by mutableStateOf(false)
 
     var addRowText by mutableStateOf("")
@@ -39,8 +42,6 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
     var addRowSelection by mutableStateOf(DateSelection.None)
 
     var datePickerRequest by mutableStateOf<DatePickerRequest?>(null)
-
-    var confirmingDeleteListId by mutableStateOf<String?>(null)
 
     var rename by mutableStateOf<RenameState?>(null)
 
@@ -60,7 +61,6 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
 
     fun openAddRow() {
         addRowExpanded = true
-        confirmingDeleteListId = null
     }
 
     fun closeAddRow() {

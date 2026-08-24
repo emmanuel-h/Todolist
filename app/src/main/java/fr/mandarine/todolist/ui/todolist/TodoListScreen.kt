@@ -24,20 +24,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.unit.Dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListState
+import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
@@ -46,20 +46,29 @@ import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.SectionSkip
+import fr.mandarine.todolist.ui.paper.UndoSlip
+import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.pageFrame
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
-import fr.mandarine.todolist.ui.paper.paperSheet
-import fr.mandarine.todolist.ui.paper.performConfirmFeedback
+import fr.mandarine.todolist.ui.paper.penStrike
+import fr.mandarine.todolist.ui.paper.rememberPageTail
+import fr.mandarine.todolist.ui.paper.rememberPenStrike
 import fr.mandarine.todolist.ui.paper.ruledPage
 import fr.mandarine.todolist.ui.paper.seatOnRule
+import fr.mandarine.todolist.ui.paper.settleOnRule
 import fr.mandarine.todolist.ui.reorder.AutoScrollWhileDragging
 import fr.mandarine.todolist.ui.reorder.DragSession
 import fr.mandarine.todolist.ui.reorder.EdgeScroll
+import fr.mandarine.todolist.ui.reorder.liftToReorder
+import fr.mandarine.todolist.ui.reorder.liftedSlip
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
-import fr.mandarine.todolist.ui.reorder.reorderHandle
 import fr.mandarine.todolist.ui.tutorial.tutorialAnchor
+import kotlinx.coroutines.delay
+
+internal const val INK_TICK_MILLIS = 220L
+internal const val INK_STRIKE_MILLIS = 220L
 
 private const val INLINE_ADD_KEY = "inline-add"
 private const val HEAD_KEY = "head"
@@ -83,21 +92,61 @@ fun TodoListScreen(
     onReorder: (Int, Int) -> Unit
 ) {
     val content = state as? TodoListState.Content
+    val deletion = screenState.deletion
     val activeItems = orderedBy(content?.activeItems.orEmpty(), screenState.previewOrder) { it.id }
-    val completedItems = content?.completedItems.orEmpty()
+        .filterNot { deletion.hides(it.id) }
+    val completedItems = content?.completedItems.orEmpty().filterNot { deletion.hides(it.id) }
     val showSkip = activeItems.isNotEmpty() && completedItems.isNotEmpty()
+    val allDone = activeItems.isEmpty() && completedItems.isNotEmpty()
 
     val pitch = LocalPagePitch.current
     val listState = rememberLazyListState()
+    val tail = rememberPageTail(listState, pitch)
     val session = remember(screenState) {
         DragSession { order -> screenState.previewOrder = order }
     }
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
-    val view = LocalView.current
-    val toggleWithFeedback: (String) -> Unit = { id ->
-        view.performConfirmFeedback()
-        onToggle(id)
+    val liveIds = rememberUpdatedState(
+        activeItems.map { it.id } + completedItems.map { it.id }
+    )
+    val allIds = (content?.activeItems.orEmpty() + content?.completedItems.orEmpty()).map { it.id }
+    val requestToggle: (String) -> Unit = { id ->
+        when {
+            session.dragging -> Unit
+            !screenState.animationsEnabled -> listState.holdPage { onToggle(id) }
+            screenState.pendingToggle == id -> screenState.pendingToggle = null
+            else -> screenState.pendingToggle = id
+        }
+    }
+    val requestDelete: (String) -> Unit = { id ->
+        if (!session.dragging) {
+            screenState.editingItemId = null
+            deletion.request(id)?.let(onDelete)
+        }
+    }
+    val holdTorn: (String) -> Unit = { id ->
+        listState.holdPage {
+            tail.absorb(id)
+            deletion.markTorn()
+        }
+    }
+
+    LaunchedEffect(screenState.pendingToggle) {
+        val id = screenState.pendingToggle ?: return@LaunchedEffect
+        delay(INK_TICK_MILLIS + INK_STRIKE_MILLIS)
+        screenState.pendingToggle = null
+        if (liveIds.value.contains(id)) listState.holdPage { onToggle(id) }
+    }
+
+    LaunchedEffect(deletion.pending?.id) {
+        if (deletion.pending == null) return@LaunchedEffect
+        delay(UNDO_SLIP_MILLIS)
+        deletion.commit()?.let(onDelete)
+    }
+
+    LaunchedEffect(allIds) {
+        deletion.forget(allIds.toSet())
     }
 
     LaunchedEffect(screenState.hideKeyboardSignal) {
@@ -121,21 +170,25 @@ fun TodoListScreen(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .headMarginFade(listState, headMargin)
                     .ruledPage(
                         listState = listState,
                         pitch = pitch,
                         headMargin = headMargin,
                         color = LocalPaperPalette.current.rule
                     )
+                    .headMarginFade(listState, headMargin)
                     .consumeWindowInsets(WindowInsets.safeDrawing),
                 contentPadding = PaddingValues(
                     top = insets.calculateTopPadding(),
-                    bottom = insets.calculateBottomPadding() + pitch
+                    bottom = insets.calculateBottomPadding() + pitch + tail.height
                 )
             ) {
                 item(key = HEAD_KEY, contentType = HEAD_TYPE) {
-                    HeadLine(name = listName)
+                    HeadLine(
+                        name = listName,
+                        allDone = allDone,
+                        animated = screenState.animationsEnabled
+                    )
                 }
                 itemsIndexed(
                     items = activeItems,
@@ -145,14 +198,15 @@ fun TodoListScreen(
                     ActiveRow(
                         item = item,
                         position = position,
-                        activeItems = activeItems,
+                        rowIds = activeItems.map { it.id },
                         listState = listState,
                         session = session,
                         edgeScroll = edgeScroll,
                         screenState = screenState,
-                        onToggle = toggleWithFeedback,
+                        onToggle = requestToggle,
                         onEdit = onEdit,
-                        onDelete = onDelete,
+                        onDeleteRequested = requestDelete,
+                        onTorn = holdTorn,
                         onReorder = onReorder
                     )
                 }
@@ -193,23 +247,40 @@ fun TodoListScreen(
                 ) { position, item ->
                     TodoRow(
                         item = item,
+                        checked = screenState.inked(item),
                         editing = screenState.editingItemId == item.id,
-                        onToggle = { toggleWithFeedback(item.id) },
-                        onEditRequested = { screenState.editingItemId = item.id },
+                        onToggle = { requestToggle(item.id) },
+                        onEditRequested = {
+                            if (!session.dragging) screenState.editingItemId = item.id
+                        },
                         onEditCommitted = { title -> onEdit(item.id, title) },
                         onEditDismissed = { screenState.editingItemId = null },
-                        onDelete = { onDelete(item.id) },
+                        onDeleteRequested = { requestDelete(item.id) },
                         modifier = animatedRow(screenState),
                         toggleModifier = Modifier.tutorialAnchor(
                             screenState,
                             TutorialAnchor.CompletedItemToggle(position)
                         ),
-                        animated = screenState.animationsEnabled
+                        animated = screenState.animationsEnabled,
+                        tearing = deletion.tearing(item.id),
+                        onTorn = { holdTorn(item.id) }
                     )
                 }
             }
-            BackGlyph(onBack = onBack)
+            BackGlyph(
+                onBack = onBack,
+                listState = listState,
+                headMargin = headMargin,
+                pitch = pitch
+            )
         }
+        UndoSlip(
+            pending = deletion.pending?.id,
+            window = UNDO_SLIP_MILLIS,
+            onUndo = { listState.holdPage { deletion.undo()?.let(tail::release) } },
+            modifier = Modifier.align(Alignment.BottomCenter),
+            animated = screenState.animationsEnabled
+        )
     }
 }
 
@@ -217,57 +288,71 @@ fun TodoListScreen(
 private fun LazyItemScope.ActiveRow(
     item: TodoItem,
     position: Int,
-    activeItems: List<TodoItem>,
+    rowIds: List<String>,
     listState: LazyListState,
     session: DragSession,
     edgeScroll: EdgeScroll,
     screenState: TodoListScreenState,
     onToggle: (String) -> Unit,
     onEdit: (String, String) -> Unit,
-    onDelete: (String) -> Unit,
+    onDeleteRequested: (String) -> Unit,
+    onTorn: (String) -> Unit,
     onReorder: (Int, Int) -> Unit
 ) {
-    val dragged = session.dragging && session.index == position
-
-    val rowModifier = if (dragged) {
-        Modifier
-            .zIndex(1f)
-            .graphicsLayer { translationY = session.offset }
-            .paperSheet(tone = LocalPaperPalette.current.paperSheet)
-    } else {
-        animatedRow(screenState)
+    val lifted = session.dragging && session.index == position
+    val deletion = screenState.deletion
+    val move: (Int) -> (() -> Unit)? = { step ->
+        val destination = position + step
+        if (destination in rowIds.indices) {
+            {
+                listState.holdPage {
+                    screenState.previewOrder = null
+                    onReorder(position, destination)
+                }
+            }
+        } else {
+            null
+        }
     }
 
     TodoRow(
         item = item,
+        checked = screenState.inked(item),
         editing = screenState.editingItemId == item.id,
         onToggle = { onToggle(item.id) },
-        onEditRequested = { screenState.editingItemId = item.id },
+        onEditRequested = { if (!session.dragging) screenState.editingItemId = item.id },
         onEditCommitted = { title -> onEdit(item.id, title) },
         onEditDismissed = { screenState.editingItemId = null },
-        onDelete = { onDelete(item.id) },
-        modifier = rowModifier
-            .tutorialAnchor(screenState, TutorialAnchor.ActiveItemRow(position)),
-        handleModifier = Modifier
-            .tutorialAnchor(screenState, TutorialAnchor.ActiveItemDragHandle(position))
-            .reorderHandle(
+        onDeleteRequested = { onDeleteRequested(item.id) },
+        modifier = Modifier
+            .then(if (lifted) Modifier else animatedRow(screenState))
+            .liftedSlip(session, lifted, screenState.animationsEnabled)
+            .liftToReorder(
                 listState = listState,
                 session = session,
                 edgeScroll = edgeScroll,
                 id = item.id,
-                ids = activeItems.map { it.id },
+                ids = rowIds,
                 onDrop = { reorder ->
-                    if (reorder == null) {
-                        screenState.previewOrder = null
-                    } else {
-                        onReorder(reorder.from, reorder.to)
-                    }
+                    screenState.previewOrder = null
+                    if (reorder != null) onReorder(reorder.from, reorder.to)
                 }
-            ),
+            )
+            .tutorialAnchor(screenState, TutorialAnchor.ActiveItemRow(position))
+            .tutorialAnchor(screenState, TutorialAnchor.ActiveItemDragHandle(position)),
         toggleModifier = Modifier
             .tutorialAnchor(screenState, TutorialAnchor.ActiveItemToggle(position)),
-        animated = screenState.animationsEnabled
+        animated = screenState.animationsEnabled,
+        tearing = deletion.tearing(item.id),
+        onTorn = { onTorn(item.id) },
+        onMoveUp = move(-1),
+        onMoveDown = move(+1)
     )
+}
+
+private inline fun LazyListState.holdPage(change: () -> Unit) {
+    requestScrollToItem(firstVisibleItemIndex, firstVisibleItemScrollOffset)
+    change()
 }
 
 @Composable
@@ -283,31 +368,42 @@ private fun LazyItemScope.animatedRow(screenState: TodoListScreenState): Modifie
     }
 
 @Composable
-private fun HeadLine(name: String) {
+private fun HeadLine(name: String, allDone: Boolean, animated: Boolean) {
+    val palette = LocalPaperPalette.current
+    val style = MaterialTheme.typography.titleLarge
+    val strike = rememberPenStrike(name, allDone, animated)
+    val ink = if (allDone) palette.inkDone else palette.ink
     Row(
         modifier = Modifier.fillMaxWidth().height(LocalPagePitch.current),
         verticalAlignment = Alignment.Top
     ) {
         Text(
-            text = name,
+            text = remember(name) { handwritten(name) },
             modifier = Modifier
                 .padding(start = PaperDimens.gutter + PaperDimens.iconButton)
-                .seatOnRule(MaterialTheme.typography.titleLarge),
-            style = MaterialTheme.typography.titleLarge,
-            color = LocalPaperPalette.current.ink
+                .seatOnRule()
+                .penStrike(strike, ink),
+            style = style,
+            color = ink,
+            onTextLayout = strike::onTextLayout
         )
     }
 }
 
 @Composable
-private fun BackGlyph(onBack: () -> Unit) {
+private fun BackGlyph(
+    onBack: () -> Unit,
+    listState: LazyListState,
+    headMargin: Dp,
+    pitch: Dp
+) {
     InkIconButton(
         painter = painterResource(R.drawable.ic_arrow_back),
         contentDescription = stringResource(R.string.navigate_back),
         onClick = onBack,
-        modifier = Modifier.windowInsetsPadding(
-            WindowInsets.safeDrawing.only(WindowInsetsSides.Top)
-        ),
+        modifier = Modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+            .settleOnRule(listState, headMargin, pitch),
         tint = LocalPaperPalette.current.ink,
         seat = IconSeat.OnRule
     )

@@ -1,12 +1,21 @@
 package fr.mandarine.todolist.ui.tutorial
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.MonotonicFrameClock
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TutorialBannerContent
@@ -20,6 +29,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -35,6 +46,7 @@ class TutorialOverlayUiTest {
     val composeRule = createComposeRule()
 
     private val state = TutorialOverlayState()
+    private val anchors = TutorialAnchors()
     private var skipped = 0
 
     @Test
@@ -60,6 +72,20 @@ class TutorialOverlayUiTest {
         composeRule.onNodeWithContentDescription(skipDescription()).performClick()
 
         assertEquals(1, skipped)
+    }
+
+    @Test
+    fun `should keep the page underneath out of a screen reader while the demo runs`() {
+        renderPage(demoRunning = true)
+
+        assertNotNull(hiddenFromAccessibility())
+    }
+
+    @Test
+    fun `should leave the page readable when no demo is running`() {
+        renderPage(demoRunning = false)
+
+        assertNull(hiddenFromAccessibility())
     }
 
     @Test
@@ -119,10 +145,31 @@ class TutorialOverlayUiTest {
     private fun render() {
         composeRule.setContent {
             PaperTheme {
-                TutorialOverlay(state = state, onSkip = { skipped += 1 })
+                TutorialOverlay(
+                    state = state,
+                    anchors = anchors,
+                    onSkip = { skipped += 1 }
+                )
             }
         }
     }
+
+    private fun renderPage(demoRunning: Boolean) {
+        composeRule.setContent {
+            PaperTheme {
+                Box(
+                    Modifier
+                        .size(48.dp)
+                        .semantics { testTag = PAGE }
+                        .behindTutorial(demoRunning)
+                )
+            }
+        }
+    }
+
+    private fun hiddenFromAccessibility(): Unit? =
+        composeRule.onNodeWithTag(PAGE, useUnmergedTree = true).fetchSemanticsNode()
+            .config.getOrNull(SemanticsProperties.HideFromAccessibility)
 
     private fun onFrames(block: suspend () -> Unit) = runBlocking(ImmediateFrameClock()) { block() }
 
@@ -148,5 +195,6 @@ class TutorialOverlayUiTest {
 
     private companion object {
         val ANCHOR = TutorialBounds(left = 0, top = 300, width = 100, height = 80)
+        const val PAGE = "page"
     }
 }

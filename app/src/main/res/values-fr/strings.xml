@@ -1,5 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Liste de tâches</string>
+    <string name="create_list">Créer une liste</string>
+    <string name="delete_list">Supprimer la liste</string>
+    <string name="delete">Supprimer</string>
+    <string name="cancel">Annuler</string>
+    <string name="item_mark_completed">Marquer la tâche comme terminée</string>
+    <string name="item_mark_incomplete">Marquer la tâche comme non terminée</string>
+    <string name="item_state_completed">Terminée</string>
+    <string name="item_state_active">Non terminée</string>
+    <string name="target_date_description">Date prévue %1$s</string>
+    <string name="due_date_description">Date limite %1$s</string>
+    <plurals name="open_items">
+        <item quantity="one">%d tâche restante</item>
+        <item quantity="other">%d tâches restantes</item>
+    </plurals>
+    <plurals name="done_items">
+        <item quantity="one">%d tâche terminée</item>
+        <item quantity="other">%d tâches terminées</item>
+    </plurals>
+    <string name="add_list_fab_description">Créer une nouvelle liste</string>
+    <string name="submit_inline_add">Ajouter la tâche</string>
+    <string name="item_edit">Modifier la tâche</string>
+    <string name="item_delete">Supprimer la tâche</string>
+    <string name="move_up">Déplacer vers le haut</string>
+    <string name="move_down">Déplacer vers le bas</string>
+    <string name="undo_delete">Annuler la suppression</string>
+    <string name="save">Enregistrer</string>
+    <string name="navigate_back">Revenir en arrière</string>
+    <string name="edit_list">Modifier le nom de la liste</string>
+    <string name="rename_list">Enregistrer le nom de la liste</string>
+    <string name="set_target_date">Définir la date prévue</string>
+    <string name="clear_target_date">Effacer la date prévue</string>
+    <string name="set_due_date">Définir la date limite</string>
+    <string name="clear_due_date">Effacer la date limite</string>
+    <string name="notification_channel_name">Rappels</string>
+    <string name="replay_tutorial">Revoir le tutoriel</string>
     <string name="date_kind_target_caption">À faire ce jour-là</string>
     <string name="date_kind_due_caption">À terminer avant ce jour</string>
 </resources>

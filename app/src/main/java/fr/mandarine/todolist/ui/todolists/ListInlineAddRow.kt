@@ -1,7 +1,7 @@
 package fr.mandarine.todolist.ui.todolists
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -22,8 +23,10 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.seatOnRule
+import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 @Composable
 fun ListInlineAddRow(
@@ -95,20 +98,21 @@ private fun RowScope.NameField(
     modifier: Modifier
 ) {
     val palette = LocalPaperPalette.current
-    Box(modifier = Modifier.weight(1f)) {
+    val style = MaterialTheme.typography.titleMedium
+    OnRuleSlot(modifier = Modifier.weight(1f), alignment = Alignment.TopStart) {
         if (text.isEmpty()) {
             Text(
                 text = stringResource(R.string.list_name_hint),
-                modifier = Modifier.seatOnRule(MaterialTheme.typography.bodyMedium),
-                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.seatOnRule(),
+                style = style,
                 color = palette.pencil
             )
         }
         BasicTextField(
             value = text,
             onValueChange = onTextChange,
-            modifier = modifier.seatOnRule(MaterialTheme.typography.bodyMedium),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.ink),
+            modifier = modifier.fillMaxWidth().seatOnRule(),
+            textStyle = style.trimmedToGlyphs().copy(color = palette.ink),
             singleLine = true,
             cursorBrush = SolidColor(palette.inkBlue),
             keyboardOptions = KeyboardOptions(

@@ -3,6 +3,7 @@ package fr.mandarine.todolist.ui.tutorial
 import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -23,12 +24,18 @@ interface TutorialAnchorHost {
     fun boundsOf(anchor: TutorialAnchor): TutorialBounds?
 }
 
+/**
+ * The bounds are snapshot state so the overlay can watch the thing it is pointing
+ * at: a row that leaves the page takes the phantom hand with it. Layout reports
+ * the same rectangle on every pass, so only a rectangle that actually moved is
+ * written back.
+ */
 class TutorialAnchors : TutorialAnchorHost {
 
-    private val bounds = mutableMapOf<TutorialAnchor, TutorialBounds>()
+    private val bounds = mutableStateMapOf<TutorialAnchor, TutorialBounds>()
 
     override fun putBounds(anchor: TutorialAnchor, bounds: TutorialBounds) {
-        this.bounds[anchor] = bounds
+        if (this.bounds[anchor] != bounds) this.bounds[anchor] = bounds
     }
 
     override fun removeBounds(anchor: TutorialAnchor) {

@@ -25,7 +25,8 @@ class PaperGalleryActivity : ComponentActivity() {
                     ) {
                         RuledRowPreview()
                         GhostRowPreview()
-                        CountBadgePreview()
+                        InkRingPreview()
+                        InkRolesPreview()
                         InkIconPreview()
                         StickyNotePadPreview()
                     }

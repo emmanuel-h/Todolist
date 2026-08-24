@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,6 +30,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
@@ -42,6 +44,7 @@ import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.PaperDialog
 import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.PaperType
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import java.util.Locale
 
@@ -88,19 +91,6 @@ fun RenameListDialog(
                 )
             }
         }
-        Text(
-            text = stringResource(
-                if (state.selection.kind == DateKind.TARGET) {
-                    R.string.date_kind_target_caption
-                } else {
-                    R.string.date_kind_due_caption
-                }
-            ),
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = palette.inkSoft,
-            maxLines = 1
-        )
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.End
@@ -140,7 +130,7 @@ private fun NameField(name: String, onNameChange: (String) -> Unit, onConfirm: (
             .fillMaxWidth()
             .focusRequester(focusRequester)
             .padding(bottom = 6.dp),
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = palette.ink),
+        textStyle = PaperType.field.copy(color = palette.ink),
         singleLine = true,
         cursorBrush = SolidColor(palette.inkBlue),
         keyboardOptions = KeyboardOptions(
@@ -193,7 +183,7 @@ private fun ToggleCell(
         modifier = Modifier
             .size(PaperDimens.iconButton)
             .background(if (selected) palette.inkBluePale else palette.paperSheet)
-            .clickable(onClick = onClick),
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         InkIcon(

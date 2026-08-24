@@ -8,13 +8,27 @@
     <string name="cancel">Cancel</string>
     <string name="item_mark_completed">Mark item as completed</string>
     <string name="item_mark_incomplete">Mark item as incomplete</string>
+    <string name="item_state_completed">Completed</string>
+    <string name="item_state_active">Not completed</string>
+    <string name="target_date_description">Target date %1$s</string>
+    <string name="due_date_description">Due date %1$s</string>
+    <plurals name="open_items">
+        <item quantity="one">%d item left</item>
+        <item quantity="other">%d items left</item>
+    </plurals>
+    <plurals name="done_items">
+        <item quantity="one">%d item done</item>
+        <item quantity="other">%d items done</item>
+    </plurals>
     <string name="add_list_fab_description">Create new list</string>
     <string name="submit_inline_add">Submit new item</string>
     <string name="add_item_ghost_hint">…</string>
     <string name="item_edit">Edit item</string>
     <string name="item_delete">Delete item</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="undo_delete">Undo delete</string>
     <string name="save">Save</string>
-    <string name="drag_handle">Drag to reorder</string>
     <string name="navigate_back">Navigate up</string>
     <string name="edit_list">Edit list name</string>
     <string name="rename_list">Save list name</string>

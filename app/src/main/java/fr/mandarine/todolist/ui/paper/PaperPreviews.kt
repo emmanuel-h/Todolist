@@ -3,7 +3,6 @@ package fr.mandarine.todolist.ui.paper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
@@ -26,6 +26,9 @@ import kotlinx.coroutines.delay
 
 private const val PREVIEW_PAPER = 0xFFFAF5EA
 private const val PREVIEW_TAKEN_MILLIS = 900L
+private const val PREVIEW_APPLES = "🍎 Apples"
+private const val PREVIEW_GROCERIES = "🛒 Groceries"
+private const val PREVIEW_OPEN_COUNT = "3"
 
 @Preview(showBackground = true, backgroundColor = PREVIEW_PAPER, heightDp = 320)
 @Composable
@@ -41,52 +44,85 @@ internal fun RuledRowPreview() {
     PaperTheme {
         PaperSurface(Modifier.height(200.dp)) {
             Column {
-                RuledRow(onClick = {}) {
-                    InkIcon(
-                        painter = painterResource(R.drawable.ic_drag_handle),
-                        contentDescription = stringResource(R.string.drag_handle),
-                        tint = LocalPaperPalette.current.pencil
+                RuledRow {
+                    InkRing(
+                        checked = false,
+                        onToggle = {},
+                        seed = 1,
+                        contentDescription = stringResource(R.string.item_mark_completed),
+                        stateDescription = stringResource(R.string.item_state_active)
                     )
                     Text(
-                        text = "🍎 Apples",
-                        modifier = Modifier.weight(1f).padding(start = 8.dp),
+                        text = PREVIEW_APPLES,
+                        modifier = Modifier.weight(1f).seatOnRule(),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = LocalPaperPalette.current.ink
-                    )
-                    InkIconButton(
-                        painter = painterResource(R.drawable.ic_check),
-                        contentDescription = stringResource(R.string.item_mark_completed),
-                        onClick = {},
-                        tint = LocalPaperPalette.current.inkBlue
-                    )
-                    InkIconButton(
-                        painter = painterResource(R.drawable.ic_delete),
-                        contentDescription = stringResource(R.string.item_delete),
-                        onClick = {},
-                        tint = LocalPaperPalette.current.inkRedSoft
+                        color = LocalPaperPalette.current.inkRest
                     )
                 }
-                RuledRow {
+                RuledRow(onClick = {}) {
                     Text(
-                        text = "🛒 Groceries",
-                        modifier = Modifier.weight(1f),
+                        text = PREVIEW_GROCERIES,
+                        modifier = Modifier.weight(1f).seatOnRule(),
                         style = MaterialTheme.typography.titleMedium,
-                        color = LocalPaperPalette.current.ink
+                        color = LocalPaperPalette.current.inkRest
                     )
-                    CountBadge(
-                        painter = painterResource(R.drawable.ic_radio_button_unchecked),
-                        count = 3
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    CountBadge(
-                        painter = painterResource(R.drawable.ic_check_circle),
-                        count = 12,
-                        tint = LocalPaperPalette.current.pencil,
-                        borderColor = LocalPaperPalette.current.rule
+                    Text(
+                        text = PREVIEW_OPEN_COUNT,
+                        modifier = Modifier
+                            .width(PaperDimens.marginColumn)
+                            .seatOnRule(),
+                        style = LocalRuledHand.current.margin,
+                        color = LocalPaperPalette.current.inkMargin,
+                        textAlign = TextAlign.End
                     )
                 }
                 RuledRow {}
             }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = PREVIEW_PAPER)
+@Composable
+internal fun InkRingPreview() {
+    PaperTheme {
+        PaperSurface(Modifier.height(200.dp)) {
+            var checked by remember { mutableStateOf(false) }
+            Column {
+                RuledRow {
+                    InkRing(
+                        checked = checked,
+                        onToggle = { checked = !checked },
+                        seed = 7,
+                        contentDescription = stringResource(R.string.item_mark_completed),
+                        stateDescription = stringResource(R.string.item_state_active)
+                    )
+                }
+                RuledRow {
+                    InkRing(
+                        checked = true,
+                        onToggle = {},
+                        seed = 11,
+                        contentDescription = stringResource(R.string.item_mark_incomplete),
+                        stateDescription = stringResource(R.string.item_state_completed),
+                        animated = false
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = PREVIEW_PAPER)
+@Composable
+internal fun InkRolesPreview() {
+    PaperTheme {
+        val palette = LocalPaperPalette.current
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = PREVIEW_APPLES, color = palette.inkRest)
+            Text(text = PREVIEW_OPEN_COUNT, color = palette.inkMargin, style = LocalRuledHand.current.margin)
+            Text(text = PREVIEW_GROCERIES, color = palette.inkLive)
+            Text(text = PREVIEW_APPLES, color = palette.inkDanger)
         }
     }
 }
@@ -106,27 +142,6 @@ internal fun GhostRowPreview() {
 
 @Preview(showBackground = true, backgroundColor = PREVIEW_PAPER)
 @Composable
-internal fun CountBadgePreview() {
-    PaperTheme {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CountBadge(painterResource(R.drawable.ic_radio_button_unchecked), 0)
-            CountBadge(painterResource(R.drawable.ic_radio_button_unchecked), 7)
-            CountBadge(
-                painter = painterResource(R.drawable.ic_check_circle),
-                count = 128,
-                tint = LocalPaperPalette.current.pencil,
-                borderColor = LocalPaperPalette.current.rule
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = PREVIEW_PAPER)
-@Composable
 internal fun InkIconPreview() {
     PaperTheme {
         Row(
@@ -137,18 +152,18 @@ internal fun InkIconPreview() {
             InkIcon(
                 painter = painterResource(R.drawable.ic_event),
                 contentDescription = null,
-                tint = LocalPaperPalette.current.inkBlue
+                tint = LocalPaperPalette.current.inkMargin
             )
             InkIconButton(
-                painter = painterResource(R.drawable.ic_edit),
-                contentDescription = stringResource(R.string.item_edit),
+                painter = painterResource(R.drawable.ic_add),
+                contentDescription = stringResource(R.string.submit_inline_add),
                 onClick = {}
             )
             InkIconButton(
-                painter = painterResource(R.drawable.ic_delete),
-                contentDescription = stringResource(R.string.item_delete),
+                painter = painterResource(R.drawable.ic_alarm),
+                contentDescription = stringResource(R.string.set_due_date),
                 onClick = {},
-                tint = LocalPaperPalette.current.inkRedSoft,
+                tint = LocalPaperPalette.current.inkDanger,
                 enabled = false
             )
         }

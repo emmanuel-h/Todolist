@@ -42,13 +42,13 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should disarm a pending delete when the create row opens`() {
-        state.confirmingDeleteListId = "list-1"
+    fun `should leave a pending deletion alone when the create row opens`() {
+        state.deletion.request("list-1")
 
         state.openAddRow()
 
         assertTrue(state.addRowExpanded)
-        assertNull(state.confirmingDeleteListId)
+        assertEquals("list-1", state.deletion.pending?.id)
     }
 
     @Test

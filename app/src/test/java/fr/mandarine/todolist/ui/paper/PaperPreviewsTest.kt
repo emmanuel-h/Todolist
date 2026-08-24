@@ -26,13 +26,12 @@ class PaperPreviewsTest {
     }
 
     @Test
-    fun `should render the ruled row preview with both row heights and both badges`() {
+    fun `should render the ruled row preview with both row heights and the open tally`() {
         composeRule.setContent { RuledRowPreview() }
 
         composeRule.onNodeWithText("🍎 Apples").assertIsDisplayed()
         composeRule.onNodeWithText("🛒 Groceries").assertIsDisplayed()
         composeRule.onNodeWithText("3").assertIsDisplayed()
-        composeRule.onNodeWithText("12").assertIsDisplayed()
     }
 
     @Test
@@ -43,12 +42,18 @@ class PaperPreviewsTest {
     }
 
     @Test
-    fun `should render the count badge preview from zero upwards`() {
-        composeRule.setContent { CountBadgePreview() }
+    fun `should render the ink ring preview in both its states`() {
+        composeRule.setContent { InkRingPreview() }
 
-        composeRule.onNodeWithText("0").assertIsDisplayed()
-        composeRule.onNodeWithText("7").assertIsDisplayed()
-        composeRule.onNodeWithText("128").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Mark item as completed").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Mark item as incomplete").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should render the ink role preview`() {
+        composeRule.setContent { InkRolesPreview() }
+
+        composeRule.onRoot().assertIsDisplayed()
     }
 
     @Test

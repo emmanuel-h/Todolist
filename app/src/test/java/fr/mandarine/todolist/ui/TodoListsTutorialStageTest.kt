@@ -174,7 +174,7 @@ class TodoListsTutorialStageTest {
             createList(activity, "Hi")
 
             assertTrue(perform(activity, TutorialAction.RequestDeleteFirstList))
-            assertNotNull(activity.screenState.confirmingDeleteListId)
+            assertNotNull(activity.screenState.deletion.pending)
             assertEquals("Hi", activity.firstListName())
         }
     }
@@ -185,7 +185,7 @@ class TodoListsTutorialStageTest {
             createFinishedList(activity, "Hi")
 
             assertTrue(perform(activity, TutorialAction.RequestDeleteFirstList))
-            assertNotNull(activity.screenState.confirmingDeleteListId)
+            assertNotNull(activity.screenState.deletion.pending)
         }
     }
 
@@ -213,7 +213,7 @@ class TodoListsTutorialStageTest {
             perform(activity, TutorialAction.RequestDeleteFirstList)
 
             assertTrue(perform(activity, TutorialAction.ConfirmDeleteFirstList))
-            assertNull(activity.screenState.confirmingDeleteListId)
+            assertNull(activity.screenState.deletion.pending)
             assertNull(activity.firstListName())
         }
     }

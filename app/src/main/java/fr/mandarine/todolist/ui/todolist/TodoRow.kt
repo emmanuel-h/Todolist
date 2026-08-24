@@ -1,8 +1,13 @@
 package fr.mandarine.todolist.ui.todolist
 
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,122 +19,167 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
-import fr.mandarine.todolist.ui.paper.IconSeat
-import fr.mandarine.todolist.ui.paper.InkIcon
-import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.InkRing
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.OnRuleSlot
-import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.PaperMotion
+import fr.mandarine.todolist.ui.paper.RowVerb
 import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.SwipeMark
+import fr.mandarine.todolist.ui.paper.SwipeReveal
+import fr.mandarine.todolist.ui.paper.SwipeRow
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.penStrike
 import fr.mandarine.todolist.ui.paper.rememberPenStrike
+import fr.mandarine.todolist.ui.paper.rowVerbs
 import fr.mandarine.todolist.ui.paper.seatOnRule
+import fr.mandarine.todolist.ui.paper.spokenVerbs
+import fr.mandarine.todolist.ui.paper.tearOff
+import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
+
+private const val ROW_BODY_LABEL = "rowBody"
 
 @Composable
 fun TodoRow(
     item: TodoItem,
+    checked: Boolean,
     editing: Boolean,
     onToggle: () -> Unit,
     onEditRequested: () -> Unit,
     onEditCommitted: (String) -> Unit,
     onEditDismissed: () -> Unit,
-    onDelete: () -> Unit,
+    onDeleteRequested: () -> Unit,
     modifier: Modifier = Modifier,
-    handleModifier: Modifier = Modifier,
     toggleModifier: Modifier = Modifier,
-    animated: Boolean = true
+    animated: Boolean = true,
+    tearing: Boolean = false,
+    onTorn: () -> Unit = {},
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null
 ) {
-    val palette = LocalPaperPalette.current
-    RuledRow(modifier = modifier) {
-        DragHandle(visible = !item.isCompleted, modifier = handleModifier)
-        if (editing) {
+    val verbs = rowVerbs(
+        RowVerb(
+            stringResource(
+                if (checked) R.string.item_mark_incomplete else R.string.item_mark_completed
+            ),
+            onToggle
+        ),
+        RowVerb(stringResource(R.string.item_edit), onEditRequested),
+        RowVerb(stringResource(R.string.item_delete), onDeleteRequested),
+        onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
+        onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
+    )
+    SwipeRow(
+        key = item.id,
+        onDelete = onDeleteRequested,
+        reveal = SwipeReveal(SwipeMark.Check, onToggle),
+        enabled = !editing,
+        animated = animated,
+        modifier = modifier.tearOff(tearing, animated, onTorn)
+    ) {
+        RuledRow {
+            InkRing(
+                checked = checked,
+                onToggle = onToggle,
+                seed = item.id.hashCode(),
+                contentDescription = stringResource(
+                    if (checked) R.string.item_mark_incomplete else R.string.item_mark_completed
+                ),
+                stateDescription = stringResource(
+                    if (checked) R.string.item_state_completed else R.string.item_state_active
+                ),
+                modifier = toggleModifier,
+                animated = animated
+            )
+            RowBody(
+                item = item,
+                checked = checked,
+                editing = editing,
+                animated = animated,
+                verbs = verbs,
+                onEditRequested = onEditRequested,
+                onEditCommitted = onEditCommitted,
+                onEditDismissed = onEditDismissed
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.RowBody(
+    item: TodoItem,
+    checked: Boolean,
+    editing: Boolean,
+    animated: Boolean,
+    verbs: List<RowVerb>,
+    onEditRequested: () -> Unit,
+    onEditCommitted: (String) -> Unit,
+    onEditDismissed: () -> Unit
+) {
+    AnimatedContent(
+        targetState = editing,
+        modifier = Modifier.weight(1f),
+        transitionSpec = {
+            val enter = if (animated) PaperMotion.rowEnter else PaperMotion.instant
+            val exit = if (animated) PaperMotion.rowExit else PaperMotion.instant
+            (fadeIn(enter) togetherWith fadeOut(exit)) using null
+        },
+        label = ROW_BODY_LABEL
+    ) { typing ->
+        if (typing) {
             RowTitleEditor(
                 title = item.title,
                 onCommit = onEditCommitted,
                 onDismiss = onEditDismissed
             )
         } else {
-            RowTitle(item = item, animated = animated, onToggle = onToggle)
-        }
-        InkIconButton(
-            painter = painterResource(
-                if (item.isCompleted) R.drawable.ic_undo else R.drawable.ic_check
-            ),
-            contentDescription = stringResource(
-                if (item.isCompleted) R.string.item_mark_incomplete else R.string.item_mark_completed
-            ),
-            onClick = onToggle,
-            modifier = toggleModifier,
-            tint = palette.inkBlue,
-            seat = IconSeat.OnRule
-        )
-        InkIconButton(
-            painter = painterResource(R.drawable.ic_edit),
-            contentDescription = stringResource(R.string.item_edit),
-            onClick = onEditRequested,
-            tint = palette.pencil,
-            seat = IconSeat.OnRule
-        )
-        InkIconButton(
-            painter = painterResource(R.drawable.ic_delete),
-            contentDescription = stringResource(R.string.item_delete),
-            onClick = onDelete,
-            tint = palette.inkRedSoft,
-            seat = IconSeat.OnRule
-        )
-    }
-}
-
-/**
- * Completed rows keep the handle's 48dp of space but draw nothing in it, so item
- * titles stay on the same vertical line across both sections.
- */
-@Composable
-private fun DragHandle(visible: Boolean, modifier: Modifier) {
-    OnRuleSlot(
-        modifier = Modifier
-            .width(PaperDimens.iconButton)
-            .then(if (visible) modifier else Modifier)
-    ) {
-        if (visible) {
-            InkIcon(
-                painter = painterResource(R.drawable.ic_drag_handle),
-                contentDescription = stringResource(R.string.drag_handle),
-                tint = LocalPaperPalette.current.pencil
+            RowTitle(
+                item = item,
+                checked = checked,
+                animated = animated,
+                verbs = verbs,
+                onEditRequested = onEditRequested
             )
         }
     }
 }
 
 @Composable
-private fun RowScope.RowTitle(item: TodoItem, animated: Boolean, onToggle: () -> Unit) {
+private fun RowTitle(
+    item: TodoItem,
+    checked: Boolean,
+    animated: Boolean,
+    verbs: List<RowVerb>,
+    onEditRequested: () -> Unit
+) {
     val palette = LocalPaperPalette.current
     val style = MaterialTheme.typography.bodyLarge
-    val strike = rememberPenStrike(item.id, item.isCompleted, animated)
-    val ink = if (item.isCompleted) palette.inkDone else palette.ink
+    val strike = rememberPenStrike(item.id, checked, animated, INK_TICK_MILLIS)
+    val ink = if (item.isCompleted) palette.inkDone else palette.inkRest
     Text(
         text = remember(item.title) { handwritten(item.title) },
         modifier = Modifier
-            .weight(1f)
-            .seatOnRule(style)
+            .fillMaxWidth()
+            .seatOnRule()
             .penStrike(strike, ink)
-            .pointerInput(item.id) {
-                detectTapGestures(onDoubleTap = { onToggle() })
-            },
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onEditRequested
+            )
+            .spokenVerbs(verbs),
         style = style,
         color = ink,
         onTextLayout = strike::onTextLayout
@@ -137,7 +187,7 @@ private fun RowScope.RowTitle(item: TodoItem, animated: Boolean, onToggle: () ->
 }
 
 @Composable
-private fun RowScope.RowTitleEditor(
+private fun RowTitleEditor(
     title: String,
     onCommit: (String) -> Unit,
     onDismiss: () -> Unit
@@ -148,31 +198,34 @@ private fun RowScope.RowTitleEditor(
     }
     var everFocused by remember { mutableStateOf(false) }
     val palette = LocalPaperPalette.current
+    val style = MaterialTheme.typography.bodyLarge
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
-    BasicTextField(
-        value = value,
-        onValueChange = { value = it },
-        modifier = Modifier
-            .weight(1f)
-            .seatOnRule(MaterialTheme.typography.bodyLarge)
-            .focusRequester(focusRequester)
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    everFocused = true
-                } else if (everFocused) {
-                    commitTitle(value.text, onCommit, onDismiss)
-                }
-            },
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = palette.ink),
-        singleLine = true,
-        cursorBrush = SolidColor(palette.inkBlue),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(
-            onDone = { commitTitle(value.text, onCommit, onDismiss) }
+    OnRuleSlot(modifier = Modifier.fillMaxWidth(), alignment = Alignment.TopStart) {
+        BasicTextField(
+            value = value,
+            onValueChange = { value = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .seatOnRule()
+                .focusRequester(focusRequester)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        everFocused = true
+                    } else if (everFocused) {
+                        commitTitle(value.text, onCommit, onDismiss)
+                    }
+                },
+            textStyle = style.trimmedToGlyphs().copy(color = palette.ink),
+            singleLine = true,
+            cursorBrush = SolidColor(palette.inkLive),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = { commitTitle(value.text, onCommit, onDismiss) }
+            )
         )
-    )
+    }
 }
 
 internal fun commitTitle(

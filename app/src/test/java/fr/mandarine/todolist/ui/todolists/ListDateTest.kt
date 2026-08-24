@@ -126,18 +126,36 @@ class ListDateTest {
     }
 
     @Test
-    fun `should ink a target date that has not passed`() {
-        assertEquals(PaperPalette.light.inkBlue, targetTint(PaperPalette.light, elapsed = false))
+    fun `should pencil a target date that has not passed`() {
+        assertEquals(PaperPalette.light.inkMargin, targetTint(PaperPalette.light, elapsed = false))
     }
 
     @Test
-    fun `should fade a target date that has passed`() {
-        assertEquals(PaperPalette.light.inkSoft, targetTint(PaperPalette.light, elapsed = true))
+    fun `should write a target date that has passed in the same ink as anything done`() {
+        val elapsed = targetTint(PaperPalette.light, elapsed = true)
+
+        assertEquals(PaperPalette.light.inkDone, elapsed)
     }
 
     @Test
-    fun `should ink a future due date like any other date`() {
-        assertEquals(PaperPalette.light.inkBlue, dueTint(PaperPalette.light, DueDateStatus.FUTURE))
+    fun `should keep every date jot tint fully opaque so its contrast is the ink's own`() {
+        val tints = listOf(
+            targetTint(PaperPalette.light, elapsed = true),
+            targetTint(PaperPalette.light, elapsed = false),
+            dueTint(PaperPalette.light, DueDateStatus.FUTURE),
+            dueTint(PaperPalette.light, DueDateStatus.TODAY),
+            dueTint(PaperPalette.light, DueDateStatus.OVERDUE)
+        )
+
+        tints.forEach { assertEquals(1f, it.alpha, 0.001f) }
+    }
+
+    @Test
+    fun `should pencil a future due date like any other date`() {
+        assertEquals(
+            PaperPalette.light.inkMargin,
+            dueTint(PaperPalette.light, DueDateStatus.FUTURE)
+        )
     }
 
     @Test

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -26,6 +27,19 @@ private const val NIB_REST = 1f
 private const val NIB_LABEL = "nibSquash"
 
 enum class IconSeat { Centred, OnRule }
+
+/**
+ * Where the ink stops inside a glyph's own box, as a fraction of that box: the
+ * drawables are drawn on a 24 unit grid and each leaves a different blank border
+ * under its mark.
+ */
+@Immutable
+object GlyphFoot {
+    const val plus = 19f / 24f
+    const val arrow = 20f / 24f
+    const val trash = 21f / 24f
+    const val pencil = 21f / 24f
+}
 
 @Composable
 fun InkIcon(
@@ -72,12 +86,13 @@ fun InkIconButton(
                 role = Role.Button,
                 onClick = onClick
             ),
-        contentAlignment = if (onRule) Alignment.BottomCenter else Alignment.Center
+        contentAlignment = if (onRule) Alignment.TopCenter else Alignment.Center
     ) {
+        val seated = if (onRule) Modifier.seatGlyphOnRule(GlyphFoot.arrow) else Modifier
         InkIcon(
             painter = painter,
             contentDescription = contentDescription,
-            modifier = Modifier.graphicsLayer {
+            modifier = seated.graphicsLayer {
                 scaleX = squash
                 scaleY = squash
             },

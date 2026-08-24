@@ -67,6 +67,13 @@ class RuledPageTest {
     }
 
     @Test
+    fun `should widen the ruling with the readers font scale so the hand keeps its line`() {
+        val pitches = pitchesAtFontScales(1f, 1.5f)
+
+        assertTrue("plain ${pitches[0]} enlarged ${pitches[1]}", pitches[1] > pitches[0])
+    }
+
+    @Test
     fun `should seat the first rule at the foot of the head margin`() {
         val offset = firstRuleOffset(headPx = 56f, scrolledPx = 0, thickness = 1f, pitchPx = 56f)
 
@@ -242,6 +249,19 @@ class RuledPageTest {
             )
         }
         return bitmap.toPixelMap()
+    }
+
+    private fun pitchesAtFontScales(vararg scales: Float): List<Dp> {
+        val captured = mutableListOf<Dp>()
+        composeRule.setContent {
+            scales.forEach { scale ->
+                CompositionLocalProvider(LocalDensity provides Density(2f, scale)) {
+                    captured += pagePitch()
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        return captured.toList()
     }
 
     private fun pitchesFor(vararg styles: TextStyle): List<Dp> {

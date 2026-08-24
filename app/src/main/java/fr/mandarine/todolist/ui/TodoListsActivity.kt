@@ -49,6 +49,7 @@ import fr.mandarine.todolist.ui.todolists.TodoListsScreen
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
 import fr.mandarine.todolist.ui.tutorial.TutorialOverlay
 import fr.mandarine.todolist.ui.tutorial.TutorialOverlayController
+import fr.mandarine.todolist.ui.tutorial.behindTutorial
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -106,28 +107,32 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
         setContent {
             val state by viewModel.state.collectAsState()
+            val overlayState = tutorialController.overlayState
             PaperTheme {
                 Box(Modifier.fillMaxSize()) {
-                    TodoListsScreen(
-                        state = state,
-                        screenState = screenState,
-                        today = clock.today(),
-                        onOpenList = { list -> openList(list) },
-                        onCreateList = { name, targetDate, dueDate ->
-                            viewModel.createList(name, targetDate, dueDate)
-                        },
-                        onRenameList = { listId, name, targetDate, dueDate ->
-                            viewModel.editList(listId, name, targetDate, dueDate)
-                        },
-                        onDeleteList = { listId -> viewModel.deleteList(listId) },
-                        onReorder = { from, to ->
-                            screenState.previewOrder = null
-                            viewModel.reorderLists(from, to)
-                        },
-                        onReplayTutorial = { tutorialViewModel.replay() }
-                    )
+                    Box(Modifier.fillMaxSize().behindTutorial(overlayState.visible)) {
+                        TodoListsScreen(
+                            state = state,
+                            screenState = screenState,
+                            today = clock.today(),
+                            onOpenList = { list -> openList(list) },
+                            onCreateList = { name, targetDate, dueDate ->
+                                viewModel.createList(name, targetDate, dueDate)
+                            },
+                            onRenameList = { listId, name, targetDate, dueDate ->
+                                viewModel.editList(listId, name, targetDate, dueDate)
+                            },
+                            onDeleteList = { listId -> viewModel.deleteList(listId) },
+                            onReorder = { from, to ->
+                                screenState.previewOrder = null
+                                viewModel.reorderLists(from, to)
+                            },
+                            onReplayTutorial = { tutorialViewModel.replay() }
+                        )
+                    }
                     TutorialOverlay(
-                        state = tutorialController.overlayState,
+                        state = overlayState,
+                        anchors = screenState,
                         onSkip = { tutorialController.onSkipRequested() }
                     )
                 }
@@ -203,7 +208,8 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
     override val screen: TutorialScreen = TutorialScreen.LISTS
 
-    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? = screenState.boundsOf(anchor)
+    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? =
+        tutorialController.overlayState.aimAt(anchor, screenState.boundsOf(anchor))
 
     override suspend fun perform(action: TutorialAction): Boolean = when (action) {
         TutorialAction.OpenListCreateRow -> openCreateRow()
@@ -276,15 +282,20 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         return true
     }
 
+    /**
+     * The demo tears the row off exactly the way a swipe does, so the beat that
+     * used to arm a confirm strip now starts the pending deletion and the beat
+     * that used to confirm it writes that deletion through early instead of
+     * waiting for the undo slip to settle.
+     */
     private fun armDeleteOnFirstList(): Boolean {
         val summary = firstSummary() ?: return false
-        screenState.confirmingDeleteListId = summary.list.id
+        screenState.deletion.request(summary.list.id)?.let { viewModel.deleteList(it) }
         return true
     }
 
     private fun confirmDeleteOnFirstList(): Boolean {
-        val listId = screenState.confirmingDeleteListId ?: return false
-        screenState.confirmingDeleteListId = null
+        val listId = screenState.deletion.commit() ?: return false
         viewModel.deleteList(listId)
         return true
     }

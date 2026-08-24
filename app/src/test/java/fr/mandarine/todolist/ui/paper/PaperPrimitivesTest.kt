@@ -1,16 +1,26 @@
 package fr.mandarine.todolist.ui.paper
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -133,28 +143,14 @@ class PaperPrimitivesTest {
     }
 
     @Test
-    fun `should render a count badge as the bare number`() {
-        composeRule.setContent {
-            PaperTheme {
-                CountBadge(
-                    painter = painterResource(R.drawable.ic_check_circle),
-                    count = 7
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("7").assertIsDisplayed()
-    }
-
-    @Test
     fun `should report taps on an ink icon button and refuse them when disabled`() {
         var taps = 0
         composeRule.setContent {
             PaperTheme {
                 Row {
                     InkIconButton(
-                        painter = painterResource(R.drawable.ic_edit),
-                        contentDescription = "edit",
+                        painter = painterResource(R.drawable.ic_add),
+                        contentDescription = "add",
                         onClick = { taps++ }
                     )
                     InkIconButton(
@@ -167,11 +163,109 @@ class PaperPrimitivesTest {
             }
         }
 
-        composeRule.onNodeWithContentDescription("edit").performClick()
+        composeRule.onNodeWithContentDescription("add").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("delete").assertIsNotEnabled()
 
         assertEquals(1, taps)
+    }
+
+    @Test
+    fun `should toggle the ink ring when it is tapped`() {
+        var toggles = 0
+        composeRule.setContent {
+            PaperTheme {
+                InkRing(
+                    checked = false,
+                    onToggle = { toggles++ },
+                    seed = 1,
+                    contentDescription = "tick",
+                    stateDescription = "open"
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("tick").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(1, toggles)
+    }
+
+    @Test
+    fun `should stay silent when a ring is first drawn already ticked`() {
+        val buzzes = mutableListOf<HapticFeedbackType>()
+        composeRule.setContent {
+            PaperTheme {
+                CompositionLocalProvider(LocalHapticFeedback provides RecordingHaptics(buzzes)) {
+                    InkRing(
+                        checked = true,
+                        onToggle = {},
+                        seed = 1,
+                        contentDescription = "tick",
+                        stateDescription = "done"
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(emptyList<HapticFeedbackType>(), buzzes)
+    }
+
+    @Test
+    fun `should still buzz the toggle when the ring is snapped with motion reduced`() {
+        val buzzes = mutableListOf<HapticFeedbackType>()
+        var checked by mutableStateOf(false)
+        composeRule.setContent {
+            PaperTheme {
+                CompositionLocalProvider(LocalHapticFeedback provides RecordingHaptics(buzzes)) {
+                    InkRing(
+                        checked = checked,
+                        onToggle = { checked = !checked },
+                        seed = 1,
+                        contentDescription = "tick",
+                        stateDescription = "open",
+                        animated = false
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("tick").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(HapticFeedbackType.ToggleOn), buzzes)
+    }
+
+    private class RecordingHaptics(private val buzzes: MutableList<HapticFeedbackType>) :
+        HapticFeedback {
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            buzzes += hapticFeedbackType
+        }
+    }
+
+    @Test
+    fun `should read the ink ring out as a checkbox carrying its own state`() {
+        composeRule.setContent {
+            PaperTheme {
+                InkRing(
+                    checked = true,
+                    onToggle = {},
+                    seed = 1,
+                    contentDescription = "tick",
+                    stateDescription = "done"
+                )
+            }
+        }
+
+        val node = composeRule.onNodeWithContentDescription("tick").fetchSemanticsNode()
+
+        assertEquals(Role.Checkbox, node.config.getOrNull(SemanticsProperties.Role))
+        assertEquals("done", node.config.getOrNull(SemanticsProperties.StateDescription))
+        assertEquals(
+            ToggleableState.On,
+            node.config.getOrNull(SemanticsProperties.ToggleableState)
+        )
     }
 
     @Test
@@ -286,6 +380,45 @@ class PaperPrimitivesTest {
     }
 
     @Test
+    fun `should seat a mark with no baseline of its own by its foot where the hand writes`() {
+        val baselines = mutableListOf<Float>()
+        var pitch = 0
+        composeRule.setContent {
+            PaperTheme {
+                pitch = with(LocalDensity.current) { LocalPagePitch.current.roundToPx() }
+                Box {
+                    Text(
+                        text = SEATED_SAMPLE,
+                        modifier = Modifier.seatOnRule(),
+                        onTextLayout = { baselines += it.firstBaseline }
+                    )
+                    Box(Modifier.height(SEATED_GLYPH).seatOnRule().testTag(SEATED))
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        val written = composeRule.onNodeWithText(SEATED_SAMPLE, useUnmergedTree = true)
+            .fetchSemanticsNode()
+        val footed = composeRule.onNodeWithTag(SEATED, useUnmergedTree = true).fetchSemanticsNode()
+        val line = written.positionInRoot.y + baselines.first()
+
+        assertEquals(line, footed.positionInRoot.y + footed.size.height, ONE_PIXEL)
+        assertTrue("expected $line to write above the rule at $pitch", line < pitch)
+        assertTrue("expected $line to sit on the rule at $pitch", pitch - line < pitch / A_HAIR)
+    }
+
+    @Test
+    fun `should name the four inks a row is allowed to use`() {
+        val palette = PaperPalette.light
+
+        assertEquals(palette.ink, palette.inkRest)
+        assertEquals(palette.pencil, palette.inkMargin)
+        assertEquals(palette.inkBlue, palette.inkLive)
+        assertEquals(palette.inkRed, palette.inkDanger)
+    }
+
+    @Test
     fun `should map the ink palette onto the material colour roles`() {
         val captured = mutableListOf<Color>()
         composeRule.setContent {
@@ -304,5 +437,13 @@ class PaperPrimitivesTest {
         assertEquals(PaperPalette.light.inkRed, captured[2])
         assertEquals(PaperPalette.light.rule, captured[3])
         assertEquals(0f, captured[4].alpha, 0f)
+    }
+
+    private companion object {
+        const val SEATED = "seated"
+        const val SEATED_SAMPLE = "Ag"
+        const val ONE_PIXEL = 1f
+        const val A_HAIR = 8
+        val SEATED_GLYPH = 12.dp
     }
 }

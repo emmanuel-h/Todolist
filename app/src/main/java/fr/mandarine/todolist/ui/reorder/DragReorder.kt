@@ -1,10 +1,13 @@
 package fr.mandarine.todolist.ui.reorder
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlin.math.sign
 
 data class DragPosition(val index: Int, val offset: Float)
 
@@ -25,6 +28,9 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
     var offset by mutableFloatStateOf(0f)
         private set
 
+    var direction by mutableFloatStateOf(0f)
+        private set
+
     var edgeScrolling by mutableStateOf(false)
 
     private var startIndex = NO_DRAG_INDEX
@@ -41,6 +47,7 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
         startIndex = from
         index = from
         offset = 0f
+        direction = 0f
         edgeScrolling = false
         ids = rowIds
         heights = rowHeights
@@ -48,6 +55,7 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
 
     fun drag(delta: Float) {
         if (!dragging) return
+        if (delta != 0f) direction = sign(delta)
         val settled = settleDrag(index, offset + delta, heights)
         if (settled.index != index) {
             ids = ids.moved(index, settled.index)
@@ -60,6 +68,25 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
 
     fun heightOf(position: Int): Int = heights.getOrElse(position) { 0 }
 
+    /**
+     * The row is already sitting in its new slot by the time the finger lifts, so
+     * the drop only has to glide the residual offset away. The session stays open
+     * for the whole glide — releasing it first would drop the row into place in a
+     * single frame, which is the jump the handle used to make.
+     */
+    suspend fun settle(spec: AnimationSpec<Float>): Reorder? {
+        if (!dragging) return null
+        edgeScrolling = false
+        var landed = false
+        try {
+            Animatable(offset).animateTo(0f, spec) { offset = value }
+            landed = true
+        } finally {
+            if (!landed) cancel()
+        }
+        return end()
+    }
+
     fun end(): Reorder? {
         val from = startIndex
         val to = index
@@ -71,6 +98,7 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
         startIndex = NO_DRAG_INDEX
         index = NO_DRAG_INDEX
         offset = 0f
+        direction = 0f
         edgeScrolling = false
         ids = emptyList()
         heights = emptyList()
