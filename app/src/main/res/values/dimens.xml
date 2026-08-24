@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Horizontal inset that caps list content width on large screens so rows
-         stay readable instead of stretching edge to edge. Zero on handsets. The
-         only dimension left in resources: everything else lives in PaperDimens,
-         because only this one varies by screen width. -->
-    <dimen name="list_horizontal_inset">0dp</dimen>
-</resources>

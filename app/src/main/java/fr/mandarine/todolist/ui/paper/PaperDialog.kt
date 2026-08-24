@@ -1,6 +1,5 @@
 package fr.mandarine.todolist.ui.paper
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -22,12 +21,13 @@ fun PaperDialog(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val palette = LocalPaperPalette.current
     Dialog(onDismissRequest = onDismissRequest) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .background(PaperInk.paperSheet)
-                .border(PaperDimens.rule, PaperInk.rule)
+                .paperSheet(tone = palette.paperShade)
+                .border(PaperDimens.rule, palette.rule)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             content = content
         )

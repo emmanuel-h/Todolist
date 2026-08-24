@@ -12,14 +12,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -27,21 +30,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.paper.CountBadge
+import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperDimens
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.handwritten
+import fr.mandarine.todolist.ui.paper.penStrike
+import fr.mandarine.todolist.ui.paper.rememberPenStrike
+import fr.mandarine.todolist.ui.paper.seatOnRule
 import java.util.Locale
 
-private const val ALL_DONE_ALPHA = 0.5f
 private const val HIDDEN_ALPHA = 0f
 private val TARGET_ICON = 14.dp
 private val DUE_LIMIT_ICON = 12.dp
@@ -68,44 +77,45 @@ fun TodoListRow(
     confirmModifier: Modifier = Modifier
 ) {
     val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val palette = LocalPaperPalette.current
     Box(modifier) {
-        RuledRow(
-            modifier = Modifier.alpha(if (confirmingDelete) HIDDEN_ALPHA else 1f),
-            minHeight = PaperDimens.listRowHeight,
-            verticalPadding = 8.dp
-        ) {
+        RuledRow(modifier = Modifier.alpha(if (confirmingDelete) HIDDEN_ALPHA else 1f)) {
             DragHandle(handleModifier)
             Row(
                 modifier = Modifier.weight(1f).clickable(onClick = onOpen),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 InkIconButton(
                     painter = painterResource(R.drawable.ic_edit),
                     contentDescription = stringResource(R.string.edit_list),
                     onClick = onRename,
-                    tint = PaperInk.pencil
+                    tint = palette.pencil,
+                    seat = IconSeat.OnRule
                 )
-                RowText(summary = summary, locale = locale)
-                CountBadge(
-                    painter = painterResource(R.drawable.ic_radio_button_unchecked),
-                    count = summary.activeCount,
-                    modifier = Modifier.padding(end = 4.dp),
-                    tint = PaperInk.inkSoft,
-                    borderColor = PaperInk.pencil
-                )
-                CountBadge(
-                    painter = painterResource(R.drawable.ic_check_circle),
-                    count = summary.completedCount,
-                    modifier = Modifier.padding(end = 8.dp),
-                    tint = PaperInk.pencil,
-                    borderColor = PaperInk.rule
-                )
+                RowText(summary = summary, locale = locale, animated = animated)
+                OnRuleSlot(Modifier.padding(end = 4.dp)) {
+                    CountBadge(
+                        painter = painterResource(R.drawable.ic_radio_button_unchecked),
+                        count = summary.activeCount,
+                        tint = palette.inkSoft,
+                        borderColor = palette.pencil
+                    )
+                }
+                OnRuleSlot(Modifier.padding(end = 8.dp)) {
+                    CountBadge(
+                        painter = painterResource(R.drawable.ic_check_circle),
+                        count = summary.completedCount,
+                        tint = palette.pencil,
+                        borderColor = palette.rule
+                    )
+                }
                 InkIconButton(
                     painter = painterResource(R.drawable.ic_delete),
                     contentDescription = stringResource(R.string.delete_list),
                     onClick = onDeleteRequested,
                     modifier = deleteModifier,
-                    tint = PaperInk.inkRedSoft
+                    tint = palette.inkRedSoft,
+                    seat = IconSeat.OnRule
                 )
             }
         }
@@ -136,66 +146,67 @@ fun TodoListRow(
  */
 @Composable
 private fun DragHandle(modifier: Modifier) {
-    Box(
-        modifier = Modifier.size(PaperDimens.iconButton).then(modifier),
-        contentAlignment = Alignment.Center
-    ) {
+    OnRuleSlot(modifier = Modifier.width(PaperDimens.iconButton).then(modifier)) {
         InkIcon(
             painter = painterResource(R.drawable.ic_drag_handle),
             contentDescription = stringResource(R.string.drag_handle),
-            tint = PaperInk.pencil
+            tint = LocalPaperPalette.current.pencil
         )
     }
 }
 
 @Composable
-private fun RowScope.RowText(summary: TodoListSummary, locale: Locale) {
+private fun RowScope.RowText(summary: TodoListSummary, locale: Locale, animated: Boolean) {
+    val palette = LocalPaperPalette.current
+    val targetDate = summary.list.targetDate
+    val dueDate = summary.list.dueDate
+    val dueStatus = summary.dueDateStatus
     Column(
         modifier = Modifier.weight(1f).padding(start = 2.dp, end = 8.dp)
     ) {
+        val style = MaterialTheme.typography.titleMedium
+        val strike = rememberPenStrike(summary.list.id, summary.allDone, animated)
+        val ink = if (summary.allDone) palette.inkDone else palette.ink
         Text(
-            text = summary.list.name,
-            style = MaterialTheme.typography.titleMedium,
-            color = if (summary.allDone) {
-                PaperInk.ink.copy(alpha = ALL_DONE_ALPHA)
-            } else {
-                PaperInk.ink
-            },
-            textDecoration = if (summary.allDone) TextDecoration.LineThrough else null
+            text = remember(summary.list.name) { handwritten(summary.list.name) },
+            modifier = Modifier.seatOnRule(style).penStrike(strike, ink),
+            style = style,
+            color = ink,
+            onTextLayout = strike::onTextLayout
         )
-        val targetDate = summary.list.targetDate
-        if (targetDate != null) {
-            DateLine(
-                text = formatListDate(targetDate, summary.showTargetYear, locale),
-                tint = targetTint(summary.isTargetDateElapsed)
-            ) {
-                InkIcon(
-                    painter = painterResource(R.drawable.ic_event),
-                    contentDescription = null,
-                    tint = it,
-                    size = TARGET_ICON
-                )
+        if (targetDate == null && dueDate == null) return@Column
+        DateLines {
+            if (targetDate != null) {
+                DateLine(
+                    text = formatListDate(targetDate, summary.showTargetYear, locale),
+                    tint = targetTint(palette, summary.isTargetDateElapsed)
+                ) {
+                    InkIcon(
+                        painter = painterResource(R.drawable.ic_event),
+                        contentDescription = null,
+                        tint = it,
+                        size = TARGET_ICON
+                    )
+                }
             }
-        }
-        val dueDate = summary.list.dueDate
-        val dueStatus = summary.dueDateStatus
-        if (dueDate != null && dueStatus != null) {
-            DateLine(
-                text = formatListDate(dueDate, summary.showDueDateYear, locale),
-                tint = dueTint(dueStatus)
-            ) {
-                InkIcon(
-                    painter = painterResource(R.drawable.ic_alarm),
-                    contentDescription = null,
-                    tint = it,
-                    size = TARGET_ICON
-                )
-                InkIcon(
-                    painter = painterResource(R.drawable.ic_tab_right),
-                    contentDescription = null,
-                    tint = it,
-                    size = DUE_LIMIT_ICON
-                )
+            if (dueDate != null && dueStatus != null) {
+                DateLine(
+                    text = formatListDate(dueDate, summary.showDueDateYear, locale),
+                    tint = dueTint(palette, dueStatus)
+                ) {
+                    InkIcon(
+                        painter = painterResource(R.drawable.ic_alarm),
+                        contentDescription = null,
+                        tint = it,
+                        size = TARGET_ICON
+                    )
+                    InkIcon(
+                        painter = painterResource(R.drawable.ic_tab_right),
+                        contentDescription = null,
+                        tint = it,
+                        size = DUE_LIMIT_ICON
+                    )
+                }
             }
         }
     }
@@ -205,13 +216,22 @@ private fun RowScope.RowText(summary: TodoListSummary, locale: Locale) {
  * A target date is an intention and fades once it has passed; a due date is a
  * limit and gets louder as it approaches. Neither ever borrows the other's ink.
  */
-internal fun targetTint(elapsed: Boolean): Color =
-    if (elapsed) PaperInk.inkSoft else PaperInk.inkBlue
+internal fun targetTint(palette: PaperPalette, elapsed: Boolean): Color =
+    if (elapsed) palette.inkSoft else palette.inkBlue
 
-internal fun dueTint(status: DueDateStatus): Color = when (status) {
-    DueDateStatus.FUTURE -> PaperInk.inkBlue
-    DueDateStatus.TODAY -> PaperInk.inkAmber
-    DueDateStatus.OVERDUE -> PaperInk.inkRed
+internal fun dueTint(palette: PaperPalette, status: DueDateStatus): Color = when (status) {
+    DueDateStatus.FUTURE -> palette.inkBlue
+    DueDateStatus.TODAY -> palette.inkAmber
+    DueDateStatus.OVERDUE -> palette.inkRed
+}
+
+@Composable
+private fun DateLines(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier.height(LocalPagePitch.current),
+        verticalArrangement = Arrangement.Bottom,
+        content = content
+    )
 }
 
 @Composable
@@ -242,10 +262,11 @@ private fun AnimatedVisibilityScope.DeleteConfirmStrip(
     onConfirm: () -> Unit,
     confirmModifier: Modifier
 ) {
+    val palette = LocalPaperPalette.current
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(PaperInk.inkRedWash)
+            .background(palette.inkRedWash)
             .clickable(onClick = onCancel)
             .padding(start = CONFIRM_STRIP_INSET, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -254,7 +275,7 @@ private fun AnimatedVisibilityScope.DeleteConfirmStrip(
             text = name,
             modifier = Modifier.weight(1f).padding(end = 8.dp),
             style = MaterialTheme.typography.titleMedium,
-            color = PaperInk.inkRedDeep,
+            color = palette.inkRedDeep,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -263,14 +284,14 @@ private fun AnimatedVisibilityScope.DeleteConfirmStrip(
             contentDescription = stringResource(R.string.cancel),
             onClick = onCancel,
             modifier = confirmActionEntry(animated, order = 0),
-            tint = PaperInk.inkRedDeep
+            tint = palette.inkRedDeep
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_delete_confirm_ring),
             contentDescription = stringResource(R.string.delete),
             onClick = onConfirm,
             modifier = confirmModifier.then(confirmActionEntry(animated, order = 1)),
-            tint = PaperInk.inkRed
+            tint = palette.inkRed
         )
     }
 }

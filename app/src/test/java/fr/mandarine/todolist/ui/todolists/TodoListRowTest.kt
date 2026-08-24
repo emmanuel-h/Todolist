@@ -13,10 +13,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextDecoration
 import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
+import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
 import java.util.Locale
@@ -74,24 +74,22 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should strike the name through when every item is done`() {
+    fun `should write a finished name in solid pale ink and never a font strike`() {
         render(summary(allDone = true))
 
-        assertEquals(TextDecoration.LineThrough, textStyleOf("Groceries")?.textDecoration)
+        val style = textStyleOf("Groceries")
+
+        assertNull(style?.textDecoration)
+        assertEquals(PaperPalette.light.inkDone, style?.color)
+        assertEquals(1f, style!!.color.alpha, 0.01f)
     }
 
     @Test
-    fun `should fade the name when every item is done`() {
-        render(summary(allDone = true))
-
-        assertEquals(0.5f, textStyleOf("Groceries")!!.color.alpha, 0.01f)
-    }
-
-    @Test
-    fun `should leave the name unstruck while the list still has work`() {
+    fun `should leave the name in full ink while the list still has work`() {
         render(summary(allDone = false))
 
         assertNull(textStyleOf("Groceries")?.textDecoration)
+        assertEquals(PaperPalette.light.ink, textStyleOf("Groceries")?.color)
     }
 
     @Test

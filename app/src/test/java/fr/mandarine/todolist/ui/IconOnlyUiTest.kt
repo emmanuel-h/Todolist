@@ -12,7 +12,7 @@ import androidx.compose.ui.test.onRoot
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
-import fr.mandarine.todolist.ui.paper.SectionDivider
+import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
@@ -33,27 +33,27 @@ class IconOnlyUiTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `should show only numeric count in divider label without the word Completed`() {
-        composeRule.setContent { PaperTheme { SectionDivider(completedCount = 2) } }
+    fun `should show only numeric count in the section skip without the word Completed`() {
+        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 2) } }
 
         assertEquals(listOf("2"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
-    fun `should show count of one in divider label when exactly one completed item exists`() {
-        composeRule.setContent { PaperTheme { SectionDivider(completedCount = 1) } }
+    fun `should show count of one in the section skip when exactly one completed item exists`() {
+        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 1) } }
 
         assertEquals(listOf("1"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
-    fun `should not contain the word Completed in divider label text`() {
-        composeRule.setContent { PaperTheme { SectionDivider(completedCount = 12) } }
+    fun `should not contain the word Completed in the section skip text`() {
+        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 12) } }
 
         val labels = composeRule.onRoot().fetchSemanticsNode().staticText().map { it.lowercase() }
 
         assert(labels.none { it.contains("completed") }) {
-            "Expected divider label to not contain 'completed' but was: $labels"
+            "Expected the section skip to not contain 'completed' but was: $labels"
         }
     }
 

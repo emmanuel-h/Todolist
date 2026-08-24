@@ -1,9 +1,8 @@
 package fr.mandarine.todolist.ui.todolist
 
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -27,16 +25,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextDecoration
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperDimens
-import fr.mandarine.todolist.ui.paper.PaperInk
 import fr.mandarine.todolist.ui.paper.RuledRow
-
-private const val COMPLETED_TITLE_ALPHA = 0.5f
+import fr.mandarine.todolist.ui.paper.handwritten
+import fr.mandarine.todolist.ui.paper.penStrike
+import fr.mandarine.todolist.ui.paper.rememberPenStrike
+import fr.mandarine.todolist.ui.paper.seatOnRule
 
 @Composable
 fun TodoRow(
@@ -49,8 +50,10 @@ fun TodoRow(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     handleModifier: Modifier = Modifier,
-    toggleModifier: Modifier = Modifier
+    toggleModifier: Modifier = Modifier,
+    animated: Boolean = true
 ) {
+    val palette = LocalPaperPalette.current
     RuledRow(modifier = modifier) {
         DragHandle(visible = !item.isCompleted, modifier = handleModifier)
         if (editing) {
@@ -60,7 +63,7 @@ fun TodoRow(
                 onDismiss = onEditDismissed
             )
         } else {
-            RowTitle(item = item, onToggle = onToggle)
+            RowTitle(item = item, animated = animated, onToggle = onToggle)
         }
         InkIconButton(
             painter = painterResource(
@@ -71,19 +74,22 @@ fun TodoRow(
             ),
             onClick = onToggle,
             modifier = toggleModifier,
-            tint = PaperInk.inkBlue
+            tint = palette.inkBlue,
+            seat = IconSeat.OnRule
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_edit),
             contentDescription = stringResource(R.string.item_edit),
             onClick = onEditRequested,
-            tint = PaperInk.pencil
+            tint = palette.pencil,
+            seat = IconSeat.OnRule
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_delete),
             contentDescription = stringResource(R.string.item_delete),
             onClick = onDelete,
-            tint = PaperInk.inkRedSoft
+            tint = palette.inkRedSoft,
+            seat = IconSeat.OnRule
         )
     }
 }
@@ -94,38 +100,39 @@ fun TodoRow(
  */
 @Composable
 private fun DragHandle(visible: Boolean, modifier: Modifier) {
-    Box(
+    OnRuleSlot(
         modifier = Modifier
-            .size(PaperDimens.iconButton)
-            .then(if (visible) modifier else Modifier),
-        contentAlignment = Alignment.Center
+            .width(PaperDimens.iconButton)
+            .then(if (visible) modifier else Modifier)
     ) {
         if (visible) {
             InkIcon(
                 painter = painterResource(R.drawable.ic_drag_handle),
                 contentDescription = stringResource(R.string.drag_handle),
-                tint = PaperInk.pencil
+                tint = LocalPaperPalette.current.pencil
             )
         }
     }
 }
 
 @Composable
-private fun RowScope.RowTitle(item: TodoItem, onToggle: () -> Unit) {
+private fun RowScope.RowTitle(item: TodoItem, animated: Boolean, onToggle: () -> Unit) {
+    val palette = LocalPaperPalette.current
+    val style = MaterialTheme.typography.bodyLarge
+    val strike = rememberPenStrike(item.id, item.isCompleted, animated)
+    val ink = if (item.isCompleted) palette.inkDone else palette.ink
     Text(
-        text = item.title,
+        text = remember(item.title) { handwritten(item.title) },
         modifier = Modifier
             .weight(1f)
+            .seatOnRule(style)
+            .penStrike(strike, ink)
             .pointerInput(item.id) {
                 detectTapGestures(onDoubleTap = { onToggle() })
             },
-        style = MaterialTheme.typography.bodyLarge,
-        color = if (item.isCompleted) {
-            PaperInk.ink.copy(alpha = COMPLETED_TITLE_ALPHA)
-        } else {
-            PaperInk.ink
-        },
-        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else null
+        style = style,
+        color = ink,
+        onTextLayout = strike::onTextLayout
     )
 }
 
@@ -140,6 +147,7 @@ private fun RowScope.RowTitleEditor(
         mutableStateOf(TextFieldValue(title, TextRange(title.length)))
     }
     var everFocused by remember { mutableStateOf(false) }
+    val palette = LocalPaperPalette.current
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -148,6 +156,7 @@ private fun RowScope.RowTitleEditor(
         onValueChange = { value = it },
         modifier = Modifier
             .weight(1f)
+            .seatOnRule(MaterialTheme.typography.bodyLarge)
             .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
                 if (focusState.isFocused) {
@@ -156,9 +165,9 @@ private fun RowScope.RowTitleEditor(
                     commitTitle(value.text, onCommit, onDismiss)
                 }
             },
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = PaperInk.ink),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = palette.ink),
         singleLine = true,
-        cursorBrush = SolidColor(PaperInk.inkBlue),
+        cursorBrush = SolidColor(palette.inkBlue),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(
             onDone = { commitTitle(value.text, onCommit, onDismiss) }

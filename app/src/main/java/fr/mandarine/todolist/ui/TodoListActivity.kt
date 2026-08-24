@@ -35,6 +35,8 @@ import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import fr.mandarine.todolist.ui.paper.PaperTheme
+import fr.mandarine.todolist.ui.paper.drawEdgeToEdge
+import fr.mandarine.todolist.ui.paper.preparePaperSheet
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.reorder.moved
@@ -59,6 +61,7 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        drawEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         val listId = requireNotNull(intent.getStringExtra("LIST_ID")) {
@@ -88,6 +91,8 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
         tutorialViewModel = container.tutorialViewModel
         tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
         screenState.animationsEnabled = animationsAllowed()
+
+        preparePaperSheet()
 
         setContent {
             val state by viewModel.state.collectAsState()

@@ -38,7 +38,7 @@ class PaperPrimitivesTest {
 
     @Test
     fun `should build a grain tile at the documented size`() {
-        val tile = paperGrainTile()
+        val tile = paperGrainTile(density = 2f)
 
         assertEquals(PaperDimens.GRAIN_TILE_PIXELS, tile.width)
         assertEquals(PaperDimens.GRAIN_TILE_PIXELS, tile.height)
@@ -46,10 +46,32 @@ class PaperPrimitivesTest {
 
     @Test
     fun `should build the same grain tile every time so the paper never shimmers`() {
-        val first = paperGrainTile().toPixelMap().buffer
-        val second = paperGrainTile().toPixelMap().buffer
+        val first = paperGrainTile(density = 2f).toPixelMap().buffer
+        val second = paperGrainTile(density = 2f).toPixelMap().buffer
 
         assertTrue(first.contentEquals(second))
+    }
+
+    @Test
+    fun `should bake a different grain tile for a different density`() {
+        val coarse = bakePaperGrainTile(density = 1f).toPixelMap().buffer
+        val fine = bakePaperGrainTile(density = 3f).toPixelMap().buffer
+
+        assertTrue(!coarse.contentEquals(fine))
+    }
+
+    @Test
+    fun `should keep the grain within the darkening budget of the paper`() {
+        val pixels = bakePaperGrainTile(density = 2f).toPixelMap()
+
+        var darkest = 1f
+        for (y in 0 until pixels.height) {
+            for (x in 0 until pixels.width) {
+                darkest = minOf(darkest, pixels[x, y].red)
+            }
+        }
+
+        assertTrue(darkest > 0.9f)
     }
 
     @Test
@@ -236,6 +258,34 @@ class PaperPrimitivesTest {
     }
 
     @Test
+    fun `should hand the palette to everything drawn inside the theme`() {
+        val captured = mutableListOf<PaperPalette>()
+        composeRule.setContent {
+            PaperTheme { captured += LocalPaperPalette.current }
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(PaperPalette.light, captured.single())
+    }
+
+    @Test
+    fun `should write every line of the app in the one bundled hand`() {
+        val captured = mutableListOf<androidx.compose.ui.text.TextStyle>()
+        composeRule.setContent {
+            PaperTheme {
+                captured += MaterialTheme.typography.bodyLarge
+                captured += MaterialTheme.typography.titleMedium
+                captured += MaterialTheme.typography.labelSmall
+            }
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(captured.all { it.fontFamily == PaperType.hand })
+        assertEquals(PaperType.itemLine.fontSize, captured[0].fontSize)
+        assertEquals(PaperType.listLine.fontSize, captured[1].fontSize)
+    }
+
+    @Test
     fun `should map the ink palette onto the material colour roles`() {
         val captured = mutableListOf<Color>()
         composeRule.setContent {
@@ -249,10 +299,10 @@ class PaperPrimitivesTest {
         }
         composeRule.waitForIdle()
 
-        assertEquals(PaperInk.inkBlue, captured[0])
-        assertEquals(PaperInk.paper, captured[1])
-        assertEquals(PaperInk.inkRed, captured[2])
-        assertEquals(PaperInk.rule, captured[3])
+        assertEquals(PaperPalette.light.inkBlue, captured[0])
+        assertEquals(PaperPalette.light.paper, captured[1])
+        assertEquals(PaperPalette.light.inkRed, captured[2])
+        assertEquals(PaperPalette.light.rule, captured[3])
         assertEquals(0f, captured[4].alpha, 0f)
     }
 }

@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -36,8 +37,10 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialCaption
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.PaperType
+import fr.mandarine.todolist.ui.paper.paperSheet
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -51,7 +54,7 @@ private val CAPTION_PADDING = 14.dp
 private val CAPTION_GAP = 12.dp
 private val BANNER_MARGIN = 12.dp
 private val BANNER_GAP = 32.dp
-private val PROGRESS_BOTTOM_MARGIN = 88.dp
+private val PROGRESS_BOTTOM_MARGIN = 12.dp
 private val PROGRESS_DOT_SIZE = 8.dp
 private val PROGRESS_DOT_GAP = 6.dp
 
@@ -61,8 +64,10 @@ private val PROGRESS_DOT_GAP = 6.dp
  * last drop shadows left in the app.
  */
 @Composable
-private fun Modifier.paperSlip(): Modifier =
-    background(PaperInk.paperSheet).border(PaperDimens.rule, PaperInk.rule)
+private fun Modifier.paperSlip(): Modifier {
+    val palette = LocalPaperPalette.current
+    return paperSheet(tone = palette.paperShade).border(PaperDimens.rule, palette.rule)
+}
 
 @Composable
 fun TutorialOverlay(
@@ -95,6 +100,7 @@ fun TutorialOverlay(
             onSkip = onSkip,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(bottom = PROGRESS_BOTTOM_MARGIN)
         )
     }
@@ -102,6 +108,8 @@ fun TutorialOverlay(
 
 @Composable
 private fun PhantomHand(state: TutorialOverlayState) {
+    val wash = LocalPaperPalette.current.inkBlue
+    val rimInk = LocalPaperPalette.current.inkBlueDeep
     Box(
         Modifier
             .size(HAND_SIZE)
@@ -113,9 +121,9 @@ private fun PhantomHand(state: TutorialOverlayState) {
             }
             .drawBehind {
                 val rim = HAND_RIM.toPx()
-                drawCircle(PaperInk.inkBlue.copy(alpha = HAND_WASH_ALPHA))
+                drawCircle(wash.copy(alpha = HAND_WASH_ALPHA))
                 drawCircle(
-                    color = PaperInk.inkBlueDeep.copy(alpha = handRimAlpha(state.handScale.value)),
+                    color = rimInk.copy(alpha = handRimAlpha(state.handScale.value)),
                     radius = size.minDimension / 2f - rim / 2f,
                     style = Stroke(width = rim)
                 )
@@ -150,8 +158,8 @@ private fun BoxScope.BannerSlip(
         Text(
             text = bannerTextFor(content),
             modifier = Modifier.padding(SLIP_PADDING),
-            color = PaperInk.ink,
-            style = MaterialTheme.typography.bodyMedium
+            color = LocalPaperPalette.current.ink,
+            style = PaperType.prose
         )
     }
 }
@@ -172,8 +180,8 @@ private fun BoxScope.CaptionSlip(caption: TutorialCaption, state: TutorialOverla
             modifier = Modifier
                 .padding(CAPTION_PADDING)
                 .graphicsLayer { alpha = state.captionTextAlpha.value },
-            color = PaperInk.ink,
-            style = MaterialTheme.typography.bodyMedium
+            color = LocalPaperPalette.current.ink,
+            style = PaperType.prose
         )
     }
 }
@@ -197,18 +205,19 @@ private fun ProgressSlip(filledDots: Int, onSkip: () -> Unit, modifier: Modifier
             contentDescription = stringResource(R.string.cancel),
             onClick = onSkip,
             modifier = Modifier.padding(start = 8.dp),
-            tint = PaperInk.inkSoft
+            tint = LocalPaperPalette.current.inkSoft
         )
     }
 }
 
 @Composable
 private fun ProgressDot(filled: Boolean, leadingGap: Dp) {
+    val palette = LocalPaperPalette.current
     Box(
         Modifier
             .padding(start = leadingGap)
             .size(PROGRESS_DOT_SIZE)
-            .background(if (filled) PaperInk.inkBlue else PaperInk.rule, CircleShape)
+            .background(if (filled) palette.inkBlue else palette.rule, CircleShape)
             .clearAndSetSemantics {}
     )
 }

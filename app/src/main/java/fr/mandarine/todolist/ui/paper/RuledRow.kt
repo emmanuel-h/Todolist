@@ -12,16 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 
-fun Modifier.paperRule(): Modifier = drawWithCache {
+fun Modifier.paperRule(color: Color): Modifier = drawWithCache {
     val thickness = PaperDimens.rule.toPx()
     val start = PaperDimens.gutter.toPx()
     onDrawWithContent {
         drawContent()
         drawRect(
-            color = PaperInk.rule,
+            color = color,
             topLeft = Offset(start, size.height - thickness),
             size = Size(size.width - start, thickness)
         )
@@ -31,21 +30,19 @@ fun Modifier.paperRule(): Modifier = drawWithCache {
 @Composable
 fun RuledRow(
     modifier: Modifier = Modifier,
-    minHeight: Dp = PaperDimens.itemRowHeight,
-    verticalPadding: Dp = 4.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable RowScope.() -> Unit
 ) {
+    val pitch = LocalPagePitch.current
     val clickModifier = if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .then(clickModifier)
-            .paperRule()
-            .heightIn(min = minHeight)
-            .padding(start = PaperDimens.gutter, end = PaperDimens.rowEndPadding)
-            .padding(vertical = verticalPadding),
-        verticalAlignment = Alignment.CenterVertically,
+            .pitchHeight(pitch)
+            .heightIn(min = pitch)
+            .padding(start = PaperDimens.gutter, end = PaperDimens.rowEndPadding),
+        verticalAlignment = Alignment.Top,
         content = content
     )
 }

@@ -42,7 +42,7 @@ import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.PaperDialog
 import fr.mandarine.todolist.ui.paper.PaperDimens
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import java.util.Locale
 
 private val DATE_BOX_HEIGHT = 40.dp
@@ -59,6 +59,7 @@ fun RenameListDialog(
     onConfirm: () -> Unit
 ) {
     val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val palette = LocalPaperPalette.current
     PaperDialog(onDismissRequest = onDismiss) {
         NameField(name = state.name, onNameChange = onNameChange, onConfirm = onConfirm)
         Row(
@@ -83,7 +84,7 @@ fun RenameListDialog(
                         }
                     ),
                     onClick = onClearDate,
-                    tint = PaperInk.pencil
+                    tint = palette.pencil
                 )
             }
         }
@@ -97,7 +98,7 @@ fun RenameListDialog(
             ),
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
-            color = PaperInk.inkSoft,
+            color = palette.inkSoft,
             maxLines = 1
         )
         Row(
@@ -108,13 +109,13 @@ fun RenameListDialog(
                 painter = painterResource(R.drawable.ic_close),
                 contentDescription = stringResource(R.string.cancel),
                 onClick = onDismiss,
-                tint = PaperInk.inkSoft
+                tint = palette.inkSoft
             )
             InkIconButton(
                 painter = painterResource(R.drawable.ic_check),
                 contentDescription = stringResource(R.string.rename_list),
                 onClick = onConfirm,
-                tint = PaperInk.inkBlue
+                tint = palette.inkBlue
             )
         }
     }
@@ -122,6 +123,7 @@ fun RenameListDialog(
 
 @Composable
 private fun NameField(name: String, onNameChange: (String) -> Unit, onConfirm: () -> Unit) {
+    val palette = LocalPaperPalette.current
     val focusRequester = remember { FocusRequester() }
     var value by remember {
         mutableStateOf(TextFieldValue(name, TextRange(name.length)))
@@ -138,9 +140,9 @@ private fun NameField(name: String, onNameChange: (String) -> Unit, onConfirm: (
             .fillMaxWidth()
             .focusRequester(focusRequester)
             .padding(bottom = 6.dp),
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = PaperInk.ink),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = palette.ink),
         singleLine = true,
-        cursorBrush = SolidColor(PaperInk.inkBlue),
+        cursorBrush = SolidColor(palette.inkBlue),
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Sentences,
             imeAction = ImeAction.Done
@@ -151,13 +153,14 @@ private fun NameField(name: String, onNameChange: (String) -> Unit, onConfirm: (
         modifier = Modifier
             .fillMaxWidth()
             .height(PaperDimens.rule)
-            .background(PaperInk.rule)
+            .background(palette.rule)
     )
 }
 
 @Composable
 private fun KindToggle(kind: DateKind, onKindChange: (DateKind) -> Unit) {
-    Row(modifier = Modifier.border(PaperDimens.rule, PaperInk.pencil)) {
+    val palette = LocalPaperPalette.current
+    Row(modifier = Modifier.border(PaperDimens.rule, palette.pencil)) {
         ToggleCell(
             iconRes = R.drawable.ic_event,
             descriptionRes = R.string.set_target_date,
@@ -167,7 +170,7 @@ private fun KindToggle(kind: DateKind, onKindChange: (DateKind) -> Unit) {
         Box(
             modifier = Modifier
                 .size(PaperDimens.rule, PaperDimens.iconButton)
-                .background(PaperInk.pencil)
+                .background(palette.pencil)
         )
         ToggleCell(
             iconRes = R.drawable.ic_alarm,
@@ -185,17 +188,18 @@ private fun ToggleCell(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val palette = LocalPaperPalette.current
     Box(
         modifier = Modifier
             .size(PaperDimens.iconButton)
-            .background(if (selected) PaperInk.inkBluePale else PaperInk.paperSheet)
+            .background(if (selected) palette.inkBluePale else palette.paperSheet)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         InkIcon(
             painter = painterResource(iconRes),
             contentDescription = stringResource(descriptionRes),
-            tint = if (selected) PaperInk.inkBlue else PaperInk.pencil,
+            tint = if (selected) palette.inkBlue else palette.pencil,
             size = TOGGLE_GLYPH
         )
     }
@@ -208,12 +212,13 @@ private fun DateBox(
     onClick: () -> Unit,
     modifier: Modifier
 ) {
+    val palette = LocalPaperPalette.current
     val description = stringResource(
         if (selection.kind == DateKind.TARGET) R.string.set_target_date else R.string.set_due_date
     )
     Box(
         modifier = modifier
-            .border(PaperDimens.rule, PaperInk.rule)
+            .border(PaperDimens.rule, palette.rule)
             .heightIn(min = DATE_BOX_HEIGHT)
             .clickable(onClick = onClick)
             .semantics { contentDescription = description }
@@ -225,7 +230,7 @@ private fun DateBox(
             InkIcon(
                 painter = painterResource(R.drawable.ic_add),
                 contentDescription = null,
-                tint = PaperInk.pencil,
+                tint = palette.pencil,
                 size = TOGGLE_GLYPH
             )
         } else {
@@ -233,7 +238,7 @@ private fun DateBox(
                 text = formatListDate(date, showYear = true, locale = locale),
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelMedium,
-                color = PaperInk.ink,
+                color = palette.ink,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

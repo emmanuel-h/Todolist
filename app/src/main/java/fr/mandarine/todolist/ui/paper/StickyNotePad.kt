@@ -1,7 +1,6 @@
 package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -37,8 +37,9 @@ private fun StickyNoteSheetSurface(
         modifier = modifier
             .size(PaperDimens.stickySheet)
             .graphicsLayer { rotationZ = rotationDegrees }
-            .background(color, shape)
-            .border(PaperDimens.rule, PaperInk.stickyNoteEdge, shape),
+            .clip(shape)
+            .paperSheet(tone = color, lit = color)
+            .border(PaperDimens.rule, LocalPaperPalette.current.stickyNoteEdge, shape),
         contentAlignment = Alignment.Center,
         content = content
     )
@@ -74,17 +75,18 @@ fun StickyNotePad(
         }
     }
 
+    val palette = LocalPaperPalette.current
     Box(
         modifier = modifier.size(PaperDimens.stickyPad),
         contentAlignment = Alignment.Center
     ) {
         if (!taken) {
-            StickyNoteSheetSurface(PaperInk.stickyNoteBack, BACK_SHEET_ROTATION, Modifier) {}
-            StickyNoteSheetSurface(PaperInk.stickyNoteMid, MID_SHEET_ROTATION, Modifier) {}
+            StickyNoteSheetSurface(palette.stickyNoteBack, BACK_SHEET_ROTATION, Modifier) {}
+            StickyNoteSheetSurface(palette.stickyNoteMid, MID_SHEET_ROTATION, Modifier) {}
 
             val resting = stickyNoteSettleAt(settle.value)
             StickyNoteSheetSurface(
-                color = PaperInk.stickyNote,
+                color = palette.stickyNote,
                 rotationDegrees = resting.rotationDegrees,
                 modifier = Modifier
                     .graphicsLayer {
@@ -97,7 +99,7 @@ fun StickyNotePad(
                 InkIcon(
                     painter = painter,
                     contentDescription = contentDescription,
-                    tint = PaperInk.ink
+                    tint = palette.ink
                 )
             }
         }
@@ -105,7 +107,7 @@ fun StickyNotePad(
         if (peeling) {
             val flying = stickyNotePeelAt(peel.value)
             StickyNoteSheetSurface(
-                color = PaperInk.stickyNote,
+                color = palette.stickyNote,
                 rotationDegrees = flying.rotationDegrees,
                 modifier = Modifier.graphicsLayer {
                     scaleX = flying.scale

@@ -19,9 +19,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIconButton
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.seatOnRule
 
 @Composable
 fun ListInlineAddRow(
@@ -38,6 +40,7 @@ fun ListInlineAddRow(
     dueDateModifier: Modifier = Modifier,
     submitModifier: Modifier = Modifier
 ) {
+    val palette = LocalPaperPalette.current
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -46,7 +49,8 @@ fun ListInlineAddRow(
             painter = painterResource(R.drawable.ic_close),
             contentDescription = stringResource(R.string.cancel),
             onClick = onCancel,
-            tint = PaperInk.inkBlue
+            tint = palette.inkBlue,
+            seat = IconSeat.OnRule
         )
         NameField(
             text = text,
@@ -61,21 +65,24 @@ fun ListInlineAddRow(
             contentDescription = stringResource(R.string.set_target_date),
             onClick = onPickTargetDate,
             modifier = targetDateModifier,
-            tint = if (selection.targetDate != null) PaperInk.inkBlue else PaperInk.pencil
+            tint = if (selection.targetDate != null) palette.inkBlue else palette.pencil,
+            seat = IconSeat.OnRule
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_alarm),
             contentDescription = stringResource(R.string.set_due_date),
             onClick = onPickDueDate,
             modifier = dueDateModifier,
-            tint = if (selection.dueDate != null) PaperInk.inkBlue else PaperInk.pencil
+            tint = if (selection.dueDate != null) palette.inkBlue else palette.pencil,
+            seat = IconSeat.OnRule
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_check),
             contentDescription = stringResource(R.string.create_list),
             onClick = onSubmit,
             modifier = submitModifier,
-            tint = PaperInk.inkBlue
+            tint = palette.inkBlue,
+            seat = IconSeat.OnRule
         )
     }
 }
@@ -87,21 +94,23 @@ private fun RowScope.NameField(
     onSubmit: () -> Unit,
     modifier: Modifier
 ) {
+    val palette = LocalPaperPalette.current
     Box(modifier = Modifier.weight(1f)) {
         if (text.isEmpty()) {
             Text(
                 text = stringResource(R.string.list_name_hint),
+                modifier = Modifier.seatOnRule(MaterialTheme.typography.bodyMedium),
                 style = MaterialTheme.typography.bodyMedium,
-                color = PaperInk.pencil
+                color = palette.pencil
             )
         }
         BasicTextField(
             value = text,
             onValueChange = onTextChange,
-            modifier = modifier,
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = PaperInk.ink),
+            modifier = modifier.seatOnRule(MaterialTheme.typography.bodyMedium),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.ink),
             singleLine = true,
-            cursorBrush = SolidColor(PaperInk.inkBlue),
+            cursorBrush = SolidColor(palette.inkBlue),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 imeAction = ImeAction.Done

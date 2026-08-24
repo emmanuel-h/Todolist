@@ -23,9 +23,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.GhostRow
+import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkIconButton
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.seatOnRule
 
 @Composable
 fun InlineAddRow(
@@ -44,6 +46,7 @@ fun InlineAddRow(
         return
     }
 
+    val palette = LocalPaperPalette.current
     val focusRequester = remember { FocusRequester() }
     var everFocused by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -54,20 +57,23 @@ fun InlineAddRow(
             contentDescription = stringResource(R.string.submit_inline_add),
             onClick = onSubmit,
             modifier = submitModifier,
-            tint = PaperInk.inkBlue
+            tint = palette.inkBlue,
+            seat = IconSeat.OnRule
         )
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
             if (text.isEmpty()) {
                 Text(
                     text = stringResource(R.string.add_item_hint),
+                    modifier = Modifier.seatOnRule(MaterialTheme.typography.bodyMedium),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = PaperInk.pencil
+                    color = palette.pencil
                 )
             }
             BasicTextField(
                 value = text,
                 onValueChange = onTextChange,
                 modifier = Modifier
+                    .seatOnRule(MaterialTheme.typography.bodyMedium)
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
@@ -76,9 +82,9 @@ fun InlineAddRow(
                             onCollapse()
                         }
                     },
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = PaperInk.ink),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.ink),
                 singleLine = true,
-                cursorBrush = SolidColor(PaperInk.inkBlue),
+                cursorBrush = SolidColor(palette.inkBlue),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onSubmit() })
             )

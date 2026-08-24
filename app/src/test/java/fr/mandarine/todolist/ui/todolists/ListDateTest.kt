@@ -1,7 +1,7 @@
 package fr.mandarine.todolist.ui.todolists
 
 import fr.mandarine.todolist.domain.DueDateStatus
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.PaperPalette
 import java.time.LocalDate
 import java.util.Locale
 import org.junit.Assert.assertEquals
@@ -127,26 +127,26 @@ class ListDateTest {
 
     @Test
     fun `should ink a target date that has not passed`() {
-        assertEquals(PaperInk.inkBlue, targetTint(elapsed = false))
+        assertEquals(PaperPalette.light.inkBlue, targetTint(PaperPalette.light, elapsed = false))
     }
 
     @Test
     fun `should fade a target date that has passed`() {
-        assertEquals(PaperInk.inkSoft, targetTint(elapsed = true))
+        assertEquals(PaperPalette.light.inkSoft, targetTint(PaperPalette.light, elapsed = true))
     }
 
     @Test
     fun `should ink a future due date like any other date`() {
-        assertEquals(PaperInk.inkBlue, dueTint(DueDateStatus.FUTURE))
+        assertEquals(PaperPalette.light.inkBlue, dueTint(PaperPalette.light, DueDateStatus.FUTURE))
     }
 
     @Test
     fun `should warn on a due date falling today`() {
-        assertEquals(PaperInk.inkAmber, dueTint(DueDateStatus.TODAY))
+        assertEquals(PaperPalette.light.inkAmber, dueTint(PaperPalette.light, DueDateStatus.TODAY))
     }
 
     @Test
     fun `should alarm on a due date already passed`() {
-        assertEquals(PaperInk.inkRed, dueTint(DueDateStatus.OVERDUE))
+        assertEquals(PaperPalette.light.inkRed, dueTint(PaperPalette.light, DueDateStatus.OVERDUE))
     }
 }

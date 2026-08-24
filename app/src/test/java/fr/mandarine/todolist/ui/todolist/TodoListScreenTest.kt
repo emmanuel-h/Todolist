@@ -24,9 +24,9 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextDecoration
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.presentation.TodoListState
+import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -55,7 +55,7 @@ class TodoListScreenTest {
     private var hostView: View? = null
 
     @Test
-    fun `should show the list name in the top bar`() {
+    fun `should write the list name on the first line of the page`() {
         render(content(active = listOf(item("1", "Apples"))), listName = "Groceries")
 
         composeRule.onNodeWithText("Groceries").assertIsDisplayed()
@@ -118,23 +118,24 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should strike through and fade the title of a completed item`() {
+    fun `should write a completed title in solid pale ink and never a font strike`() {
         render(content(completed = listOf(completed("2", "Milk"))))
 
         val style = textStyleOf("Milk")
 
-        assertEquals(TextDecoration.LineThrough, style?.textDecoration)
-        assertEquals(0.5f, style?.color?.alpha ?: 1f, 0.01f)
+        assertNull(style?.textDecoration)
+        assertEquals(PaperPalette.light.inkDone, style?.color)
+        assertEquals(1f, style?.color?.alpha ?: 0f, 0.01f)
     }
 
     @Test
-    fun `should not strike through the title of an active item`() {
+    fun `should write an active title in full ink`() {
         render(content(active = listOf(item("1", "Apples"))))
 
         val style = textStyleOf("Apples")
 
         assertNull(style?.textDecoration)
-        assertEquals(1f, style?.color?.alpha ?: 0f, 0.01f)
+        assertEquals(PaperPalette.light.ink, style?.color)
     }
 
     @Test

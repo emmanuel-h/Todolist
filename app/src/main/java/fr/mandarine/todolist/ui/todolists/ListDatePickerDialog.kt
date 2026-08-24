@@ -9,7 +9,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.InkIconButton
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import java.time.LocalDate
 
 /**
@@ -37,7 +37,7 @@ fun ListDatePickerDialog(
                     val millis = state.selectedDateMillis
                     if (millis == null) onDismiss() else onPicked(localDateFromPickerMillis(millis))
                 },
-                tint = PaperInk.inkBlue
+                tint = LocalPaperPalette.current.inkBlue
             )
         },
         dismissButton = {
@@ -45,7 +45,7 @@ fun ListDatePickerDialog(
                 painter = painterResource(R.drawable.ic_close),
                 contentDescription = stringResource(R.string.cancel),
                 onClick = onDismiss,
-                tint = PaperInk.inkSoft
+                tint = LocalPaperPalette.current.inkSoft
             )
         }
     ) {

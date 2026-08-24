@@ -36,6 +36,26 @@ object PaperMotion {
         visibilityThreshold = IntOffset.VisibilityThreshold
     )
 
+    val penStroke: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 1600f
+    )
+
+    val pressWash: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 1600f
+    )
+
+    val pressRelease: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 3800f
+    )
+
+    val nibSquash: SpringSpec<Float> = spring(
+        dampingRatio = 0.6f,
+        stiffness = 800f
+    )
+
     val instant: SpringSpec<Float> = spring(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = Spring.StiffnessHigh

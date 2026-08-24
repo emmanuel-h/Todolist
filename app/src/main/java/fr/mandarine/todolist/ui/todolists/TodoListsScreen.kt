@@ -1,12 +1,13 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -23,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,11 +34,18 @@ import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.InkIconButton
-import fr.mandarine.todolist.ui.paper.PaperInk
+import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
-import fr.mandarine.todolist.ui.paper.SectionDivider
+import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.paper.StickyNotePad
+import fr.mandarine.todolist.ui.paper.headMarginFade
+import fr.mandarine.todolist.ui.paper.pageFrame
+import fr.mandarine.todolist.ui.paper.pageVerticalInsets
+import fr.mandarine.todolist.ui.paper.paperSheet
+import fr.mandarine.todolist.ui.paper.ruledPage
 import fr.mandarine.todolist.ui.reorder.AutoScrollWhileDragging
 import fr.mandarine.todolist.ui.reorder.DragSession
 import fr.mandarine.todolist.ui.reorder.EdgeScroll
@@ -48,10 +55,13 @@ import fr.mandarine.todolist.ui.reorder.reorderHandle
 import fr.mandarine.todolist.ui.tutorial.tutorialAnchor
 import java.time.LocalDate
 
-private const val DIVIDER_KEY = "done-divider"
+private const val HEAD_KEY = "head"
+private const val SKIP_KEY = "done-skip"
+private const val HEAD_TYPE = "head"
+private const val ACTIVE_TYPE = "active"
+private const val SKIP_TYPE = "skip"
+private const val DONE_TYPE = "done"
 private const val REPLAY_ALPHA = 0.45f
-private val LIST_TOP_PADDING = 64.dp
-private val LIST_BOTTOM_PADDING = 88.dp
 private val CORNER_MARGIN = 8.dp
 private val DROP_IN_TRAVEL = 16.dp
 
@@ -75,13 +85,17 @@ fun TodoListsScreen(
     val dropInListId = remember(activeIds) { screenState.dropInFor(activeIds) }
     val firstRowId = (activeSummaries.firstOrNull() ?: doneSummaries.firstOrNull())?.list?.id
 
+    val pitch = LocalPagePitch.current
     val listState = rememberLazyListState()
     val session = remember(screenState) {
         DragSession { order -> screenState.previewOrder = order }
     }
     val edgeScroll = rememberEdgeScroll()
     val keyboard = LocalSoftwareKeyboardController.current
-    val horizontalInset = dimensionResource(R.dimen.list_horizontal_inset)
+    val insets = pageVerticalInsets()
+    val topInset = insets.calculateTopPadding()
+    val listTopInset = if (screenState.addRowExpanded) 0.dp else topInset
+    val headMargin = listTopInset + pitch
 
     LaunchedEffect(screenState.hideKeyboardSignal) {
         if (screenState.hideKeyboardSignal > 0) keyboard?.hide()
@@ -90,12 +104,7 @@ fun TodoListsScreen(
     AutoScrollWhileDragging(listState, session, edgeScroll)
 
     PaperSurface {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .imePadding()
-        ) {
+        Column(modifier = Modifier.pageFrame().align(Alignment.TopCenter)) {
             if (screenState.addRowExpanded) {
                 ListInlineAddRow(
                     text = screenState.addRowText,
@@ -117,7 +126,9 @@ fun TodoListsScreen(
                         )
                     },
                     onSubmit = { submitAddRow(screenState, onCreateList) },
-                    modifier = Modifier.tutorialAnchor(screenState, TutorialAnchor.ListCreateRow),
+                    modifier = Modifier
+                        .padding(top = topInset)
+                        .tutorialAnchor(screenState, TutorialAnchor.ListCreateRow),
                     nameFieldModifier = Modifier
                         .tutorialAnchor(screenState, TutorialAnchor.ListNameField),
                     targetDateModifier = Modifier
@@ -130,15 +141,29 @@ fun TodoListsScreen(
             }
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .headMarginFade(listState, headMargin)
+                    .ruledPage(
+                        listState = listState,
+                        pitch = pitch,
+                        headMargin = headMargin,
+                        color = LocalPaperPalette.current.rule
+                    )
+                    .consumeWindowInsets(WindowInsets.safeDrawing),
                 contentPadding = PaddingValues(
-                    start = horizontalInset,
-                    end = horizontalInset,
-                    top = LIST_TOP_PADDING,
-                    bottom = LIST_BOTTOM_PADDING
+                    top = listTopInset,
+                    bottom = insets.calculateBottomPadding() + PaperDimens.stickyPad + pitch
                 )
             ) {
-                itemsIndexed(activeSummaries, key = { _, it -> it.list.id }) { position, summary ->
+                item(key = HEAD_KEY, contentType = HEAD_TYPE) {
+                    Spacer(Modifier.height(pitch))
+                }
+                itemsIndexed(
+                    items = activeSummaries,
+                    key = { _, it -> it.list.id },
+                    contentType = { _, _ -> ACTIVE_TYPE }
+                ) { position, summary ->
                     ActiveListRow(
                         summary = summary,
                         position = position,
@@ -155,14 +180,18 @@ fun TodoListsScreen(
                     )
                 }
                 if (activeSummaries.isNotEmpty() && doneSummaries.isNotEmpty()) {
-                    item(key = DIVIDER_KEY) {
-                        SectionDivider(
+                    item(key = SKIP_KEY, contentType = SKIP_TYPE) {
+                        SectionSkip(
                             completedCount = doneSummaries.size,
                             modifier = animatedRow(screenState)
                         )
                     }
                 }
-                itemsIndexed(doneSummaries, key = { _, it -> it.list.id }) { _, summary ->
+                itemsIndexed(
+                    items = doneSummaries,
+                    key = { _, it -> it.list.id },
+                    contentType = { _, _ -> DONE_TYPE }
+                ) { _, summary ->
                     val firstRow = firstRowId == summary.list.id
                     TodoListRow(
                         summary = summary,
@@ -196,9 +225,10 @@ fun TodoListsScreen(
                 onClick = onReplayTutorial,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(CORNER_MARGIN)
                     .alpha(REPLAY_ALPHA),
-                tint = PaperInk.pencil
+                tint = LocalPaperPalette.current.pencil
             )
         }
         StickyNotePad(
@@ -206,6 +236,7 @@ fun TodoListsScreen(
             contentDescription = stringResource(R.string.add_list_fab_description),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(CORNER_MARGIN)
                 .tutorialAnchor(screenState, TutorialAnchor.CreateListButton),
             taken = screenState.addRowExpanded,
@@ -308,7 +339,7 @@ private fun LazyItemScope.ActiveListRow(
         Modifier
             .zIndex(1f)
             .graphicsLayer { translationY = session.offset }
-            .background(PaperInk.paperSheet)
+            .paperSheet(tone = LocalPaperPalette.current.paperSheet)
     } else {
         animatedRow(screenState).dropIn(dropIn && screenState.animationsEnabled)
     }

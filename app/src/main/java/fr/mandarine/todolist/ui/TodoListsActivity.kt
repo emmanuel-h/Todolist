@@ -39,6 +39,8 @@ import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import fr.mandarine.todolist.ui.paper.PaperTheme
+import fr.mandarine.todolist.ui.paper.drawEdgeToEdge
+import fr.mandarine.todolist.ui.paper.preparePaperSheet
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DatePickerRequest
 import fr.mandarine.todolist.ui.todolists.DateSelection
@@ -71,6 +73,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        drawEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         val container = (application as TodoListApplication).container
@@ -98,6 +101,8 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         screenState.animationsEnabled = animationsAllowed()
 
         container.notificationScheduler.scheduleDailyCheck()
+
+        preparePaperSheet()
 
         setContent {
             val state by viewModel.state.collectAsState()

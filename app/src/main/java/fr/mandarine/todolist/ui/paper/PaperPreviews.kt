@@ -45,33 +45,33 @@ internal fun RuledRowPreview() {
                     InkIcon(
                         painter = painterResource(R.drawable.ic_drag_handle),
                         contentDescription = stringResource(R.string.drag_handle),
-                        tint = PaperInk.pencil
+                        tint = LocalPaperPalette.current.pencil
                     )
                     Text(
                         text = "🍎 Apples",
                         modifier = Modifier.weight(1f).padding(start = 8.dp),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = PaperInk.ink
+                        color = LocalPaperPalette.current.ink
                     )
                     InkIconButton(
                         painter = painterResource(R.drawable.ic_check),
                         contentDescription = stringResource(R.string.item_mark_completed),
                         onClick = {},
-                        tint = PaperInk.inkBlue
+                        tint = LocalPaperPalette.current.inkBlue
                     )
                     InkIconButton(
                         painter = painterResource(R.drawable.ic_delete),
                         contentDescription = stringResource(R.string.item_delete),
                         onClick = {},
-                        tint = PaperInk.inkRedSoft
+                        tint = LocalPaperPalette.current.inkRedSoft
                     )
                 }
-                RuledRow(minHeight = PaperDimens.listRowHeight) {
+                RuledRow {
                     Text(
                         text = "🛒 Groceries",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
-                        color = PaperInk.ink
+                        color = LocalPaperPalette.current.ink
                     )
                     CountBadge(
                         painter = painterResource(R.drawable.ic_radio_button_unchecked),
@@ -81,8 +81,8 @@ internal fun RuledRowPreview() {
                     CountBadge(
                         painter = painterResource(R.drawable.ic_check_circle),
                         count = 12,
-                        tint = PaperInk.pencil,
-                        borderColor = PaperInk.rule
+                        tint = LocalPaperPalette.current.pencil,
+                        borderColor = LocalPaperPalette.current.rule
                     )
                 }
                 RuledRow {}
@@ -98,11 +98,7 @@ internal fun GhostRowPreview() {
         PaperSurface(Modifier.height(160.dp)) {
             Column {
                 GhostRow(onClick = {})
-                GhostRow(
-                    onClick = {},
-                    minHeight = PaperDimens.ghostRowCollapsedHeight,
-                    tint = PaperInk.pencil
-                )
+                GhostRow(onClick = {}, tint = LocalPaperPalette.current.pencil)
             }
         }
     }
@@ -122,8 +118,8 @@ internal fun CountBadgePreview() {
             CountBadge(
                 painter = painterResource(R.drawable.ic_check_circle),
                 count = 128,
-                tint = PaperInk.pencil,
-                borderColor = PaperInk.rule
+                tint = LocalPaperPalette.current.pencil,
+                borderColor = LocalPaperPalette.current.rule
             )
         }
     }
@@ -141,7 +137,7 @@ internal fun InkIconPreview() {
             InkIcon(
                 painter = painterResource(R.drawable.ic_event),
                 contentDescription = null,
-                tint = PaperInk.inkBlue
+                tint = LocalPaperPalette.current.inkBlue
             )
             InkIconButton(
                 painter = painterResource(R.drawable.ic_edit),
@@ -152,7 +148,7 @@ internal fun InkIconPreview() {
                 painter = painterResource(R.drawable.ic_delete),
                 contentDescription = stringResource(R.string.item_delete),
                 onClick = {},
-                tint = PaperInk.inkRedSoft,
+                tint = LocalPaperPalette.current.inkRedSoft,
                 enabled = false
             )
         }

@@ -8,13 +8,8 @@ object PaperDimens {
 
     val gutter = 40.dp
     val rule = 1.dp
-    val sectionInset = 48.dp
-    val toolbarInset = 32.dp
+    val pageWidth = 640.dp
     val rowEndPadding = 4.dp
-
-    val itemRowHeight = 56.dp
-    val listRowHeight = 72.dp
-    val ghostRowCollapsedHeight = 40.dp
 
     val iconButton = 48.dp
     val iconGlyph = 24.dp
@@ -27,5 +22,5 @@ object PaperDimens {
     val stickyPeelTravelX = 12.dp
     val stickyPeelTravelY = 28.dp
 
-    const val GRAIN_TILE_PIXELS = 64
+    const val GRAIN_TILE_PIXELS = 512
 }

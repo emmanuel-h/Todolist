@@ -1,52 +1,70 @@
 package fr.mandarine.todolist.ui.paper
 
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 
-private val PaperColorScheme = lightColorScheme(
-    primary = PaperInk.inkBlue,
-    onPrimary = PaperInk.paper,
-    primaryContainer = PaperInk.inkBluePale,
-    onPrimaryContainer = PaperInk.inkBlueDeep,
-    inversePrimary = PaperInk.inkBlueFaded,
-    secondary = PaperInk.pencil,
-    onSecondary = PaperInk.paper,
-    secondaryContainer = PaperInk.paperShadeDeep,
-    onSecondaryContainer = PaperInk.ink,
-    tertiary = PaperInk.inkSoft,
-    onTertiary = PaperInk.paper,
-    tertiaryContainer = PaperInk.paperShade,
-    onTertiaryContainer = PaperInk.ink,
-    background = PaperInk.paper,
-    onBackground = PaperInk.ink,
-    surface = PaperInk.paper,
-    onSurface = PaperInk.ink,
-    surfaceVariant = PaperInk.paperShade,
-    onSurfaceVariant = PaperInk.inkSoft,
+internal fun paperColorScheme(palette: PaperPalette): ColorScheme = lightColorScheme(
+    primary = palette.inkBlue,
+    onPrimary = palette.paper,
+    primaryContainer = palette.inkBluePale,
+    onPrimaryContainer = palette.inkBlueDeep,
+    inversePrimary = palette.inkBlueFaded,
+    secondary = palette.pencil,
+    onSecondary = palette.paper,
+    secondaryContainer = palette.paperShadeDeep,
+    onSecondaryContainer = palette.ink,
+    tertiary = palette.inkSoft,
+    onTertiary = palette.paper,
+    tertiaryContainer = palette.paperShade,
+    onTertiaryContainer = palette.ink,
+    background = palette.paper,
+    onBackground = palette.ink,
+    surface = palette.paper,
+    onSurface = palette.ink,
+    surfaceVariant = palette.paperShade,
+    onSurfaceVariant = palette.inkSoft,
     surfaceTint = Color.Transparent,
-    inverseSurface = PaperInk.ink,
-    inverseOnSurface = PaperInk.paper,
-    error = PaperInk.inkRed,
-    onError = PaperInk.paper,
-    errorContainer = PaperInk.inkRedWash,
-    onErrorContainer = PaperInk.inkRedDeep,
-    outline = PaperInk.pencil,
-    outlineVariant = PaperInk.rule,
-    surfaceBright = PaperInk.paperSheet,
-    surfaceDim = PaperInk.paperSunken,
-    surfaceContainerLowest = PaperInk.paper,
-    surfaceContainerLow = PaperInk.paperShade,
-    surfaceContainer = PaperInk.paperShade,
-    surfaceContainerHigh = PaperInk.paperShadeDeep,
-    surfaceContainerHighest = PaperInk.paperSunken
+    inverseSurface = palette.ink,
+    inverseOnSurface = palette.paper,
+    error = palette.inkRed,
+    onError = palette.paper,
+    errorContainer = palette.inkRedWash,
+    onErrorContainer = palette.inkRedDeep,
+    outline = palette.pencil,
+    outlineVariant = palette.rule,
+    surfaceBright = palette.paperSheet,
+    surfaceDim = palette.paperSunken,
+    surfaceContainerLowest = palette.paper,
+    surfaceContainerLow = palette.paperShade,
+    surfaceContainer = palette.paperShade,
+    surfaceContainerHigh = palette.paperShadeDeep,
+    surfaceContainerHighest = palette.paperSunken
 )
 
 @Composable
-fun PaperTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = PaperColorScheme,
-        content = content
-    )
+fun PaperTheme(
+    palette: PaperPalette = PaperPalette.light,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = remember(palette) { paperColorScheme(palette) }
+    CompositionLocalProvider(
+        LocalPaperPalette provides palette,
+        LocalPagePitch provides pagePitch()
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = PaperType.typography
+        ) {
+            CompositionLocalProvider(
+                LocalIndication provides PaperIndication,
+                content = content
+            )
+        }
+    }
 }
