@@ -197,7 +197,6 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
     }
 
     private suspend fun typeItemTitle(text: String): Boolean {
-        if (!screenState.addRowExpanded) return false
         for (character in text) {
             delay(TYPE_CHAR_MILLIS)
             screenState.addRowText += character
@@ -207,7 +206,6 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
     }
 
     private fun submitItem(): Boolean {
-        if (!screenState.addRowExpanded) return false
         val submitted = viewModel.submitInlineInput(screenState.addRowText)
         if (submitted) screenState.addRowText = ""
         return submitted

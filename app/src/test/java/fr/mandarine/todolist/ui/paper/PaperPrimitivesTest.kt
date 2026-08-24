@@ -128,18 +128,26 @@ class PaperPrimitivesTest {
     }
 
     @Test
-    fun `should report the tap on a ghost row and show only the ellipsis hint`() {
-        var tapped = false
+    fun `should show only the ellipsis hint on an add line and take the pen when it is tapped`() {
+        var penUp = false
         composeRule.setContent {
             PaperTheme {
-                GhostRow(onClick = { tapped = true }, modifier = Modifier.testTag("ghost"))
+                InkAddLine(
+                    text = "",
+                    onTextChange = {},
+                    onCommit = {},
+                    armed = false,
+                    onPenUp = { penUp = true },
+                    onPenDown = {},
+                    modifier = Modifier.testTag("add-line")
+                )
             }
         }
 
         composeRule.onNodeWithText("…").assertIsDisplayed()
-        composeRule.onNodeWithTag("ghost").performClick()
+        composeRule.onNodeWithTag("add-line").performClick()
 
-        assertTrue(tapped)
+        assertTrue(penUp)
     }
 
     @Test

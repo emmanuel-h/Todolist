@@ -24,9 +24,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -69,7 +67,7 @@ fun InkRing(
     style: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
     val palette = LocalPaperPalette.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = rememberPaperHaptics()
     val ringSize = with(LocalDensity.current) { style.fontSize.toPx().toDp() }
     val tick = remember { Animatable(if (checked) TICK_DRAWN else TICK_CLEAR) }
     val wash = remember { Animatable(WASH_GONE) }
@@ -94,9 +92,7 @@ fun InkRing(
             tick.animateTo(TICK_CLEAR, PaperMotion.penStroke)
             launch { wash.animateTo(WASH_GONE, PaperMotion.penStroke) }
         }
-        haptics.performHapticFeedback(
-            if (checked) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
-        )
+        if (checked) haptics.tick() else haptics.untick()
     }
 
     Box(

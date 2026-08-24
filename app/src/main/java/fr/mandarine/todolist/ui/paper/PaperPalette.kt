@@ -30,7 +30,9 @@ data class PaperPalette(
     val stickyNoteBack: Color,
     val stickyNoteEdge: Color,
     val rule: Color,
-    val vignette: Color
+    val vignette: Color,
+    val keyboardSeam: Color,
+    val shadow: Color
 ) {
     val inkRest: Color get() = ink
 
@@ -66,7 +68,9 @@ data class PaperPalette(
             stickyNoteBack = Color(0xFFCBB97C),
             stickyNoteEdge = Color(0xFFB0995C),
             rule = Color(0xFFD5CCB6),
-            vignette = Color(0x063A2A10)
+            vignette = Color(0x063A2A10),
+            keyboardSeam = Color(0x0F3A2A10),
+            shadow = Color(0xFF3A2A10)
         )
     }
 }

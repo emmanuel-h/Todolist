@@ -49,15 +49,8 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
 
     var animationsEnabled by mutableStateOf(true)
 
-    var hideKeyboardSignal by mutableStateOf(0)
-        private set
-
     private var knownListIds: Set<String> = emptySet()
     private var pendingDropIn = false
-
-    fun requestHideKeyboard() {
-        hideKeyboardSignal += 1
-    }
 
     fun openAddRow() {
         addRowExpanded = true
@@ -65,6 +58,10 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
 
     fun closeAddRow() {
         addRowExpanded = false
+        clearAddRow()
+    }
+
+    fun clearAddRow() {
         addRowText = ""
         addRowSelection = DateSelection.None
     }

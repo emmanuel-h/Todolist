@@ -2,6 +2,8 @@ package fr.mandarine.todolist.ui.paper
 
 import android.view.HapticFeedbackConstants
 import android.view.View
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,119 +17,133 @@ import org.robolectric.annotation.Config
 class PaperHapticsTest {
 
     private val view = View(RuntimeEnvironment.getApplication())
+    private val asked = mutableListOf<HapticFeedbackType>()
+    private val haptics = PaperHaptics(RecordingHaptics(asked), view)
+
+    @Test
+    fun `should toggle on when an item is ticked`() {
+        haptics.tick()
+
+        assertEquals(listOf(HapticFeedbackType.ToggleOn), asked)
+    }
+
+    @Test
+    fun `should toggle off when an item is restored`() {
+        haptics.untick()
+
+        assertEquals(listOf(HapticFeedbackType.ToggleOff), asked)
+    }
 
     @Test
     fun `should buzz the threshold when a row is picked up`() {
-        view.performPickUpFeedback()
+        haptics.pickUp()
+
+        assertEquals(listOf(HapticFeedbackType.GestureThresholdActivate), asked)
+    }
+
+    @Test
+    fun `should tick a segment for every rule a lifted row crosses`() {
+        haptics.pass()
+
+        assertEquals(listOf(HapticFeedbackType.SegmentTick), asked)
+    }
+
+    @Test
+    fun `should end the gesture when a lifted row is dropped`() {
+        haptics.drop()
+
+        assertEquals(listOf(HapticFeedbackType.GestureEnd), asked)
+    }
+
+    @Test
+    fun `should confirm what has been written to the page`() {
+        haptics.submit()
+
+        assertEquals(listOf(HapticFeedbackType.Confirm), asked)
+    }
+
+    @Test
+    fun `should reject when a row is torn off the page`() {
+        haptics.tearOff()
+
+        assertEquals(listOf(HapticFeedbackType.Reject), asked)
+    }
+
+    @Test
+    fun `should click when a sheet lands on the page`() {
+        haptics.land()
+
+        assertEquals(listOf(HapticFeedbackType.ContextClick), asked)
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun `should fall back to clock ticks on a platform without toggle feedback`() {
+        haptics.tick()
+        assertEquals(HapticFeedbackConstants.CLOCK_TICK, lastOnTheView())
+
+        haptics.untick()
+        assertEquals(HapticFeedbackConstants.CLOCK_TICK, lastOnTheView())
+
+        haptics.pass()
+        assertEquals(HapticFeedbackConstants.CLOCK_TICK, lastOnTheView())
+
+        assertEquals(emptyList<HapticFeedbackType>(), asked)
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun `should fall back to a long press for a pick up the platform cannot name`() {
+        haptics.pickUp()
+
+        assertEquals(HapticFeedbackConstants.LONG_PRESS, lastOnTheView())
+        assertEquals(emptyList<HapticFeedbackType>(), asked)
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun `should keep asking the platform for the gestures it does know`() {
+        haptics.drop()
+        haptics.submit()
+        haptics.tearOff()
 
         assertEquals(
-            HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE,
-            shadowOf(view).lastHapticFeedbackPerformed()
+            listOf(
+                HapticFeedbackType.GestureEnd,
+                HapticFeedbackType.Confirm,
+                HapticFeedbackType.Reject
+            ),
+            asked
         )
     }
 
     @Test
     @Config(sdk = [29])
-    fun `should fall back to a long press on platforms without a threshold buzz`() {
-        val legacyView = View(RuntimeEnvironment.getApplication())
+    fun `should fall back to a clock tick where a gesture cannot be ended or confirmed`() {
+        haptics.drop()
+        assertEquals(HapticFeedbackConstants.CLOCK_TICK, lastOnTheView())
 
-        legacyView.performPickUpFeedback()
+        haptics.submit()
+        assertEquals(HapticFeedbackConstants.CLOCK_TICK, lastOnTheView())
 
-        assertEquals(
-            HapticFeedbackConstants.LONG_PRESS,
-            shadowOf(legacyView).lastHapticFeedbackPerformed()
-        )
-    }
-
-    @Test
-    fun `should buzz a rejection when a row is torn off the page`() {
-        view.performTearOffFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.REJECT,
-            shadowOf(view).lastHapticFeedbackPerformed()
-        )
+        assertEquals(emptyList<HapticFeedbackType>(), asked)
     }
 
     @Test
     @Config(sdk = [29])
-    fun `should fall back to a context click on platforms without a rejection buzz`() {
-        val legacyView = View(RuntimeEnvironment.getApplication())
+    fun `should fall back to a context click where a tear cannot be rejected`() {
+        haptics.tearOff()
 
-        legacyView.performTearOffFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.CONTEXT_CLICK,
-            shadowOf(legacyView).lastHapticFeedbackPerformed()
-        )
+        assertEquals(HapticFeedbackConstants.CONTEXT_CLICK, lastOnTheView())
+        assertEquals(emptyList<HapticFeedbackType>(), asked)
     }
 
-    @Test
-    fun `should buzz the end of the gesture when a lifted row is dropped`() {
-        view.performDropFeedback()
+    private fun lastOnTheView(): Int = shadowOf(view).lastHapticFeedbackPerformed()
 
-        assertEquals(
-            HapticFeedbackConstants.GESTURE_END,
-            shadowOf(view).lastHapticFeedbackPerformed()
-        )
-    }
-
-    @Test
-    @Config(sdk = [29])
-    fun `should fall back to a context click on platforms without a gesture end`() {
-        val legacyView = View(RuntimeEnvironment.getApplication())
-
-        legacyView.performDropFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.CONTEXT_CLICK,
-            shadowOf(legacyView).lastHapticFeedbackPerformed()
-        )
-    }
-
-    @Test
-    fun `should tick once for every rule a lifted row crosses`() {
-        view.performPassRuleFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.SEGMENT_TICK,
-            shadowOf(view).lastHapticFeedbackPerformed()
-        )
-    }
-
-    @Test
-    @Config(sdk = [29])
-    fun `should fall back to a clock tick on platforms without segment ticks`() {
-        val legacyView = View(RuntimeEnvironment.getApplication())
-
-        legacyView.performPassRuleFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.CLOCK_TICK,
-            shadowOf(legacyView).lastHapticFeedbackPerformed()
-        )
-    }
-
-    @Test
-    fun `should buzz a confirmation when the platform knows the constant`() {
-        view.performConfirmFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.CONFIRM,
-            shadowOf(view).lastHapticFeedbackPerformed()
-        )
-    }
-
-    @Test
-    @Config(sdk = [29])
-    fun `should fall back to a clock tick on platforms without confirm`() {
-        val legacyView = View(RuntimeEnvironment.getApplication())
-
-        legacyView.performConfirmFeedback()
-
-        assertEquals(
-            HapticFeedbackConstants.CLOCK_TICK,
-            shadowOf(legacyView).lastHapticFeedbackPerformed()
-        )
+    private class RecordingHaptics(private val asked: MutableList<HapticFeedbackType>) :
+        HapticFeedback {
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            asked += hapticFeedbackType
+        }
     }
 }

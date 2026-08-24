@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -75,13 +74,13 @@ private const val SLIP_TILT = -1.2f
 fun Modifier.tearOff(torn: Boolean, animated: Boolean, onTorn: () -> Unit): Modifier {
     val progress = remember { Animatable(ON_THE_PAGE) }
     val latestTorn = rememberUpdatedState(onTorn)
-    val view = LocalView.current
+    val haptics = rememberPaperHaptics()
     LaunchedEffect(torn) {
         if (!torn) {
             progress.snapTo(ON_THE_PAGE)
             return@LaunchedEffect
         }
-        view.performTearOffFeedback()
+        haptics.tearOff()
         if (animated) {
             progress.animateTo(TORN_OFF, PaperMotion.tearOff)
         } else {

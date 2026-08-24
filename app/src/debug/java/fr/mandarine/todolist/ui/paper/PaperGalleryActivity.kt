@@ -24,7 +24,7 @@ class PaperGalleryActivity : ComponentActivity() {
                             .verticalScroll(rememberScrollState())
                     ) {
                         RuledRowPreview()
-                        GhostRowPreview()
+                        InkAddLinePreview()
                         InkRingPreview()
                         InkRolesPreview()
                         InkIconPreview()

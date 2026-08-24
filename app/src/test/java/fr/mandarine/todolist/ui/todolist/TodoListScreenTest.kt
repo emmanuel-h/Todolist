@@ -9,7 +9,11 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasSetTextAction
@@ -206,6 +210,26 @@ class TodoListScreenTest {
     }
 
     @Test
+    fun `should still buzz the tick when the page is not allowed to animate`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
+
+        assertEquals(HapticFeedbackConstants.TOGGLE_ON, lastFeedback())
+    }
+
+    @Test
+    fun `should still buzz the restore when the page is not allowed to animate`() {
+        screenState.animationsEnabled = false
+        render(content(completed = listOf(completed("2", "Milk"))))
+
+        composeRule.onNodeWithContentDescription(MARK_INCOMPLETE).performClick()
+
+        assertEquals(HapticFeedbackConstants.TOGGLE_OFF, lastFeedback())
+    }
+
+    @Test
     fun `should stay silent while no item is toggled`() {
         render(content(active = listOf(item("1", "Apples"))))
 
@@ -220,7 +244,7 @@ class TodoListScreenTest {
 
         composeRule.onNodeWithText("Apples").performClick()
 
-        composeRule.onNode(hasSetTextAction()).assertTextEquals("Apples")
+        editField().assertTextEquals("Apples")
     }
 
     @Test
@@ -228,8 +252,8 @@ class TodoListScreenTest {
         render(content(active = listOf(item("1", "Apples"))))
         composeRule.onNodeWithText("Apples").performClick()
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Pears")
-        composeRule.onNode(hasSetTextAction()).performImeAction()
+        editField().performTextReplacement("Pears")
+        editField().performImeAction()
 
         assertEquals(listOf("1" to "Pears"), edited)
     }
@@ -239,8 +263,8 @@ class TodoListScreenTest {
         render(content(active = listOf(item("1", "Apples"))))
         composeRule.onNodeWithText("Apples").performClick()
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("   ")
-        composeRule.onNode(hasSetTextAction()).performImeAction()
+        editField().performTextReplacement("   ")
+        editField().performImeAction()
 
         assertEquals(emptyList<Pair<String, String>>(), edited)
     }
@@ -250,32 +274,28 @@ class TodoListScreenTest {
         render(content(active = listOf(item("1", "Apples"))))
         composeRule.onNodeWithText("Apples").performClick()
 
-        composeRule.onNode(hasSetTextAction()).performImeAction()
+        editField().performImeAction()
         composeRule.waitForIdle()
 
         assertNull(screenState.editingItemId)
     }
 
     @Test
-    fun `should expand the add row when the ghost row is tapped`() {
+    fun `should take the pen when the add line is tapped`() {
         render(TodoListState.Empty)
 
         composeRule.onNodeWithText(GHOST_HINT).performClick()
         composeRule.waitForIdle()
 
         assertTrue(screenState.addRowExpanded)
-        composeRule.onNodeWithContentDescription(SUBMIT).assertIsDisplayed()
+        addLine().assertIsFocused()
     }
 
     @Test
-    fun `should submit the typed title when the add affordance is tapped`() {
-        screenState.addRowExpanded = true
+    fun `should carry no submit affordance on the add line`() {
         render(TodoListState.Empty)
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Bread")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
-
-        assertEquals(listOf("Bread"), submitted)
+        assertEquals(listOf(BACK), descriptions())
     }
 
     @Test
@@ -283,11 +303,35 @@ class TodoListScreenTest {
         screenState.addRowExpanded = true
         render(TodoListState.Empty)
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Bread")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
+        addLine().performTextReplacement("Bread")
+        addLine().performImeAction()
         composeRule.waitForIdle()
 
         assertEquals("", screenState.addRowText)
+    }
+
+    @Test
+    fun `should leave a fresh caret waiting on the add line after a title is committed`() {
+        screenState.addRowExpanded = true
+        render(TodoListState.Empty)
+
+        addLine().performTextReplacement("Bread")
+        addLine().performImeAction()
+        composeRule.waitForIdle()
+
+        addLine().assertIsFocused()
+        assertTrue(screenState.addRowExpanded)
+    }
+
+    @Test
+    fun `should not submit a blank title when the field takes its IME action`() {
+        screenState.addRowExpanded = true
+        render(TodoListState.Empty)
+
+        addLine().performTextReplacement("   ")
+        addLine().performImeAction()
+
+        assertEquals(emptyList<String>(), submitted)
     }
 
     @Test
@@ -295,8 +339,8 @@ class TodoListScreenTest {
         screenState.addRowExpanded = true
         render(TodoListState.Empty)
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Bread")
-        composeRule.onNode(hasSetTextAction()).performImeAction()
+        addLine().performTextReplacement("Bread")
+        addLine().performImeAction()
 
         assertEquals(listOf("Bread"), submitted)
     }
@@ -457,6 +501,12 @@ class TodoListScreenTest {
         composeRule.waitForIdle()
     }
 
+    private fun editField(): SemanticsNodeInteraction =
+        composeRule.onNode(hasSetTextAction() and isFocused())
+
+    private fun addLine(): SemanticsNodeInteraction =
+        composeRule.onAllNodes(hasSetTextAction()).onLast()
+
     private fun render(state: TodoListState, listName: String = "") {
         composeRule.setContent { PaperTheme { Screen(state, listName) } }
     }
@@ -548,7 +598,6 @@ class TodoListScreenTest {
         const val DELETE = "Delete item"
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
-        const val SUBMIT = "Submit new item"
         const val UNDO = "Undo delete"
         const val NO_FEEDBACK = -1
         const val SETTLE_MILLIS = 100L

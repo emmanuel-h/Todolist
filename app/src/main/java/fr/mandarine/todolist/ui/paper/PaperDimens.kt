@@ -10,6 +10,7 @@ object PaperDimens {
     val rule = 1.dp
     val pageWidth = 640.dp
     val rowEndPadding = 4.dp
+    val keyboardSeam = 12.dp
 
     val iconButton = 48.dp
     val iconGlyph = 24.dp

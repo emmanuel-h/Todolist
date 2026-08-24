@@ -129,12 +129,26 @@ internal fun InkRolesPreview() {
 
 @Preview(showBackground = true, backgroundColor = PREVIEW_PAPER)
 @Composable
-internal fun GhostRowPreview() {
+internal fun InkAddLinePreview() {
     PaperTheme {
         PaperSurface(Modifier.height(160.dp)) {
             Column {
-                GhostRow(onClick = {})
-                GhostRow(onClick = {}, tint = LocalPaperPalette.current.pencil)
+                InkAddLine(
+                    text = "",
+                    onTextChange = {},
+                    onCommit = {},
+                    armed = false,
+                    onPenUp = {},
+                    onPenDown = {}
+                )
+                InkAddLine(
+                    text = PREVIEW_GROCERIES,
+                    onTextChange = {},
+                    onCommit = {},
+                    armed = false,
+                    onPenUp = {},
+                    onPenDown = {}
+                )
             }
         }
     }
@@ -156,7 +170,7 @@ internal fun InkIconPreview() {
             )
             InkIconButton(
                 painter = painterResource(R.drawable.ic_add),
-                contentDescription = stringResource(R.string.submit_inline_add),
+                contentDescription = stringResource(R.string.set_target_date),
                 onClick = {}
             )
             InkIconButton(

@@ -33,15 +33,6 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should raise a fresh keyboard-hide signal on every request`() {
-        val first = state.hideKeyboardSignal
-
-        state.requestHideKeyboard()
-
-        assertEquals(first + 1, state.hideKeyboardSignal)
-    }
-
-    @Test
     fun `should leave a pending deletion alone when the create row opens`() {
         state.deletion.request("list-1")
 
@@ -129,7 +120,20 @@ class TodoListsScreenStateTest {
 
         assertTrue(submitted)
         assertEquals(Triple("Groceries", date, null), created)
+        assertTrue(state.addRowExpanded)
+        assertEquals("", state.addRowText)
+        assertEquals(DateSelection.None, state.addRowSelection)
+    }
+
+    @Test
+    fun `should abandon the typed name when the pen goes down on the create row`() {
+        state.openAddRow()
+        state.addRowText = "Groceries"
+
+        state.closeAddRow()
+
         assertFalse(state.addRowExpanded)
+        assertEquals("", state.addRowText)
     }
 
     @Test

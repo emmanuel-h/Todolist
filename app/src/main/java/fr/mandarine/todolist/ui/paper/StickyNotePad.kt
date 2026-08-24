@@ -56,20 +56,25 @@ fun StickyNotePad(
 ) {
     val peel = remember { Animatable(STICKY_PEEL_REST) }
     val settle = remember { Animatable(STICKY_SETTLE_DONE) }
+    val haptics = rememberPaperHaptics()
     var peeling by remember { mutableStateOf(false) }
     val previouslyTaken = remember { mutableStateOf(taken) }
 
     LaunchedEffect(taken) {
         val was = previouslyTaken.value
         previouslyTaken.value = taken
-        if (reducedMotion || was == taken) return@LaunchedEffect
+        if (was == taken) return@LaunchedEffect
         if (taken) {
-            peeling = true
-            peel.snapTo(STICKY_PEEL_REST)
-            peel.animateTo(STICKY_PEEL_LIFTED, PaperMotion.sheetLift)
-            peel.animateTo(STICKY_PEEL_GONE, PaperMotion.sheetSettle)
-            peeling = false
-        } else {
+            haptics.pickUp()
+            if (!reducedMotion) {
+                peeling = true
+                peel.snapTo(STICKY_PEEL_REST)
+                peel.animateTo(STICKY_PEEL_LIFTED, PaperMotion.sheetLift)
+                peel.animateTo(STICKY_PEEL_GONE, PaperMotion.sheetSettle)
+                peeling = false
+            }
+            haptics.land()
+        } else if (!reducedMotion) {
             settle.snapTo(STICKY_SETTLE_START)
             settle.animateTo(STICKY_SETTLE_DONE, PaperMotion.sheetSettle)
         }

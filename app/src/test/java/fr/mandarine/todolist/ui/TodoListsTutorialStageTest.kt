@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui
 
 import androidx.test.core.app.ActivityScenario
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.MainThreadDatabaseRule
 import fr.mandarine.todolist.TodoListApplication
@@ -34,6 +35,15 @@ class TodoListsTutorialStageTest {
 
     @get:Rule
     val databaseRule = MainThreadDatabaseRule()
+
+    @Before
+    fun stillPage() {
+        Settings.Global.putFloat(
+            ApplicationProvider.getApplicationContext<TodoListApplication>().contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            0f
+        )
+    }
 
     @Before
     fun markTutorialSeen() {
@@ -76,14 +86,12 @@ class TodoListsTutorialStageTest {
     }
 
     @Test
-    fun `should put the keyboard away once the name is typed`() {
+    fun `should write the name onto the open create row`() {
         onActivity { activity ->
             perform(activity, TutorialAction.OpenListCreateRow)
-            val before = activity.screenState.hideKeyboardSignal
 
-            perform(activity, TutorialAction.TypeListName("Hi"))
-
-            assertEquals(before + 1, activity.screenState.hideKeyboardSignal)
+            assertTrue(perform(activity, TutorialAction.TypeListName("Hi")))
+            assertEquals("Hi", activity.screenState.addRowText)
         }
     }
 

@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui
 
 import android.content.Intent
 import androidx.test.core.app.ActivityScenario
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.MainThreadDatabaseRule
 import fr.mandarine.todolist.TodoListApplication
@@ -31,6 +32,15 @@ class TodoListTutorialStageTest {
 
     @get:Rule
     val databaseRule = MainThreadDatabaseRule()
+
+    @Before
+    fun stillPage() {
+        Settings.Global.putFloat(
+            ApplicationProvider.getApplicationContext<TodoListApplication>().contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            0f
+        )
+    }
 
     @Before
     fun markTutorialSeen() {
@@ -96,9 +106,10 @@ class TodoListTutorialStageTest {
     }
 
     @Test
-    fun `should refuse to type a title while the add row is closed`() {
+    fun `should write on the add line even before the pen has been put on it`() {
         onActivity { activity ->
-            assertFalse(perform(activity, TutorialAction.TypeItemTitle("Apples")))
+            assertTrue(perform(activity, TutorialAction.TypeItemTitle("Apples")))
+            assertEquals("Apples", activity.screenState.addRowText)
         }
     }
 

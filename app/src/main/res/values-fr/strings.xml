@@ -20,7 +20,6 @@
         <item quantity="other">%d tâches terminées</item>
     </plurals>
     <string name="add_list_fab_description">Créer une nouvelle liste</string>
-    <string name="submit_inline_add">Ajouter la tâche</string>
     <string name="item_edit">Modifier la tâche</string>
     <string name="item_delete">Supprimer la tâche</string>
     <string name="move_up">Déplacer vers le haut</string>

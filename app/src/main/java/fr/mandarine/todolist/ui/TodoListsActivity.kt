@@ -64,6 +64,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
     private lateinit var clock: Clock
     private var notificationPermissionRequested = false
+    private var demoListId: String? = null
 
     private lateinit var tutorialViewModel: TutorialViewModel
     private lateinit var tutorialController: TutorialOverlayController
@@ -247,7 +248,6 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
             delay(TYPE_CHAR_MILLIS)
             screenState.addRowText += character
         }
-        screenState.requestHideKeyboard()
         return true
     }
 
@@ -278,6 +278,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
     private fun openFirstList(): Boolean {
         val summary = firstSummary() ?: return false
+        demoListId = summary.list.id
         openList(summary.list)
         return true
     }
@@ -289,14 +290,15 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
      * waiting for the undo slip to settle.
      */
     private fun armDeleteOnFirstList(): Boolean {
-        val summary = firstSummary() ?: return false
-        screenState.deletion.request(summary.list.id)?.let { viewModel.deleteList(it) }
+        val listId = demoListId ?: firstSummary()?.list?.id ?: return false
+        screenState.deletion.request(listId)?.let { viewModel.deleteList(it) }
         return true
     }
 
     private fun confirmDeleteOnFirstList(): Boolean {
         val listId = screenState.deletion.commit() ?: return false
         viewModel.deleteList(listId)
+        demoListId = null
         return true
     }
 

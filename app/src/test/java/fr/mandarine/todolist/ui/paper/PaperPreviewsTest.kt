@@ -35,8 +35,8 @@ class PaperPreviewsTest {
     }
 
     @Test
-    fun `should render the ghost row preview in both heights`() {
-        composeRule.setContent { GhostRowPreview() }
+    fun `should render the add line preview both empty and written on`() {
+        composeRule.setContent { InkAddLinePreview() }
 
         composeRule.onRoot().assertIsDisplayed()
     }

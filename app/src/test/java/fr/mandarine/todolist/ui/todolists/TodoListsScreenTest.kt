@@ -6,7 +6,10 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
@@ -126,20 +129,21 @@ class TodoListsScreenTest {
         assertEquals(1, replayed)
     }
 
-    // ── The create row ────────────────────────────────────────────────────────
+    // ── The add line ──────────────────────────────────────────────────────────
 
     @Test
-    fun `should show the create row when a sheet is taken from the pad`() {
+    fun `should put the add line on the page when a sheet is taken from the pad`() {
         render(TodoListsState.Empty)
 
         composeRule.onNodeWithContentDescription(CREATE_LIST).performClick()
+        composeRule.waitForIdle()
 
         assertTrue(screenState.addRowExpanded)
-        composeRule.onNodeWithContentDescription(SUBMIT).assertIsDisplayed()
+        addLine().assertIsFocused()
     }
 
     @Test
-    fun `should hide the pad and the replay affordance while the create row is open`() {
+    fun `should hide the pad and the replay affordance while the add line is on the page`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
@@ -148,32 +152,18 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should not show the create row before a sheet is taken`() {
+    fun `should not show the add line before a sheet is taken`() {
         render(TodoListsState.Empty)
 
-        composeRule.onNodeWithContentDescription(SUBMIT).assertDoesNotExist()
+        composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
     @Test
-    fun `should create the list when a name is submitted`() {
+    fun `should carry no glyph of its own on the add line`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Work")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
-
-        assertEquals(listOf(Triple("Work", null, null)), created)
-    }
-
-    @Test
-    fun `should close the create row after a list is created`() {
-        screenState.addRowExpanded = true
-        render(TodoListsState.Empty)
-
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Work")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
-
-        assertEquals(false, screenState.addRowExpanded)
+        assertEquals(emptyList<String>(), descriptions())
     }
 
     @Test
@@ -181,10 +171,24 @@ class TodoListsScreenTest {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Work")
-        composeRule.onNode(hasSetTextAction()).performImeAction()
+        addLine().performTextReplacement("Work")
+        addLine().performImeAction()
 
         assertEquals(listOf(Triple("Work", null, null)), created)
+    }
+
+    @Test
+    fun `should leave a fresh caret waiting after a list is created`() {
+        screenState.addRowExpanded = true
+        render(TodoListsState.Empty)
+
+        addLine().performTextReplacement("Work")
+        addLine().performImeAction()
+        composeRule.waitForIdle()
+
+        assertTrue(screenState.addRowExpanded)
+        assertEquals("", screenState.addRowText)
+        addLine().assertIsFocused()
     }
 
     @Test
@@ -192,8 +196,8 @@ class TodoListsScreenTest {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("   ")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
+        addLine().performTextReplacement("   ")
+        addLine().performImeAction()
 
         assertTrue(created.isEmpty())
         assertTrue(screenState.addRowExpanded)
@@ -204,72 +208,22 @@ class TodoListsScreenTest {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
+        addLine().performImeAction()
 
         assertTrue(created.isEmpty())
     }
 
     @Test
-    fun `should abandon the typed name when the create row is cancelled`() {
+    fun `should take the add line off the page when the pen goes down`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
+        addLine().performTextReplacement("Work")
 
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Work")
-        composeRule.onNodeWithContentDescription(CANCEL).performClick()
+        screenState.closeAddRow()
+        composeRule.waitForIdle()
 
         assertTrue(created.isEmpty())
-        assertEquals(false, screenState.addRowExpanded)
-        assertEquals("", screenState.addRowText)
-    }
-
-    @Test
-    fun `should create the list with the target date picked in the create row`() {
-        screenState.addRowExpanded = true
-        screenState.addRowSelection = DateSelection(DateKind.TARGET, DATE)
-        render(TodoListsState.Empty)
-
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Work")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
-
-        assertEquals(listOf(Triple("Work", DATE, null)), created)
-    }
-
-    @Test
-    fun `should create the list with the due date picked in the create row`() {
-        screenState.addRowExpanded = true
-        screenState.addRowSelection = DateSelection(DateKind.DUE, DATE)
-        render(TodoListsState.Empty)
-
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("Work")
-        composeRule.onNodeWithContentDescription(SUBMIT).performClick()
-
-        assertEquals(listOf(Triple("Work", null, DATE)), created)
-    }
-
-    @Test
-    fun `should ask for a target date when the calendar affordance is tapped`() {
-        screenState.addRowExpanded = true
-        render(TodoListsState.Empty)
-
-        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].performClick()
-
-        assertEquals(
-            DatePickerRequest(DateTarget.ADD_ROW, DateKind.TARGET, null),
-            screenState.datePickerRequest
-        )
-    }
-
-    @Test
-    fun `should ask for a due date when the alarm affordance is tapped`() {
-        screenState.addRowExpanded = true
-        render(TodoListsState.Empty)
-
-        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].performClick()
-
-        assertEquals(
-            DatePickerRequest(DateTarget.ADD_ROW, DateKind.DUE, null),
-            screenState.datePickerRequest
-        )
+        composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
     // ── Delete ────────────────────────────────────────────────────────────────
@@ -468,6 +422,9 @@ class TodoListsScreenTest {
         composeRule.waitForIdle()
     }
 
+    private fun addLine(): SemanticsNodeInteraction =
+        composeRule.onAllNodes(hasSetTextAction()).onLast()
+
     private fun render(state: TodoListsState) {
         composeRule.setContent { PaperTheme { Screen(state) } }
     }
@@ -510,12 +467,17 @@ class TodoListsScreenTest {
             .map { it.text }
             .filter { it.isNotBlank() } + node.children.flatMap { collectText(it) }
 
+    private fun descriptions(): List<String> =
+        collectDescriptions(composeRule.onRoot().fetchSemanticsNode())
+
+    private fun collectDescriptions(node: SemanticsNode): List<String> =
+        node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() +
+            node.children.flatMap { collectDescriptions(it) }
+
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         const val REPLAY = "Replay tutorial"
         const val CREATE_LIST = "Create new list"
-        const val SUBMIT = "Create list"
-        const val CANCEL = "Cancel"
         const val UNDO = "Undo delete"
         const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L
         const val SAVE_NAME = "Save list name"

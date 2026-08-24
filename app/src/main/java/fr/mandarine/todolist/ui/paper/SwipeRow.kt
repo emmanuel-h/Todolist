@@ -1,22 +1,23 @@
 package fr.mandarine.todolist.ui.paper
 
-import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
-import androidx.compose.foundation.gestures.AnchoredDraggableState
-import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.anchoredDraggable
-import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -32,16 +33,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.res.painterResource
-
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.drop
+import kotlin.math.sign
 
 enum class RowSwipe { Delete, Rest, Reveal }
 
@@ -51,12 +50,18 @@ enum class SwipeMark { Check, Pencil }
  * What a row uncovers when it is dragged start to end. A row that can be finished
  * uncovers a check; a row that has nothing to finish uncovers the pencil that
  * edits it, so the same gesture always means "the other thing this row does".
+ * The check is answered by the ring drawing its own tick, which carries its own
+ * touch; the pencil opens a surface that has none, so the gesture signs off itself.
  */
 @Immutable
-class SwipeReveal(val mark: SwipeMark, val perform: () -> Unit)
+class SwipeReveal(val mark: SwipeMark, val perform: () -> Unit) {
+    internal val answeredInInk: Boolean get() = mark == SwipeMark.Check
+}
 
 private val SWIPE_TRAVEL = 96.dp
+private val SWIPE_FLICK = 125.dp
 private const val SWIPE_THRESHOLD = 0.5f
+private const val SWIPE_RESISTANCE = 0.35f
 private const val AT_REST = 0f
 private const val FULLY_DRAWN = 1f
 private const val MARK_MIN_SCALE = 0.6f
@@ -67,6 +72,57 @@ private val CHECK_START = Offset(0.10f, 0.52f)
 private val CHECK_KNEE = Offset(0.38f, 0.84f)
 private val CHECK_END = Offset(0.92f, 0.12f)
 private const val HALF = 0.5f
+
+/**
+ * A row is paper, not a panel on rails: it follows the finger exactly as far as
+ * the mark it uncovers takes to draw, and past that it grows heavy, so the page
+ * pushes back instead of letting the row fly off it. What the release does is
+ * decided the instant the finger lifts — the row springs straight home from
+ * wherever it was let go of, and the mark it was drawing is what happens.
+ */
+@Stable
+internal class RowSwipeState(private val travel: Float, private val reveals: Boolean) {
+
+    private var pulled by mutableFloatStateOf(AT_REST)
+
+    val offset: Float get() = weightedSwipe(pulled, travel)
+
+    val travelling: Boolean get() = pulled != AT_REST
+
+    val locked: Boolean get() = abs(offset) >= travel * SWIPE_THRESHOLD
+
+    fun drag(delta: Float) {
+        val reached = pulled + delta
+        pulled = if (reveals) reached else reached.coerceAtMost(AT_REST)
+    }
+
+    fun landing(velocity: Float, flick: Float): RowSwipe {
+        val committing = if (abs(velocity) >= flick) {
+            sign(velocity) == sign(offset)
+        } else {
+            locked
+        }
+        return when {
+            !committing || offset == AT_REST -> RowSwipe.Rest
+            offset < AT_REST -> RowSwipe.Delete
+            else -> RowSwipe.Reveal
+        }
+    }
+
+    suspend fun springHome(spec: AnimationSpec<Float>) {
+        Animatable(pulled).animateTo(AT_REST, spec) { pulled = value }
+    }
+}
+
+/**
+ * Paper drags freely while the mark is still being drawn and grows heavy once it
+ * is complete, so the row can be pushed further but never thrown away.
+ */
+internal fun weightedSwipe(travelled: Float, travel: Float): Float {
+    val excess = abs(travelled) - travel
+    if (excess <= AT_REST) return travelled
+    return sign(travelled) * (travel + excess * SWIPE_RESISTANCE)
+}
 
 /**
  * The row itself is the moving paper: it slides over the page and the mark it is
@@ -84,58 +140,30 @@ fun SwipeRow(
     content: @Composable () -> Unit
 ) {
     val palette = LocalPaperPalette.current
-    val view = LocalView.current
+    val haptics = rememberPaperHaptics()
     val density = LocalDensity.current
     val pitch = LocalPagePitch.current
     val travel = with(density) { SWIPE_TRAVEL.toPx() }
+    val flick = with(density) { SWIPE_FLICK.toPx() }
     val revealMark = reveal?.mark
     val trash = painterResource(R.drawable.ic_delete)
     val pencil = painterResource(R.drawable.ic_edit)
 
-    val swipe = remember(key, revealMark, travel) {
-        AnchoredDraggableState(
-            initialValue = RowSwipe.Rest,
-            anchors = DraggableAnchors {
-                RowSwipe.Delete at -travel
-                RowSwipe.Rest at AT_REST
-                if (revealMark != null) RowSwipe.Reveal at travel
-            }
-        )
-    }
+    val swipe = remember(key, revealMark, travel) { RowSwipeState(travel, revealMark != null) }
     val settle = if (animated) PaperMotion.swipeSettle else PaperMotion.instant
-    val fling = AnchoredDraggableDefaults.flingBehavior(
-        state = swipe,
-        positionalThreshold = { distance -> distance * SWIPE_THRESHOLD },
-        animationSpec = settle
-    )
-
     val latestDelete = rememberUpdatedState(onDelete)
     val latestReveal = rememberUpdatedState(reveal)
 
-    LaunchedEffect(swipe) {
-        snapshotFlow { swipe.targetValue }
-            .drop(1)
-            .collect { target -> if (target != RowSwipe.Rest) view.performPickUpFeedback() }
-    }
+    val locked by remember(swipe) { derivedStateOf { swipe.locked } }
+    val travelling by remember(swipe) { derivedStateOf { swipe.travelling } }
 
-    LaunchedEffect(swipe) {
-        snapshotFlow { swipe.settledValue }.collect { settled ->
-            when (settled) {
-                RowSwipe.Rest -> return@collect
-                RowSwipe.Delete -> latestDelete.value()
-                RowSwipe.Reveal -> latestReveal.value?.perform?.invoke()
-            }
-            swipe.animateTo(RowSwipe.Rest, settle)
-        }
-    }
+    LaunchedEffect(locked) { if (locked) haptics.pickUp() }
 
-    val travelling by remember(swipe) {
-        derivedStateOf { abs(swipe.currentOffset()) > AT_REST }
-    }
+    val pull = rememberDraggableState { delta -> swipe.drag(delta) }
 
     Box(
         modifier = modifier.drawBehind {
-            val travelled = swipe.currentOffset()
+            val travelled = swipe.offset
             val rule = pitch.toPx()
             if (travelled < AT_REST) {
                 drawStampedGlyph(
@@ -159,7 +187,7 @@ fun SwipeRow(
                         ink = palette.pencil
                     )
                 } else {
-                    drawCheckMark(progress, travel * HALF, seat, palette.inkMargin)
+                    drawCheckMark(progress, travel * HALF, seat, palette.pencil)
                 }
             }
         }
@@ -167,24 +195,31 @@ fun SwipeRow(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset { IntOffset(swipe.currentOffset().roundToInt(), 0) }
+                .offset { IntOffset(swipe.offset.roundToInt(), 0) }
                 .preferredFrameRate(
                     if (travelling) FrameRateCategory.High else FrameRateCategory.Default
                 )
-                .anchoredDraggable(
-                    state = swipe,
+                .draggable(
+                    state = pull,
                     orientation = Orientation.Horizontal,
                     enabled = enabled,
-                    flingBehavior = fling
+                    onDragStopped = { velocity ->
+                        when (swipe.landing(velocity, flick)) {
+                            RowSwipe.Rest -> Unit
+                            RowSwipe.Delete -> latestDelete.value()
+                            RowSwipe.Reveal -> latestReveal.value?.let { taken ->
+                                taken.perform()
+                                if (!taken.answeredInInk) haptics.drop()
+                            }
+                        }
+                        swipe.springHome(settle)
+                    }
                 )
         ) {
             content()
         }
     }
 }
-
-private fun AnchoredDraggableState<RowSwipe>.currentOffset(): Float =
-    offset.let { if (it.isNaN()) AT_REST else it }
 
 private fun DrawScope.ruleSeat(pitch: Float): Float = size.height - pitch * BASELINE_LIFT
 

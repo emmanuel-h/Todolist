@@ -6,6 +6,7 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 
 @Immutable
 object PaperMotion {
@@ -74,6 +75,28 @@ object PaperMotion {
     val nibSquash: SpringSpec<Float> = spring(
         dampingRatio = 0.6f,
         stiffness = 800f
+    )
+
+    val lineUnfold: SpringSpec<IntSize> = spring(
+        dampingRatio = 0.8f,
+        stiffness = 380f,
+        visibilityThreshold = IntSize.VisibilityThreshold
+    )
+
+    val lineFold: SpringSpec<IntSize> = spring(
+        dampingRatio = 1f,
+        stiffness = 3800f,
+        visibilityThreshold = IntSize.VisibilityThreshold
+    )
+
+    val lineInk: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 1600f
+    )
+
+    val seamShade: SpringSpec<Float> = spring(
+        dampingRatio = 1f,
+        stiffness = 400f
     )
 
     val instant: SpringSpec<Float> = spring(

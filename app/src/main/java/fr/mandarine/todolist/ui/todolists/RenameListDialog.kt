@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.rememberPaperHaptics
 import fr.mandarine.todolist.ui.paper.PaperDialog
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperType
@@ -63,8 +64,13 @@ fun RenameListDialog(
 ) {
     val locale = Locale.getDefault(Locale.Category.FORMAT)
     val palette = LocalPaperPalette.current
+    val haptics = rememberPaperHaptics()
+    val confirm: () -> Unit = {
+        if (state.name.isNotBlank()) haptics.submit()
+        onConfirm()
+    }
     PaperDialog(onDismissRequest = onDismiss) {
-        NameField(name = state.name, onNameChange = onNameChange, onConfirm = onConfirm)
+        NameField(name = state.name, onNameChange = onNameChange, onConfirm = confirm)
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -104,7 +110,7 @@ fun RenameListDialog(
             InkIconButton(
                 painter = painterResource(R.drawable.ic_check),
                 contentDescription = stringResource(R.string.rename_list),
-                onClick = onConfirm,
+                onClick = confirm,
                 tint = palette.inkBlue
             )
         }

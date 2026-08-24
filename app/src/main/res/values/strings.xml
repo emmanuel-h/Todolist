@@ -1,8 +1,7 @@
 <resources>
     <string name="app_name">To do list</string>
-    <string name="add_item_hint">…</string>
+    <string name="add_line_hint">…</string>
     <string name="create_list">Create list</string>
-    <string name="list_name_hint">…</string>
     <string name="delete_list">Delete list</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
@@ -21,8 +20,6 @@
         <item quantity="other">%d items done</item>
     </plurals>
     <string name="add_list_fab_description">Create new list</string>
-    <string name="submit_inline_add">Submit new item</string>
-    <string name="add_item_ghost_hint">…</string>
     <string name="item_edit">Edit item</string>
     <string name="item_delete">Delete item</string>
     <string name="move_up">Move up</string>

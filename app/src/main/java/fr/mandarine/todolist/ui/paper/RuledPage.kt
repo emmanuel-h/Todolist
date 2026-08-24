@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
@@ -62,6 +65,9 @@ private const val INK_RUNNING_AT = 0.48f
 private const val INK_RUNNING = 0.72f
 private const val INK_SETTLED_AT = 0.68f
 private const val AT_REST = 0f
+private const val NO_KEYBOARD = 0
+private const val FULL_SHADE = 1f
+private const val SEAM_LABEL = "keyboardSeam"
 
 val LocalPagePitch = staticCompositionLocalOf { 56.dp }
 
@@ -86,6 +92,35 @@ fun pageVerticalInsets(): PaddingValues = WindowInsets.safeDrawing
     .only(WindowInsetsSides.Vertical)
     .asPaddingValues()
 
+/**
+ * Read as a derived state so the page recomposes when the keyboard arrives or
+ * leaves rather than once per frame of its animation.
+ */
+@Composable
+fun keyboardVisible(): Boolean {
+    val insets = WindowInsets.ime
+    val density = LocalDensity.current
+    val visible by remember(insets, density) {
+        derivedStateOf { insets.getBottom(density) > NO_KEYBOARD }
+    }
+    return visible
+}
+
+/**
+ * How deeply the keyboard's shade lies on the paper, read at draw time. It gives
+ * way to the undo slip, whose own shadow is the only depth the page should carry
+ * while it is out.
+ */
+@Composable
+fun keyboardSeam(unshadowed: Boolean): () -> Float {
+    val depth = animateFloatAsState(
+        targetValue = if (keyboardVisible() && unshadowed) FULL_SHADE else AT_REST,
+        animationSpec = PaperMotion.seamShade,
+        label = SEAM_LABEL
+    )
+    return { depth.value }
+}
+
 @Composable
 fun Modifier.pageFrame(): Modifier = this
     .widthIn(max = PaperDimens.pageWidth)
@@ -103,11 +138,19 @@ internal class PageRuling(
     val gap: Float
 )
 
+/**
+ * The keyboard is a slab laid on the sheet rather than a window cut into it, so
+ * the paper takes a shadow from it along the edge the two meet on. It is warm and
+ * barely there — any heavier and the bottom of the page reads as dirty — and it
+ * only exists while the keyboard does.
+ */
 fun Modifier.ruledPage(
     listState: LazyListState,
     pitch: Dp,
     headMargin: Dp,
     color: Color,
+    seamColor: Color,
+    seam: () -> Float,
     gutter: Dp = PaperDimens.gutter
 ): Modifier = drawWithCache {
     val ruling = PageRuling(
@@ -118,12 +161,28 @@ fun Modifier.ruledPage(
         thickness = ruleThickness(),
         gap = HEAD_RULE_GAP.toPx()
     )
+    val seamDepth = PaperDimens.keyboardSeam.toPx().coerceAtMost(size.height)
+    val seamTop = size.height - seamDepth
+    val shade = Brush.verticalGradient(
+        colors = listOf(Color.Transparent, seamColor),
+        startY = seamTop,
+        endY = size.height
+    )
     onDrawBehind {
         drawPageRules(
             ruling = ruling,
             scrolled = listState.firstVisibleItemScrollOffset,
             headVisible = listState.firstVisibleItemIndex == 0
         )
+        val depth = seam()
+        if (depth > AT_REST) {
+            drawRect(
+                brush = shade,
+                topLeft = Offset(AT_REST, seamTop),
+                size = Size(size.width, seamDepth),
+                alpha = depth
+            )
+        }
     }
 }
 

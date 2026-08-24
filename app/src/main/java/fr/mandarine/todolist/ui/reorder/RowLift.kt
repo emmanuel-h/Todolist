@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -19,7 +20,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,12 +29,10 @@ import androidx.compose.ui.zIndex
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.paperSheetFading
-import fr.mandarine.todolist.ui.paper.performConfirmFeedback
-import fr.mandarine.todolist.ui.paper.performDropFeedback
-import fr.mandarine.todolist.ui.paper.performPassRuleFeedback
-import fr.mandarine.todolist.ui.paper.performPickUpFeedback
+import fr.mandarine.todolist.ui.paper.rememberPaperHaptics
 import kotlinx.coroutines.launch
 
+private const val LIFT_HOLD_MILLIS = 400L
 private val AUTO_SCROLL_EDGE = 72.dp
 private val AUTO_SCROLL_MAX_STEP = 12.dp
 private val LIFT_SHADOW_RADIUS = 14.dp
@@ -61,6 +61,23 @@ fun rememberEdgeScroll(
 }
 
 /**
+ * Holding a row is what lifts it, and the platform's own half second is long
+ * enough that the page reads as ignoring the finger. The wait belongs to the
+ * gesture detector rather than to any one row, so the page hands it down to every
+ * row it holds.
+ */
+@Composable
+fun LiftHold(content: @Composable () -> Unit) {
+    val platform = LocalViewConfiguration.current
+    val holding = remember(platform) { LiftHoldConfiguration(platform) }
+    CompositionLocalProvider(LocalViewConfiguration provides holding, content = content)
+}
+
+private class LiftHoldConfiguration(platform: ViewConfiguration) : ViewConfiguration by platform {
+    override val longPressTimeoutMillis: Long = LIFT_HOLD_MILLIS
+}
+
+/**
  * A press held on the row lifts it; the row list is read through
  * [rememberUpdatedState] because the staged order changes under the finger while
  * the same gesture is still running.
@@ -74,7 +91,7 @@ fun Modifier.liftToReorder(
     ids: List<String>,
     onDrop: (Reorder?) -> Unit
 ): Modifier {
-    val view = LocalView.current
+    val haptics = rememberPaperHaptics()
     val scope = rememberCoroutineScope()
     val latestIds = rememberUpdatedState(ids)
     val latestDrop = rememberUpdatedState(onDrop)
@@ -87,20 +104,20 @@ fun Modifier.liftToReorder(
                     rowIds = current,
                     rowHeights = rowHeights(listState, current)
                 )
-                view.performPickUpFeedback()
+                haptics.pickUp()
             },
             onDrag = { change, amount ->
                 change.consume()
                 val before = session.index
                 session.drag(amount.y)
-                if (session.index != before) view.performPassRuleFeedback()
+                if (session.index != before) haptics.pass()
                 session.edgeScrolling = edgeScrollDelta(listState, session, edgeScroll) != 0f
             },
             onDragEnd = {
-                view.performDropFeedback()
+                haptics.drop()
                 scope.launch {
                     val reorder = session.settle(PaperMotion.sheetSettle)
-                    if (reorder != null) view.performConfirmFeedback()
+                    if (reorder != null) haptics.submit()
                     latestDrop.value(reorder)
                 }
             },
@@ -117,19 +134,24 @@ fun Modifier.liftToReorder(
 /**
  * The lifted row is a slip of paper in its own right: it carries its grain and a
  * warm shadow with it, and both are read at draw time so a drag never spends a
- * recomposition on them.
+ * recomposition on them. The shadow spreads on a slacker spring than the grip
+ * that darkens it, so the slip is caught in the hand a moment before the page
+ * beneath it goes soft — which is what reads as the paper coming free.
  */
 @Composable
 fun Modifier.liftedSlip(session: DragSession, lifted: Boolean, animated: Boolean): Modifier {
     val palette = LocalPaperPalette.current
-    val raise = remember { Animatable(FLAT) }
+    val spread = remember { Animatable(FLAT) }
+    val grip = remember { Animatable(FLAT) }
     val carried = rememberUpdatedState(lifted)
     LaunchedEffect(lifted, animated) {
         val target = if (lifted) RAISED else FLAT
         if (!animated) {
-            raise.snapTo(target)
+            spread.snapTo(target)
+            grip.snapTo(target)
         } else {
-            raise.animateTo(target, if (lifted) PaperMotion.slipGrip else PaperMotion.slipShadow)
+            launch { spread.animateTo(target, PaperMotion.slipShadow) }
+            grip.animateTo(target, PaperMotion.slipGrip)
         }
     }
     return this
@@ -137,20 +159,19 @@ fun Modifier.liftedSlip(session: DragSession, lifted: Boolean, animated: Boolean
         .preferredFrameRate(if (lifted) FrameRateCategory.High else FrameRateCategory.Default)
         .graphicsLayer {
             if (carried.value) translationY = session.offset
-            val raised = raise.value
-            if (raised <= FLAT) return@graphicsLayer
-            scaleX = RAISED + LIFT_SCALE * raised
+            val held = grip.value
+            if (held <= FLAT) return@graphicsLayer
+            scaleX = RAISED + LIFT_SCALE * held
             scaleY = scaleX
-            rotationZ = LIFT_TILT * raised * session.direction
+            rotationZ = LIFT_TILT * held * session.direction
         }
         .dropShadow(RectangleShape) {
-            val raised = raise.value
-            radius = LIFT_SHADOW_RADIUS.toPx() * raised
-            alpha = LIFT_SHADOW_ALPHA * raised
-            color = palette.ink
-            offset = Offset(FLAT, LIFT_SHADOW_DROP.toPx() * raised)
+            radius = LIFT_SHADOW_RADIUS.toPx() * spread.value
+            alpha = LIFT_SHADOW_ALPHA * grip.value
+            color = palette.shadow
+            offset = Offset(FLAT, LIFT_SHADOW_DROP.toPx() * spread.value)
         }
-        .paperSheetFading({ raise.value }, tone = palette.paperSheet)
+        .paperSheetFading({ grip.value }, tone = palette.paperSheet)
 }
 
 /**
