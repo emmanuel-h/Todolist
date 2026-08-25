@@ -121,12 +121,18 @@ fun keyboardSeam(unshadowed: Boolean): () -> Float {
     return { depth.value.coerceIn(AT_REST, FULL_SHADE) }
 }
 
+/**
+ * The page itself: never wider than a sheet, centred on whatever desk it is given,
+ * bending as one object when it is pulled past its last line.
+ */
 @Composable
-fun Modifier.pageFrame(): Modifier = this
+fun Modifier.pageFrame(bend: PaperOverscrollEffect? = null): Modifier = this
     .widthIn(max = PaperDimens.pageWidth)
     .fillMaxSize()
     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
     .imePadding()
+    .pageBend(bend)
+    .laidOnTheDesk()
 
 @Immutable
 internal class PageRuling(

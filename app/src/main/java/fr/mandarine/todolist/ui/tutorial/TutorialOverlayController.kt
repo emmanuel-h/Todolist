@@ -28,6 +28,7 @@ class TutorialOverlayController(
     val overlayState = TutorialOverlayState()
 
     private var sceneJob: Job? = null
+    private var playing: Pair<TutorialUiState, TutorialScreen>? = null
 
     fun onSkipRequested() {
         sceneJob?.cancel()
@@ -36,7 +37,16 @@ class TutorialOverlayController(
         scope.launch(sceneContext) { overlayState.fadeOut() }
     }
 
+    /**
+     * A scene is a step played on a page, and the same beat may be handed in twice
+     * — the step changes and the page it is played on catches up a frame later.
+     * Playing it again would cancel the scene that is already running it, so a beat
+     * already being played is left alone.
+     */
     fun handleState(state: TutorialUiState, stage: TutorialStage) {
+        val beat = state to stage.screen
+        if (playing == beat) return
+        playing = beat
         overlayState.filledDots = filledDotsFor(state)
         val director = TutorialDirector(stage, overlayState, tutorialViewModel, today)
         when (state) {

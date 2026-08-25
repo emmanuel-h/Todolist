@@ -7,7 +7,6 @@ import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.TodoListApplication
 import fr.mandarine.todolist.domain.ListNotification
 import fr.mandarine.todolist.domain.TodoList
-import fr.mandarine.todolist.ui.TodoListActivity
 import fr.mandarine.todolist.ui.TodoListsActivity
 import java.time.LocalDate
 import java.util.Locale
@@ -133,17 +132,21 @@ class AndroidListNotifierTest {
         }
     }
 
+    /**
+     * Both screens now live in one window, so the task the tap builds is that one
+     * window carrying the list it should open on top of its own page of lists —
+     * not two activities stacked on each other.
+     */
     @Test
-    fun `should build a back stack of lists screen then list screen for the tap intent`() {
+    fun `should open the one window the notebook is read in for the tap intent`() {
         val list = TodoList("list-42", "Test List", dueDate = LocalDate.now())
 
         notifier.postNotifications(listOf(ListNotification.DueDateToday(list)))
 
         val notification = shadowOf(notificationManager).getNotification("list-42", AndroidListNotifier.NOTIFICATION_ID)
         val savedIntents = shadowOf(notification.contentIntent).savedIntents
-        assertEquals(2, savedIntents.size)
+        assertEquals(1, savedIntents.size)
         assertEquals(ComponentName(application, TodoListsActivity::class.java), savedIntents[0].component)
-        assertEquals(ComponentName(application, TodoListActivity::class.java), savedIntents[1].component)
     }
 
     @Test

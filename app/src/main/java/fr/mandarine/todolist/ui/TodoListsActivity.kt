@@ -1,6 +1,5 @@
 package fr.mandarine.todolist.ui
 
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -16,63 +15,77 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import fr.mandarine.todolist.AppContainer
 import fr.mandarine.todolist.TodoListApplication
+import fr.mandarine.todolist.domain.AddTodoUseCase
 import fr.mandarine.todolist.domain.Clock
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
+import fr.mandarine.todolist.domain.DeleteTodoUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
+import fr.mandarine.todolist.domain.EditTodoUseCase
+import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
+import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
-import fr.mandarine.todolist.domain.TodoList
-import fr.mandarine.todolist.domain.TodoListSummary
-import fr.mandarine.todolist.domain.TutorialAction
-import fr.mandarine.todolist.domain.TutorialAnchor
-import fr.mandarine.todolist.domain.TutorialScreen
+import fr.mandarine.todolist.domain.ReorderTodosUseCase
+import fr.mandarine.todolist.domain.SaveDemoListIdUseCase
+import fr.mandarine.todolist.domain.ToggleTodoUseCase
+import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
-import fr.mandarine.todolist.presentation.TutorialBannerContent
-import fr.mandarine.todolist.presentation.TutorialBounds
-import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
+import fr.mandarine.todolist.ui.nav.ItemsRoute
+import fr.mandarine.todolist.ui.nav.ListsRoute
+import fr.mandarine.todolist.ui.nav.NavStage
+import fr.mandarine.todolist.ui.nav.PageStack
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.drawEdgeToEdge
 import fr.mandarine.todolist.ui.paper.openOnPaper
 import fr.mandarine.todolist.ui.paper.preparePaperSheet
-import fr.mandarine.todolist.ui.todolists.DateKind
-import fr.mandarine.todolist.ui.todolists.DatePickerRequest
-import fr.mandarine.todolist.ui.todolists.DateSelection
-import fr.mandarine.todolist.ui.todolists.DateTarget
-import fr.mandarine.todolist.ui.todolists.TodoListsScreen
+import fr.mandarine.todolist.ui.todolists.ListsStage
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
+import fr.mandarine.todolist.ui.tutorial.NonShiftingTodoListRepository
 import fr.mandarine.todolist.ui.tutorial.TutorialOverlay
 import fr.mandarine.todolist.ui.tutorial.TutorialOverlayController
 import fr.mandarine.todolist.ui.tutorial.behindTutorial
 import java.time.LocalDate
-import kotlinx.coroutines.delay
+import java.util.UUID
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-private const val TYPE_CHAR_MILLIS = 80L
 private const val BLANK_PAGE_MILLIS = 500L
+private const val LIST_ID_EXTRA = "LIST_ID"
+private const val OPEN_PAGE = "open-list-id"
 
-class TodoListsActivity : ComponentActivity(), TutorialStage {
+/**
+ * The one window the notebook is read in. Both pages live in it and the back stack
+ * decides which of them is on top, so opening a list lays a sheet over the page of
+ * lists instead of replacing the window — and back peels that sheet off again.
+ */
+class TodoListsActivity : ComponentActivity() {
 
     internal lateinit var viewModel: TodoListsViewModel
+    internal lateinit var stage: NavStage
     internal val screenState = TodoListsScreenState()
+    internal val backStack = NavBackStack<NavKey>(ListsRoute)
 
+    private lateinit var container: AppContainer
     private lateinit var clock: Clock
     private lateinit var notificationAsk: NotificationAsk
     private lateinit var notificationPermission: ActivityResultLauncher<String>
-    private var demoListId: String? = null
-    private var listsBeforeDemo: Set<String> = emptySet()
     private var pageWritten by mutableStateOf(false)
 
     private lateinit var tutorialViewModel: TutorialViewModel
@@ -88,7 +101,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         drawEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        val container = (application as TodoListApplication).container
+        container = (application as TodoListApplication).container
         val todoListRepository = container.todoListRepository
         val todoRepository = container.todoRepository
         clock = container.clock
@@ -110,7 +123,21 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
         tutorialViewModel = container.tutorialViewModel
         tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
-        screenState.animationsEnabled = animationsAllowed()
+        stage = NavStage(
+            backStack,
+            ListsStage(
+                viewModel = viewModel,
+                screenState = screenState,
+                aim = tutorialController.overlayState::aimAt,
+                writeDemoList = { name, targetDate, dueDate ->
+                    writeDemoList(name, targetDate, dueDate)
+                },
+                onOpen = { list -> stage.open(list) }
+            )
+        )
+        stage.animationsEnabled = animationsAllowed()
+        openedListId(savedInstanceState)?.let { backStack.add(ItemsRoute(it)) }
+
         notificationAsk = NotificationAsk(this)
         notificationPermission = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -134,35 +161,26 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         }
 
         setContent {
-            val state by viewModel.state.collectAsStateWithLifecycle()
             val overlayState = tutorialController.overlayState
             ReportDrawnWhen { pageWritten }
             PaperTheme {
                 Box(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().behindTutorial(overlayState.visible)) {
-                        TodoListsScreen(
-                            state = state,
-                            screenState = screenState,
+                        PageStack(
+                            backStack = backStack,
+                            listsViewModel = viewModel,
+                            listsScreenState = screenState,
+                            stage = stage,
                             today = clock.today(),
-                            onOpenList = { list -> openList(list) },
-                            onCreateList = { name, targetDate, dueDate ->
-                                viewModel.createList(name, targetDate, dueDate)
-                            },
-                            onRenameList = { listId, name, targetDate, dueDate ->
-                                viewModel.editList(listId, name, targetDate, dueDate)
-                            },
-                            onDeleteList = { listId -> viewModel.deleteList(listId) },
+                            itemsViewModelFactory = { listId -> itemsViewModelFactory(listId) },
+                            aim = overlayState::aimAt,
                             onDueDateSet = { askForNotifications() },
-                            onReorder = { from, to ->
-                                screenState.previewOrder = null
-                                viewModel.reorderLists(from, to)
-                            },
                             onReplayTutorial = { tutorialViewModel.replay() }
                         )
                     }
                     TutorialOverlay(
                         state = overlayState,
-                        anchors = screenState,
+                        anchors = stage.anchors,
                         onSkip = { tutorialController.onSkipRequested() }
                     )
                 }
@@ -179,15 +197,31 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
         onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
 
+        /**
+         * A scene belongs to a step and to the page that step is played on, and
+         * with one window the page can now change without the step changing — the
+         * demo walking back out of a list is exactly that. So the beat the
+         * controller is asked to play is both together.
+         *
+         * An abandoned demo is torn off by the tutorial itself, which the page of
+         * lists never hears about, so the page is read again the moment the demo
+         * leaves rather than holding a row that is no longer written anywhere.
+         */
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                tutorialViewModel.uiState.collect { state ->
+                combine(tutorialViewModel.uiState, snapshotFlow { stage.screen }) { state, _ ->
+                    state
+                }.collect { state ->
                     val running = state is TutorialUiState.ReadyToStart ||
                         state is TutorialUiState.Active
                     tutorialBackCallback.isEnabled = running
-                    screenState.recordingAnchors = running
-                    screenState.animationsEnabled = animationsAllowed()
-                    tutorialController.handleState(state, this@TodoListsActivity)
+                    stage.recordingAnchors = running
+                    stage.animationsEnabled = animationsAllowed()
+                    if (state is TutorialUiState.Dismissed) {
+                        closeDemoPage()
+                        viewModel.refresh()
+                    }
+                    tutorialController.handleState(state, stage)
                 }
             }
         }
@@ -198,6 +232,11 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        (backStack.lastOrNull() as? ItemsRoute)?.let { outState.putString(OPEN_PAGE, it.listId) }
     }
 
     /**
@@ -214,6 +253,56 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    /**
+     * A tapped notification names the list it is about, and a window that is being
+     * rebuilt after being thrown away remembers the page it was left open at. Both
+     * arrive as one sheet already laid over the page of lists.
+     */
+    private fun openedListId(savedInstanceState: Bundle?): String? =
+        savedInstanceState?.getString(OPEN_PAGE) ?: intent.getStringExtra(LIST_ID_EXTRA)
+
+    /**
+     * The demo is torn off with its list, so a page of it left open would outlive
+     * the list it reads and leave the reader holding a sheet with nothing written
+     * on it. Ending the demo closes whatever it opened.
+     */
+    private fun closeDemoPage() {
+        while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+    }
+
+    /**
+     * The demo's list is claimed as the demo's before a single row of it is
+     * written, so an abort at any beat — or a window torn down mid-demonstration —
+     * finds an id to tear off rather than a stray list nobody owns. It is then
+     * written through a page that lays it above the reader's rows without
+     * renumbering them, which is what lets the tear-off restore the page exactly.
+     */
+    private suspend fun writeDemoList(name: String, targetDate: LocalDate?, dueDate: LocalDate?) {
+        withContext(container.databaseDispatcher) {
+            val demoListId = UUID.randomUUID().toString()
+            SaveDemoListIdUseCase(container.tutorialStateRepository)(demoListId)
+            CreateTodoListUseCase(
+                NonShiftingTodoListRepository(container.todoListRepository)
+            ) { demoListId }(name, targetDate, dueDate)
+        }
+        viewModel.refresh()
+    }
+
+    private fun itemsViewModelFactory(listId: String): ViewModelProvider.Factory =
+        viewModelFactory {
+            TodoListViewModel(
+                AddTodoUseCase(container.todoRepository),
+                GetTodosUseCase(container.todoRepository),
+                ToggleTodoUseCase(container.todoRepository),
+                DeleteTodoUseCase(container.todoRepository),
+                EditTodoUseCase(container.todoRepository),
+                ReorderTodosUseCase(container.todoRepository),
+                GetTodoListsUseCase(container.todoListRepository),
+                listId = listId,
+                dispatcher = container.databaseDispatcher
+            )
+        }
+
     private fun animationsAllowed(): Boolean =
         !tutorialViewModel.animationsSuppressed && !isReducedMotion()
 
@@ -225,134 +314,4 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         )
         return scale == 0f
     }
-
-    private fun openList(list: TodoList) {
-        val intent = Intent(this, TodoListActivity::class.java)
-        intent.putExtra("LIST_ID", list.id)
-        intent.putExtra("LIST_NAME", list.name)
-        startActivity(intent)
-    }
-
-    // ── TutorialStage ──
-
-    override val screen: TutorialScreen = TutorialScreen.LISTS
-
-    override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? =
-        tutorialController.overlayState.aimAt(anchor, screenState.boundsOf(anchor))
-
-    override suspend fun perform(action: TutorialAction): Boolean = when (action) {
-        TutorialAction.OpenListCreateRow -> openCreateRow()
-        is TutorialAction.TypeListName -> typeListName(action.text)
-        TutorialAction.OpenDueDatePicker -> openDueDatePicker()
-        is TutorialAction.PickDueDate -> pickDueDate(action.date)
-        TutorialAction.SubmitList -> submitList()
-        TutorialAction.OpenFirstList -> openFirstList()
-        TutorialAction.RequestDeleteFirstList -> armDeleteOnFirstList()
-        TutorialAction.ConfirmDeleteFirstList -> confirmDeleteOnFirstList()
-        else -> false
-    }
-
-    /**
-     * On a page that already holds lists the demo's own list is not simply the
-     * first row, so the id is found by waiting for a row that was not on the page
-     * before the demo started writing. Taking the first row instead hands the
-     * cleanup the reader's list and deletes it when the demo is abandoned.
-     */
-    override suspend fun awaitDemoListId(): String? {
-        val written = listsBeforeDemo
-        val content = viewModel.state.first { s ->
-            s is TodoListsState.Content && s.activeSummaries.any { it.list.id !in written }
-        } as TodoListsState.Content
-        return content.activeSummaries.firstOrNull { it.list.id !in written }?.list?.id
-    }
-
-    private fun listIdsOnPage(): Set<String> {
-        val content = viewModel.state.value as? TodoListsState.Content ?: return emptySet()
-        return (content.activeSummaries + content.doneSummaries).mapTo(mutableSetOf()) { it.list.id }
-    }
-
-    override fun bannerContent(): TutorialBannerContent? {
-        val summary = firstActiveSummary() ?: return null
-        return TutorialBannerContent(summary.list.name, summary.list.dueDate)
-    }
-
-    private fun openCreateRow(): Boolean {
-        if (screenState.addRowExpanded) return false
-        listsBeforeDemo = listIdsOnPage()
-        screenState.openAddRow()
-        return true
-    }
-
-    private suspend fun typeListName(text: String): Boolean {
-        if (!screenState.addRowExpanded) return false
-        for (character in text) {
-            delay(TYPE_CHAR_MILLIS)
-            screenState.addRowText += character
-        }
-        return true
-    }
-
-    private fun openDueDatePicker(): Boolean {
-        if (!screenState.addRowExpanded) return false
-        screenState.datePickerRequest = DatePickerRequest(
-            target = DateTarget.ADD_ROW,
-            kind = DateKind.DUE,
-            initial = screenState.addRowSelection.dueDate
-        )
-        return true
-    }
-
-    private fun pickDueDate(date: LocalDate): Boolean {
-        screenState.addRowSelection = DateSelection(DateKind.DUE, date)
-        screenState.datePickerRequest = null
-        return true
-    }
-
-    private fun submitList(): Boolean {
-        val name = screenState.addRowText
-        if (name.isBlank()) return false
-        val selection = screenState.addRowSelection
-        viewModel.createList(name, selection.targetDate, selection.dueDate)
-        screenState.closeAddRow()
-        return true
-    }
-
-    private fun openFirstList(): Boolean {
-        val summary = firstSummary() ?: return false
-        demoListId = summary.list.id
-        openList(summary.list)
-        return true
-    }
-
-    /**
-     * The demo tears the row off exactly the way a swipe does, so the beat that
-     * used to arm a confirm strip now starts the pending deletion and the beat
-     * that used to confirm it writes that deletion through early instead of
-     * waiting for the undo slip to settle.
-     */
-    private fun armDeleteOnFirstList(): Boolean {
-        val listId = demoListId ?: firstSummary()?.list?.id ?: return false
-        screenState.deletion.request(listId)?.let { viewModel.deleteList(it) }
-        return true
-    }
-
-    private fun confirmDeleteOnFirstList(): Boolean {
-        val listId = screenState.deletion.commit() ?: return false
-        viewModel.deleteList(listId)
-        demoListId = null
-        return true
-    }
-
-    /**
-     * By the last scene the demo list is finished and has moved below the
-     * divider, so "the first list" has to mean the first row on the page rather
-     * than the first unfinished one.
-     */
-    private fun firstSummary(): TodoListSummary? {
-        val content = viewModel.state.value as? TodoListsState.Content ?: return null
-        return content.activeSummaries.firstOrNull() ?: content.doneSummaries.firstOrNull()
-    }
-
-    private fun firstActiveSummary(): TodoListSummary? =
-        (viewModel.state.value as? TodoListsState.Content)?.activeSummaries?.firstOrNull()
 }

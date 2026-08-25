@@ -29,6 +29,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import fr.mandarine.todolist.R
@@ -146,6 +147,7 @@ private fun RowScope.RowBody(
         if (typing) {
             RowTitleEditor(
                 title = item.title,
+                style = MaterialTheme.typography.bodyLarge,
                 onCommit = onEditCommitted,
                 onDismiss = onEditDismissed
             )
@@ -192,8 +194,9 @@ private fun RowTitle(
 }
 
 @Composable
-private fun RowTitleEditor(
+internal fun RowTitleEditor(
     title: String,
+    style: TextStyle,
     onCommit: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -203,7 +206,6 @@ private fun RowTitleEditor(
     }
     var everFocused by remember { mutableStateOf(false) }
     val palette = LocalPaperPalette.current
-    val style = MaterialTheme.typography.bodyLarge
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 

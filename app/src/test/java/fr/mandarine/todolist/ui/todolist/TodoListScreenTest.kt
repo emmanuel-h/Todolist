@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.isFocused
@@ -25,18 +26,28 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
+import java.time.LocalDate
+import java.util.Locale
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.PaperPalette
+import fr.mandarine.todolist.ui.todolists.DateKind
+import fr.mandarine.todolist.ui.todolists.DateSelection
+import fr.mandarine.todolist.ui.todolists.formatListDate
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -59,8 +70,103 @@ class TodoListScreenTest {
     private val edited = mutableListOf<Pair<String, String>>()
     private val submitted = mutableListOf<String>()
     private val reordered = mutableListOf<Pair<Int, Int>>()
+    private val renamed = mutableListOf<String>()
+    private val datesWritten = mutableListOf<DateSelection>()
     private var backPressed = 0
     private var hostView: View? = null
+
+    @Test
+    fun `should rewrite the name of the list when the head line is tapped`() {
+        render(content(active = listOf(item("1", "Apples"))), listName = "Groceries")
+
+        composeRule.onNodeWithText("Groceries").performClick()
+        editField().performTextReplacement("Provisions")
+        editField().performImeAction()
+
+        assertEquals(listOf("Provisions"), renamed)
+    }
+
+    @Test
+    fun `should leave the name of the list alone when the rewrite is blank`() {
+        render(content(active = listOf(item("1", "Apples"))), listName = "Groceries")
+
+        composeRule.onNodeWithText("Groceries").performClick()
+        editField().performTextReplacement(" ")
+        editField().performImeAction()
+
+        assertEquals(emptyList<String>(), renamed)
+        assertFalse(screenState.renamingList)
+    }
+
+    @Test
+    fun `should open the calendar on the day the jot already carries`() {
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", dueDate = TODAY),
+                allDone = false,
+                dueDateStatus = DueDateStatus.TODAY
+            )
+        )
+
+        composeRule
+            .onNodeWithContentDescription("Due date ${formatListDate(TODAY, true, locale())}")
+            .performClick()
+
+        assertEquals(DateSelection(DateKind.DUE, TODAY), screenState.dateSheet)
+    }
+
+    /**
+     * The jot is a control, and it has to say so on the node that says the date —
+     * a press hung on the line around it is a mark a screen reader can read but
+     * not press, beside a press it cannot name.
+     */
+    @Test
+    fun `should offer the head rule's jot as a press a screen reader can name and make`() {
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", dueDate = TODAY),
+                allDone = false,
+                dueDateStatus = DueDateStatus.TODAY
+            )
+        )
+
+        val jot = composeRule
+            .onNodeWithContentDescription("Due date ${formatListDate(TODAY, true, locale())}")
+
+        jot.assertHasClickAction()
+        assertEquals(
+            "Set due date",
+            jot.fetchSemanticsNode().config.getOrNull(SemanticsActions.OnClick)?.label
+        )
+        jot.performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(DateSelection(DateKind.DUE, TODAY), screenState.dateSheet)
+    }
+
+    @Test
+    fun `should write the day picked on the calendar back onto the list`() {
+        screenState.animationsEnabled = false
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", targetDate = TODAY),
+                allDone = false
+            )
+        )
+
+        composeRule
+            .onNodeWithContentDescription("Target date ${formatListDate(TODAY, true, locale())}")
+            .performClick()
+        composeRule.onNodeWithText(TODAY.plusDays(1).dayOfMonth.toString()).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(
+            listOf(DateSelection(DateKind.TARGET, TODAY.plusDays(1))),
+            datesWritten
+        )
+        assertNull(screenState.dateSheet)
+    }
 
     @Test
     fun `should write the list name on the first line of the page`() {
@@ -508,14 +614,23 @@ class TodoListScreenTest {
         composeRule.onAllNodes(hasSetTextAction()).onLast()
 
     private fun render(state: TodoListState, listName: String = "") {
-        composeRule.setContent { PaperTheme { Screen(state, listName) } }
+        render(
+            state,
+            listName.takeIf { it.isNotEmpty() }
+                ?.let { TodoListSummary(TodoList(LIST_ID, it), allDone = false) }
+        )
+    }
+
+    private fun render(state: TodoListState, summary: TodoListSummary?) {
+        composeRule.setContent { PaperTheme { Screen(state, summary) } }
     }
 
     @Composable
-    private fun Screen(state: TodoListState, listName: String) {
+    private fun Screen(state: TodoListState, summary: TodoListSummary?) {
         hostView = LocalView.current
         TodoListScreen(
-            listName = listName,
+            summary = summary,
+            today = TODAY,
             state = state,
             screenState = screenState,
             onBack = { backPressed += 1 },
@@ -523,9 +638,13 @@ class TodoListScreenTest {
             onEdit = { id, title -> edited += id to title },
             onDelete = { deleted += it },
             onSubmitInline = { submitted += it },
-            onReorder = { from, to -> reordered += from to to }
+            onReorder = { from, to -> reordered += from to to },
+            onRenameList = { renamed += it },
+            onWriteDate = { datesWritten += it }
         )
     }
+
+    private fun locale(): Locale = Locale.getDefault(Locale.Category.FORMAT)
 
     private fun lastFeedback(): Int {
         var view: View? = hostView
@@ -589,6 +708,7 @@ class TodoListScreenTest {
         TodoItem(id, title, LIST_ID, isCompleted = true, completedAt = 1000L)
 
     private companion object {
+        val TODAY: LocalDate = LocalDate.of(2026, 1, 1)
         const val LIST_ID = "list-1"
         const val GHOST_HINT = "…"
         const val BACK = "Navigate up"

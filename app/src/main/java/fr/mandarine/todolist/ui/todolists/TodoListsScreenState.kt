@@ -9,7 +9,20 @@ import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchors
 import java.time.LocalDate
 
-enum class DateTarget { ADD_ROW, RENAME }
+/**
+ * Whose date the open calendar is going to write. The line being written and the
+ * edit surface both hold their answer in screen state until they are put down; a
+ * row on the page has nothing to hold it in, so it names the list instead and the
+ * pick is written straight through.
+ */
+sealed interface DateTarget {
+
+    data object AddRow : DateTarget
+
+    data object Rename : DateTarget
+
+    data class Row(val listId: String) : DateTarget
+}
 
 data class DatePickerRequest(
     val target: DateTarget,

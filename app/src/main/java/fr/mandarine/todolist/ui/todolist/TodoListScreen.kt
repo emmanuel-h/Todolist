@@ -1,9 +1,12 @@
 package fr.mandarine.todolist.ui.todolist
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -32,18 +35,24 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
+import fr.mandarine.todolist.ui.listmeta.DateJot
+import fr.mandarine.todolist.ui.nav.travellingName
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkAddLine
 import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.LocalPaperGutter
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
@@ -57,6 +66,7 @@ import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
 import fr.mandarine.todolist.ui.paper.penStrike
+import fr.mandarine.todolist.ui.paper.rememberPageBend
 import fr.mandarine.todolist.ui.paper.rememberPageTail
 import fr.mandarine.todolist.ui.paper.rememberPaperHaptics
 import fr.mandarine.todolist.ui.paper.rememberPenStrike
@@ -71,11 +81,19 @@ import fr.mandarine.todolist.ui.reorder.liftToReorder
 import fr.mandarine.todolist.ui.reorder.liftedSlip
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
+import fr.mandarine.todolist.ui.todolists.DateKind
+import fr.mandarine.todolist.ui.todolists.DateSelection
+import fr.mandarine.todolist.ui.todolists.ListDatePickerDialog
+import fr.mandarine.todolist.ui.todolists.dueTone
+import fr.mandarine.todolist.ui.todolists.targetTone
 import fr.mandarine.todolist.ui.tutorial.tutorialAnchor
+import java.time.LocalDate
 import kotlinx.coroutines.delay
 
 internal const val INK_TICK_MILLIS = 220L
 internal const val INK_STRIKE_MILLIS = 220L
+
+private val NAME_END_GAP = 8.dp
 
 private const val INLINE_ADD_KEY = "inline-add"
 private const val HEAD_KEY = "head"
@@ -88,7 +106,8 @@ private const val COMPLETED_TYPE = "completed"
 
 @Composable
 fun TodoListScreen(
-    listName: String,
+    summary: TodoListSummary?,
+    today: LocalDate,
     state: TodoListState,
     screenState: TodoListScreenState,
     onBack: () -> Unit,
@@ -96,7 +115,9 @@ fun TodoListScreen(
     onEdit: (String, String) -> Unit,
     onDelete: (String) -> Unit,
     onSubmitInline: (String) -> Unit,
-    onReorder: (Int, Int) -> Unit
+    onReorder: (Int, Int) -> Unit,
+    onRenameList: (String) -> Unit = {},
+    onWriteDate: (DateSelection) -> Unit = {}
 ) {
     val content = state as? TodoListState.Content
     val deletion = screenState.deletion
@@ -170,14 +191,16 @@ fun TodoListScreen(
     val insets = pageVerticalInsets()
     val headMargin = insets.calculateTopPadding() + pitch
     val palette = LocalPaperPalette.current
+    val gutter = LocalPaperGutter.current
     val seam = keyboardSeam(deletion.pending == null)
+    val bend = rememberPageBend(screenState.animationsEnabled)
 
     PaperSurface(
         modifier = Modifier.pointerInput(Unit) {
             detectTapGestures(onTap = { focusManager.clearFocus() })
         }
     ) {
-        Box(modifier = Modifier.pageFrame().align(Alignment.TopCenter)) {
+        Box(modifier = Modifier.pageFrame(bend).align(Alignment.TopCenter)) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -188,20 +211,27 @@ fun TodoListScreen(
                         headMargin = headMargin,
                         color = palette.rule,
                         seamColor = palette.keyboardSeam,
-                        seam = seam
+                        seam = seam,
+                        gutter = gutter
                     )
                     .headMarginFade(listState, headMargin)
                     .consumeWindowInsets(WindowInsets.safeDrawing),
                 contentPadding = PaddingValues(
                     top = insets.calculateTopPadding(),
                     bottom = insets.calculateBottomPadding() + pitch + tail.height
-                )
+                ),
+                overscrollEffect = bend
             ) {
                 item(key = HEAD_KEY, contentType = HEAD_TYPE) {
                     HeadLine(
-                        name = listName,
+                        summary = summary,
                         allDone = allDone,
-                        animated = screenState.animationsEnabled
+                        renaming = screenState.renamingList,
+                        animated = screenState.animationsEnabled,
+                        onRenameRequested = { screenState.renamingList = true },
+                        onRenamed = onRenameList,
+                        onRenameDismissed = { screenState.renamingList = false },
+                        onDateRequested = { selection -> screenState.dateSheet = selection }
                     )
                 }
                 itemsIndexed(
@@ -294,6 +324,20 @@ fun TodoListScreen(
             animated = screenState.animationsEnabled
         )
     }
+
+    val sheet = screenState.dateSheet
+    if (sheet != null) {
+        ListDatePickerDialog(
+            initial = sheet.date,
+            today = today,
+            animated = screenState.animationsEnabled,
+            onDismiss = { screenState.dateSheet = null },
+            onPicked = { date ->
+                screenState.dateSheet = null
+                onWriteDate(sheet.withDate(date))
+            }
+        )
+    }
 }
 
 @Composable
@@ -381,25 +425,114 @@ private fun LazyItemScope.animatedRow(screenState: TodoListScreenState): Modifie
         Modifier.animateItem(fadeInSpec = null, placementSpec = null, fadeOutSpec = null)
     }
 
+/**
+ * The name of the list, written on the first rule of its own page. It is the same
+ * mark as the row that was tapped to get here — it travels out of that row and
+ * grows into this one — and it answers to the same two gestures a row does: a tap
+ * on the words rewrites them, a tap on the date jot opens the calendar.
+ */
 @Composable
-private fun HeadLine(name: String, allDone: Boolean, animated: Boolean) {
-    val palette = LocalPaperPalette.current
+private fun HeadLine(
+    summary: TodoListSummary?,
+    allDone: Boolean,
+    renaming: Boolean,
+    animated: Boolean,
+    onRenameRequested: () -> Unit,
+    onRenamed: (String) -> Unit,
+    onRenameDismissed: () -> Unit,
+    onDateRequested: (DateSelection) -> Unit
+) {
+    val pitch = LocalPagePitch.current
+    if (summary == null) {
+        Spacer(Modifier.height(pitch))
+        return
+    }
     val style = MaterialTheme.typography.titleLarge
-    val strike = rememberPenStrike(name, allDone, animated)
-    val ink = palette.inked(InkBudget.words(allDone))
     Row(
-        modifier = Modifier.fillMaxWidth().height(LocalPagePitch.current),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(pitch)
+            .padding(
+                start = LocalPaperGutter.current + PaperDimens.iconButton,
+                end = PaperDimens.rowEndPadding
+            ),
         verticalAlignment = Alignment.Top
     ) {
-        Text(
-            text = remember(name) { handwritten(name) },
-            modifier = Modifier
-                .padding(start = PaperDimens.gutter + PaperDimens.iconButton)
-                .seatOnRule()
-                .penStrike(strike, ink),
-            style = style,
-            color = ink,
-            onTextLayout = strike::onTextLayout
+        Box(modifier = Modifier.weight(1f).padding(end = NAME_END_GAP)) {
+            if (renaming) {
+                RowTitleEditor(
+                    title = summary.list.name,
+                    style = style,
+                    onCommit = onRenamed,
+                    onDismiss = onRenameDismissed
+                )
+            } else {
+                HeadName(
+                    summary = summary,
+                    allDone = allDone,
+                    animated = animated,
+                    style = style,
+                    onRenameRequested = onRenameRequested
+                )
+            }
+        }
+        HeadJots(summary = summary, onDateRequested = onDateRequested)
+    }
+}
+
+@Composable
+private fun HeadName(
+    summary: TodoListSummary,
+    allDone: Boolean,
+    animated: Boolean,
+    style: TextStyle,
+    onRenameRequested: () -> Unit
+) {
+    val palette = LocalPaperPalette.current
+    val name = summary.list.name
+    val strike = rememberPenStrike(name, allDone, animated)
+    val ink = palette.inked(InkBudget.words(allDone))
+    Text(
+        text = remember(name) { handwritten(name) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .seatOnRule()
+            .penStrike(strike, ink)
+            .travellingName(summary.list.id)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = stringResource(R.string.edit_list),
+                onClick = onRenameRequested
+            ),
+        style = style,
+        color = ink,
+        onTextLayout = strike::onTextLayout
+    )
+}
+
+@Composable
+private fun HeadJots(summary: TodoListSummary, onDateRequested: (DateSelection) -> Unit) {
+    val palette = LocalPaperPalette.current
+    val targetDate = summary.list.targetDate
+    val dueDate = summary.list.dueDate
+    val dueStatus = summary.dueDateStatus
+    if (targetDate != null) {
+        DateJot(
+            date = targetDate,
+            kind = DateKind.TARGET,
+            showYear = summary.showTargetYear,
+            tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
+            onRewrite = onDateRequested
+        )
+    }
+    if (dueDate != null && dueStatus != null) {
+        DateJot(
+            date = dueDate,
+            kind = DateKind.DUE,
+            showYear = summary.showDueDateYear,
+            tint = palette.inked(dueTone(dueStatus)),
+            onRewrite = onDateRequested
         )
     }
 }

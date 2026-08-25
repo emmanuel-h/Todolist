@@ -15,9 +15,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 
-fun Modifier.paperRuling(pitch: Dp, color: Color): Modifier = drawWithCache {
+fun Modifier.paperRuling(
+    pitch: Dp,
+    color: Color,
+    gutter: Dp = PaperDimens.gutter
+): Modifier = drawWithCache {
     val thickness = PaperDimens.rule.toPx()
-    val start = PaperDimens.gutter.toPx()
+    val start = gutter.toPx()
     val step = pitch.toPx().coerceAtLeast(thickness)
     onDrawBehind {
         var line = size.height - thickness
@@ -46,7 +50,7 @@ fun RuledRow(
             .then(clickModifier)
             .pitchHeight(pitch)
             .heightIn(min = pitch)
-            .padding(start = PaperDimens.gutter, end = PaperDimens.rowEndPadding),
+            .padding(start = LocalPaperGutter.current, end = PaperDimens.rowEndPadding),
         verticalAlignment = Alignment.Top,
         content = content
     )

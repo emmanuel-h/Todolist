@@ -11,6 +11,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 
@@ -47,6 +48,12 @@ object PaperMotion {
     val sheetSettle: SpringSpec<Float> = spring(
         dampingRatio = SPATIAL_DAMPING,
         stiffness = SPATIAL_STIFFNESS
+    )
+
+    val sheetTravel: SpringSpec<Rect> = spring(
+        dampingRatio = SPATIAL_DAMPING,
+        stiffness = SPATIAL_STIFFNESS,
+        visibilityThreshold = Rect.VisibilityThreshold
     )
 
     val rowPlacement: SpringSpec<IntOffset> = spring(

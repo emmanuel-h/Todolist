@@ -49,6 +49,7 @@ import fr.mandarine.todolist.ui.paper.InkAddLine
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.LocalPaperGutter
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
@@ -62,6 +63,7 @@ import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
+import fr.mandarine.todolist.ui.paper.rememberPageBend
 import fr.mandarine.todolist.ui.paper.rememberPageTail
 import fr.mandarine.todolist.ui.paper.ruledPage
 import fr.mandarine.todolist.ui.reorder.AutoScrollWhileDragging
@@ -127,7 +129,9 @@ fun TodoListsScreen(
     val bottomInset = insets.calculateBottomPadding()
     val headMargin = topInset + pitch
     val palette = LocalPaperPalette.current
+    val gutter = LocalPaperGutter.current
     val seam = keyboardSeam(deletion.pending == null)
+    val bend = rememberPageBend(screenState.animationsEnabled)
     val padFootprint = if (screenState.addRowExpanded) 0.dp else padFootMargin(bottomInset)
     val restingSpace = (bottomInset - padFootprint).coerceAtLeast(0.dp)
 
@@ -156,6 +160,20 @@ fun TodoListsScreen(
             deletion.markTorn()
         }
     }
+    /**
+     * The jot in a row's margin is the same mark as the jot on that list's own head
+     * rule, so it opens the same calendar on the same day rather than counting as a
+     * tap on the row it is written beside.
+     */
+    val rewriteDate: (String) -> (DateSelection) -> Unit = { listId ->
+        { jotted ->
+            screenState.datePickerRequest = DatePickerRequest(
+                target = DateTarget.Row(listId),
+                kind = jotted.kind,
+                initial = jotted.date
+            )
+        }
+    }
 
     LaunchedEffect(deletion.pending?.id) {
         if (deletion.pending == null) return@LaunchedEffect
@@ -174,7 +192,7 @@ fun TodoListsScreen(
             detectTapGestures(onTap = { focusManager.clearFocus() })
         }
     ) {
-        Column(modifier = Modifier.pageFrame().align(Alignment.TopCenter)) {
+        Column(modifier = Modifier.pageFrame(bend).align(Alignment.TopCenter)) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -185,7 +203,8 @@ fun TodoListsScreen(
                         headMargin = headMargin,
                         color = palette.rule,
                         seamColor = palette.keyboardSeam,
-                        seam = seam
+                        seam = seam,
+                        gutter = gutter
                     )
                     .headMarginFade(listState, headMargin)
                     .consumeWindowInsets(WindowInsets.safeDrawing)
@@ -193,7 +212,8 @@ fun TodoListsScreen(
                 contentPadding = PaddingValues(
                     top = topInset,
                     bottom = restingSpace + pitch + tail.height
-                )
+                ),
+                overscrollEffect = bend
             ) {
                 item(key = HEAD_KEY, contentType = HEAD_TYPE) {
                     Spacer(Modifier.height(pitch))
@@ -248,7 +268,8 @@ fun TodoListsScreen(
                         onOpenList = openList,
                         onDeleteRequested = requestDelete,
                         onTorn = holdTorn,
-                        onReorder = onReorder
+                        onReorder = onReorder,
+                        onRewriteDate = rewriteDate(summary.list.id)
                     )
                 }
                 if (activeSummaries.isNotEmpty() && doneSummaries.isNotEmpty()) {
@@ -280,7 +301,8 @@ fun TodoListsScreen(
                         onTorn = { holdTorn(summary.list.id) },
                         onRenameRequested = {
                             screenState.rename = RenameState.of(summary.list)
-                        }
+                        },
+                        onRewriteDate = rewriteDate(summary.list.id)
                     )
                 }
             }
@@ -336,7 +358,7 @@ fun TodoListsScreen(
             },
             onPickDate = {
                 screenState.datePickerRequest = DatePickerRequest(
-                    target = DateTarget.RENAME,
+                    target = DateTarget.Rename,
                     kind = rename.selection.kind,
                     initial = rename.selection.date
                 )
@@ -367,7 +389,9 @@ fun TodoListsScreen(
             animated = screenState.animationsEnabled,
             onDismiss = { screenState.datePickerRequest = null },
             onPicked = { date ->
-                val owed = applyPickedDate(screenState, request, date)
+                val owed = applyPickedDate(screenState, request, date) { listId, written ->
+                    writeListDate(state, listId, written, onRenameList)
+                }
                 screenState.datePickerRequest = null
                 if (owed) onDueDateSet()
             }
@@ -391,7 +415,7 @@ private fun AddLineDateRule(screenState: TodoListsScreenState, onDueDateSet: () 
             },
             onPickDate = {
                 screenState.datePickerRequest = DatePickerRequest(
-                    target = DateTarget.ADD_ROW,
+                    target = DateTarget.AddRow,
                     kind = selection.kind,
                     initial = selection.date
                 )
@@ -454,14 +478,38 @@ internal fun submitAddRow(
 internal fun applyPickedDate(
     screenState: TodoListsScreenState,
     request: DatePickerRequest,
-    date: LocalDate
+    date: LocalDate,
+    writeRowDate: (String, DateSelection) -> Boolean
 ): Boolean {
     val picked = DateSelection(request.kind, date)
-    return when (request.target) {
-        DateTarget.ADD_ROW -> writeAddRowSelection(screenState, picked)
-        DateTarget.RENAME -> writeRenameSelection(screenState, picked)
+    return when (val target = request.target) {
+        DateTarget.AddRow -> writeAddRowSelection(screenState, picked)
+        DateTarget.Rename -> writeRenameSelection(screenState, picked)
+        is DateTarget.Row -> writeRowDate(target.listId, picked)
     }
 }
+
+/**
+ * A day circled for a row already on the page is written through at once, the way
+ * the same jot on that list's own head rule writes it: the name is left as it is
+ * and the one date the list carries is traded for the day just picked.
+ */
+internal fun writeListDate(
+    state: TodoListsState,
+    listId: String,
+    written: DateSelection,
+    onRenameList: (String, String, LocalDate?, LocalDate?) -> Unit
+): Boolean {
+    val list = listOnPage(state, listId) ?: return false
+    onRenameList(list.id, list.name, written.targetDate, written.dueDate)
+    return dueDateWritten(DateSelection.of(list.targetDate, list.dueDate), written)
+}
+
+private fun listOnPage(state: TodoListsState, listId: String): TodoList? =
+    (state as? TodoListsState.Content)
+        ?.let { it.activeSummaries + it.doneSummaries }
+        ?.firstOrNull { it.list.id == listId }
+        ?.list
 
 internal fun writeAddRowSelection(
     screenState: TodoListsScreenState,
@@ -495,7 +543,8 @@ private fun LazyItemScope.ActiveListRow(
     onOpenList: (TodoList) -> Unit,
     onDeleteRequested: (String) -> Unit,
     onTorn: (String) -> Unit,
-    onReorder: (Int, Int) -> Unit
+    onReorder: (Int, Int) -> Unit,
+    onRewriteDate: (DateSelection) -> Unit
 ) {
     val lifted = session.dragging && session.index == position
     val deletion = screenState.deletion
@@ -542,6 +591,7 @@ private fun LazyItemScope.ActiveListRow(
             tearing = deletion.tearing(summary.list.id),
             onTorn = { onTorn(summary.list.id) },
             onRenameRequested = { screenState.rename = RenameState.of(summary.list) },
+            onRewriteDate = onRewriteDate,
             onMoveUp = move(-1),
             onMoveDown = move(+1)
         )

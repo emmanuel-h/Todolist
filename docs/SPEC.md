@@ -30,7 +30,9 @@ This principle overrides any contradictory suggestion from a UI agent or the wir
 Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the content area is a flat tonal plane, and nothing floats above the page except the ＋ chip and the tutorial overlay.
 
 - The page is drawn by `PaperSurface`: solid paper tone + a generated fibre grain, nothing else. `android:windowBackground` is the flat `@color/paper` for the frames before the first composition.
-- The gutter is `PaperDimens.gutter` (40dp) — where row content and the ruling both start. **The gutter is bare paper**: no punched-hole column, no margin rule.
+- The gutter is `LocalPaperGutter` — where row content and the ruling both start. **The gutter is bare paper**: no punched-hole column, no margin rule. It is `PaperDimens.gutter` (40dp) on a compact window and `PaperDimens.wideGutter` (100dp, a Seyes margin) from the medium width breakpoint up, because a wider window is a wider sheet rather than a wider text measure.
+- The page is never wider than `PaperDimens.pageWidth` (640dp) and is centred in its window. From the expanded width breakpoint (840dp — which a phone in landscape reaches) the composition becomes literal: the window is painted with `palette.desk`, the page column carries its own sheet and drops a shadow onto the desk, and the sticky pad and the replay glyph rest on the desk beside it. `PageFit` is read from `WindowSizeClass` in `PaperTheme` and provided as `LocalPageFit`.
+- Pulling either page past its last line bends it instead of stretching it: the whole sheet — ruling, ink, back glyph and all — gives ground at half the speed of the finger up to 32dp, the pulled edge takes a shade in daylight and a lit hairline by lamplight, and letting go lays it flat on `PaperMotion.pageMove`. A downward pull with the keyboard up is left alone so it can reach the keyboard, and a reader who has asked for stillness gets no overscroll at all.
 - Ruling is drawn **per row**, not per page: `@drawable/row_rule` is the background of `item_todo.xml`, `item_todo_inline_add.xml`, and `item_todo_list.xml`, so a hairline always meets the text baseline no matter how tall the row grows. Ruling therefore stops at the last row; the page below it is bare.
 - **Both screens use the same row grammar.** List rows are not cards: they are ruled rows carrying `⠿ · ✎ · name · counts · 🗑`, matching the item rows. `MaterialCardView`, its stroke, and its elevation are gone from `item_todo_list.xml`.
 - A fully-completed list is marked by strikethrough and 50% alpha on its name only. The former `colorSecondaryContainer` row fill is gone — a coloured block does not belong on paper.
@@ -47,17 +49,37 @@ Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the 
 
 ## Navigation
 
+The app is **one window**. `TodoListsActivity` is the only activity; the two screens are two
+entries on a Navigation 3 back stack inside it, so the tapped row can travel into the head rule of
+the page it opens and back can peel that page off under the finger.
+
 ```
-TodoListsActivity  ("My Lists")
-        │
-        │  tap a list row
-        ▼
-TodoListActivity  ("<list name>")
-        │
-        │  back / up button
-        ▼
-TodoListsActivity  ("My Lists")
+one window — TodoListsActivity
+┌──────────────────────────────────────┐
+│  back stack                          │
+│                                      │
+│  ListsRoute            the page      │
+│      │                 of lists      │
+│      │  tap a list row               │
+│      ▼                               │
+│  ItemsRoute(listId)    a sheet laid  │
+│                        over it       │
+│      │  back / edge drag / ←         │
+│      ▼                               │
+│  ListsRoute                          │
+└──────────────────────────────────────┘
 ```
+
+- Opening a list **pushes** `ItemsRoute`: the row's bounds and its name are shared elements that
+  travel and grow into the head rule of the items page, the other rows stay in full ink underneath
+  until the travel finishes, and the items fade in beneath the arriving sheet.
+- Back **peels** the sheet off: the items page slides off to the trailing edge, uncovering the page
+  of lists already in place, with a warm shadow (daylight) or a lit hairline (night) along its
+  leading edge. A drag from the screen edge seeks that same movement with the finger; releasing
+  past the threshold completes the peel and cancelling springs the sheet flat again.
+- There is exactly one predictive-back driver: `NavDisplay`'s own. The tutorial's
+  `OnBackPressedCallback` is registered after the composition and stays disabled outside the demo,
+  and the add line's `BackHandler` is enabled only while the pen is on the paper.
 
 ---
 
@@ -270,8 +292,9 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 (alarm = due date, calendar = target date) and the date is formatted via
 `DateFormat.getBestDateTimePattern` with the `dM` skeleton for the device's format locale.
 
-- Each notification's title is the list name; tapping it deep-links into that list's screen
-  with the lists screen beneath it in the back stack (`TaskStackBuilder` with the manifest parent).
+- Each notification's title is the list name; tapping it clears the task and opens the one window
+  with `LIST_ID` on its intent, so it lands on that list's page with the page of lists already
+  beneath it on the nav back stack.
 - Notifications are posted on a dedicated channel ("Reminders"), tagged by list id so two lists
   never overwrite each other's notification.
 - The daily 08:00 check runs as a WorkManager unique `PeriodicWorkRequest`

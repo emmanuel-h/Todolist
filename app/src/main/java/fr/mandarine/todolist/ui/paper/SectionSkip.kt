@@ -24,7 +24,7 @@ fun SectionSkip(completedCount: Int, modifier: Modifier = Modifier, animated: Bo
         Text(
             text = tally.toString(),
             modifier = Modifier
-                .width(PaperDimens.gutter)
+                .width(LocalPaperGutter.current)
                 .seatOnRule(),
             style = LocalRuledHand.current.margin,
             color = LocalPaperPalette.current.inked(InkTone.Margin),

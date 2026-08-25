@@ -8,6 +8,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -15,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
@@ -53,6 +57,7 @@ class TodoListRowTest {
     private var deleteRequested = 0
     private var renameRequested = 0
     private var torn = 0
+    private val rewritten = mutableListOf<DateSelection>()
 
     @Test
     fun `should show the list name`() {
@@ -68,6 +73,104 @@ class TodoListRowTest {
         composeRule.onNodeWithText("Groceries").performClick()
 
         assertEquals(1, opened)
+    }
+
+    // ── The jot in the margin ─────────────────────────────────────────────────
+
+    @Test
+    fun `should open the calendar on the day the jot carries rather than the list`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        composeRule.onNodeWithContentDescription("Due date ${spelled(DATE)}").performClick()
+
+        assertEquals(listOf(DateSelection(DateKind.DUE, DATE)), rewritten)
+        assertEquals(0, opened)
+    }
+
+    @Test
+    fun `should hand the calendar the kind of date the jot was written as`() {
+        render(summary(targetDate = DATE))
+
+        composeRule.onNodeWithContentDescription("Target date ${spelled(DATE)}").performClick()
+
+        assertEquals(listOf(DateSelection(DateKind.TARGET, DATE)), rewritten)
+    }
+
+    @Test
+    fun `should still open the list when the row is tapped beside its jot`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        composeRule.onNodeWithText("Groceries").performClick()
+
+        assertEquals(1, opened)
+        assertEquals(emptyList<DateSelection>(), rewritten)
+    }
+
+    @Test
+    fun `should still uncover the edit surface when a row carrying a jot is swiped`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+
+        assertEquals(1, renameRequested)
+        assertEquals(emptyList<DateSelection>(), rewritten)
+    }
+
+    @Test
+    fun `should offer the jot as a press a screen reader can name and make`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        val jot = composeRule.onNodeWithContentDescription("Due date ${spelled(DATE)}")
+
+        jot.assertHasClickAction()
+        assertEquals("Set due date", clickLabelOf(jot))
+        jot.performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf(DateSelection(DateKind.DUE, DATE)), rewritten)
+    }
+
+    @Test
+    fun `should name the target jot's press after the date it writes`() {
+        render(summary(targetDate = DATE))
+
+        val jot = composeRule.onNodeWithContentDescription("Target date ${spelled(DATE)}")
+
+        assertEquals("Set target date", clickLabelOf(jot))
+    }
+
+    @Test
+    fun `should leave the jot inert on a page that has nowhere to write the date`() {
+        render(summary(targetDate = DATE), rewritable = false)
+
+        composeRule
+            .onNodeWithContentDescription("Target date ${spelled(DATE)}")
+            .assertHasNoClickAction()
+    }
+
+    /**
+     * The tally is what the row says about itself, not something the row can be
+     * asked to do: it is read out with the row and adds nothing to press. Only the
+     * row itself, and the jot that carries a calendar, answer to a press.
+     */
+    @Test
+    fun `should leave the tally a mark to be read and not one to be pressed`() {
+        render(summary(activeCount = 3))
+
+        assertEquals(listOf(OPENS_THE_LIST), presses())
+    }
+
+    @Test
+    fun `should add the jot to what a row can be pressed for and nothing else`() {
+        render(summary(activeCount = 3, dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        assertEquals(listOf(OPENS_THE_LIST, "Set due date"), presses())
+    }
+
+    @Test
+    fun `should keep every verb the row already answered to once the jot takes taps`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        assertEquals(listOf("Edit list name", "Delete list"), verbs())
     }
 
     @Test
@@ -283,10 +386,27 @@ class TodoListRowTest {
     private fun render(
         summary: TodoListSummary,
         tearing: Boolean = false,
-        editable: Boolean = true
+        editable: Boolean = true,
+        rewritable: Boolean = true
     ) {
-        composeRule.setContent { PaperTheme { Row(summary, tearing, editable) } }
+        composeRule.setContent { PaperTheme { Row(summary, tearing, editable, rewritable) } }
     }
+
+    private fun clickLabelOf(node: SemanticsNodeInteraction): String? =
+        node.fetchSemanticsNode().config.getOrNull(SemanticsActions.OnClick)?.label
+
+    private fun verbs(): List<String> = collectVerbs(composeRule.onRoot().fetchSemanticsNode())
+
+    private fun collectVerbs(node: SemanticsNode): List<String> =
+        node.config.getOrNull(SemanticsActions.CustomActions).orEmpty().map { it.label } +
+            node.children.flatMap { collectVerbs(it) }
+
+    private fun presses(): List<String?> = collectPresses(composeRule.onRoot().fetchSemanticsNode())
+
+    private fun collectPresses(node: SemanticsNode): List<String?> =
+        node.config.getOrNull(SemanticsActions.OnClick).let { press ->
+            if (press == null) emptyList() else listOf(press.label)
+        } + node.children.flatMap { collectPresses(it) }
 
     private fun nameX(): Float =
         composeRule.onNodeWithText("Groceries").fetchSemanticsNode().positionInRoot.x
@@ -299,7 +419,12 @@ class TodoListRowTest {
     }
 
     @Composable
-    private fun Row(summary: TodoListSummary, tearing: Boolean, editable: Boolean) {
+    private fun Row(
+        summary: TodoListSummary,
+        tearing: Boolean,
+        editable: Boolean,
+        rewritable: Boolean = true
+    ) {
         TodoListRow(
             summary = summary,
             animated = false,
@@ -307,7 +432,8 @@ class TodoListRowTest {
             onDeleteRequested = { deleteRequested += 1 },
             tearing = tearing,
             onTorn = { torn += 1 },
-            onRenameRequested = if (editable) ({ renameRequested += 1 }) else null
+            onRenameRequested = if (editable) ({ renameRequested += 1 }) else null,
+            onRewriteDate = if (rewritable) ({ rewritten += it }) else null
         )
     }
 
@@ -371,6 +497,7 @@ class TodoListRowTest {
 
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
+        val OPENS_THE_LIST: String? = null
         const val ROW = "row"
         const val ONE_LINE = 1
         const val ONE_PIXEL = 1f

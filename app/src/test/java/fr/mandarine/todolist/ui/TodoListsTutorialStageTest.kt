@@ -11,6 +11,8 @@ import fr.mandarine.todolist.domain.TutorialAction
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.ui.nav.ItemsRoute
+import fr.mandarine.todolist.ui.nav.ListsRoute
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DatePickerRequest
 import fr.mandarine.todolist.ui.todolists.DateTarget
@@ -26,7 +28,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -54,7 +55,7 @@ class TodoListsTutorialStageTest {
     @Test
     fun `should stage the lists screen`() {
         onActivity { activity ->
-            assertEquals(TutorialScreen.LISTS, activity.screen)
+            assertEquals(TutorialScreen.LISTS, activity.stage.screen)
         }
     }
 
@@ -109,7 +110,7 @@ class TodoListsTutorialStageTest {
 
             assertTrue(perform(activity, TutorialAction.OpenDueDatePicker))
             assertEquals(
-                DatePickerRequest(DateTarget.ADD_ROW, DateKind.DUE, null),
+                DatePickerRequest(DateTarget.AddRow, DateKind.DUE, null),
                 activity.screenState.datePickerRequest
             )
         }
@@ -148,6 +149,54 @@ class TodoListsTutorialStageTest {
     }
 
     @Test
+    fun `should leave every row already on the page where it was when the demo writes`() {
+        onActivity { activity ->
+            createList(activity, "Travail")
+            createList(activity, "Voyage")
+            val before = activity.listPositions()
+
+            perform(activity, TutorialAction.OpenListCreateRow)
+            perform(activity, TutorialAction.TypeListName("Hi"))
+            perform(activity, TutorialAction.SubmitList)
+
+            assertEquals(before, activity.listPositions() - "Hi")
+        }
+    }
+
+    @Test
+    fun `should write the demo list above every row already on the page`() {
+        onActivity { activity ->
+            createList(activity, "Travail")
+
+            perform(activity, TutorialAction.OpenListCreateRow)
+            perform(activity, TutorialAction.TypeListName("Hi"))
+            perform(activity, TutorialAction.SubmitList)
+
+            assertEquals("Hi", activity.firstListName())
+        }
+    }
+
+    @Test
+    fun `should claim the demo list as the tutorial's before a row of it is written`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
+            perform(activity, TutorialAction.TypeListName("Hi"))
+            perform(activity, TutorialAction.SubmitList)
+
+            assertEquals(activity.firstListId(), pendingDemoListId())
+        }
+    }
+
+    @Test
+    fun `should claim nothing while the demo has written nothing`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
+
+            assertNull(pendingDemoListId())
+        }
+    }
+
+    @Test
     fun `should refuse to create a list with no name`() {
         onActivity { activity ->
             perform(activity, TutorialAction.OpenListCreateRow)
@@ -157,15 +206,16 @@ class TodoListsTutorialStageTest {
     }
 
     @Test
-    fun `should open the first list`() {
+    fun `should lay the page of the first list over the page of lists`() {
         onActivity { activity ->
             createList(activity, "Hi")
 
             assertTrue(perform(activity, TutorialAction.OpenFirstList))
-            val next = Shadows.shadowOf(activity).nextStartedActivity
-            assertNotNull(next)
-            assertTrue(next!!.component!!.className.contains("TodoListActivity"))
-            assertEquals("Hi", next.getStringExtra("LIST_NAME"))
+            assertEquals(
+                listOf(ListsRoute, ItemsRoute(requireNotNull(activity.firstListId()))),
+                activity.backStack.toList()
+            )
+            assertEquals(TutorialScreen.ITEMS, activity.stage.screen)
         }
     }
 
@@ -203,7 +253,7 @@ class TodoListsTutorialStageTest {
             createFinishedList(activity, "Hi")
 
             assertTrue(perform(activity, TutorialAction.OpenFirstList))
-            assertNotNull(Shadows.shadowOf(activity).nextStartedActivity)
+            assertEquals(TutorialScreen.ITEMS, activity.stage.screen)
         }
     }
 
@@ -248,7 +298,7 @@ class TodoListsTutorialStageTest {
             val bounds = TutorialBounds(left = 1, top = 2, width = 3, height = 4)
             activity.screenState.putBounds(TutorialAnchor.CreateListButton, bounds)
 
-            assertEquals(bounds, activity.boundsOf(TutorialAnchor.CreateListButton))
+            assertEquals(bounds, activity.stage.boundsOf(TutorialAnchor.CreateListButton))
         }
     }
 
@@ -257,7 +307,7 @@ class TodoListsTutorialStageTest {
         onActivity { activity ->
             createList(activity, "Hi")
 
-            val banner = activity.bannerContent()
+            val banner = activity.stage.bannerContent()
 
             assertEquals("Hi", banner?.listName)
         }
@@ -266,7 +316,7 @@ class TodoListsTutorialStageTest {
     @Test
     fun `should draw no banner while there is no list`() {
         onActivity { activity ->
-            assertNull(activity.bannerContent())
+            assertNull(activity.stage.bannerContent())
         }
     }
 
@@ -275,7 +325,7 @@ class TodoListsTutorialStageTest {
         onActivity { activity ->
             createList(activity, "Hi")
 
-            assertEquals(activity.firstListId(), runBlocking { activity.awaitDemoListId() })
+            assertEquals(activity.firstListId(), runBlocking { activity.stage.awaitDemoListId() })
         }
     }
 
@@ -288,7 +338,7 @@ class TodoListsTutorialStageTest {
     }
 
     private fun perform(activity: TodoListsActivity, action: TutorialAction): Boolean =
-        runBlocking { activity.perform(action) }
+        runBlocking { activity.stage.perform(action) }
 
     private fun createList(activity: TodoListsActivity, name: String) {
         activity.viewModel.createList(name)
@@ -303,6 +353,17 @@ class TodoListsTutorialStageTest {
         container.todoRepository.toggle(item.id)
         activity.viewModel.refresh()
     }
+
+    private fun pendingDemoListId(): String? {
+        val app = ApplicationProvider.getApplicationContext<TodoListApplication>()
+        return SharedPreferencesTutorialStateRepository(app).getPendingDemoListId()
+    }
+
+    private fun TodoListsActivity.listPositions(): Map<String, Int> =
+        (viewModel.state.value as? fr.mandarine.todolist.presentation.TodoListsState.Content)
+            ?.let { it.activeSummaries + it.doneSummaries }
+            ?.associate { it.list.name to it.list.position }
+            .orEmpty()
 
     private fun TodoListsActivity.firstListName(): String? = firstSummary()?.list?.name
 

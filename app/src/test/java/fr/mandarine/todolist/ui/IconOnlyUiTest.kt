@@ -10,6 +10,8 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
@@ -130,10 +132,13 @@ class IconOnlyUiTest {
     }
 }
 
+private val TODAY: LocalDate = LocalDate.of(2026, 1, 1)
+
 @Composable
 private fun EmptyItemsScreen() {
     TodoListScreen(
-        listName = "",
+        summary = null,
+        today = TODAY,
         state = TodoListState.Empty,
         screenState = remember { TodoListScreenState() },
         onBack = {},
@@ -148,7 +153,8 @@ private fun EmptyItemsScreen() {
 @Composable
 private fun OneItemScreen() {
     TodoListScreen(
-        listName = "Groceries",
+        summary = TodoListSummary(TodoList("list-1", "Groceries"), allDone = false),
+        today = TODAY,
         state = TodoListState.Content(listOf(TodoItem("1", "Apples", "list-1")), emptyList()),
         screenState = remember { TodoListScreenState() },
         onBack = {},

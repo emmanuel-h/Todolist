@@ -1,8 +1,10 @@
 package fr.mandarine.todolist.ui.todolists
 
 import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.domain.TutorialAnchor
 import androidx.compose.ui.unit.dp
+import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TutorialBounds
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -152,9 +154,9 @@ class TodoListsScreenStateTest {
 
     @Test
     fun `should apply a picked date to the create row`() {
-        val request = DatePickerRequest(DateTarget.ADD_ROW, DateKind.DUE, null)
+        val request = DatePickerRequest(DateTarget.AddRow, DateKind.DUE, null)
 
-        applyPickedDate(state, request, date)
+        applyPickedDate(state, request, date, ::writeRow)
 
         assertEquals(DateSelection(DateKind.DUE, date), state.addRowSelection)
     }
@@ -162,34 +164,34 @@ class TodoListsScreenStateTest {
     @Test
     fun `should apply a picked date to the rename dialog`() {
         state.rename = RenameState.of(TodoList("list-1", "Groceries"))
-        val request = DatePickerRequest(DateTarget.RENAME, DateKind.TARGET, null)
+        val request = DatePickerRequest(DateTarget.Rename, DateKind.TARGET, null)
 
-        applyPickedDate(state, request, date)
+        applyPickedDate(state, request, date, ::writeRow)
 
         assertEquals(DateSelection(DateKind.TARGET, date), state.rename?.selection)
     }
 
     @Test
     fun `should ignore a picked date when the rename dialog has already closed`() {
-        val request = DatePickerRequest(DateTarget.RENAME, DateKind.TARGET, null)
+        val request = DatePickerRequest(DateTarget.Rename, DateKind.TARGET, null)
 
-        applyPickedDate(state, request, date)
+        applyPickedDate(state, request, date, ::writeRow)
 
         assertNull(state.rename)
     }
 
     @Test
     fun `should report the ask owed when a picked day lands under the alarm`() {
-        val request = DatePickerRequest(DateTarget.ADD_ROW, DateKind.DUE, null)
+        val request = DatePickerRequest(DateTarget.AddRow, DateKind.DUE, null)
 
-        assertTrue(applyPickedDate(state, request, date))
+        assertTrue(applyPickedDate(state, request, date, ::writeRow))
     }
 
     @Test
     fun `should report no ask owed when a picked day lands under the calendar`() {
-        val request = DatePickerRequest(DateTarget.ADD_ROW, DateKind.TARGET, null)
+        val request = DatePickerRequest(DateTarget.AddRow, DateKind.TARGET, null)
 
-        assertFalse(applyPickedDate(state, request, date))
+        assertFalse(applyPickedDate(state, request, date, ::writeRow))
     }
 
     @Test
@@ -254,4 +256,104 @@ class TodoListsScreenStateTest {
     fun `should leave the pad off the page when the desk beside it is wide enough`() {
         assertFalse(padLiesOnPage(windowWidth = 914.dp, pageWidth = 640.dp, reach = 80.dp))
     }
+
+    // ── A date jotted against a row already on the page ───────────────────────
+
+    @Test
+    fun `should hand a day circled for a row straight to that row's list`() {
+        val request = DatePickerRequest(DateTarget.Row("list-1"), DateKind.DUE, null)
+
+        applyPickedDate(state, request, date, ::writeRow)
+
+        assertEquals(listOf("list-1" to DateSelection(DateKind.DUE, date)), rowWrites)
+    }
+
+    @Test
+    fun `should leave the line and the edit sheet alone when a row is given a date`() {
+        state.rename = RenameState.of(TodoList("list-1", "Groceries"))
+        val request = DatePickerRequest(DateTarget.Row("list-1"), DateKind.TARGET, null)
+
+        applyPickedDate(state, request, date, ::writeRow)
+
+        assertEquals(DateSelection.None, state.addRowSelection)
+        assertEquals(DateSelection.None, state.rename?.selection)
+    }
+
+    @Test
+    fun `should report the ask owed when the day circled for a row lands under the alarm`() {
+        val request = DatePickerRequest(DateTarget.Row("list-1"), DateKind.DUE, null)
+
+        assertTrue(applyPickedDate(state, request, date, ::writeRow))
+    }
+
+    @Test
+    fun `should write a row's new day through under the name the list already has`() {
+        val owed = writeListDate(page, "list-1", DateSelection(DateKind.DUE, date), ::rename)
+
+        assertTrue(owed)
+        assertEquals(listOf(Rename("list-1", "Groceries", null, date)), renames)
+    }
+
+    @Test
+    fun `should trade a list's target date for the due date circled against its row`() {
+        writeListDate(page, "list-2", DateSelection(DateKind.DUE, date), ::rename)
+
+        assertEquals(listOf(Rename("list-2", "Jardin", null, date)), renames)
+    }
+
+    @Test
+    fun `should report no ask owed when a row keeps the day its alarm was already set to`() {
+        val owed = writeListDate(page, "list-3", DateSelection(DateKind.DUE, date), ::rename)
+
+        assertFalse(owed)
+        assertEquals(listOf(Rename("list-3", "Courses", null, date)), renames)
+    }
+
+    @Test
+    fun `should write nothing when the row's list has left the page`() {
+        val owed = writeListDate(page, "gone", DateSelection(DateKind.DUE, date), ::rename)
+
+        assertFalse(owed)
+        assertEquals(emptyList<Rename>(), renames)
+    }
+
+    @Test
+    fun `should reach a finished list below the divider as readily as an unfinished one`() {
+        writeListDate(page, "list-4", DateSelection(DateKind.TARGET, date), ::rename)
+
+        assertEquals(listOf(Rename("list-4", "Voyage", date, null)), renames)
+    }
+
+    private val rowWrites = mutableListOf<Pair<String, DateSelection>>()
+    private val renames = mutableListOf<Rename>()
+
+    private fun writeRow(listId: String, written: DateSelection): Boolean {
+        rowWrites += listId to written
+        return written.dueDate != null
+    }
+
+    private fun rename(
+        listId: String,
+        name: String,
+        targetDate: LocalDate?,
+        dueDate: LocalDate?
+    ) {
+        renames += Rename(listId, name, targetDate, dueDate)
+    }
+
+    private data class Rename(
+        val listId: String,
+        val name: String,
+        val targetDate: LocalDate?,
+        val dueDate: LocalDate?
+    )
+
+    private val page = TodoListsState.Content(
+        activeSummaries = listOf(
+            TodoListSummary(TodoList("list-1", "Groceries"), allDone = false),
+            TodoListSummary(TodoList("list-2", "Jardin", targetDate = date), allDone = false),
+            TodoListSummary(TodoList("list-3", "Courses", dueDate = date), allDone = false)
+        ),
+        doneSummaries = listOf(TodoListSummary(TodoList("list-4", "Voyage"), allDone = true))
+    )
 }

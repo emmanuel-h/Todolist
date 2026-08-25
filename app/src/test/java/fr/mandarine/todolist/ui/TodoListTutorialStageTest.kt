@@ -1,19 +1,27 @@
 package fr.mandarine.todolist.ui
 
-import android.content.Intent
-import androidx.test.core.app.ActivityScenario
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.MainThreadDatabaseRule
 import fr.mandarine.todolist.TodoListApplication
 import fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository
+import fr.mandarine.todolist.domain.AddTodoUseCase
+import fr.mandarine.todolist.domain.DeleteTodoUseCase
+import fr.mandarine.todolist.domain.EditTodoUseCase
+import fr.mandarine.todolist.domain.GetTodoListsUseCase
+import fr.mandarine.todolist.domain.GetTodosUseCase
+import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TutorialAction
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.presentation.TodoListState
+import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.ui.todolist.ItemsStage
+import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,6 +37,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class TodoListTutorialStageTest {
+
+    private var left = 0
 
     @get:Rule
     val databaseRule = MainThreadDatabaseRule()
@@ -232,13 +242,10 @@ class TodoListTutorialStageTest {
     }
 
     @Test
-    fun `should leave the screen when the tutorial navigates back`() {
+    fun `should peel the page off when the tutorial navigates back`() {
         onActivity { activity ->
-            activity.tutorialBackCallback.isEnabled = true
-
             assertTrue(perform(activity, TutorialAction.NavigateBack))
-            assertFalse(activity.tutorialBackCallback.isEnabled)
-            assertTrue(activity.isFinishing)
+            assertEquals(1, left)
         }
     }
 
@@ -265,20 +272,28 @@ class TodoListTutorialStageTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun onActivity(block: (TodoListActivity) -> Unit) {
-        val intent = Intent(
-            ApplicationProvider.getApplicationContext(),
-            TodoListActivity::class.java
-        ).putExtra("LIST_ID", LIST_ID).putExtra("LIST_NAME", "Groceries")
-        ActivityScenario.launch<TodoListActivity>(intent).use { scenario ->
-            scenario.onActivity(block)
-        }
+    private fun onActivity(block: (ItemsStage) -> Unit) {
+        val container = ApplicationProvider.getApplicationContext<TodoListApplication>().container
+        val repository = container.todoRepository
+        val viewModel = TodoListViewModel(
+            AddTodoUseCase(repository),
+            GetTodosUseCase(repository),
+            ToggleTodoUseCase(repository),
+            DeleteTodoUseCase(repository),
+            EditTodoUseCase(repository),
+            ReorderTodosUseCase(repository),
+            GetTodoListsUseCase(container.todoListRepository),
+            listId = LIST_ID,
+            dispatcher = container.databaseDispatcher
+        )
+        viewModel.refresh()
+        block(ItemsStage(viewModel, TodoListScreenState(), { _, bounds -> bounds }) { left += 1 })
     }
 
-    private fun perform(activity: TodoListActivity, action: TutorialAction): Boolean =
+    private fun perform(activity: ItemsStage, action: TutorialAction): Boolean =
         runBlocking { activity.perform(action) }
 
-    private fun seedItems(activity: TodoListActivity, vararg titles: String) {
+    private fun seedItems(activity: ItemsStage, vararg titles: String) {
         val repository = ApplicationProvider.getApplicationContext<TodoListApplication>()
             .container.todoRepository
         titles.forEachIndexed { index, title ->
@@ -287,16 +302,16 @@ class TodoListTutorialStageTest {
         activity.viewModel.refresh()
     }
 
-    private fun TodoListActivity.content(): TodoListState.Content? =
+    private fun ItemsStage.content(): TodoListState.Content? =
         viewModel.state.value as? TodoListState.Content
 
-    private fun TodoListActivity.activeTitles(): List<String> =
+    private fun ItemsStage.activeTitles(): List<String> =
         content()?.activeItems.orEmpty().map { it.title }
 
-    private fun TodoListActivity.completedTitles(): List<String> =
+    private fun ItemsStage.completedTitles(): List<String> =
         content()?.completedItems.orEmpty().map { it.title }
 
-    private fun TodoListActivity.activeIds(): List<String> =
+    private fun ItemsStage.activeIds(): List<String> =
         content()?.activeItems.orEmpty().map { it.id }
 
     private companion object {

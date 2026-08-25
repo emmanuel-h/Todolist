@@ -14,6 +14,7 @@ import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.listmeta.DateJot
 import fr.mandarine.todolist.ui.listmeta.OpenCount
+import fr.mandarine.todolist.ui.nav.travellingName
 import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
@@ -43,6 +44,7 @@ fun TodoListRow(
     tearing: Boolean = false,
     onTorn: () -> Unit = {},
     onRenameRequested: (() -> Unit)? = null,
+    onRewriteDate: ((DateSelection) -> Unit)? = null,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null
 ) {
@@ -61,7 +63,7 @@ fun TodoListRow(
     ) {
         RuledRow(modifier = Modifier.spokenVerbs(verbs), onClick = onOpen) {
             RowName(summary = summary, animated = animated)
-            Marginalia(summary = summary, animated = animated)
+            Marginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
         }
     }
 }
@@ -78,7 +80,8 @@ private fun RowScope.RowName(summary: TodoListSummary, animated: Boolean) {
             .weight(1f)
             .padding(end = NAME_END_GAP)
             .seatOnRule()
-            .penStrike(strike, ink),
+            .penStrike(strike, ink)
+            .travellingName(summary.list.id),
         style = style,
         color = ink,
         onTextLayout = strike::onTextLayout
@@ -86,7 +89,11 @@ private fun RowScope.RowName(summary: TodoListSummary, animated: Boolean) {
 }
 
 @Composable
-private fun Marginalia(summary: TodoListSummary, animated: Boolean) {
+private fun Marginalia(
+    summary: TodoListSummary,
+    animated: Boolean,
+    onRewriteDate: ((DateSelection) -> Unit)?
+) {
     val palette = LocalPaperPalette.current
     val targetDate = summary.list.targetDate
     val dueDate = summary.list.dueDate
@@ -96,7 +103,8 @@ private fun Marginalia(summary: TodoListSummary, animated: Boolean) {
             date = targetDate,
             kind = DateKind.TARGET,
             showYear = summary.showTargetYear,
-            tint = palette.inked(targetTone(summary.isTargetDateElapsed))
+            tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
+            onRewrite = onRewriteDate
         )
     }
     if (dueDate != null && dueStatus != null) {
@@ -104,7 +112,8 @@ private fun Marginalia(summary: TodoListSummary, animated: Boolean) {
             date = dueDate,
             kind = DateKind.DUE,
             showYear = summary.showDueDateYear,
-            tint = palette.inked(dueTone(dueStatus))
+            tint = palette.inked(dueTone(dueStatus)),
+            onRewrite = onRewriteDate
         )
     }
     OpenCount(count = summary.activeCount, animated = animated)

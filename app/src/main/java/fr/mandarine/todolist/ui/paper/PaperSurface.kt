@@ -107,7 +107,7 @@ fun PaperSurface(
         modifier = Modifier
             .fillMaxSize()
             .then(modifier)
-            .paperSheet()
+            .paperGround()
     ) {
         content()
         PageVeil()

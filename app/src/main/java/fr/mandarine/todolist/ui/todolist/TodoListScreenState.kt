@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.ui.DeletionState
+import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchors
 
@@ -17,6 +18,10 @@ class TodoListScreenState : TutorialAnchorHost by TutorialAnchors() {
     var addRowText by mutableStateOf("")
 
     var editingItemId by mutableStateOf<String?>(null)
+
+    var renamingList by mutableStateOf(false)
+
+    var dateSheet by mutableStateOf<DateSelection?>(null)
 
     var pendingToggle by mutableStateOf<String?>(null)
 

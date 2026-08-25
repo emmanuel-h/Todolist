@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
 object PaperDimens {
 
     val gutter = 40.dp
+    val wideGutter = 100.dp
     val rule = 1.dp
     val pageWidth = 640.dp
     val rowEndPadding = 4.dp

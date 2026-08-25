@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui.listmeta
 
 import android.text.format.DateFormat
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.seatOnRule
 import fr.mandarine.todolist.ui.todolists.DateKind
+import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.todolists.listDateFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -34,13 +36,23 @@ private val JOT_SPACING = 4.dp
 private val JOT_END_PADDING = 8.dp
 private const val ONE_LINE = 1
 
+/**
+ * A date written in the margin of a line. Wherever the same mark is drawn it means
+ * the same thing, so a jot that can be rewritten carries its calendar with it
+ * rather than leaving the line it sits on to answer for the tap.
+ *
+ * The tap and the words are declared on the one node: a click hung on the row that
+ * holds the jot is a separate node from the one that says the date, which leaves a
+ * screen reader a mark it can read but not press and a press it cannot name.
+ */
 @Composable
 fun DateJot(
     date: LocalDate,
     kind: DateKind,
     showYear: Boolean,
     tint: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRewrite: ((DateSelection) -> Unit)? = null
 ) {
     val locale = Locale.getDefault(Locale.Category.FORMAT)
     val formatter = remember(locale, showYear) { jotFormatter(locale, showYear) }
@@ -53,10 +65,24 @@ fun DateJot(
         },
         remember(date, spokenFormatter) { date.format(spokenFormatter) }
     )
+    val rewriting = stringResource(
+        when (kind) {
+            DateKind.TARGET -> R.string.set_target_date
+            DateKind.DUE -> R.string.set_due_date
+        }
+    )
+    val rewrite = onRewrite?.let { write -> { write(DateSelection(kind, date)) } }
     Row(
         modifier = modifier
             .padding(end = JOT_END_PADDING)
-            .semantics(mergeDescendants = true) { contentDescription = spoken },
+            .semantics(mergeDescendants = true) { contentDescription = spoken }
+            .then(
+                if (rewrite == null) {
+                    Modifier
+                } else {
+                    Modifier.clickable(onClickLabel = rewriting, onClick = rewrite)
+                }
+            ),
         verticalAlignment = Alignment.Top
     ) {
         OnRuleSlot {

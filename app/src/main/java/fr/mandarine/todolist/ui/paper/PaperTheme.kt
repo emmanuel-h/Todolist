@@ -70,9 +70,12 @@ fun PaperTheme(
     val pitch = maxOf(pagePitch(PaperType.itemLine), pagePitch(PaperType.listLine))
     val hand = rememberRuledHand(pitch)
     val veil = remember { PaperVeil() }
+    val fit = rememberPageFit()
     CompositionLocalProvider(
         LocalPaperPalette provides palette,
         LocalPagePitch provides pitch,
+        LocalPageFit provides fit,
+        LocalPaperGutter provides gutterFor(fit),
         LocalRuledHand provides hand,
         LocalPaperVeil provides veil
     ) {

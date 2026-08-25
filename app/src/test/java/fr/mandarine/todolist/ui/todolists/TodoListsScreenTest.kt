@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -23,12 +24,14 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
+import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -300,6 +303,113 @@ class TodoListsScreenTest {
         composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
     }
 
+    /**
+     * The scrap is spent as the window runs down, but a reader aims at where they
+     * saw it land. A reach that narrows with the paper turns a delete they meant to
+     * take back into one they cannot, and there is no second way to undo.
+     */
+    @Test
+    fun `should keep the undo within reach of where it landed as its paper is spent`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        tearOffGroceries()
+        val landed = slipBounds()
+        composeRule.mainClock.advanceTimeBy(UNDO_SLIP_MILLIS * SPENT_NUMERATOR / SPENT_DIVISOR)
+
+        assertEquals(landed, slipBounds())
+    }
+
+    @Test
+    fun `should still put the list back when the undo is tapped late in its window`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        tearOffGroceries()
+        composeRule.mainClock.advanceTimeBy(UNDO_SLIP_MILLIS * SPENT_NUMERATOR / SPENT_DIVISOR)
+        composeRule.onNodeWithContentDescription(UNDO).performClick()
+        slipSettles()
+
+        assertTrue(deleted.isEmpty())
+        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
+    }
+
+    // ── The jot in a row's margin ─────────────────────────────────────────────
+
+    @Test
+    fun `should open the calendar on a row's own day rather than open the list`() {
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
+
+        composeRule.onNodeWithContentDescription("Due date ${spelled(DATE)}").performClick()
+
+        assertEquals(DateTarget.Row("1"), screenState.datePickerRequest?.target)
+        assertEquals(DateKind.DUE, screenState.datePickerRequest?.kind)
+        assertEquals(DATE, screenState.datePickerRequest?.initial)
+        assertEquals(emptyList<String>(), opened)
+    }
+
+    @Test
+    fun `should reach the jot of a finished list below the divider too`() {
+        render(
+            content(
+                active = listOf(summary("1", "Groceries")),
+                done = listOf(summary("2", "Jardin", allDone = true, targetDate = DATE))
+            )
+        )
+
+        composeRule.onNodeWithContentDescription("Target date ${spelled(DATE)}").performClick()
+
+        assertEquals(DateTarget.Row("2"), screenState.datePickerRequest?.target)
+    }
+
+    @Test
+    fun `should write the day picked for a row back onto that row's list`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries", targetDate = DATE))))
+
+        composeRule.onNodeWithContentDescription("Target date ${spelled(DATE)}").performClick()
+        composeRule.onNodeWithText(DATE.plusDays(1).dayOfMonth.toString()).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf("Groceries"), renamed)
+        assertEquals(listOf(DATE.plusDays(1) to null), renamedDates)
+        assertNull(screenState.datePickerRequest)
+    }
+
+    @Test
+    fun `should ask for notifications when a day picked for a row lands under the alarm`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
+
+        composeRule.onNodeWithContentDescription("Due date ${spelled(DATE)}").performClick()
+        composeRule.onNodeWithText(DATE.plusDays(1).dayOfMonth.toString()).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(null to DATE.plusDays(1)), renamedDates)
+        assertEquals(1, dueDatesSet)
+    }
+
+    @Test
+    fun `should still open the list when the row carrying a jot is tapped elsewhere`() {
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
+
+        composeRule.onNodeWithText("Groceries").performClick()
+
+        assertEquals(listOf("Groceries"), opened)
+        assertNull(screenState.datePickerRequest)
+    }
+
+    @Test
+    fun `should still uncover the edit surface of a row carrying a jot`() {
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
+
+        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+
+        assertEquals(RenameState.of(TodoList("1", "Groceries", dueDate = DATE)), screenState.rename)
+        assertNull(screenState.datePickerRequest)
+    }
+
     // ── Rename ────────────────────────────────────────────────────────────────
 
     @Test
@@ -330,7 +440,7 @@ class TodoListsScreenTest {
 
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
 
-        assertEquals(DateTarget.RENAME, screenState.datePickerRequest?.target)
+        assertEquals(DateTarget.Rename, screenState.datePickerRequest?.target)
         assertEquals(DateKind.TARGET, screenState.datePickerRequest?.kind)
     }
 
@@ -547,7 +657,7 @@ class TodoListsScreenTest {
 
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
 
-        assertEquals(DateTarget.ADD_ROW, screenState.datePickerRequest?.target)
+        assertEquals(DateTarget.AddRow, screenState.datePickerRequest?.target)
         assertEquals(DateKind.TARGET, screenState.datePickerRequest?.kind)
     }
 
@@ -644,7 +754,7 @@ class TodoListsScreenTest {
     private fun openDateSheet(kind: DateKind) {
         composeRule.runOnIdle {
             screenState.animationsEnabled = false
-            screenState.datePickerRequest = DatePickerRequest(DateTarget.ADD_ROW, kind, null)
+            screenState.datePickerRequest = DatePickerRequest(DateTarget.AddRow, kind, null)
         }
         composeRule.waitForIdle()
     }
@@ -659,8 +769,23 @@ class TodoListsScreenTest {
             TodoListsState.Content(active, done)
         }
 
-    private fun summary(id: String, name: String, allDone: Boolean = false) =
-        TodoListSummary(list = TodoList(id, name), allDone = allDone)
+    private fun summary(
+        id: String,
+        name: String,
+        allDone: Boolean = false,
+        targetDate: LocalDate? = null,
+        dueDate: LocalDate? = null
+    ) = TodoListSummary(
+        list = TodoList(id, name, targetDate = targetDate, dueDate = dueDate),
+        allDone = allDone,
+        dueDateStatus = dueDate?.let { DueDateStatus.FUTURE }
+    )
+
+    private fun spelled(date: LocalDate): String =
+        formatListDate(date, showYear = true, locale = Locale.getDefault(Locale.Category.FORMAT))
+
+    private fun slipBounds(): Rect =
+        composeRule.onNodeWithContentDescription(UNDO).fetchSemanticsNode().boundsInRoot
 
     private fun texts(): List<String> = collectText(composeRule.onRoot().fetchSemanticsNode())
 
@@ -682,6 +807,8 @@ class TodoListsScreenTest {
         const val CREATE_LIST = "Create new list"
         const val UNDO = "Undo delete"
         const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L
+        const val SPENT_NUMERATOR = 3L
+        const val SPENT_DIVISOR = 4L
         const val SET_TARGET_DATE = "Set target date"
         const val CLEAR_TARGET_DATE = "Clear target date"
         const val SET_DUE_DATE = "Set due date"
