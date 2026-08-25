@@ -151,6 +151,19 @@ class RoomTodoRepositoryUnitTest {
 
 
     @Test
+    fun `should reopen item at one past the highest active position when duplicate positions exist`() {
+        every { dao.updateCompletedAndPosition("item-1", false, null, 6) } returns Unit
+        every { dao.getById("item-1") } returns TodoItemEntity("item-1", "Item 1", "list-1", completed = true, completedAt = 1000L)
+        every { dao.getAllByListId("list-1") } returns listOf(
+            TodoItemEntity("a", "Active A", "list-1", completed = false, position = 5),
+            TodoItemEntity("b", "Active B", "list-1", completed = false, position = 5),
+            TodoItemEntity("item-1", "Item 1", "list-1", completed = true, completedAt = 1000L)
+        )
+        repository.toggle("item-1")
+        verify { dao.updateCompletedAndPosition("item-1", false, null, 6) }
+    }
+
+    @Test
     fun `should do nothing when toggle is called for non-existent id`() {
         every { dao.getById("non-existent") } returns null
         repository.toggle("non-existent")
