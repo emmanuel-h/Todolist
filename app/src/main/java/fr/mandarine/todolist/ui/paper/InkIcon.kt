@@ -29,16 +29,16 @@ private const val NIB_LABEL = "nibSquash"
 enum class IconSeat { Centred, OnRule }
 
 /**
- * Where the ink stops inside a glyph's own box, as a fraction of that box: the
- * drawables are drawn on a 24 unit grid and each leaves a different blank border
- * under its mark.
+ * Where the ink stops inside a glyph's own box, as a fraction of that box: every
+ * glyph is stroked on the same 24 unit grid, so the foot is the lowest point of
+ * its path plus the half nib the round cap adds under it.
  */
 @Immutable
 object GlyphFoot {
-    const val plus = 19f / 24f
     const val arrow = 20f / 24f
-    const val trash = 21f / 24f
-    const val pencil = 21f / 24f
+    const val chevron = 19f / 24f
+    const val trash = 23f / 24f
+    const val pencil = 23f / 24f
 }
 
 @Composable
@@ -46,7 +46,7 @@ fun InkIcon(
     painter: Painter,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    tint: Color = LocalPaperPalette.current.ink,
+    tint: Color = LocalPaperPalette.current.inked(InkTone.Words),
     size: Dp = PaperDimens.iconGlyph
 ) {
     Icon(
@@ -65,14 +65,15 @@ fun InkIconButton(
     modifier: Modifier = Modifier,
     tint: Color = LocalPaperPalette.current.inkSoft,
     enabled: Boolean = true,
-    seat: IconSeat = IconSeat.Centred
+    seat: IconSeat = IconSeat.Centred,
+    foot: Float = GlyphFoot.arrow
 ) {
     val onRule = seat == IconSeat.OnRule
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val squash by animateFloatAsState(
         targetValue = if (pressed) NIB_SQUASH else NIB_REST,
-        animationSpec = PaperMotion.nibSquash,
+        animationSpec = PaperMotion.pickUp,
         label = NIB_LABEL
     )
     Box(
@@ -88,7 +89,7 @@ fun InkIconButton(
             ),
         contentAlignment = if (onRule) Alignment.TopCenter else Alignment.Center
     ) {
-        val seated = if (onRule) Modifier.seatGlyphOnRule(GlyphFoot.arrow) else Modifier
+        val seated = if (onRule) Modifier.seatGlyphOnRule(foot) else Modifier
         InkIcon(
             painter = painter,
             contentDescription = contentDescription,

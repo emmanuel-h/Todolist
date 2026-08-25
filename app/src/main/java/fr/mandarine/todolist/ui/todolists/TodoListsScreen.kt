@@ -34,8 +34,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoList
@@ -45,15 +47,18 @@ import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.InkAddLine
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
+import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.paper.StickyNotePad
 import fr.mandarine.todolist.ui.paper.UndoSlip
 import fr.mandarine.todolist.ui.paper.headMarginFade
+import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
@@ -93,7 +98,8 @@ fun TodoListsScreen(
     onRenameList: (String, String, LocalDate?, LocalDate?) -> Unit,
     onDeleteList: (String) -> Unit,
     onReorder: (Int, Int) -> Unit,
-    onReplayTutorial: () -> Unit
+    onReplayTutorial: () -> Unit,
+    onDueDateSet: () -> Unit = {}
 ) {
     val content = state as? TodoListsState.Content
     val deletion = screenState.deletion
@@ -107,6 +113,7 @@ fun TodoListsScreen(
     val allIds = (content?.activeSummaries.orEmpty() + content?.doneSummaries.orEmpty())
         .map { it.list.id }
 
+    val pageEmpty = activeSummaries.isEmpty() && doneSummaries.isEmpty()
     val pitch = LocalPagePitch.current
     val listState = rememberLazyListState()
     val tail = rememberPageTail(listState, pitch)
@@ -117,12 +124,31 @@ fun TodoListsScreen(
     val focusManager = LocalFocusManager.current
     val insets = pageVerticalInsets()
     val topInset = insets.calculateTopPadding()
+    val bottomInset = insets.calculateBottomPadding()
     val headMargin = topInset + pitch
     val palette = LocalPaperPalette.current
     val seam = keyboardSeam(deletion.pending == null)
+    val padFootprint = if (screenState.addRowExpanded) 0.dp else padFootMargin(bottomInset)
+    val restingSpace = (bottomInset - padFootprint).coerceAtLeast(0.dp)
 
     val requestDelete: (String) -> Unit = { id ->
         if (!session.dragging) deletion.request(id)?.let(onDeleteList)
+    }
+    /**
+     * A tap on a row while the pen is still on the add line finishes that line
+     * rather than leaving the screen with the words on it: on a page full of lists
+     * there may be no blank paper left to tap, and a tap that loses what was
+     * written reads as a mistake the app made.
+     */
+    val openList: (TodoList) -> Unit = { list ->
+        when {
+            session.dragging -> Unit
+            screenState.addRowExpanded -> {
+                submitAddRow(screenState, onCreateList)
+                screenState.closeAddRow()
+            }
+            else -> onOpenList(list)
+        }
     }
     val holdTorn: (String) -> Unit = { id ->
         listState.holdPage {
@@ -162,11 +188,11 @@ fun TodoListsScreen(
                         seam = seam
                     )
                     .headMarginFade(listState, headMargin)
-                    .consumeWindowInsets(WindowInsets.safeDrawing),
+                    .consumeWindowInsets(WindowInsets.safeDrawing)
+                    .padding(bottom = padFootprint),
                 contentPadding = PaddingValues(
                     top = topInset,
-                    bottom = insets.calculateBottomPadding() +
-                        PaperDimens.stickyPad + pitch + tail.height
+                    bottom = restingSpace + pitch + tail.height
                 )
             ) {
                 item(key = HEAD_KEY, contentType = HEAD_TYPE) {
@@ -178,23 +204,30 @@ fun TodoListsScreen(
                         enter = unfoldFromHeadRule(screenState.animationsEnabled),
                         exit = foldAwayFromPage(screenState.animationsEnabled)
                     ) {
-                        InkAddLine(
-                            text = screenState.addRowText,
-                            onTextChange = { screenState.addRowText = it },
-                            onCommit = { _ -> submitAddRow(screenState, onCreateList) },
-                            armed = screenState.addRowExpanded,
-                            onPenUp = { screenState.openAddRow() },
-                            onPenDown = { screenState.closeAddRow() },
-                            modifier = Modifier
-                                .tutorialAnchor(screenState, TutorialAnchor.ListCreateRow)
-                                .tutorialAnchor(screenState, TutorialAnchor.TargetDateButton)
-                                .tutorialAnchor(screenState, TutorialAnchor.DueDateButton)
-                                .tutorialAnchor(screenState, TutorialAnchor.SubmitListButton),
-                            fieldModifier = Modifier
-                                .tutorialAnchor(screenState, TutorialAnchor.ListNameField),
-                            style = MaterialTheme.typography.titleMedium,
-                            animated = screenState.animationsEnabled
-                        )
+                        Column {
+                            InkAddLine(
+                                text = screenState.addRowText,
+                                onTextChange = { screenState.addRowText = it },
+                                onCommit = { _ -> submitAddRow(screenState, onCreateList) },
+                                armed = screenState.addRowExpanded,
+                                onPenUp = { screenState.openAddRow() },
+                                onPenDown = { screenState.closeAddRow() },
+                                modifier = Modifier
+                                    .tutorialAnchor(screenState, TutorialAnchor.ListCreateRow)
+                                    .tutorialAnchor(screenState, TutorialAnchor.SubmitListButton),
+                                fieldModifier = Modifier
+                                    .tutorialAnchor(screenState, TutorialAnchor.ListNameField),
+                                style = MaterialTheme.typography.titleMedium,
+                                animated = screenState.animationsEnabled
+                            )
+                            AnimatedVisibility(
+                                visible = dateMarksOwed(screenState),
+                                enter = unfoldFromHeadRule(screenState.animationsEnabled),
+                                exit = foldAwayFromPage(screenState.animationsEnabled)
+                            ) {
+                                AddLineDateRule(screenState, onDueDateSet)
+                            }
+                        }
                     }
                 }
                 itemsIndexed(
@@ -212,7 +245,7 @@ fun TodoListsScreen(
                         session = session,
                         edgeScroll = edgeScroll,
                         screenState = screenState,
-                        onOpenList = onOpenList,
+                        onOpenList = openList,
                         onDeleteRequested = requestDelete,
                         onTorn = holdTorn,
                         onReorder = onReorder
@@ -222,7 +255,8 @@ fun TodoListsScreen(
                     item(key = SKIP_KEY, contentType = SKIP_TYPE) {
                         SectionSkip(
                             completedCount = doneSummaries.size,
-                            modifier = animatedRow(screenState)
+                            modifier = animatedRow(screenState),
+                            animated = screenState.animationsEnabled
                         )
                     }
                 }
@@ -235,7 +269,7 @@ fun TodoListsScreen(
                     TodoListRow(
                         summary = summary,
                         animated = screenState.animationsEnabled,
-                        onOpen = { if (!session.dragging) onOpenList(summary.list) },
+                        onOpen = { openList(summary.list) },
                         onDeleteRequested = { requestDelete(summary.list.id) },
                         modifier = animatedRow(screenState)
                             .then(rowAnchor(screenState, firstRow, TutorialAnchor.FirstListRow))
@@ -252,17 +286,21 @@ fun TodoListsScreen(
             }
         }
 
-        if (!screenState.addRowExpanded) {
+        AnimatedVisibility(
+            visible = !screenState.addRowExpanded,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(CORNER_MARGIN),
+            enter = fadeIn(PaperMotion.rowEnter),
+            exit = fadeOut(PaperMotion.rowExit)
+        ) {
             InkIconButton(
-                painter = painterResource(R.drawable.ic_replay),
+                painter = painterResource(R.drawable.ic_help),
                 contentDescription = stringResource(R.string.replay_tutorial),
                 onClick = onReplayTutorial,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(CORNER_MARGIN)
-                    .alpha(REPLAY_ALPHA),
-                tint = LocalPaperPalette.current.pencil
+                modifier = Modifier.alpha(REPLAY_ALPHA),
+                tint = LocalPaperPalette.current.inked(InkTone.Margin)
             )
         }
         StickyNotePad(
@@ -274,7 +312,8 @@ fun TodoListsScreen(
                 .padding(CORNER_MARGIN)
                 .tutorialAnchor(screenState, TutorialAnchor.CreateListButton),
             taken = screenState.addRowExpanded,
-            reducedMotion = !screenState.animationsEnabled
+            reducedMotion = !screenState.animationsEnabled,
+            beckons = pageEmpty
         )
         UndoSlip(
             pending = deletion.pending?.id,
@@ -290,8 +329,10 @@ fun TodoListsScreen(
         RenameListDialog(
             state = rename,
             onNameChange = { screenState.rename = rename.copy(name = it) },
-            onKindChange = {
-                screenState.rename = rename.copy(selection = rename.selection.withKind(it))
+            onKindChange = { kind ->
+                if (writeRenameSelection(screenState, rename.selection.withKind(kind))) {
+                    onDueDateSet()
+                }
             },
             onPickDate = {
                 screenState.datePickerRequest = DatePickerRequest(
@@ -323,14 +364,70 @@ fun TodoListsScreen(
         ListDatePickerDialog(
             initial = request.initial,
             today = today,
+            animated = screenState.animationsEnabled,
             onDismiss = { screenState.datePickerRequest = null },
             onPicked = { date ->
-                applyPickedDate(screenState, request, date)
+                val owed = applyPickedDate(screenState, request, date)
                 screenState.datePickerRequest = null
+                if (owed) onDueDateSet()
             }
         )
     }
 }
+
+/**
+ * The line being written wears its date marks on the rule beneath it, the way the
+ * edit sheet does — but only once there are words for the date to belong to, so
+ * the sheet taken off the pad still reads as one bare rule until it is written on.
+ */
+@Composable
+private fun AddLineDateRule(screenState: TodoListsScreenState, onDueDateSet: () -> Unit) {
+    val selection = screenState.addRowSelection
+    RuledRow {
+        DateMarks(
+            selection = selection,
+            onKindChange = { kind ->
+                if (writeAddRowSelection(screenState, selection.withKind(kind))) onDueDateSet()
+            },
+            onPickDate = {
+                screenState.datePickerRequest = DatePickerRequest(
+                    target = DateTarget.ADD_ROW,
+                    kind = selection.kind,
+                    initial = selection.date
+                )
+            },
+            onClearDate = { screenState.addRowSelection = selection.cleared() },
+            targetModifier = Modifier
+                .tutorialAnchor(screenState, TutorialAnchor.TargetDateButton),
+            dueModifier = Modifier
+                .tutorialAnchor(screenState, TutorialAnchor.DueDateButton)
+        )
+    }
+}
+
+internal fun dateMarksOwed(screenState: TodoListsScreenState): Boolean =
+    screenState.addRowText.isNotBlank() || screenState.addRowSelection.date != null
+
+/**
+ * The pad lies on the page itself only when there is no desk around the page to
+ * lie on. Where it does, the page keeps a foot margin the width of the pad's
+ * footprint, so no row is ever written underneath it at any font scale — and
+ * where the page is narrow enough to leave a margin beside it, the page keeps its
+ * whole height.
+ */
+@Composable
+private fun padFootMargin(bottomInset: Dp): Dp {
+    val windowWidth = LocalWindowInfo.current.containerDpSize.width
+    val reach = PaperDimens.stickyPad + CORNER_MARGIN
+    return if (padLiesOnPage(windowWidth, PaperDimens.pageWidth, reach)) {
+        bottomInset + reach
+    } else {
+        0.dp
+    }
+}
+
+internal fun padLiesOnPage(windowWidth: Dp, pageWidth: Dp, reach: Dp): Boolean =
+    (windowWidth - minOf(windowWidth, pageWidth)) / 2f < reach
 
 /**
  * The line does not go away once a list is written on it: the sheet stays on the
@@ -349,20 +446,39 @@ internal fun submitAddRow(
     return true
 }
 
+/**
+ * Every route to a date goes through one of these two, and each answers the only
+ * question the page asks of a write: did a due date just come into existence, and
+ * is the notification ask therefore owed?
+ */
 internal fun applyPickedDate(
     screenState: TodoListsScreenState,
     request: DatePickerRequest,
     date: LocalDate
-) {
-    when (request.target) {
-        DateTarget.ADD_ROW -> screenState.addRowSelection = DateSelection(request.kind, date)
-        DateTarget.RENAME -> {
-            val rename = screenState.rename ?: return
-            screenState.rename = rename.copy(
-                selection = DateSelection(request.kind, date)
-            )
-        }
+): Boolean {
+    val picked = DateSelection(request.kind, date)
+    return when (request.target) {
+        DateTarget.ADD_ROW -> writeAddRowSelection(screenState, picked)
+        DateTarget.RENAME -> writeRenameSelection(screenState, picked)
     }
+}
+
+internal fun writeAddRowSelection(
+    screenState: TodoListsScreenState,
+    written: DateSelection
+): Boolean {
+    val before = screenState.addRowSelection
+    screenState.addRowSelection = written
+    return dueDateWritten(before, written)
+}
+
+internal fun writeRenameSelection(
+    screenState: TodoListsScreenState,
+    written: DateSelection
+): Boolean {
+    val rename = screenState.rename ?: return false
+    screenState.rename = rename.copy(selection = written)
+    return dueDateWritten(rename.selection, written)
 }
 
 @Composable
@@ -406,7 +522,7 @@ private fun LazyItemScope.ActiveListRow(
         TodoListRow(
             summary = summary,
             animated = screenState.animationsEnabled,
-            onOpen = { if (!session.dragging) onOpenList(summary.list) },
+            onOpen = { onOpenList(summary.list) },
             onDeleteRequested = { onDeleteRequested(summary.list.id) },
             modifier = resting
                 .liftedSlip(session, lifted, screenState.animationsEnabled)
@@ -475,9 +591,9 @@ private fun unfoldFromHeadRule(animated: Boolean): EnterTransition =
         EnterTransition.None
     } else {
         expandVertically(
-            animationSpec = PaperMotion.lineUnfold,
+            animationSpec = PaperMotion.rowUnfold,
             expandFrom = Alignment.Top
-        ) + fadeIn(animationSpec = PaperMotion.lineInk)
+        ) + fadeIn(animationSpec = PaperMotion.rowEnter)
     }
 
 private fun foldAwayFromPage(animated: Boolean): ExitTransition =
@@ -485,9 +601,9 @@ private fun foldAwayFromPage(animated: Boolean): ExitTransition =
         ExitTransition.None
     } else {
         shrinkVertically(
-            animationSpec = PaperMotion.lineFold,
+            animationSpec = PaperMotion.rowFold,
             shrinkTowards = Alignment.Top
-        ) + fadeOut(animationSpec = PaperMotion.lineInk)
+        ) + fadeOut(animationSpec = PaperMotion.rowExit)
     }
 
 /**

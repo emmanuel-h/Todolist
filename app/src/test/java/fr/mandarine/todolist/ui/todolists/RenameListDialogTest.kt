@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.paper.PaperTheme
@@ -62,6 +63,14 @@ class RenameListDialogTest {
     }
 
     @Test
+    fun `should carry no confirm row on the sheet`() {
+        render(RenameState.of(TodoList("1", "Groceries")))
+
+        composeRule.onNodeWithContentDescription(SAVE_NAME).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(CANCEL).assertDoesNotExist()
+    }
+
+    @Test
     fun `should mark the calendar toggle when the dialog opens with no date`() {
         render(RenameState.of(TodoList("1", "Groceries")))
 
@@ -106,11 +115,18 @@ class RenameListDialogTest {
     }
 
     @Test
-    fun `should show the picked date in the date box`() {
+    fun `should write the picked date out on the sheet`() {
         render(RenameState.of(TodoList("1", "Groceries", targetDate = DATE)))
 
         val formatted = formatListDate(DATE, showYear = true, locale = Locale.getDefault())
         composeRule.onNodeWithText(formatted).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should leave the date line as a bare hint while the list has no date`() {
+        render(RenameState.of(TodoList("1", "Groceries")))
+
+        composeRule.onNodeWithText(HINT).assertIsDisplayed()
     }
 
     @Test
@@ -140,7 +156,7 @@ class RenameListDialogTest {
     }
 
     @Test
-    fun `should ask for a date when the date box is tapped`() {
+    fun `should ask for a date when the written date is tapped`() {
         render(RenameState.of(TodoList("1", "Groceries")))
 
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
@@ -149,22 +165,25 @@ class RenameListDialogTest {
     }
 
     @Test
-    fun `should confirm the rename`() {
+    fun `should keep the writing when the keyboard finishes the line`() {
         render(RenameState.of(TodoList("1", "Groceries")))
 
-        composeRule.onNodeWithContentDescription(SAVE_NAME).performClick()
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("Shopping")
+        composeRule.onNode(hasSetTextAction()).performImeAction()
 
         assertEquals(1, confirmed)
+        assertEquals(0, dismissed)
     }
 
     @Test
-    fun `should dismiss without renaming`() {
+    fun `should throw the sheet away rather than commit a blank name`() {
         render(RenameState.of(TodoList("1", "Groceries")))
 
-        composeRule.onNodeWithContentDescription(CANCEL).performClick()
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("   ")
+        composeRule.onNode(hasSetTextAction()).performImeAction()
 
-        assertEquals(1, dismissed)
         assertEquals(0, confirmed)
+        assertEquals(1, dismissed)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -202,5 +221,6 @@ class RenameListDialogTest {
         const val CLEAR_DUE = "Clear due date"
         const val SAVE_NAME = "Save list name"
         const val CANCEL = "Cancel"
+        const val HINT = "…"
     }
 }

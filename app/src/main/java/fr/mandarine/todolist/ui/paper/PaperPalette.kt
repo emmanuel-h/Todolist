@@ -34,14 +34,6 @@ data class PaperPalette(
     val keyboardSeam: Color,
     val shadow: Color
 ) {
-    val inkRest: Color get() = ink
-
-    val inkMargin: Color get() = pencil
-
-    val inkLive: Color get() = inkBlue
-
-    val inkDanger: Color get() = inkRed
-
     companion object {
         val light = PaperPalette(
             paper = Color(0xFFFAF5EA),

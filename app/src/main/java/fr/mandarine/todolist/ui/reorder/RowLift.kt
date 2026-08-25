@@ -150,8 +150,8 @@ fun Modifier.liftedSlip(session: DragSession, lifted: Boolean, animated: Boolean
             spread.snapTo(target)
             grip.snapTo(target)
         } else {
-            launch { spread.animateTo(target, PaperMotion.slipShadow) }
-            grip.animateTo(target, PaperMotion.slipGrip)
+            launch { spread.animateTo(target, PaperMotion.pickUp) }
+            grip.animateTo(target, PaperMotion.rowEnter)
         }
     }
     return this

@@ -9,9 +9,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.LocalRuledHand
 import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.TallyRoll
+import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.seatOnRule
 
 private const val NOTHING_LEFT = 0
@@ -19,18 +22,24 @@ private const val NO_TALLY = ""
 private const val ONE_LINE = 1
 
 @Composable
-fun OpenCount(count: Int, modifier: Modifier = Modifier) {
+fun OpenCount(count: Int, modifier: Modifier = Modifier, animated: Boolean = true) {
     val spoken = pluralStringResource(R.plurals.open_items, count, count)
-    Text(
-        text = if (count > NOTHING_LEFT) count.toString() else NO_TALLY,
+    TallyRoll(
+        count = count,
         modifier = modifier
-            .widthIn(min = PaperDimens.marginColumn)
-            .seatOnRule()
             .semantics { if (count > NOTHING_LEFT) contentDescription = spoken },
-        style = LocalRuledHand.current.margin,
-        color = LocalPaperPalette.current.inkMargin,
-        textAlign = TextAlign.End,
-        softWrap = false,
-        maxLines = ONE_LINE
-    )
+        animated = animated
+    ) { tally ->
+        Text(
+            text = if (tally > NOTHING_LEFT) tally.toString() else NO_TALLY,
+            modifier = Modifier
+                .widthIn(min = PaperDimens.marginColumn)
+                .seatOnRule(),
+            style = LocalRuledHand.current.margin,
+            color = LocalPaperPalette.current.inked(InkTone.Margin),
+            textAlign = TextAlign.End,
+            softWrap = false,
+            maxLines = ONE_LINE
+        )
+    }
 }

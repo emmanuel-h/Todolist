@@ -56,7 +56,7 @@ internal fun RuledRowPreview() {
                         text = PREVIEW_APPLES,
                         modifier = Modifier.weight(1f).seatOnRule(),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = LocalPaperPalette.current.inkRest
+                        color = LocalPaperPalette.current.inked(InkTone.Words)
                     )
                 }
                 RuledRow(onClick = {}) {
@@ -64,7 +64,7 @@ internal fun RuledRowPreview() {
                         text = PREVIEW_GROCERIES,
                         modifier = Modifier.weight(1f).seatOnRule(),
                         style = MaterialTheme.typography.titleMedium,
-                        color = LocalPaperPalette.current.inkRest
+                        color = LocalPaperPalette.current.inked(InkTone.Words)
                     )
                     Text(
                         text = PREVIEW_OPEN_COUNT,
@@ -72,7 +72,7 @@ internal fun RuledRowPreview() {
                             .width(PaperDimens.marginColumn)
                             .seatOnRule(),
                         style = LocalRuledHand.current.margin,
-                        color = LocalPaperPalette.current.inkMargin,
+                        color = LocalPaperPalette.current.inked(InkTone.Margin),
                         textAlign = TextAlign.End
                     )
                 }
@@ -119,10 +119,10 @@ internal fun InkRolesPreview() {
     PaperTheme {
         val palette = LocalPaperPalette.current
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = PREVIEW_APPLES, color = palette.inkRest)
-            Text(text = PREVIEW_OPEN_COUNT, color = palette.inkMargin, style = LocalRuledHand.current.margin)
-            Text(text = PREVIEW_GROCERIES, color = palette.inkLive)
-            Text(text = PREVIEW_APPLES, color = palette.inkDanger)
+            Text(text = PREVIEW_APPLES, color = palette.inked(InkTone.Words))
+            Text(text = PREVIEW_OPEN_COUNT, color = palette.inked(InkTone.Margin), style = LocalRuledHand.current.margin)
+            Text(text = PREVIEW_GROCERIES, color = palette.inked(InkTone.Acted))
+            Text(text = PREVIEW_APPLES, color = palette.inked(InkTone.Lost))
         }
     }
 }
@@ -166,7 +166,7 @@ internal fun InkIconPreview() {
             InkIcon(
                 painter = painterResource(R.drawable.ic_event),
                 contentDescription = null,
-                tint = LocalPaperPalette.current.inkMargin
+                tint = LocalPaperPalette.current.inked(InkTone.Margin)
             )
             InkIconButton(
                 painter = painterResource(R.drawable.ic_add),
@@ -177,7 +177,7 @@ internal fun InkIconPreview() {
                 painter = painterResource(R.drawable.ic_alarm),
                 contentDescription = stringResource(R.string.set_due_date),
                 onClick = {},
-                tint = LocalPaperPalette.current.inkDanger,
+                tint = LocalPaperPalette.current.inked(InkTone.Lost),
                 enabled = false
             )
         }

@@ -1,9 +1,9 @@
 package fr.mandarine.todolist.ui.tutorial
 
 import android.text.format.DateFormat
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -45,11 +47,14 @@ import androidx.compose.ui.unit.lerp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialCaption
+import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperType
+import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.paperSheet
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -68,8 +73,12 @@ private const val HAND_AIM_LABEL = "handAim"
 private const val OFF_THE_PAGE = 0f
 private const val ON_THE_PAGE = 1f
 
+private val SLIP_SHADOW = 6.dp
+private val SLIP_DROP = 3.dp
+private const val SLIP_SHADOW_ALPHA = 0.16f
 private val SLIP_PADDING = 16.dp
 private val CAPTION_PADDING = 14.dp
+private val CAPTION_GLYPH_GAP = 8.dp
 private val CAPTION_GAP = 12.dp
 private val BANNER_MARGIN = 12.dp
 private val BANNER_GAP = 32.dp
@@ -78,14 +87,22 @@ private val PROGRESS_DOT_SIZE = 8.dp
 private val PROGRESS_DOT_GAP = 6.dp
 
 /**
- * A shadowless slip of paper laid on the page, the same construction the rename
- * dialog uses. The view overlay drew three elevated Material cards, which were the
- * last drop shadows left in the app.
+ * A slip of the same paper the sheets are cut from, laid on the page: square
+ * corners, the page's grain, one shallow warm shadow to lift it off the writing
+ * and no outline at all.
  */
 @Composable
 private fun Modifier.paperSlip(): Modifier {
     val palette = LocalPaperPalette.current
-    return paperSheet(tone = palette.paperShade).border(PaperDimens.rule, palette.rule)
+    val shadowInk = palette.shadow
+    return this
+        .dropShadow(RectangleShape) {
+            radius = SLIP_SHADOW.toPx()
+            offset = Offset(OFF_THE_PAGE, SLIP_DROP.toPx())
+            color = shadowInk
+            alpha = SLIP_SHADOW_ALPHA
+        }
+        .paperSheet(tone = palette.paperShade)
 }
 
 /**
@@ -112,12 +129,14 @@ fun TutorialOverlay(
         state.captionGapPx = with(density) { CAPTION_GAP.toPx() }
     }
     val statusBarPx = WindowInsets.statusBars.getTop(density).toFloat()
+    val arrival = remember { Animatable(OFF_THE_PAGE) }
+    LaunchedEffect(Unit) { arrival.animateTo(ON_THE_PAGE, PaperMotion.rowEnter) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { state.setOrigin(it.screenBounds(root)) }
-            .graphicsLayer { alpha = state.overlayAlpha.value }
+            .graphicsLayer { alpha = state.overlayAlpha.value * arrival.value }
             .pointerInput(Unit) { swallowTouches() }
     ) {
         state.banner?.let { BannerSlip(it, state, statusBarPx) }
@@ -213,7 +232,7 @@ private fun BoxScope.BannerSlip(
         Text(
             text = bannerTextFor(content),
             modifier = Modifier.padding(SLIP_PADDING),
-            color = LocalPaperPalette.current.ink,
+            color = LocalPaperPalette.current.inked(InkTone.Words),
             style = PaperType.prose
         )
     }
@@ -221,6 +240,7 @@ private fun BoxScope.BannerSlip(
 
 @Composable
 private fun BoxScope.CaptionSlip(caption: TutorialCaption, state: TutorialOverlayState) {
+    val palette = LocalPaperPalette.current
     Box(
         Modifier
             .align(Alignment.TopCenter)
@@ -230,14 +250,25 @@ private fun BoxScope.CaptionSlip(caption: TutorialCaption, state: TutorialOverla
             }
             .paperSlip()
     ) {
-        Text(
-            text = captionEmoji(caption) + " " + stringResource(captionStringRes(caption)),
+        Row(
             modifier = Modifier
                 .padding(CAPTION_PADDING)
                 .graphicsLayer { alpha = state.captionTextAlpha.value },
-            color = LocalPaperPalette.current.ink,
-            style = PaperType.prose
-        )
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            InkIcon(
+                painter = painterResource(captionGlyph(caption)),
+                contentDescription = null,
+                tint = palette.inked(InkTone.Margin),
+                size = PaperDimens.iconGlyph
+            )
+            Text(
+                text = stringResource(captionStringRes(caption)),
+                modifier = Modifier.padding(start = CAPTION_GLYPH_GAP),
+                color = palette.inked(InkTone.Words),
+                style = PaperType.prose
+            )
+        }
     }
 }
 
@@ -272,7 +303,7 @@ private fun ProgressDot(filled: Boolean, leadingGap: Dp) {
         Modifier
             .padding(start = leadingGap)
             .size(PROGRESS_DOT_SIZE)
-            .background(if (filled) palette.inkBlue else palette.rule, CircleShape)
+            .background(if (filled) palette.inked(InkTone.Acted) else palette.rule, CircleShape)
             .clearAndSetSemantics {}
     )
 }
@@ -292,9 +323,9 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.swallowT
     }
 }
 
-internal fun captionEmoji(caption: TutorialCaption): String = when (caption) {
-    TutorialCaption.TARGET_DATE -> "📅"
-    TutorialCaption.DUE_DATE -> "⏰"
+internal fun captionGlyph(caption: TutorialCaption): Int = when (caption) {
+    TutorialCaption.TARGET_DATE -> R.drawable.ic_event
+    TutorialCaption.DUE_DATE -> R.drawable.ic_alarm
 }
 
 internal fun captionStringRes(caption: TutorialCaption): Int = when (caption) {

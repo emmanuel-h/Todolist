@@ -40,7 +40,9 @@ import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkAddLine
+import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
@@ -50,6 +52,7 @@ import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.paper.UndoSlip
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.headMarginFade
+import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
@@ -245,7 +248,8 @@ fun TodoListScreen(
                     item(key = SKIP_KEY, contentType = SKIP_TYPE) {
                         SectionSkip(
                             completedCount = completedItems.size,
-                            modifier = animatedRow(screenState)
+                            modifier = animatedRow(screenState),
+                            animated = screenState.animationsEnabled
                         )
                     }
                 }
@@ -383,7 +387,7 @@ private fun HeadLine(name: String, allDone: Boolean, animated: Boolean) {
     val palette = LocalPaperPalette.current
     val style = MaterialTheme.typography.titleLarge
     val strike = rememberPenStrike(name, allDone, animated)
-    val ink = if (allDone) palette.inkDone else palette.ink
+    val ink = palette.inked(InkBudget.words(allDone))
     Row(
         modifier = Modifier.fillMaxWidth().height(LocalPagePitch.current),
         verticalAlignment = Alignment.Top
@@ -415,7 +419,7 @@ private fun BackGlyph(
         modifier = Modifier
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
             .settleOnRule(listState, headMargin, pitch),
-        tint = LocalPaperPalette.current.ink,
+        tint = LocalPaperPalette.current.inked(InkTone.Words),
         seat = IconSeat.OnRule
     )
 }

@@ -50,10 +50,10 @@ private class PressWashNode(private val interactionSource: InteractionSource) :
         coroutineScope.launch {
             interactionSource.interactions.collect { interaction ->
                 when (interaction) {
-                    is PressInteraction.Press -> launch { washTo(1f, PaperMotion.pressWash) }
+                    is PressInteraction.Press -> launch { washTo(1f, PaperMotion.rowEnter) }
                     is PressInteraction.Release,
                     is PressInteraction.Cancel -> launch {
-                        washTo(NO_WASH, PaperMotion.pressRelease)
+                        washTo(NO_WASH, PaperMotion.rowExit)
                     }
                     is FocusInteraction.Focus -> focused = true
                     is FocusInteraction.Unfocus -> focused = false

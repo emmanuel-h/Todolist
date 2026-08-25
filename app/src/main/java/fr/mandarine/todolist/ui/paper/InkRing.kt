@@ -20,9 +20,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -48,6 +46,7 @@ private const val TWO_PI = 6.2831855f
 private const val JITTER_SPAN = 2f
 private const val JITTER_CENTRE = 1f
 private const val HALF = 0.5f
+private const val RING_WOBBLE = 0.045f
 private val RING_STROKE = 1.75.dp
 private val RING_JITTER = 0.8.dp
 private val TICK_STROKE = 2.dp
@@ -82,15 +81,15 @@ fun InkRing(
             dryness.snapTo(DRY)
         } else if (checked) {
             dryness.snapTo(WET)
-            launch { wash.animateTo(WASH_FULL, PaperMotion.pressWash) }
-            tick.animateTo(TICK_DRAWN, PaperMotion.penStroke)
-            launch { wash.animateTo(WASH_GONE, PaperMotion.penStroke) }
-            launch { dryness.animateTo(DRY, PaperMotion.penStroke) }
+            launch { wash.animateTo(WASH_FULL, PaperMotion.rowEnter) }
+            tick.animateTo(TICK_DRAWN, PaperMotion.rowEnter)
+            launch { wash.animateTo(WASH_GONE, PaperMotion.rowEnter) }
+            launch { dryness.animateTo(DRY, PaperMotion.rowEnter) }
         } else {
             dryness.snapTo(DRY)
-            launch { wash.animateTo(WASH_FULL, PaperMotion.pressWash) }
-            tick.animateTo(TICK_CLEAR, PaperMotion.penStroke)
-            launch { wash.animateTo(WASH_GONE, PaperMotion.penStroke) }
+            launch { wash.animateTo(WASH_FULL, PaperMotion.rowEnter) }
+            tick.animateTo(TICK_CLEAR, PaperMotion.rowEnter)
+            launch { wash.animateTo(WASH_GONE, PaperMotion.rowEnter) }
         }
         if (checked) haptics.tick() else haptics.untick()
     }
@@ -119,25 +118,60 @@ fun InkRing(
                     val ring = ringPath(size, seed, RING_JITTER.toPx())
                     val check = tickPath(size)
                     val measure = PathMeasure().apply { setPath(check, false) }
-                    val inked = measure.length
+                    val drawnTick = measure.length
                     val drawn = Path()
-                    val nib = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round)
-                    val tip = Stroke(width = TICK_STROKE.toPx(), cap = StrokeCap.Round)
-                    val ringInk = palette.inkMargin
+                    val nib = RING_STROKE.toPx()
+                    val tip = TICK_STROKE.toPx()
+                    val ringInk = palette.inked(InkBudget.ring(wet = false))
                     val washInk = palette.inkBluePale
-                    val wetInk = palette.inkLive
-                    val dryInk = palette.inkDone
+                    val wetInk = palette.inked(InkBudget.ring(wet = true))
+                    val dryInk = palette.inked(InkTone.Crossed)
                     onDrawBehind {
                         drawWash(washInk, wash.value)
-                        drawPath(ring, ringInk, style = nib)
+                        inked(ring, ringInk, nib)
                         val shown = tick.value
                         if (shown <= TICK_CLEAR) return@onDrawBehind
                         drawn.reset()
-                        measure.getSegment(TICK_CLEAR, inked * shown, drawn, true)
-                        drawPath(drawn, lerp(wetInk, dryInk, dryness.value), style = tip)
+                        measure.getSegment(TICK_CLEAR, drawnTick * shown, drawn, true)
+                        inked(drawn, lerp(wetInk, dryInk, dryness.value), tip)
                     }
                 }
         )
+    }
+}
+
+/**
+ * The mark that says "this one": the same hand-drawn ring the completion toggle
+ * carries, thrown around whatever it wraps and inked in stroke by stroke as the
+ * choice is made.
+ */
+@Composable
+fun Modifier.circledInInk(
+    circled: Boolean,
+    seed: Int,
+    color: Color,
+    animated: Boolean = true
+): Modifier {
+    val drawn = remember { Animatable(if (circled) TICK_DRAWN else TICK_CLEAR) }
+    LaunchedEffect(circled, animated) {
+        val target = if (circled) TICK_DRAWN else TICK_CLEAR
+        if (drawn.value == target) return@LaunchedEffect
+        if (animated) drawn.animateTo(target, PaperMotion.rowEnter) else drawn.snapTo(target)
+    }
+    return drawWithCache {
+        val ring = ringPath(size, seed, size.minDimension * RING_WOBBLE)
+        val measure = PathMeasure().apply { setPath(ring, false) }
+        val ringLength = measure.length
+        val nib = RING_STROKE.toPx()
+        val segment = Path()
+        onDrawWithContent {
+            drawContent()
+            val shown = drawn.value
+            if (shown <= TICK_CLEAR) return@onDrawWithContent
+            segment.reset()
+            measure.getSegment(TICK_CLEAR, ringLength * shown, segment, true)
+            inked(segment, color, nib)
+        }
     }
 }
 

@@ -12,10 +12,11 @@ class StickyNoteSheetStateTest {
     fun `should leave the sheet untouched when the peel has not started`() {
         val state = stickyNotePeelAt(STICKY_PEEL_REST)
 
-        assertEquals(-1f, state.rotationDegrees, tolerance)
+        assertEquals(0f, state.rotationDegrees, tolerance)
         assertEquals(1f, state.scale, tolerance)
         assertEquals(1f, state.alpha, tolerance)
         assertEquals(0f, state.travelFraction, tolerance)
+        assertEquals(STICKY_FLAT, state.foldFraction, tolerance)
     }
 
     @Test
@@ -26,14 +27,16 @@ class StickyNoteSheetStateTest {
         assertEquals(1.08f, state.scale, tolerance)
         assertEquals(1f, state.alpha, tolerance)
         assertEquals(0f, state.travelFraction, tolerance)
+        assertEquals(STICKY_FOLDED, state.foldFraction, tolerance)
     }
 
     @Test
     fun `should interpolate the lift halfway through the first phase`() {
         val state = stickyNotePeelAt(0.5f)
 
-        assertEquals(-3.5f, state.rotationDegrees, tolerance)
+        assertEquals(-3f, state.rotationDegrees, tolerance)
         assertEquals(1.04f, state.scale, tolerance)
+        assertEquals(0.5f, state.foldFraction, tolerance)
     }
 
     @Test
@@ -44,6 +47,7 @@ class StickyNoteSheetStateTest {
         assertEquals(1f, state.scale, tolerance)
         assertEquals(0f, state.alpha, tolerance)
         assertEquals(1f, state.travelFraction, tolerance)
+        assertEquals(STICKY_FLAT, state.foldFraction, tolerance)
     }
 
     @Test
@@ -54,6 +58,7 @@ class StickyNoteSheetStateTest {
         assertEquals(1.04f, state.scale, tolerance)
         assertEquals(0.5f, state.alpha, tolerance)
         assertEquals(0.5f, state.travelFraction, tolerance)
+        assertEquals(0.5f, state.foldFraction, tolerance)
     }
 
     @Test
@@ -84,7 +89,7 @@ class StickyNoteSheetStateTest {
     fun `should land the replacement sheet at the resting angle and full size`() {
         val state = stickyNoteSettleAt(STICKY_SETTLE_DONE)
 
-        assertEquals(-1f, state.rotationDegrees, tolerance)
+        assertEquals(0f, state.rotationDegrees, tolerance)
         assertEquals(1f, state.scale, tolerance)
         assertEquals(1f, state.alpha, tolerance)
     }
@@ -93,7 +98,7 @@ class StickyNoteSheetStateTest {
     fun `should interpolate the settle halfway`() {
         val state = stickyNoteSettleAt(0.5f)
 
-        assertEquals(-3.5f, state.rotationDegrees, tolerance)
+        assertEquals(-3f, state.rotationDegrees, tolerance)
         assertEquals(0.95f, state.scale, tolerance)
         assertEquals(0.5f, state.alpha, tolerance)
     }
@@ -102,6 +107,21 @@ class StickyNoteSheetStateTest {
     fun `should clamp a settle progress that runs past either end`() {
         assertEquals(0f, stickyNoteSettleAt(-2f).alpha, tolerance)
         assertEquals(1f, stickyNoteSettleAt(4f).alpha, tolerance)
+    }
+
+    @Test
+    fun `should lay the replacement sheet flat rather than folded`() {
+        assertEquals(STICKY_FLAT, stickyNoteSettleAt(STICKY_SETTLE_START).foldFraction, tolerance)
+        assertEquals(STICKY_FLAT, stickyNoteSettleAt(STICKY_SETTLE_DONE).foldFraction, tolerance)
+    }
+
+    @Test
+    fun `should fold the sheet up before it travels and lay it down as it goes`() {
+        val folded = stickyNotePeelAt(STICKY_PEEL_LIFTED).foldFraction
+
+        assertTrue(stickyNotePeelAt(0.5f).foldFraction > stickyNotePeelAt(0.25f).foldFraction)
+        assertTrue(stickyNotePeelAt(1.5f).foldFraction < folded)
+        assertEquals(0f, stickyNotePeelAt(0.5f).travelFraction, tolerance)
     }
 
     @Test

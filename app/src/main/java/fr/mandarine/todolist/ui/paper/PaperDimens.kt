@@ -19,7 +19,7 @@ object PaperDimens {
 
     val stickyPad = 72.dp
     val stickySheet = 56.dp
-    val stickyCorner = 2.dp
+    val stickyCorner = 1.dp
     val stickyPeelTravelX = 12.dp
     val stickyPeelTravelY = 28.dp
 

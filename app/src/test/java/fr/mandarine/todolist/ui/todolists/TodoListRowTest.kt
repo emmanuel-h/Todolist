@@ -26,7 +26,9 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.listmeta.formatJotDate
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.PaperPalette
+import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
 import java.util.Locale
@@ -96,11 +98,27 @@ class TodoListRowTest {
         assertEquals(listOf("2 items left"), descriptions())
     }
 
+    /**
+     * The marginalia are written beside the name, not instead of it: anything in
+     * the margin that claims the row's whole width squeezes the name down to one
+     * letter a line, which is what a tally that fills its box does.
+     */
+    @Test
+    fun `should leave the name the room the marginalia does not need`() {
+        render(summary(name = "Groceries", activeCount = 3))
+
+        val name = widthOf("Groceries")
+        val tally = widthOf("3")
+
+        assertEquals(ONE_LINE, layoutOf("Groceries")?.lineCount)
+        assertTrue("name $name against a tally of $tally", name > tally)
+    }
+
     @Test
     fun `should write the open count in pencil`() {
         render(summary(activeCount = 3))
 
-        assertEquals(PaperPalette.light.inkMargin, textStyleOf("3")?.color)
+        assertEquals(PaperPalette.light.inked(InkTone.Margin), textStyleOf("3")?.color)
     }
 
     @Test
@@ -119,7 +137,7 @@ class TodoListRowTest {
         render(summary(allDone = false))
 
         assertNull(textStyleOf("Groceries")?.textDecoration)
-        assertEquals(PaperPalette.light.inkRest, textStyleOf("Groceries")?.color)
+        assertEquals(PaperPalette.light.inked(InkTone.Words), textStyleOf("Groceries")?.color)
     }
 
     @Test
@@ -226,7 +244,7 @@ class TodoListRowTest {
     fun `should alarm on an overdue jot and stay in pencil on a future one`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.OVERDUE))
 
-        assertEquals(PaperPalette.light.inkDanger, textStyleOf(jotted(DATE))?.color)
+        assertEquals(PaperPalette.light.inked(InkTone.Lost), textStyleOf(jotted(DATE))?.color)
     }
 
     /**
@@ -337,18 +355,24 @@ class TodoListRowTest {
         node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
             .filter { it.isNotBlank() } + node.children.flatMap { collectDescriptions(it) }
 
-    private fun textStyleOf(text: String): TextStyle? {
+    private fun widthOf(text: String): Int =
+        composeRule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().size.width
+
+    private fun textStyleOf(text: String): TextStyle? = layoutOf(text)?.layoutInput?.style
+
+    private fun layoutOf(text: String): TextLayoutResult? {
         val results = mutableListOf<TextLayoutResult>()
         composeRule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
             .config.getOrNull(SemanticsActions.GetTextLayoutResult)
             ?.action
             ?.invoke(results)
-        return results.firstOrNull()?.layoutInput?.style
+        return results.firstOrNull()
     }
 
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         const val ROW = "row"
+        const val ONE_LINE = 1
         const val ONE_PIXEL = 1f
         const val BENT_SCALE = 1.3f
     }

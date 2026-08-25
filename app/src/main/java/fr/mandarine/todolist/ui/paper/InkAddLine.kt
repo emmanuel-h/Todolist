@@ -1,12 +1,11 @@
 package fr.mandarine.todolist.ui.paper
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -40,7 +39,6 @@ import kotlinx.coroutines.delay
 private const val HINT_INK = 1f
 private const val HINT_BREATH_IN = 0.35f
 private const val HINT_BREATH_OUT = 0.55f
-private const val BREATH_MILLIS = 1900
 private const val BREATH_LABEL = "hintBreath"
 private const val BREATH_ALPHA_LABEL = "hintAlpha"
 private const val PEN_SETTLE_MILLIS = 250L
@@ -81,16 +79,7 @@ fun InkAddLine(
 
     RuledRow(modifier = modifier, onClick = { focusRequester.requestFocus() }) {
         OnRuleSlot(modifier = Modifier.weight(1f), alignment = Alignment.TopStart) {
-            if (text.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.add_line_hint),
-                    modifier = Modifier
-                        .seatOnRule()
-                        .graphicsLayer { alpha = hintAlpha() },
-                    style = style,
-                    color = palette.pencil
-                )
-            }
+            GhostHint(shown = text.isEmpty(), style = style, ink = hintAlpha)
             BasicTextField(
                 value = text,
                 onValueChange = onTextChange,
@@ -107,9 +96,9 @@ fun InkAddLine(
                             onPenDown()
                         }
                     },
-                textStyle = style.trimmedToGlyphs().copy(color = palette.ink),
+                textStyle = style.trimmedToGlyphs().copy(color = palette.inked(InkTone.Words)),
                 singleLine = true,
-                cursorBrush = SolidColor(palette.inkBlue),
+                cursorBrush = SolidColor(palette.inked(InkTone.Acted)),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Done
@@ -125,6 +114,29 @@ fun InkAddLine(
                 )
             )
         }
+    }
+}
+
+/**
+ * The ghost gives way to what is written over it rather than being replaced
+ * between two frames: it is the same rule, and only the ink on it changes.
+ */
+@Composable
+private fun GhostHint(shown: Boolean, style: TextStyle, ink: () -> Float) {
+    val palette = LocalPaperPalette.current
+    AnimatedVisibility(
+        visible = shown,
+        enter = fadeIn(PaperMotion.rowEnter),
+        exit = fadeOut(PaperMotion.rowExit)
+    ) {
+        Text(
+            text = stringResource(R.string.add_line_hint),
+            modifier = Modifier
+                .seatOnRule()
+                .graphicsLayer { alpha = ink() },
+            style = style,
+            color = palette.inked(InkTone.Margin)
+        )
     }
 }
 
@@ -155,13 +167,14 @@ private fun PenDownOnKeyboardLeaving(
 ) {
     val keyboardUp = keyboardVisible()
     val windowFocused = LocalWindowInfo.current.isWindowFocused
+    val sheetLaid = LocalPaperVeil.current.laid
     var keyboardSeen by remember { mutableStateOf(false) }
 
-    LaunchedEffect(penOnPaper, keyboardUp, windowFocused) {
+    LaunchedEffect(penOnPaper, keyboardUp, windowFocused, sheetLaid) {
         when {
             !penOnPaper -> keyboardSeen = false
             keyboardUp -> keyboardSeen = true
-            keyboardSeen && windowFocused -> {
+            keyboardSeen && windowFocused && !sheetLaid -> {
                 delay(PEN_SETTLE_MILLIS)
                 focusManager.clearFocus()
             }
@@ -181,10 +194,7 @@ private fun breathingAlpha(active: Boolean): () -> Float {
     val alpha = breath.animateFloat(
         initialValue = HINT_BREATH_IN,
         targetValue = HINT_BREATH_OUT,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = BREATH_MILLIS, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
+        animationSpec = PaperMotion.breath,
         label = BREATH_ALPHA_LABEL
     )
     return { alpha.value }

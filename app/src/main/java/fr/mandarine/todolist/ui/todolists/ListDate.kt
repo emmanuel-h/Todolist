@@ -5,8 +5,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private const val MILLIS_PER_DAY = 86_400_000L
-
 enum class DateKind { TARGET, DUE }
 
 /**
@@ -38,18 +36,17 @@ data class DateSelection(val kind: DateKind, val date: LocalDate?) {
     }
 }
 
+/**
+ * A due date is what a notification is for, so the ask belongs to the moment one
+ * starts existing — whichever hand wrote it. Circling a day while the alarm is
+ * ringed and ringing the alarm over a day already written are the same event to
+ * the reader, and both have to be answered for.
+ */
+internal fun dueDateWritten(before: DateSelection, after: DateSelection): Boolean =
+    after.dueDate != null && after.dueDate != before.dueDate
+
 fun formatListDate(date: LocalDate, showYear: Boolean, locale: Locale): String {
     val skeleton = if (showYear) "EEEdMMMy" else "EEEdMMM"
     val pattern = DateFormat.getBestDateTimePattern(locale, skeleton)
     return date.format(DateTimeFormatter.ofPattern(pattern, locale))
 }
-
-/**
- * The Material date picker speaks UTC epoch millis; the domain speaks
- * [LocalDate]. Both directions floor rather than truncate so dates before the
- * epoch survive the round trip.
- */
-fun LocalDate.toPickerMillis(): Long = toEpochDay() * MILLIS_PER_DAY
-
-fun localDateFromPickerMillis(millis: Long): LocalDate =
-    LocalDate.ofEpochDay(Math.floorDiv(millis, MILLIS_PER_DAY))

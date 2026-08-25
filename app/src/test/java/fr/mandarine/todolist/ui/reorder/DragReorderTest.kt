@@ -1,9 +1,9 @@
 package fr.mandarine.todolist.ui.reorder
 
+import androidx.compose.animation.core.snap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.TestMonotonicFrameClock
 import fr.mandarine.todolist.domain.TodoItem
-import fr.mandarine.todolist.ui.paper.PaperMotion
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
@@ -316,7 +316,7 @@ class DragReorderTest {
         session.drag(60f)
 
         val reorder = withContext(TestMonotonicFrameClock(this)) {
-            session.settle(PaperMotion.instant)
+            session.settle(snap())
         }
 
         assertEquals(Reorder(0, 1), reorder)
@@ -329,7 +329,7 @@ class DragReorderTest {
         val session = DragSession { }
 
         val reorder = withContext(TestMonotonicFrameClock(this)) {
-            session.settle(PaperMotion.instant)
+            session.settle(snap())
         }
 
         assertNull(reorder)

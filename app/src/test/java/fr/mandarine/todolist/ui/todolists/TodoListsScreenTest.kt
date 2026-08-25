@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.performTouchInput
@@ -52,6 +53,7 @@ class TodoListsScreenTest {
     private val reordered = mutableListOf<Pair<Int, Int>>()
     private val opened = mutableListOf<String>()
     private var replayed = 0
+    private var dueDatesSet = 0
 
     // ── The page at rest ──────────────────────────────────────────────────────
 
@@ -226,6 +228,32 @@ class TodoListsScreenTest {
         composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
+    @Test
+    fun `should finish the line instead of opening a list tapped while the pen is down`() {
+        screenState.addRowExpanded = true
+        render(content(active = listOf(summary("1", "Groceries"))))
+        addLine().performTextReplacement("Work")
+
+        composeRule.onNodeWithText("Groceries").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(Triple("Work", null, null)), created)
+        assertTrue(opened.isEmpty())
+    }
+
+    @Test
+    fun `should only put the pen down when an empty line is on the page`() {
+        screenState.addRowExpanded = true
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithText("Groceries").performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(created.isEmpty())
+        assertTrue(opened.isEmpty())
+        assertTrue(!screenState.addRowExpanded)
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
 
     @Test
@@ -282,7 +310,7 @@ class TodoListsScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
-        composeRule.onNodeWithContentDescription(SAVE_NAME).assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].assertIsDisplayed()
     }
 
     @Test
@@ -312,19 +340,19 @@ class TodoListsScreenTest {
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
-        composeRule.onNodeWithContentDescription(SAVE_NAME).performClick()
+        composeRule.onNode(hasSetTextAction()).performImeAction()
 
         assertEquals(listOf(null to null), renamedDates)
         assertNull(screenState.rename)
     }
 
     @Test
-    fun `should rename the list when the dialog is confirmed`() {
+    fun `should rename the list when the edit sheet is put down`() {
         screenState.rename = RenameState.of(TodoList("1", "Groceries"))
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onNode(hasSetTextAction()).performTextReplacement("Shopping")
-        composeRule.onNodeWithContentDescription(SAVE_NAME).performClick()
+        composeRule.onNode(hasSetTextAction()).performImeAction()
 
         assertEquals(listOf("Shopping"), renamed)
         assertNull(screenState.rename)
@@ -336,9 +364,10 @@ class TodoListsScreenTest {
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onNode(hasSetTextAction()).performTextReplacement("   ")
-        composeRule.onNodeWithContentDescription(SAVE_NAME).performClick()
+        composeRule.onNode(hasSetTextAction()).performImeAction()
 
         assertTrue(renamed.isEmpty())
+        assertNull(screenState.rename)
     }
 
     // ── Reaching the gestures without one ─────────────────────────────────────
@@ -412,6 +441,163 @@ class TodoListsScreenTest {
         composeRule.waitForIdle()
     }
 
+    // ── The date sheet ────────────────────────────────────────────────────────
+
+    @Test
+    fun `should write the circled day onto the line that asked for it`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.DUE)
+
+        composeRule.onNodeWithText("20").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(LocalDate.of(2026, 3, 20), screenState.addRowSelection.dueDate)
+        assertNull(screenState.datePickerRequest)
+    }
+
+    @Test
+    fun `should carry no confirm row on the date sheet`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.DUE)
+
+        composeRule.onNodeWithContentDescription(SAVE).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(CANCEL).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should ask for notifications the first time a due date is written`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.DUE)
+
+        composeRule.onNodeWithText("20").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(1, dueDatesSet)
+    }
+
+    @Test
+    fun `should not ask for notifications when the day written is a target`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.TARGET)
+
+        composeRule.onNodeWithText("20").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(0, dueDatesSet)
+    }
+
+    @Test
+    fun `should ask for notifications when the alarm is rung over a day already written`() {
+        screenState.rename = RenameState.of(TodoList("1", "Groceries", targetDate = DATE))
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].performClick()
+
+        assertEquals(DATE, screenState.rename?.selection?.dueDate)
+        assertEquals(1, dueDatesSet)
+    }
+
+    @Test
+    fun `should not ask for notifications when the alarm is rung on a sheet with no day on it`() {
+        screenState.rename = RenameState.of(TodoList("1", "Groceries"))
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].performClick()
+
+        assertEquals(0, dueDatesSet)
+    }
+
+    @Test
+    fun `should not ask for notifications when a due date is turned back into a target`() {
+        screenState.rename = RenameState.of(TodoList("1", "Groceries", dueDate = DATE))
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].performClick()
+
+        assertEquals(0, dueDatesSet)
+    }
+
+    // ── The date on the line being written ────────────────────────────────────
+
+    @Test
+    fun `should leave the add line a bare rule until words are written on it`() {
+        armAddLine()
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(SET_TARGET_DATE).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should open the date marks under the line as soon as it is written on`() {
+        armAddLine()
+        render(TodoListsState.Empty)
+
+        addLine().performTextReplacement("Work")
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].assertIsSelected()
+    }
+
+    @Test
+    fun `should ask for a date from the line being written`() {
+        armAddLine(text = "Work")
+        render(TodoListsState.Empty)
+
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
+
+        assertEquals(DateTarget.ADD_ROW, screenState.datePickerRequest?.target)
+        assertEquals(DateKind.TARGET, screenState.datePickerRequest?.kind)
+    }
+
+    @Test
+    fun `should attach the day circled from the add line to the list that line commits`() {
+        armAddLine(text = "Work")
+        render(TodoListsState.Empty)
+
+        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
+        composeRule.onNodeWithText("20").performClick()
+        addLine().performImeAction()
+
+        assertEquals(listOf(Triple("Work", LocalDate.of(2026, 3, 20), null)), created)
+    }
+
+    @Test
+    fun `should attach a due date jotted on the add line to the list that line commits`() {
+        armAddLine(text = "Work", selection = DateSelection(DateKind.TARGET, DATE))
+        render(TodoListsState.Empty)
+
+        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].performClick()
+        addLine().performImeAction()
+
+        assertEquals(listOf(Triple("Work", null, DATE)), created)
+        assertEquals(1, dueDatesSet)
+    }
+
+    @Test
+    fun `should rub the date off the line when the strike-out is tapped`() {
+        armAddLine(text = "Work", selection = DateSelection(DateKind.TARGET, DATE))
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        addLine().performImeAction()
+
+        assertEquals(listOf(Triple("Work", null, null)), created)
+    }
+
+    @Test
+    fun `should take the date marks off the line once the list is written`() {
+        armAddLine(text = "Work", selection = DateSelection(DateKind.DUE, DATE))
+        render(TodoListsState.Empty)
+
+        addLine().performImeAction()
+        composeRule.waitForIdle()
+
+        assertEquals(DateSelection.None, screenState.addRowSelection)
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).assertDoesNotExist()
+    }
+
     private fun tearOffGroceries() {
         composeRule.onNodeWithText("Groceries").performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
@@ -424,6 +610,13 @@ class TodoListsScreenTest {
 
     private fun addLine(): SemanticsNodeInteraction =
         composeRule.onAllNodes(hasSetTextAction()).onLast()
+
+    private fun armAddLine(text: String = "", selection: DateSelection = DateSelection.None) {
+        screenState.animationsEnabled = false
+        screenState.addRowExpanded = true
+        screenState.addRowText = text
+        screenState.addRowSelection = selection
+    }
 
     private fun render(state: TodoListsState) {
         composeRule.setContent { PaperTheme { Screen(state) } }
@@ -443,8 +636,17 @@ class TodoListsScreenTest {
             },
             onDeleteList = { deleted += it },
             onReorder = { from, to -> reordered += from to to },
-            onReplayTutorial = { replayed += 1 }
+            onReplayTutorial = { replayed += 1 },
+            onDueDateSet = { dueDatesSet += 1 }
         )
+    }
+
+    private fun openDateSheet(kind: DateKind) {
+        composeRule.runOnIdle {
+            screenState.animationsEnabled = false
+            screenState.datePickerRequest = DatePickerRequest(DateTarget.ADD_ROW, kind, null)
+        }
+        composeRule.waitForIdle()
     }
 
     private fun content(
@@ -480,7 +682,6 @@ class TodoListsScreenTest {
         const val CREATE_LIST = "Create new list"
         const val UNDO = "Undo delete"
         const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L
-        const val SAVE_NAME = "Save list name"
         const val SET_TARGET_DATE = "Set target date"
         const val CLEAR_TARGET_DATE = "Clear target date"
         const val SET_DUE_DATE = "Set due date"
@@ -488,5 +689,7 @@ class TodoListsScreenTest {
         const val DELETE_LIST = "Delete list"
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
+        const val SAVE = "Save"
+        const val CANCEL = "Cancel"
     }
 }

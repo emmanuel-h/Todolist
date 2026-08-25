@@ -55,10 +55,12 @@ fun PaperTheme(
     val colorScheme = remember(palette) { paperColorScheme(palette) }
     val pitch = maxOf(pagePitch(PaperType.itemLine), pagePitch(PaperType.listLine))
     val hand = rememberRuledHand(pitch)
+    val veil = remember { PaperVeil() }
     CompositionLocalProvider(
         LocalPaperPalette provides palette,
         LocalPagePitch provides pitch,
-        LocalRuledHand provides hand
+        LocalRuledHand provides hand,
+        LocalPaperVeil provides veil
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

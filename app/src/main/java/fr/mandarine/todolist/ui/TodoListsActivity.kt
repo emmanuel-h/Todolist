@@ -63,7 +63,8 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
     internal val screenState = TodoListsScreenState()
 
     private lateinit var clock: Clock
-    private var notificationPermissionRequested = false
+    private lateinit var notificationAsk: NotificationAsk
+    private lateinit var notificationPermission: ActivityResultLauncher<String>
     private var demoListId: String? = null
 
     private lateinit var tutorialViewModel: TutorialViewModel
@@ -101,6 +102,10 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         tutorialViewModel = container.tutorialViewModel
         tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
         screenState.animationsEnabled = animationsAllowed()
+        notificationAsk = NotificationAsk(this)
+        notificationPermission = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) {}
 
         container.notificationScheduler.scheduleDailyCheck()
 
@@ -124,6 +129,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
                                 viewModel.editList(listId, name, targetDate, dueDate)
                             },
                             onDeleteList = { listId -> viewModel.deleteList(listId) },
+                            onDueDateSet = { askForNotifications() },
                             onReorder = { from, to ->
                                 screenState.previewOrder = null
                                 viewModel.reorderLists(from, to)
@@ -150,10 +156,6 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
         onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
 
-        val requestNotificationPermission = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) {}
-
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 tutorialViewModel.uiState.collect { state ->
@@ -161,10 +163,6 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
                         state is TutorialUiState.Active
                     screenState.animationsEnabled = animationsAllowed()
                     tutorialController.handleState(state, this@TodoListsActivity)
-                    if (state is TutorialUiState.Dismissed && !notificationPermissionRequested) {
-                        notificationPermissionRequested = true
-                        maybeRequestNotificationPermission(requestNotificationPermission)
-                    }
                 }
             }
         }
@@ -177,13 +175,18 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         viewModel.refresh()
     }
 
-    private fun maybeRequestNotificationPermission(launcher: ActivityResultLauncher<String>) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
+    /**
+     * A due date is the first moment a notification could ever fire, which makes
+     * it the first moment the request explains itself. Before that there is
+     * nothing to be reminded of, so nothing is asked.
+     */
+    internal fun askForNotifications() {
+        val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        val asked = notificationAsk.alreadyAsked()
+        if (!shouldAskForNotifications(Build.VERSION.SDK_INT, granted, asked)) return
+        notificationAsk.markAsked()
+        notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun animationsAllowed(): Boolean =

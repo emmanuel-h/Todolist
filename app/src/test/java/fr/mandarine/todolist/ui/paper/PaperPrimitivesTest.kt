@@ -417,16 +417,6 @@ class PaperPrimitivesTest {
     }
 
     @Test
-    fun `should name the four inks a row is allowed to use`() {
-        val palette = PaperPalette.light
-
-        assertEquals(palette.ink, palette.inkRest)
-        assertEquals(palette.pencil, palette.inkMargin)
-        assertEquals(palette.inkBlue, palette.inkLive)
-        assertEquals(palette.inkRed, palette.inkDanger)
-    }
-
-    @Test
     fun `should map the ink palette onto the material colour roles`() {
         val captured = mutableListOf<Color>()
         composeRule.setContent {

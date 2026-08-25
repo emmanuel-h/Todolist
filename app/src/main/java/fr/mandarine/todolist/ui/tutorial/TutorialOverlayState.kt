@@ -2,7 +2,6 @@ package fr.mandarine.todolist.ui.tutorial
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,6 +12,7 @@ import fr.mandarine.todolist.presentation.TutorialBounds
 import fr.mandarine.todolist.presentation.TutorialCaption
 import fr.mandarine.todolist.presentation.TutorialOverlay
 import fr.mandarine.todolist.presentation.TutorialUiState
+import fr.mandarine.todolist.ui.paper.PaperMotion
 import kotlinx.coroutines.delay
 
 internal const val HAND_PARKED_Y = 4000f
@@ -20,14 +20,11 @@ internal const val HAND_TAP_SCALE = 0.72f
 internal const val HAND_GRIP_SCALE = HAND_TAP_SCALE
 internal const val PROGRESS_DOT_COUNT = 5
 
-private const val TAP_MILLIS = 100
 private const val TAP_HOLD_MILLIS = 130L
-private const val GRIP_MILLIS = 150
-private const val CAPTION_FADE_MILLIS = 300
-private const val CAPTION_SWAP_MILLIS = 150
-private const val BANNER_SLIDE_MILLIS = 350
 private const val BANNER_HOLD_MILLIS = 2200L
-private const val OVERLAY_FADE_MILLIS = 500
+private const val PARKED = 0f
+private const val SHOWN = 1f
+private const val RESTING = 1f
 
 /**
  * The overlay is composed for the whole life of the screen and shown by state, so
@@ -88,71 +85,82 @@ class TutorialOverlayState : TutorialOverlay {
         visible = true
     }
 
+    /**
+     * The overlay arrives the way it leaves — the page is not hidden behind it in
+     * one frame — and the hand is parked off the paper until the first beat calls
+     * it on.
+     */
     suspend fun begin() {
-        hand.snapTo(Offset(0f, HAND_PARKED_Y))
-        handScale.snapTo(1f)
-        captionAlpha.snapTo(0f)
-        captionTextAlpha.snapTo(1f)
-        bannerProgress.snapTo(0f)
-        overlayAlpha.snapTo(1f)
+        hand.snapTo(Offset(PARKED, HAND_PARKED_Y))
+        handScale.snapTo(RESTING)
+        captionAlpha.snapTo(PARKED)
+        captionTextAlpha.snapTo(SHOWN)
+        bannerProgress.snapTo(PARKED)
+        overlayAlpha.snapTo(PARKED)
         caption = null
         banner = null
         aimedAnchor = null
         visible = true
+        overlayAlpha.animateTo(SHOWN, PaperMotion.rowEnter)
     }
 
     suspend fun fadeOut() {
         if (!visible) return
-        overlayAlpha.animateTo(0f, tween(OVERLAY_FADE_MILLIS))
+        overlayAlpha.animateTo(PARKED, PaperMotion.rowExit)
         visible = false
     }
 
+    /**
+     * The script asks for a duration, but a hand that crosses the page in the time
+     * a hand crosses a row reads as two different hands. It travels on the page's
+     * own spring instead, so a long reach takes longer than a short one.
+     */
     override suspend fun glideTo(bounds: TutorialBounds, durationMillis: Long) {
         hand.animateTo(
             targetValue = handTargetFor(bounds, originX, originY, handSizePx),
-            animationSpec = tween(durationMillis.toInt())
+            animationSpec = PaperMotion.handGlide
         )
     }
 
     override suspend fun tap() {
-        handScale.animateTo(HAND_TAP_SCALE, tween(TAP_MILLIS))
+        handScale.animateTo(HAND_TAP_SCALE, PaperMotion.pickUp)
         delay(TAP_HOLD_MILLIS)
-        handScale.animateTo(1f, tween(TAP_MILLIS))
+        handScale.animateTo(RESTING, PaperMotion.pickUp)
     }
 
     override suspend fun grip() {
-        handScale.animateTo(HAND_GRIP_SCALE, tween(GRIP_MILLIS))
+        handScale.animateTo(HAND_GRIP_SCALE, PaperMotion.pickUp)
     }
 
     override suspend fun release() {
-        handScale.animateTo(1f, tween(GRIP_MILLIS))
+        handScale.animateTo(RESTING, PaperMotion.pickUp)
     }
 
     override suspend fun showCaption(caption: TutorialCaption, below: TutorialBounds) {
         this.caption = caption
         captionTop = captionTopFor(below, originY, captionGapPx)
-        captionTextAlpha.snapTo(1f)
-        captionAlpha.snapTo(0f)
-        captionAlpha.animateTo(1f, tween(CAPTION_FADE_MILLIS))
+        captionTextAlpha.snapTo(SHOWN)
+        captionAlpha.snapTo(PARKED)
+        captionAlpha.animateTo(SHOWN, PaperMotion.rowEnter)
     }
 
     override suspend fun updateCaption(caption: TutorialCaption) {
-        captionTextAlpha.animateTo(0f, tween(CAPTION_SWAP_MILLIS))
+        captionTextAlpha.animateTo(PARKED, PaperMotion.rowExit)
         this.caption = caption
-        captionTextAlpha.animateTo(1f, tween(CAPTION_SWAP_MILLIS))
+        captionTextAlpha.animateTo(SHOWN, PaperMotion.rowEnter)
     }
 
     override suspend fun hideCaption() {
-        captionAlpha.animateTo(0f, tween(CAPTION_FADE_MILLIS))
+        captionAlpha.animateTo(PARKED, PaperMotion.rowExit)
         caption = null
     }
 
     override suspend fun showBanner(content: TutorialBannerContent) {
         banner = content
-        bannerProgress.snapTo(0f)
-        bannerProgress.animateTo(1f, tween(BANNER_SLIDE_MILLIS))
+        bannerProgress.snapTo(PARKED)
+        bannerProgress.animateTo(SHOWN, PaperMotion.sheetSettle)
         delay(BANNER_HOLD_MILLIS)
-        bannerProgress.animateTo(0f, tween(BANNER_SLIDE_MILLIS))
+        bannerProgress.animateTo(PARKED, PaperMotion.sheetSettle)
         banner = null
     }
 }

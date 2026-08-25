@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -27,9 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
@@ -150,7 +149,7 @@ fun SwipeRow(
     val pencil = painterResource(R.drawable.ic_edit)
 
     val swipe = remember(key, revealMark, travel) { RowSwipeState(travel, revealMark != null) }
-    val settle = if (animated) PaperMotion.swipeSettle else PaperMotion.instant
+    val settle = if (animated) PaperMotion.sheetSettle else snap()
     val latestDelete = rememberUpdatedState(onDelete)
     val latestReveal = rememberUpdatedState(reveal)
 
@@ -172,7 +171,7 @@ fun SwipeRow(
                     centre = size.width - travel * HALF,
                     seat = ruleSeat(rule),
                     foot = GlyphFoot.trash,
-                    ink = palette.inkDanger
+                    ink = palette.inked(InkTone.Lost)
                 )
             } else if (travelled > AT_REST) {
                 val progress = travelled / travel
@@ -184,10 +183,10 @@ fun SwipeRow(
                         centre = travel * HALF,
                         seat = seat,
                         foot = GlyphFoot.pencil,
-                        ink = palette.pencil
+                        ink = palette.inked(InkTone.Margin)
                     )
                 } else {
-                    drawCheckMark(progress, travel * HALF, seat, palette.pencil)
+                    drawCheckMark(progress, travel * HALF, seat, palette.inked(InkTone.Margin))
                 }
             }
         }
@@ -247,7 +246,7 @@ private fun DrawScope.drawCheckMark(progress: Float, centre: Float, seat: Float,
     val drawn = Path()
     measure.getSegment(AT_REST, measure.length * progress.coerceIn(AT_REST, FULLY_DRAWN), drawn, true)
     translate(centre - glyph * HALF, seat - glyph * CHECK_KNEE.y) {
-        drawPath(drawn, ink, style = Stroke(width = MARK_STROKE.toPx(), cap = StrokeCap.Round))
+        inked(drawn, ink, MARK_STROKE.toPx())
     }
 }
 

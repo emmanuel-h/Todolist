@@ -115,10 +115,10 @@ fun keyboardVisible(): Boolean {
 fun keyboardSeam(unshadowed: Boolean): () -> Float {
     val depth = animateFloatAsState(
         targetValue = if (keyboardVisible() && unshadowed) FULL_SHADE else AT_REST,
-        animationSpec = PaperMotion.seamShade,
+        animationSpec = PaperMotion.pageMove,
         label = SEAM_LABEL
     )
-    return { depth.value }
+    return { depth.value.coerceIn(AT_REST, FULL_SHADE) }
 }
 
 @Composable
@@ -290,7 +290,7 @@ fun Modifier.settleOnRule(listState: LazyListState, headMargin: Dp, pitch: Dp): 
     val seat = remember { Animatable(AT_REST) }
     LaunchedEffect(seat) {
         snapshotFlow { latest.value }.collectLatest { rest ->
-            if (rest != null) seat.animateTo(rest, PaperMotion.sheetSettle)
+            if (rest != null) seat.animateTo(rest, PaperMotion.pageMove)
         }
     }
     return this.graphicsLayer { translationY = seat.value }

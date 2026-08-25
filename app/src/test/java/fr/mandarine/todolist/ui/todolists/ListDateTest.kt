@@ -1,10 +1,13 @@
 package fr.mandarine.todolist.ui.todolists
 
 import fr.mandarine.todolist.domain.DueDateStatus
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.PaperPalette
+import fr.mandarine.todolist.ui.paper.inked
 import java.time.LocalDate
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -79,6 +82,48 @@ class ListDateTest {
     }
 
     @Test
+    fun `should owe the notification ask when a day is written under the alarm`() {
+        val written = dueDateWritten(DateSelection.None, DateSelection(DateKind.DUE, date))
+
+        assertTrue(written)
+    }
+
+    @Test
+    fun `should owe the notification ask when the alarm is rung over a day already written`() {
+        val before = DateSelection(DateKind.TARGET, date)
+
+        assertTrue(dueDateWritten(before, before.withKind(DateKind.DUE)))
+    }
+
+    @Test
+    fun `should owe no notification ask when the day written is a target`() {
+        val written = dueDateWritten(DateSelection.None, DateSelection(DateKind.TARGET, date))
+
+        assertFalse(written)
+    }
+
+    @Test
+    fun `should owe no notification ask when a due date is turned back into a target`() {
+        val before = DateSelection(DateKind.DUE, date)
+
+        assertFalse(dueDateWritten(before, before.withKind(DateKind.TARGET)))
+    }
+
+    @Test
+    fun `should owe no notification ask when the alarm is rung with no day written`() {
+        val written = dueDateWritten(DateSelection.None, DateSelection(DateKind.DUE, null))
+
+        assertFalse(written)
+    }
+
+    @Test
+    fun `should owe no notification ask when a due date is left exactly as it was`() {
+        val before = DateSelection(DateKind.DUE, date)
+
+        assertFalse(dueDateWritten(before, before.withDate(date)))
+    }
+
+    @Test
     fun `should format a date without its year using the locale field order`() {
         val formatted = formatListDate(date, showYear = false, locale = Locale.UK)
 
@@ -107,64 +152,42 @@ class ListDateTest {
     }
 
     @Test
-    fun `should survive a round trip through the picker's epoch millis`() {
-        assertEquals(date, localDateFromPickerMillis(date.toPickerMillis()))
-    }
-
-    @Test
-    fun `should survive a round trip for a date before the epoch`() {
-        val old = LocalDate.of(1965, 7, 2)
-
-        assertEquals(old, localDateFromPickerMillis(old.toPickerMillis()))
-    }
-
-    @Test
-    fun `should read a mid-day picker value as that same day`() {
-        val midday = date.toPickerMillis() + 43_200_000L
-
-        assertEquals(date, localDateFromPickerMillis(midday))
-    }
-
-    @Test
     fun `should pencil a target date that has not passed`() {
-        assertEquals(PaperPalette.light.inkMargin, targetTint(PaperPalette.light, elapsed = false))
+        assertEquals(InkTone.Margin, targetTone(elapsed = false))
     }
 
     @Test
     fun `should write a target date that has passed in the same ink as anything done`() {
-        val elapsed = targetTint(PaperPalette.light, elapsed = true)
-
-        assertEquals(PaperPalette.light.inkDone, elapsed)
+        assertEquals(InkTone.Crossed, targetTone(elapsed = true))
     }
 
     @Test
     fun `should keep every date jot tint fully opaque so its contrast is the ink's own`() {
-        val tints = listOf(
-            targetTint(PaperPalette.light, elapsed = true),
-            targetTint(PaperPalette.light, elapsed = false),
-            dueTint(PaperPalette.light, DueDateStatus.FUTURE),
-            dueTint(PaperPalette.light, DueDateStatus.TODAY),
-            dueTint(PaperPalette.light, DueDateStatus.OVERDUE)
+        val tones = listOf(
+            targetTone(elapsed = true),
+            targetTone(elapsed = false),
+            dueTone(DueDateStatus.FUTURE),
+            dueTone(DueDateStatus.TODAY),
+            dueTone(DueDateStatus.OVERDUE)
         )
 
-        tints.forEach { assertEquals(1f, it.alpha, 0.001f) }
+        tones.forEach { assertEquals(1f, PaperPalette.light.inked(it).alpha, 0.001f) }
     }
 
     @Test
     fun `should pencil a future due date like any other date`() {
-        assertEquals(
-            PaperPalette.light.inkMargin,
-            dueTint(PaperPalette.light, DueDateStatus.FUTURE)
-        )
+        assertEquals(InkTone.Margin, dueTone(DueDateStatus.FUTURE))
     }
 
     @Test
     fun `should warn on a due date falling today`() {
-        assertEquals(PaperPalette.light.inkAmber, dueTint(PaperPalette.light, DueDateStatus.TODAY))
+        assertEquals(InkTone.Today, dueTone(DueDateStatus.TODAY))
+        assertEquals(PaperPalette.light.inkAmber, PaperPalette.light.inked(InkTone.Today))
     }
 
     @Test
     fun `should alarm on a due date already passed`() {
-        assertEquals(PaperPalette.light.inkRed, dueTint(PaperPalette.light, DueDateStatus.OVERDUE))
+        assertEquals(InkTone.Lost, dueTone(DueDateStatus.OVERDUE))
+        assertEquals(PaperPalette.light.inkRed, PaperPalette.light.inked(InkTone.Lost))
     }
 }

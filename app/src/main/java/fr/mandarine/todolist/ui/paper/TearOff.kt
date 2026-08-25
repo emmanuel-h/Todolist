@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -82,7 +84,7 @@ fun Modifier.tearOff(torn: Boolean, animated: Boolean, onTorn: () -> Unit): Modi
         }
         haptics.tearOff()
         if (animated) {
-            progress.animateTo(TORN_OFF, PaperMotion.tearOff)
+            progress.animateTo(TORN_OFF, PaperMotion.pickUp)
         } else {
             progress.snapTo(TORN_OFF)
         }
@@ -94,7 +96,7 @@ fun Modifier.tearOff(torn: Boolean, animated: Boolean, onTorn: () -> Unit): Modi
         transformOrigin = TransformOrigin(ON_THE_PAGE, TORN_OFF)
         translationX = size.width * TEAR_TRAVEL * tear
         rotationZ = TEAR_TILT * tear
-        alpha = TORN_OFF - tear
+        alpha = (TORN_OFF - tear).coerceIn(ON_THE_PAGE, TORN_OFF)
     }
 }
 
@@ -120,8 +122,16 @@ fun UndoSlip(
         modifier = modifier.windowInsetsPadding(
             WindowInsets.navigationBars.union(WindowInsets.ime)
         ),
-        enter = if (animated) slideInVertically { it } + fadeIn() else fadeIn(PaperMotion.instant),
-        exit = if (animated) slideOutVertically { it } + fadeOut() else fadeOut(PaperMotion.instant)
+        enter = if (animated) {
+            slideInVertically(PaperMotion.rowPlacement) { it } + fadeIn(PaperMotion.rowEnter)
+        } else {
+            EnterTransition.None
+        },
+        exit = if (animated) {
+            slideOutVertically(PaperMotion.rowPlacement) { it } + fadeOut(PaperMotion.rowExit)
+        } else {
+            ExitTransition.None
+        }
     ) {
         Box(
             modifier = Modifier
@@ -155,7 +165,7 @@ fun UndoSlip(
             InkIcon(
                 painter = painterResource(R.drawable.ic_undo),
                 contentDescription = null,
-                tint = palette.inkLive
+                tint = palette.inked(InkTone.Acted)
             )
         }
     }

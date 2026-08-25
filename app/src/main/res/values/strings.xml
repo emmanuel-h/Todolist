@@ -33,6 +33,10 @@
     <string name="clear_target_date">Clear target date</string>
     <string name="set_due_date">Set due date</string>
     <string name="clear_due_date">Clear due date</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="choose_year">Choose year</string>
+    <string name="choose_month">Choose month</string>
     <string name="notification_channel_name">Reminders</string>
     <string name="replay_tutorial">Replay tutorial</string>
     <string name="date_kind_target_caption">To do on this day</string>

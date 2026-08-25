@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.ui.todolist
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -31,7 +33,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkRing
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperMotion
@@ -41,6 +45,7 @@ import fr.mandarine.todolist.ui.paper.SwipeMark
 import fr.mandarine.todolist.ui.paper.SwipeReveal
 import fr.mandarine.todolist.ui.paper.SwipeRow
 import fr.mandarine.todolist.ui.paper.handwritten
+import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
 import fr.mandarine.todolist.ui.paper.rememberPenStrike
 import fr.mandarine.todolist.ui.paper.rowVerbs
@@ -132,9 +137,9 @@ private fun RowScope.RowBody(
         targetState = editing,
         modifier = Modifier.weight(1f),
         transitionSpec = {
-            val enter = if (animated) PaperMotion.rowEnter else PaperMotion.instant
-            val exit = if (animated) PaperMotion.rowExit else PaperMotion.instant
-            (fadeIn(enter) togetherWith fadeOut(exit)) using null
+            val enter = if (animated) fadeIn(PaperMotion.rowEnter) else EnterTransition.None
+            val exit = if (animated) fadeOut(PaperMotion.rowExit) else ExitTransition.None
+            (enter togetherWith exit) using null
         },
         label = ROW_BODY_LABEL
     ) { typing ->
@@ -167,7 +172,7 @@ private fun RowTitle(
     val palette = LocalPaperPalette.current
     val style = MaterialTheme.typography.bodyLarge
     val strike = rememberPenStrike(item.id, checked, animated, INK_TICK_MILLIS)
-    val ink = if (item.isCompleted) palette.inkDone else palette.inkRest
+    val ink = palette.inked(InkBudget.words(item.isCompleted))
     Text(
         text = remember(item.title) { handwritten(item.title) },
         modifier = Modifier
@@ -217,9 +222,9 @@ private fun RowTitleEditor(
                         commitTitle(value.text, onCommit, onDismiss)
                     }
                 },
-            textStyle = style.trimmedToGlyphs().copy(color = palette.ink),
+            textStyle = style.trimmedToGlyphs().copy(color = palette.inked(InkTone.Words)),
             singleLine = true,
-            cursorBrush = SolidColor(palette.inkLive),
+            cursorBrush = SolidColor(palette.inked(InkTone.Acted)),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
                 onDone = { commitTitle(value.text, onCommit, onDismiss) }

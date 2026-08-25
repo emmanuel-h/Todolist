@@ -1,8 +1,6 @@
 package fr.mandarine.todolist.ui.paper
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,21 +14,20 @@ import fr.mandarine.todolist.R
 private const val ONE_LINE = 1
 
 @Composable
-fun SectionSkip(completedCount: Int, modifier: Modifier = Modifier) {
+fun SectionSkip(completedCount: Int, modifier: Modifier = Modifier, animated: Boolean = true) {
     val spoken = pluralStringResource(R.plurals.done_items, completedCount, completedCount)
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(LocalPagePitch.current)
-    ) {
+    TallyRoll(
+        count = completedCount,
+        modifier = modifier.fillMaxWidth().semantics { contentDescription = spoken },
+        animated = animated
+    ) { tally ->
         Text(
-            text = completedCount.toString(),
+            text = tally.toString(),
             modifier = Modifier
                 .width(PaperDimens.gutter)
-                .seatOnRule()
-                .semantics { contentDescription = spoken },
+                .seatOnRule(),
             style = LocalRuledHand.current.margin,
-            color = LocalPaperPalette.current.pencil,
+            color = LocalPaperPalette.current.inked(InkTone.Margin),
             textAlign = TextAlign.Center,
             softWrap = false,
             maxLines = ONE_LINE

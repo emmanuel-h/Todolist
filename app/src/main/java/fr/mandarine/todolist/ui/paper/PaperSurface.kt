@@ -84,6 +84,11 @@ fun Modifier.paperSheetFading(
     }
 }
 
+/**
+ * The page, and the one veil drawn over it: every sheet laid on the page dims it
+ * here, once, so a calendar opened over an edit slip costs the page no more light
+ * than the slip alone did.
+ */
 @Composable
 fun PaperSurface(
     modifier: Modifier = Modifier,
@@ -93,7 +98,9 @@ fun PaperSurface(
         modifier = Modifier
             .fillMaxSize()
             .then(modifier)
-            .paperSheet(),
-        content = content
-    )
+            .paperSheet()
+    ) {
+        content()
+        PageVeil()
+    }
 }

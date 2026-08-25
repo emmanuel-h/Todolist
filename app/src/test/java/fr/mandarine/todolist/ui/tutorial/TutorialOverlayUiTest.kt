@@ -89,6 +89,12 @@ class TutorialOverlayUiTest {
     }
 
     @Test
+    fun `should mark the two date kinds with their own glyph rather than an emoji`() {
+        assertEquals(R.drawable.ic_event, captionGlyph(TutorialCaption.TARGET_DATE))
+        assertEquals(R.drawable.ic_alarm, captionGlyph(TutorialCaption.DUE_DATE))
+    }
+
+    @Test
     fun `should read out the caption that distinguishes the two date kinds`() {
         onFrames {
             state.begin()
@@ -96,8 +102,7 @@ class TutorialOverlayUiTest {
         }
         render()
 
-        composeRule.onNodeWithText(caption(R.string.date_kind_target_caption, "📅"))
-            .assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.date_kind_target_caption)).assertIsDisplayed()
     }
 
     @Test
@@ -109,8 +114,7 @@ class TutorialOverlayUiTest {
         }
         render()
 
-        composeRule.onNodeWithText(caption(R.string.date_kind_due_caption, "⏰"))
-            .assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.date_kind_due_caption)).assertIsDisplayed()
     }
 
     @Test
@@ -174,8 +178,6 @@ class TutorialOverlayUiTest {
     private fun onFrames(block: suspend () -> Unit) = runBlocking(ImmediateFrameClock()) { block() }
 
     private fun skipDescription(): String = string(R.string.cancel)
-
-    private fun caption(resId: Int, emoji: String): String = "$emoji ${string(resId)}"
 
     private fun string(resId: Int): String =
         ApplicationProvider.getApplicationContext<Context>().getString(resId)

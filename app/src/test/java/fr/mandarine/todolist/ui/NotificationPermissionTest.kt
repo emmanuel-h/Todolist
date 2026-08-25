@@ -1,15 +1,16 @@
 package fr.mandarine.todolist.ui
 
-import fr.mandarine.todolist.MainThreadDatabaseRule
-import org.junit.Rule
 import android.Manifest
+import android.os.Build
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import fr.mandarine.todolist.MainThreadDatabaseRule
 import fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -23,62 +24,150 @@ class NotificationPermissionTest {
     @get:Rule
     val databaseRule = MainThreadDatabaseRule()
 
+    private fun app() = ApplicationProvider.getApplicationContext<android.app.Application>()
+
     private fun markTutorialSeen() {
-        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
-        SharedPreferencesTutorialStateRepository(app).markTutorialSeen()
+        SharedPreferencesTutorialStateRepository(app()).markTutorialSeen()
+    }
+
+    private fun requestedPermissions(activity: TodoListsActivity): List<String> =
+        Shadows.shadowOf(activity).lastRequestedPermission
+            ?.requestedPermissions
+            ?.toList()
+            .orEmpty()
+
+    @Test
+    fun `should not ask for notifications while the first-launch tutorial is running`() {
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertNull(
+                    "The tutorial must not be interrupted by a permission dialog",
+                    Shadows.shadowOf(activity).lastRequestedPermission
+                )
+            }
+        }
     }
 
     @Test
-    fun `should request POST_NOTIFICATIONS permission on Android 13+ when not yet granted`() {
+    fun `should not ask for notifications when the tutorial is dismissed`() {
         markTutorialSeen()
 
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val shadow = Shadows.shadowOf(activity)
-                val permRequest = shadow.lastRequestedPermission
-                assertNotNull("Expected a runtime permission request on API 34", permRequest)
+                assertNull(
+                    "Finishing the tutorial is not a reason to ask for notifications",
+                    Shadows.shadowOf(activity).lastRequestedPermission
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `should ask for notifications when the first due date is set`() {
+        markTutorialSeen()
+
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.askForNotifications()
+
+                assertNotNull(
+                    "Expected a runtime permission request on API 34",
+                    Shadows.shadowOf(activity).lastRequestedPermission
+                )
                 assertTrue(
                     "POST_NOTIFICATIONS must be in the requested permissions array",
-                    permRequest!!.requestedPermissions.contains(
-                        Manifest.permission.POST_NOTIFICATIONS
-                    )
+                    requestedPermissions(activity).contains(Manifest.permission.POST_NOTIFICATIONS)
                 )
             }
         }
     }
 
     @Test
-    fun `should not request POST_NOTIFICATIONS permission when already granted`() {
+    fun `should not ask for notifications a second time once the ask has been spent`() {
         markTutorialSeen()
-        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
-        Shadows.shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        NotificationAsk(app()).markAsked()
 
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val shadow = Shadows.shadowOf(activity)
-                val permRequest = shadow.lastRequestedPermission
-                val includedPostNotifications = permRequest
-                    ?.requestedPermissions
-                    ?.contains(Manifest.permission.POST_NOTIFICATIONS)
-                    ?: false
+                activity.askForNotifications()
+
+                assertNull(
+                    "A refusal must be respected without a second prompt",
+                    Shadows.shadowOf(activity).lastRequestedPermission
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `should remember that the ask was spent`() {
+        val ask = NotificationAsk(app())
+
+        assertFalse(ask.alreadyAsked())
+
+        ask.markAsked()
+
+        assertTrue(NotificationAsk(app()).alreadyAsked())
+    }
+
+    @Test
+    fun `should not ask for notifications when they are already granted`() {
+        markTutorialSeen()
+        Shadows.shadowOf(app()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+
+        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.askForNotifications()
+
                 assertFalse(
                     "Should not re-request POST_NOTIFICATIONS when already granted",
-                    includedPostNotifications
+                    requestedPermissions(activity).contains(Manifest.permission.POST_NOTIFICATIONS)
                 )
             }
         }
     }
 
     @Test
-    fun `should defer POST_NOTIFICATIONS request while first-launch tutorial is running`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val shadow = Shadows.shadowOf(activity)
-                assertNull(
-                    "Permission request must wait until the tutorial is dismissed",
-                    shadow.lastRequestedPermission
-                )
-            }
-        }
+    fun `should ask on Android 13 and later when the permission is neither granted nor spent`() {
+        assertTrue(
+            shouldAskForNotifications(
+                sdkInt = Build.VERSION_CODES.TIRAMISU,
+                granted = false,
+                asked = false
+            )
+        )
+    }
+
+    @Test
+    fun `should never ask below Android 13 because notifications need no permission there`() {
+        assertFalse(
+            shouldAskForNotifications(
+                sdkInt = Build.VERSION_CODES.S_V2,
+                granted = false,
+                asked = false
+            )
+        )
+    }
+
+    @Test
+    fun `should not ask when the permission is already granted`() {
+        assertFalse(
+            shouldAskForNotifications(
+                sdkInt = Build.VERSION_CODES.TIRAMISU,
+                granted = true,
+                asked = false
+            )
+        )
+    }
+
+    @Test
+    fun `should not ask when the ask has already been spent`() {
+        assertFalse(
+            shouldAskForNotifications(
+                sdkInt = Build.VERSION_CODES.TIRAMISU,
+                granted = false,
+                asked = true
+            )
+        )
     }
 }

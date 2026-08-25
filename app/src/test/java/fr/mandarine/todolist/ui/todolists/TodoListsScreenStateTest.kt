@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui.todolists
 
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TutorialAnchor
+import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.presentation.TutorialBounds
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -175,5 +176,82 @@ class TodoListsScreenStateTest {
         applyPickedDate(state, request, date)
 
         assertNull(state.rename)
+    }
+
+    @Test
+    fun `should report the ask owed when a picked day lands under the alarm`() {
+        val request = DatePickerRequest(DateTarget.ADD_ROW, DateKind.DUE, null)
+
+        assertTrue(applyPickedDate(state, request, date))
+    }
+
+    @Test
+    fun `should report no ask owed when a picked day lands under the calendar`() {
+        val request = DatePickerRequest(DateTarget.ADD_ROW, DateKind.TARGET, null)
+
+        assertFalse(applyPickedDate(state, request, date))
+    }
+
+    @Test
+    fun `should report the ask owed when the alarm is rung over the day on the line`() {
+        state.addRowSelection = DateSelection(DateKind.TARGET, date)
+
+        val owed = writeAddRowSelection(state, state.addRowSelection.withKind(DateKind.DUE))
+
+        assertTrue(owed)
+        assertEquals(date, state.addRowSelection.dueDate)
+    }
+
+    @Test
+    fun `should report the ask owed when the alarm is rung over the day on the sheet`() {
+        state.rename = RenameState.of(TodoList("list-1", "Groceries", targetDate = date))
+
+        val owed = writeRenameSelection(state, DateSelection(DateKind.DUE, date))
+
+        assertTrue(owed)
+        assertEquals(date, state.rename?.selection?.dueDate)
+    }
+
+    @Test
+    fun `should report no ask owed when the sheet has already been put down`() {
+        assertFalse(writeRenameSelection(state, DateSelection(DateKind.DUE, date)))
+    }
+
+    @Test
+    fun `should leave the line bare until words are written on it`() {
+        state.openAddRow()
+
+        assertFalse(dateMarksOwed(state))
+    }
+
+    @Test
+    fun `should owe the line its date marks once words are written on it`() {
+        state.openAddRow()
+        state.addRowText = "Groceries"
+
+        assertTrue(dateMarksOwed(state))
+    }
+
+    @Test
+    fun `should keep the date marks on a line whose words were rubbed out`() {
+        state.openAddRow()
+        state.addRowSelection = DateSelection(DateKind.DUE, date)
+
+        assertTrue(dateMarksOwed(state))
+    }
+
+    @Test
+    fun `should lay the pad on the page when the page fills the window`() {
+        assertTrue(padLiesOnPage(windowWidth = 411.dp, pageWidth = 640.dp, reach = 80.dp))
+    }
+
+    @Test
+    fun `should lay the pad on the page when the margin beside it is too narrow`() {
+        assertTrue(padLiesOnPage(windowWidth = 700.dp, pageWidth = 640.dp, reach = 80.dp))
+    }
+
+    @Test
+    fun `should leave the pad off the page when the desk beside it is wide enough`() {
+        assertFalse(padLiesOnPage(windowWidth = 914.dp, pageWidth = 640.dp, reach = 80.dp))
     }
 }

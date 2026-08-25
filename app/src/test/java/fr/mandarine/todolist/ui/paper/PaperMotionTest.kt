@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.paper
 
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -10,53 +11,76 @@ class PaperMotionTest {
     private val tolerance = 0.0001f
 
     @Test
-    fun `should make the lift overshoot so the sheet reads as peeled off the pad`() {
-        assertTrue(PaperMotion.sheetLift.dampingRatio < Spring.DampingRatioNoBouncy)
-        assertTrue(PaperMotion.sheetLift.stiffness > PaperMotion.sheetSettle.stiffness)
+    fun `should make a pick-up overshoot so paper reads as lifted off the page`() {
+        assertTrue(PaperMotion.pickUp.dampingRatio < Spring.DampingRatioNoBouncy)
+        assertTrue(PaperMotion.pickUp.stiffness > PaperMotion.sheetSettle.stiffness)
     }
 
     @Test
-    fun `should make the settle slower and calmer than the lift`() {
-        assertTrue(PaperMotion.sheetSettle.dampingRatio > PaperMotion.sheetLift.dampingRatio)
-        assertTrue(PaperMotion.sheetSettle.stiffness < PaperMotion.sheetLift.stiffness)
+    fun `should settle a sheet slower and calmer than it picks one up`() {
+        assertTrue(PaperMotion.sheetSettle.dampingRatio > PaperMotion.pickUp.dampingRatio)
+        assertTrue(PaperMotion.sheetSettle.stiffness < PaperMotion.pickUp.stiffness)
     }
 
     @Test
-    fun `should let a row enter with a trace of bounce and leave with none`() {
-        assertTrue(PaperMotion.rowEnter.dampingRatio < Spring.DampingRatioNoBouncy)
+    fun `should move the whole page slower than it moves one row`() {
+        assertTrue(PaperMotion.pageMove.stiffness < PaperMotion.sheetSettle.stiffness)
         assertEquals(
-            Spring.DampingRatioNoBouncy,
-            PaperMotion.rowExit.dampingRatio,
+            PaperMotion.sheetSettle.dampingRatio,
+            PaperMotion.pageMove.dampingRatio,
             tolerance
         )
     }
 
     @Test
-    fun `should move a row out faster than it lets one in`() {
-        assertTrue(PaperMotion.rowExit.stiffness > PaperMotion.rowEnter.stiffness)
+    fun `should never let ink overshoot the mark it is drawing`() {
+        assertEquals(Spring.DampingRatioNoBouncy, PaperMotion.rowEnter.dampingRatio, tolerance)
+        assertEquals(Spring.DampingRatioNoBouncy, PaperMotion.rowExit.dampingRatio, tolerance)
+        assertEquals(Spring.DampingRatioNoBouncy, PaperMotion.rowFold.dampingRatio, tolerance)
     }
 
     @Test
-    fun `should place a reordered row on the same spring a new row enters on`() {
+    fun `should take ink off the page faster than it puts ink on it`() {
+        assertTrue(PaperMotion.rowExit.stiffness > PaperMotion.rowEnter.stiffness)
+        assertEquals(PaperMotion.rowExit.stiffness, PaperMotion.rowFold.stiffness, tolerance)
+    }
+
+    @Test
+    fun `should carry ink faster than it carries paper`() {
+        assertTrue(PaperMotion.rowEnter.stiffness > PaperMotion.pickUp.stiffness)
+    }
+
+    @Test
+    fun `should place a reordered row and unfold a line on the one spring for space`() {
         assertEquals(
-            PaperMotion.rowEnter.dampingRatio,
+            PaperMotion.sheetSettle.dampingRatio,
             PaperMotion.rowPlacement.dampingRatio,
             tolerance
         )
         assertEquals(
-            PaperMotion.rowEnter.stiffness,
+            PaperMotion.sheetSettle.stiffness,
             PaperMotion.rowPlacement.stiffness,
+            tolerance
+        )
+        assertEquals(
+            PaperMotion.sheetSettle.stiffness,
+            PaperMotion.rowUnfold.stiffness,
             tolerance
         )
     }
 
     @Test
-    fun `should offer an instant spec that neither bounces nor lingers`() {
+    fun `should walk the tutorial hand at the pace of a whole-page move`() {
+        assertEquals(PaperMotion.pageMove.stiffness, PaperMotion.handGlide.stiffness, tolerance)
         assertEquals(
-            Spring.DampingRatioNoBouncy,
-            PaperMotion.instant.dampingRatio,
+            PaperMotion.pageMove.dampingRatio,
+            PaperMotion.handGlide.dampingRatio,
             tolerance
         )
-        assertEquals(Spring.StiffnessHigh, PaperMotion.instant.stiffness, tolerance)
+    }
+
+    @Test
+    fun `should reverse the breath instead of restarting it`() {
+        assertEquals(RepeatMode.Reverse, PaperMotion.breath.repeatMode)
     }
 }
