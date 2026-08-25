@@ -172,6 +172,32 @@ class RoomTodoRepositoryTest {
     }
 
     @Test
+    fun `should land at one past the highest active position when first item is completed then restored`() {
+        repository.add(TodoItem("a", "Alpha", "list-1", position = 0))
+        repository.add(TodoItem("b", "Beta", "list-1", position = 1))
+        repository.add(TodoItem("c", "Gamma", "list-1", position = 2))
+        repository.toggle("a")
+        repository.toggle("a")
+        val items = repository.getAllByListId("list-1")
+        val alpha = items.first { it.id == "a" }
+        val gamma = items.first { it.id == "c" }
+        assertEquals(3, alpha.position)
+        assertEquals(2, gamma.position)
+    }
+
+    @Test
+    fun `should land at normalised end position when restoring after a reorder that filled position gaps`() {
+        repository.add(TodoItem("a", "Alpha", "list-1", position = 0))
+        repository.add(TodoItem("b", "Beta", "list-1", position = 1))
+        repository.add(TodoItem("c", "Gamma", "list-1", position = 2))
+        repository.toggle("a")
+        repository.reorder("list-1", 0, 1)
+        repository.toggle("a")
+        val alpha = repository.getAllByListId("list-1").first { it.id == "a" }
+        assertEquals(2, alpha.position)
+    }
+
+    @Test
     fun `should return counts grouped by list`() {
         repository.add(TodoItem("1", "A", "list-1"))
         repository.add(TodoItem("2", "B", "list-1", isCompleted = true, completedAt = 500L))

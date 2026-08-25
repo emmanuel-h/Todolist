@@ -25,16 +25,13 @@ class RoomTodoRepository(
         val entity = dao.getById(todoId) ?: return
         val nowCompleted = !entity.completed
         val completedAt = if (nowCompleted) clock.now() else null
-        val position = if (nowCompleted) entity.position else activeCountIn(entity.listId)
+        val position = if (nowCompleted) entity.position else nextActivePositionIn(entity.listId)
         dao.updateCompletedAndPosition(todoId, nowCompleted, completedAt, position)
     }
 
-    private fun activeCountIn(listId: String): Int {
-        var count = 0
-        for (item in dao.getAllByListId(listId)) {
-            if (!item.completed) count++
-        }
-        return count
+    private fun nextActivePositionIn(listId: String): Int {
+        val active = dao.getAllByListId(listId).filter { !it.completed }
+        return if (active.isEmpty()) 0 else active.last().position + 1
     }
 
     override fun delete(todoId: String) {
