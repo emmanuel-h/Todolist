@@ -1,15 +1,17 @@
 package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 
-internal fun paperColorScheme(palette: PaperPalette): ColorScheme = lightColorScheme(
+internal fun paperColorScheme(palette: PaperPalette): ColorScheme = paperBaseline(palette).copy(
     primary = palette.inkBlue,
     onPrimary = palette.paper,
     primaryContainer = palette.inkBluePale,
@@ -47,9 +49,21 @@ internal fun paperColorScheme(palette: PaperPalette): ColorScheme = lightColorSc
     surfaceContainerHighest = palette.paperSunken
 )
 
+private fun paperBaseline(palette: PaperPalette): ColorScheme =
+    if (palette.byLamplight) darkColorScheme() else lightColorScheme()
+
+/**
+ * The pad is one pad; the light in the room is what changes. Which sheet the app
+ * writes on is read here once, so every mark, rule and shadow downstream is a
+ * value taken from the palette rather than a branch taken on the theme.
+ */
+@Composable
+fun paperUnderTheLight(): PaperPalette =
+    if (isSystemInDarkTheme()) PaperPalette.night else PaperPalette.light
+
 @Composable
 fun PaperTheme(
-    palette: PaperPalette = PaperPalette.light,
+    palette: PaperPalette = paperUnderTheLight(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = remember(palette) { paperColorScheme(palette) }

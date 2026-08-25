@@ -27,17 +27,24 @@ private const val OPAQUE = 1f
 private const val TRANSPARENT = 0f
 
 @Immutable
-internal class PaperSheetBrushes(val light: Brush, val grain: Brush, val corners: Brush)
+internal class PaperSheetBrushes(
+    val light: Brush,
+    val grain: Brush,
+    val corners: Brush,
+    val blend: BlendMode
+)
 
 internal fun paperSheetBrushes(
     tile: ImageBitmap,
     lit: Color,
     tone: Color,
     vignette: Color,
-    size: Size
+    size: Size,
+    grain: PaperGrain
 ): PaperSheetBrushes = PaperSheetBrushes(
     light = Brush.verticalGradient(listOf(lit, tone)),
     grain = ShaderBrush(ImageShader(tile, TileMode.Repeated, TileMode.Repeated)),
+    blend = grain.blend,
     corners = Brush.radialGradient(
         colors = listOf(Color.Transparent, vignette),
         center = Offset(size.width / HALF, size.height / HALF),
@@ -49,7 +56,7 @@ internal fun paperSheetBrushes(
 internal fun DrawScope.drawPaperSheet(brushes: PaperSheetBrushes, alpha: Float = OPAQUE) {
     if (alpha <= TRANSPARENT) return
     drawRect(brushes.light, alpha = alpha)
-    drawRect(brushes.grain, alpha = GRAIN_ALPHA * alpha, blendMode = BlendMode.Multiply)
+    drawRect(brushes.grain, alpha = GRAIN_ALPHA * alpha, blendMode = brushes.blend)
     drawRect(brushes.corners, alpha = alpha)
 }
 
@@ -59,9 +66,10 @@ fun Modifier.paperSheet(
     lit: Color = LocalPaperPalette.current.paperSheet
 ): Modifier {
     val vignette = LocalPaperPalette.current.vignette
-    val tile = paperGrainTile(LocalDensity.current.density)
+    val grain = paperGrainOn(tone)
+    val tile = paperGrainTile(LocalDensity.current.density, grain)
     return this.drawWithCache {
-        val brushes = paperSheetBrushes(tile, lit, tone, vignette, size)
+        val brushes = paperSheetBrushes(tile, lit, tone, vignette, size, grain)
         onDrawBehind { drawPaperSheet(brushes) }
     }
 }
@@ -77,9 +85,10 @@ fun Modifier.paperSheetFading(
     lit: Color = LocalPaperPalette.current.paperSheet
 ): Modifier {
     val vignette = LocalPaperPalette.current.vignette
-    val tile = paperGrainTile(LocalDensity.current.density)
+    val grain = paperGrainOn(tone)
+    val tile = paperGrainTile(LocalDensity.current.density, grain)
     return this.drawWithCache {
-        val brushes = paperSheetBrushes(tile, lit, tone, vignette, size)
+        val brushes = paperSheetBrushes(tile, lit, tone, vignette, size, grain)
         onDrawBehind { drawPaperSheet(brushes, opacity()) }
     }
 }

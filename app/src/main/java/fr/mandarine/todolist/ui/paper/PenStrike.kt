@@ -70,7 +70,7 @@ fun Modifier.penStrike(state: PenStrikeState, color: Color): Modifier = drawWith
     val layout = state.layout
     val strokes = if (layout == null) emptyList() else strikeStrokes(layout, state.seed)
     val inked = strokes.sumOf { it.length.toDouble() }.toFloat()
-    val nib = if (layout == null) NO_NIB else NIB_WIDTH * layout.emPixels(this)
+    val nib = InkNib(if (layout == null) NO_NIB else NIB_WIDTH * layout.emPixels(this))
     onDrawWithContent {
         drawContent()
         val revealed = inked * state.progress.value

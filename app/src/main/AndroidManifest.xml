@@ -18,6 +18,7 @@
         <activity
             android:name=".ui.TodoListsActivity"
             android:exported="true"
+            android:theme="@style/Theme.ToDoList.Splash"
             android:windowSoftInputMode="adjustNothing">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -7,16 +7,19 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import fr.mandarine.todolist.TodoListApplication
@@ -40,6 +43,7 @@ import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.drawEdgeToEdge
+import fr.mandarine.todolist.ui.paper.openOnPaper
 import fr.mandarine.todolist.ui.paper.preparePaperSheet
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DatePickerRequest
@@ -54,8 +58,10 @@ import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val TYPE_CHAR_MILLIS = 80L
+private const val BLANK_PAGE_MILLIS = 500L
 
 class TodoListsActivity : ComponentActivity(), TutorialStage {
 
@@ -66,6 +72,8 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
     private lateinit var notificationAsk: NotificationAsk
     private lateinit var notificationPermission: ActivityResultLauncher<String>
     private var demoListId: String? = null
+    private var listsBeforeDemo: Set<String> = emptySet()
+    private var pageWritten by mutableStateOf(false)
 
     private lateinit var tutorialViewModel: TutorialViewModel
     private lateinit var tutorialController: TutorialOverlayController
@@ -76,6 +84,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        openOnPaper { pageWritten }
         drawEdgeToEdge()
         super.onCreate(savedInstanceState)
 
@@ -111,9 +120,23 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
         preparePaperSheet()
 
+        /**
+         * The launch window holds until the first read comes back, so the page
+         * arrives already written on rather than blank with the rows landing a
+         * frame later. A page that has nothing on it never reaches Content, so the
+         * wait is bounded and the paper is handed over either way.
+         */
+        lifecycleScope.launch {
+            withTimeoutOrNull(BLANK_PAGE_MILLIS) {
+                viewModel.state.first { it is TodoListsState.Content }
+            }
+            pageWritten = true
+        }
+
         setContent {
-            val state by viewModel.state.collectAsState()
+            val state by viewModel.state.collectAsStateWithLifecycle()
             val overlayState = tutorialController.overlayState
+            ReportDrawnWhen { pageWritten }
             PaperTheme {
                 Box(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().behindTutorial(overlayState.visible)) {
@@ -159,8 +182,10 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 tutorialViewModel.uiState.collect { state ->
-                    tutorialBackCallback.isEnabled = state is TutorialUiState.ReadyToStart ||
+                    val running = state is TutorialUiState.ReadyToStart ||
                         state is TutorialUiState.Active
+                    tutorialBackCallback.isEnabled = running
+                    screenState.recordingAnchors = running
                     screenState.animationsEnabled = animationsAllowed()
                     tutorialController.handleState(state, this@TodoListsActivity)
                 }
@@ -227,11 +252,23 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
         else -> false
     }
 
+    /**
+     * On a page that already holds lists the demo's own list is not simply the
+     * first row, so the id is found by waiting for a row that was not on the page
+     * before the demo started writing. Taking the first row instead hands the
+     * cleanup the reader's list and deletes it when the demo is abandoned.
+     */
     override suspend fun awaitDemoListId(): String? {
+        val written = listsBeforeDemo
         val content = viewModel.state.first { s ->
-            s is TodoListsState.Content && s.activeSummaries.isNotEmpty()
+            s is TodoListsState.Content && s.activeSummaries.any { it.list.id !in written }
         } as TodoListsState.Content
-        return content.activeSummaries.firstOrNull()?.list?.id
+        return content.activeSummaries.firstOrNull { it.list.id !in written }?.list?.id
+    }
+
+    private fun listIdsOnPage(): Set<String> {
+        val content = viewModel.state.value as? TodoListsState.Content ?: return emptySet()
+        return (content.activeSummaries + content.doneSummaries).mapTo(mutableSetOf()) { it.list.id }
     }
 
     override fun bannerContent(): TutorialBannerContent? {
@@ -241,6 +278,7 @@ class TodoListsActivity : ComponentActivity(), TutorialStage {
 
     private fun openCreateRow(): Boolean {
         if (screenState.addRowExpanded) return false
+        listsBeforeDemo = listIdsOnPage()
         screenState.openAddRow()
         return true
     }

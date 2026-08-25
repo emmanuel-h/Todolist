@@ -48,7 +48,7 @@ class PaperPrimitivesTest {
 
     @Test
     fun `should build a grain tile at the documented size`() {
-        val tile = paperGrainTile(density = 2f)
+        val tile = paperGrainTile(density = 2f, grain = PaperGrain.DarkFleck)
 
         assertEquals(PaperDimens.GRAIN_TILE_PIXELS, tile.width)
         assertEquals(PaperDimens.GRAIN_TILE_PIXELS, tile.height)
@@ -56,23 +56,23 @@ class PaperPrimitivesTest {
 
     @Test
     fun `should build the same grain tile every time so the paper never shimmers`() {
-        val first = paperGrainTile(density = 2f).toPixelMap().buffer
-        val second = paperGrainTile(density = 2f).toPixelMap().buffer
+        val first = paperGrainTile(density = 2f, grain = PaperGrain.DarkFleck).toPixelMap().buffer
+        val second = paperGrainTile(density = 2f, grain = PaperGrain.DarkFleck).toPixelMap().buffer
 
         assertTrue(first.contentEquals(second))
     }
 
     @Test
     fun `should bake a different grain tile for a different density`() {
-        val coarse = bakePaperGrainTile(density = 1f).toPixelMap().buffer
-        val fine = bakePaperGrainTile(density = 3f).toPixelMap().buffer
+        val coarse = bakePaperGrainTile(density = 1f, grain = PaperGrain.DarkFleck).toPixelMap().buffer
+        val fine = bakePaperGrainTile(density = 3f, grain = PaperGrain.DarkFleck).toPixelMap().buffer
 
         assertTrue(!coarse.contentEquals(fine))
     }
 
     @Test
     fun `should keep the grain within the darkening budget of the paper`() {
-        val pixels = bakePaperGrainTile(density = 2f).toPixelMap()
+        val pixels = bakePaperGrainTile(density = 2f, grain = PaperGrain.DarkFleck).toPixelMap()
 
         var darkest = 1f
         for (y in 0 until pixels.height) {
@@ -82,6 +82,28 @@ class PaperPrimitivesTest {
         }
 
         assertTrue(darkest > 0.9f)
+    }
+
+    @Test
+    fun `should keep the night grain within the lighting budget of the paper`() {
+        val pixels = bakePaperGrainTile(density = 2f, grain = PaperGrain.PaleFibre).toPixelMap()
+
+        var brightest = 0f
+        for (y in 0 until pixels.height) {
+            for (x in 0 until pixels.width) {
+                brightest = maxOf(brightest, pixels[x, y].red)
+            }
+        }
+
+        assertTrue("night grain lit nothing", brightest > 0f)
+        assertTrue("night grain lit by $brightest", brightest < 0.15f)
+    }
+
+    @Test
+    fun `should take the grain from the tone the sheet is drawn in`() {
+        assertEquals(PaperGrain.DarkFleck, paperGrainOn(PaperPalette.light.paper))
+        assertEquals(PaperGrain.PaleFibre, paperGrainOn(PaperPalette.night.paper))
+        assertEquals(PaperGrain.DarkFleck, paperGrainOn(PaperPalette.night.stickyNote))
     }
 
     @Test
@@ -368,6 +390,18 @@ class PaperPrimitivesTest {
         composeRule.waitForIdle()
 
         assertEquals(PaperPalette.light, captured.single())
+    }
+
+    @Test
+    @Config(qualifiers = "night")
+    fun `should hand the night sheet to everything drawn after dark`() {
+        val captured = mutableListOf<PaperPalette>()
+        composeRule.setContent {
+            PaperTheme { captured += LocalPaperPalette.current }
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(PaperPalette.night, captured.single())
     }
 
     @Test

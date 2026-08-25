@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "To do list"
 include(":app")
+include(":baselineprofile")
  

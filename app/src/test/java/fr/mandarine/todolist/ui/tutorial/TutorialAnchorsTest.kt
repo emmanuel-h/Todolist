@@ -13,8 +13,10 @@ import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TutorialBounds
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,11 +32,58 @@ class TutorialAnchorsTest {
 
     private val anchors = TutorialAnchors()
 
+    @Before
+    fun startTheDemo() {
+        anchors.recordingAnchors = true
+    }
+
     @Test
     fun `should report the bounds an anchored composable measured`() {
         composeRule.setContent { AnchoredRow(present = true) }
 
         assertNotNull(anchors.boundsOf(ANCHOR))
+    }
+
+    /**
+     * Reporting a rectangle costs a layout callback and a snapshot write on every
+     * frame the page moves, so a page nobody is being shown around measures nothing.
+     */
+    @Test
+    fun `should measure nothing while no demo is running`() {
+        anchors.recordingAnchors = false
+
+        composeRule.setContent { AnchoredRow(present = true) }
+
+        assertNull(anchors.boundsOf(ANCHOR))
+    }
+
+    @Test
+    fun `should start measuring when a demo begins`() {
+        anchors.recordingAnchors = false
+        composeRule.setContent { AnchoredRow(present = true) }
+        assertNull(anchors.boundsOf(ANCHOR))
+
+        anchors.recordingAnchors = true
+        composeRule.waitForIdle()
+
+        assertNotNull(anchors.boundsOf(ANCHOR))
+    }
+
+    @Test
+    fun `should drop what it measured when the demo ends`() {
+        composeRule.setContent { AnchoredRow(present = true) }
+        composeRule.waitForIdle()
+        assertNotNull(anchors.boundsOf(ANCHOR))
+
+        anchors.recordingAnchors = false
+        composeRule.waitForIdle()
+
+        assertNull(anchors.boundsOf(ANCHOR))
+    }
+
+    @Test
+    fun `should measure nothing before anything has started it`() {
+        assertFalse(TutorialAnchors().recordingAnchors)
     }
 
     @Test

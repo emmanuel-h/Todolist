@@ -8,10 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import fr.mandarine.todolist.R
@@ -96,7 +96,7 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
         preparePaperSheet()
 
         setContent {
-            val state by viewModel.state.collectAsState()
+            val state by viewModel.state.collectAsStateWithLifecycle()
             val overlayState = tutorialController.overlayState
             PaperTheme {
                 Box(Modifier.fillMaxSize()) {
@@ -138,7 +138,9 @@ class TodoListActivity : ComponentActivity(), TutorialStage {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 tutorialViewModel.uiState.collect { state ->
-                    tutorialBackCallback.isEnabled = state is TutorialUiState.Active
+                    val running = state is TutorialUiState.Active
+                    tutorialBackCallback.isEnabled = running
+                    screenState.recordingAnchors = running
                     screenState.animationsEnabled = animationsAllowed()
                     tutorialController.handleState(state, this@TodoListActivity)
                 }

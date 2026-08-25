@@ -51,11 +51,13 @@ import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.byLamplight
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperType
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.paperSheet
+import fr.mandarine.todolist.ui.paper.raised
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -96,11 +98,13 @@ private fun Modifier.paperSlip(): Modifier {
     val palette = LocalPaperPalette.current
     val shadowInk = palette.shadow
     return this
-        .dropShadow(RectangleShape) {
-            radius = SLIP_SHADOW.toPx()
-            offset = Offset(OFF_THE_PAGE, SLIP_DROP.toPx())
-            color = shadowInk
-            alpha = SLIP_SHADOW_ALPHA
+        .raised(RectangleShape, palette) {
+            dropShadow(RectangleShape) {
+                radius = SLIP_SHADOW.toPx()
+                offset = Offset(OFF_THE_PAGE, SLIP_DROP.toPx())
+                color = shadowInk
+                alpha = SLIP_SHADOW_ALPHA
+            }
         }
         .paperSheet(tone = palette.paperShade)
 }
@@ -161,7 +165,7 @@ fun TutorialOverlay(
 @Composable
 private fun PhantomHand(state: TutorialOverlayState, anchors: TutorialAnchorHost) {
     val palette = LocalPaperPalette.current
-    val disc = palette.paperSheet
+    val disc = if (palette.byLamplight) palette.lift else palette.paperSheet
     val rimInk = palette.pencil
     val shadowInk = palette.ink
     val onPage by remember(state, anchors) {
@@ -183,15 +187,17 @@ private fun PhantomHand(state: TutorialOverlayState, anchors: TutorialAnchorHost
                 scaleX = squash
                 scaleY = squash
             }
-            .dropShadow(CircleShape) {
-                val press = handPress(state.handScale.value)
-                radius = lerp(HAND_SHADOW_LIFTED, HAND_SHADOW_TOUCHING, press).toPx()
-                offset = Offset(
-                    OFF_THE_PAGE,
-                    lerp(HAND_DROP_LIFTED, HAND_DROP_TOUCHING, press).toPx()
-                )
-                alpha = HAND_SHADOW_ALPHA
-                color = shadowInk
+            .raised(CircleShape, palette) {
+                dropShadow(CircleShape) {
+                    val press = handPress(state.handScale.value)
+                    radius = lerp(HAND_SHADOW_LIFTED, HAND_SHADOW_TOUCHING, press).toPx()
+                    offset = Offset(
+                        OFF_THE_PAGE,
+                        lerp(HAND_DROP_LIFTED, HAND_DROP_TOUCHING, press).toPx()
+                    )
+                    alpha = HAND_SHADOW_ALPHA
+                    color = shadowInk
+                }
             }
             .drawBehind {
                 val rim = HAND_RIM.toPx()

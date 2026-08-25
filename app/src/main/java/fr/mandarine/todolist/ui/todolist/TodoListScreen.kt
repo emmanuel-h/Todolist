@@ -103,6 +103,7 @@ fun TodoListScreen(
     val activeItems = orderedBy(content?.activeItems.orEmpty(), screenState.previewOrder) { it.id }
         .filterNot { deletion.hides(it.id) }
     val completedItems = content?.completedItems.orEmpty().filterNot { deletion.hides(it.id) }
+    val activeIds = activeItems.map { it.id }
     val showSkip = activeItems.isNotEmpty() && completedItems.isNotEmpty()
     val allDone = activeItems.isEmpty() && completedItems.isNotEmpty()
 
@@ -115,9 +116,7 @@ fun TodoListScreen(
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     val haptics = rememberPaperHaptics()
-    val liveIds = rememberUpdatedState(
-        activeItems.map { it.id } + completedItems.map { it.id }
-    )
+    val liveIds = rememberUpdatedState(activeIds + completedItems.map { it.id })
     val allIds = (content?.activeItems.orEmpty() + content?.completedItems.orEmpty()).map { it.id }
     val requestToggle: (TodoItem) -> Unit = { item ->
         when {
@@ -213,7 +212,7 @@ fun TodoListScreen(
                     ActiveRow(
                         item = item,
                         position = position,
-                        rowIds = activeItems.map { it.id },
+                        rowIds = activeIds,
                         listState = listState,
                         session = session,
                         edgeScroll = edgeScroll,

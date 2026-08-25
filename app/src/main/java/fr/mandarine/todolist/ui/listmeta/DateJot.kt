@@ -23,7 +23,7 @@ import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.seatOnRule
 import fr.mandarine.todolist.ui.todolists.DateKind
-import fr.mandarine.todolist.ui.todolists.formatListDate
+import fr.mandarine.todolist.ui.todolists.listDateFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -45,12 +45,13 @@ fun DateJot(
     val locale = Locale.getDefault(Locale.Category.FORMAT)
     val formatter = remember(locale, showYear) { jotFormatter(locale, showYear) }
     val jotted = remember(date, formatter) { date.format(formatter) }
+    val spokenFormatter = remember(locale) { listDateFormatter(locale, showYear = true) }
     val spoken = stringResource(
         when (kind) {
             DateKind.TARGET -> R.string.target_date_description
             DateKind.DUE -> R.string.due_date_description
         },
-        formatListDate(date, showYear = true, locale = locale)
+        remember(date, spokenFormatter) { date.format(spokenFormatter) }
     )
     Row(
         modifier = modifier

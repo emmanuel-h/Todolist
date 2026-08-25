@@ -120,8 +120,8 @@ fun InkRing(
                     val measure = PathMeasure().apply { setPath(check, false) }
                     val drawnTick = measure.length
                     val drawn = Path()
-                    val nib = RING_STROKE.toPx()
-                    val tip = TICK_STROKE.toPx()
+                    val nib = InkNib(RING_STROKE.toPx())
+                    val tip = InkNib(TICK_STROKE.toPx())
                     val ringInk = palette.inked(InkBudget.ring(wet = false))
                     val washInk = palette.inkBluePale
                     val wetInk = palette.inked(InkBudget.ring(wet = true))
@@ -162,7 +162,7 @@ fun Modifier.circledInInk(
         val ring = ringPath(size, seed, size.minDimension * RING_WOBBLE)
         val measure = PathMeasure().apply { setPath(ring, false) }
         val ringLength = measure.length
-        val nib = RING_STROKE.toPx()
+        val nib = InkNib(RING_STROKE.toPx())
         val segment = Path()
         onDrawWithContent {
             drawContent()

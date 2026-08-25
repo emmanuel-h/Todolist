@@ -151,6 +151,21 @@ class ListDateTest {
         assertEquals("sam. 14 mars", formatted)
     }
 
+    /**
+     * Every row on the page asks for the same hand, so the page keeps one instead of
+     * resolving the skeleton again per row.
+     */
+    @Test
+    fun `should write the same date with a kept hand as with a fresh one`() {
+        val kept = listDateFormatter(Locale.UK, showYear = false)
+
+        assertEquals(formatListDate(date, showYear = false, locale = Locale.UK), date.format(kept))
+        assertEquals(
+            formatListDate(date.plusDays(1), showYear = false, locale = Locale.UK),
+            date.plusDays(1).format(kept)
+        )
+    }
+
     @Test
     fun `should pencil a target date that has not passed`() {
         assertEquals(InkTone.Margin, targetTone(elapsed = false))

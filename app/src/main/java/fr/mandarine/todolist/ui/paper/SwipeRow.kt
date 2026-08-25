@@ -21,7 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -161,32 +161,42 @@ fun SwipeRow(
     val pull = rememberDraggableState { delta -> swipe.drag(delta) }
 
     Box(
-        modifier = modifier.drawBehind {
-            val travelled = swipe.offset
-            val rule = pitch.toPx()
-            if (travelled < AT_REST) {
-                drawStampedGlyph(
-                    glyph = trash,
-                    progress = -travelled / travel,
-                    centre = size.width - travel * HALF,
-                    seat = ruleSeat(rule),
-                    foot = GlyphFoot.trash,
-                    ink = palette.inked(InkTone.Lost)
-                )
-            } else if (travelled > AT_REST) {
-                val progress = travelled / travel
-                val seat = ruleSeat(rule)
-                if (revealMark == SwipeMark.Pencil) {
+        modifier = modifier.drawWithCache {
+            val seat = size.height - pitch.toPx() * BASELINE_LIFT
+            val mark = SwipeMarkNib(
+                glyph = MARK_GLYPH.toPx(),
+                nib = InkNib(MARK_STROKE.toPx()),
+                lost = ColorFilter.tint(palette.inked(InkTone.Lost)),
+                margin = ColorFilter.tint(palette.inked(InkTone.Margin)),
+                ink = palette.inked(InkTone.Margin)
+            )
+            onDrawBehind {
+                val travelled = swipe.offset
+                if (travelled < AT_REST) {
                     drawStampedGlyph(
-                        glyph = pencil,
-                        progress = progress,
-                        centre = travel * HALF,
+                        glyph = trash,
+                        progress = -travelled / travel,
+                        centre = size.width - travel * HALF,
                         seat = seat,
-                        foot = GlyphFoot.pencil,
-                        ink = palette.inked(InkTone.Margin)
+                        foot = GlyphFoot.trash,
+                        mark = mark,
+                        tint = mark.lost
                     )
-                } else {
-                    drawCheckMark(progress, travel * HALF, seat, palette.inked(InkTone.Margin))
+                } else if (travelled > AT_REST) {
+                    val progress = travelled / travel
+                    if (revealMark == SwipeMark.Pencil) {
+                        drawStampedGlyph(
+                            glyph = pencil,
+                            progress = progress,
+                            centre = travel * HALF,
+                            seat = seat,
+                            foot = GlyphFoot.pencil,
+                            mark = mark,
+                            tint = mark.margin
+                        )
+                    } else {
+                        drawCheckMark(progress, travel * HALF, seat, mark)
+                    }
                 }
             }
         }
@@ -220,7 +230,34 @@ fun SwipeRow(
     }
 }
 
-private fun DrawScope.ruleSeat(pitch: Float): Float = size.height - pitch * BASELINE_LIFT
+/**
+ * Everything the drag needs to draw with, cut once for the row: the check is one
+ * path and one measure, and the two glyph tints and the nib outlive the gesture.
+ * Only how much of the mark is drawn changes from frame to frame.
+ */
+@Immutable
+private class SwipeMarkNib(
+    val glyph: Float,
+    val nib: InkNib,
+    val lost: ColorFilter,
+    val margin: ColorFilter,
+    val ink: Color
+) {
+    private val check = Path().apply {
+        moveTo(glyph * CHECK_START.x, glyph * CHECK_START.y)
+        lineTo(glyph * CHECK_KNEE.x, glyph * CHECK_KNEE.y)
+        lineTo(glyph * CHECK_END.x, glyph * CHECK_END.y)
+    }
+    private val measure = PathMeasure().apply { setPath(check, false) }
+    private val length = measure.length
+    private val drawn = Path()
+
+    fun checkedAsFarAs(progress: Float): Path {
+        drawn.reset()
+        measure.getSegment(AT_REST, length * progress.coerceIn(AT_REST, FULLY_DRAWN), drawn, true)
+        return drawn
+    }
+}
 
 private fun DrawScope.drawStampedGlyph(
     glyph: Painter,
@@ -228,30 +265,26 @@ private fun DrawScope.drawStampedGlyph(
     centre: Float,
     seat: Float,
     foot: Float,
-    ink: Color
+    mark: SwipeMarkNib,
+    tint: ColorFilter
 ) {
     val drawn = progress.coerceIn(AT_REST, FULLY_DRAWN)
-    val scaled = MARK_GLYPH.toPx() * (MARK_MIN_SCALE + MARK_GROWTH * drawn)
+    val scaled = mark.glyph * (MARK_MIN_SCALE + MARK_GROWTH * drawn)
     translate(centre - scaled * HALF, seat - scaled * foot) {
         with(glyph) {
-            draw(Size(scaled, scaled), alpha = drawn, ColorFilter.tint(ink))
+            draw(Size(scaled, scaled), alpha = drawn, tint)
         }
     }
 }
 
-private fun DrawScope.drawCheckMark(progress: Float, centre: Float, seat: Float, ink: Color) {
-    val glyph = MARK_GLYPH.toPx()
-    val check = checkPath(glyph)
-    val measure = PathMeasure().apply { setPath(check, false) }
-    val drawn = Path()
-    measure.getSegment(AT_REST, measure.length * progress.coerceIn(AT_REST, FULLY_DRAWN), drawn, true)
-    translate(centre - glyph * HALF, seat - glyph * CHECK_KNEE.y) {
-        inked(drawn, ink, MARK_STROKE.toPx())
+private fun DrawScope.drawCheckMark(
+    progress: Float,
+    centre: Float,
+    seat: Float,
+    mark: SwipeMarkNib
+) {
+    val drawn = mark.checkedAsFarAs(progress)
+    translate(centre - mark.glyph * HALF, seat - mark.glyph * CHECK_KNEE.y) {
+        inked(drawn, mark.ink, mark.nib)
     }
-}
-
-private fun checkPath(glyph: Float): Path = Path().apply {
-    moveTo(glyph * CHECK_START.x, glyph * CHECK_START.y)
-    lineTo(glyph * CHECK_KNEE.x, glyph * CHECK_KNEE.y)
-    lineTo(glyph * CHECK_END.x, glyph * CHECK_END.y)
 }

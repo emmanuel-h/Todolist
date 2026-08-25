@@ -118,17 +118,18 @@ fun PaperDialog(
                             alpha = settle.value
                             translationY = SHEET_RISE.toPx() * (SETTLED - settle.value)
                         }
-                        .dropShadow(RectangleShape) {
-                            radius = AMBIENT_RADIUS.toPx()
-                            offset = Offset(STRAIGHT_DOWN, AMBIENT_DROP.toPx())
-                            color = shadowInk
-                            alpha = AMBIENT_ALPHA
-                        }
-                        .dropShadow(RectangleShape) {
-                            radius = CONTACT_RADIUS.toPx()
-                            offset = Offset(STRAIGHT_DOWN, CONTACT_DROP.toPx())
-                            color = shadowInk
-                            alpha = CONTACT_ALPHA
+                        .raised(RectangleShape, palette) {
+                            dropShadow(RectangleShape) {
+                                radius = AMBIENT_RADIUS.toPx()
+                                offset = Offset(STRAIGHT_DOWN, AMBIENT_DROP.toPx())
+                                color = shadowInk
+                                alpha = AMBIENT_ALPHA
+                            }.dropShadow(RectangleShape) {
+                                radius = CONTACT_RADIUS.toPx()
+                                offset = Offset(STRAIGHT_DOWN, CONTACT_DROP.toPx())
+                                color = shadowInk
+                                alpha = CONTACT_ALPHA
+                            }
                         }
                         .paperSheet(tone = palette.paperShade, lit = palette.paperSheet)
                         .pointerInput(Unit) { detectTapGestures { } }

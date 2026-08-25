@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.paper
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -28,25 +29,38 @@ fun DrawScope.inked(
     width: Float,
     alpha: Float = FULLY_INKED,
     cap: StrokeCap = StrokeCap.Round
-) {
-    drawPath(
-        path = path,
-        color = colour,
-        alpha = BLEED_ALPHA * alpha,
-        style = Stroke(width = width + BLEED_SPREAD, cap = cap)
-    )
-    drawPath(
-        path = path,
-        color = colour.dried(),
-        alpha = EDGE_ALPHA * alpha,
-        style = Stroke(width = width + EDGE_SPREAD, cap = cap)
-    )
-    drawPath(
-        path = path,
-        color = colour,
-        alpha = alpha,
-        style = Stroke(width = width, cap = cap)
-    )
+) = inked(path, colour, InkNib(width, cap), alpha)
+
+/**
+ * The three passes are one nib rather than three widths asked for again on every
+ * frame. A hand that keeps writing the same mark — a ring on every row of a page
+ * being flung, a strike through every finished line — cuts its nib once, where the
+ * brushes and the tile are cut, and spends the scroll drawing with it.
+ */
+@Immutable
+class InkNib(width: Float, cap: StrokeCap = StrokeCap.Round) {
+
+    internal val bleed = Stroke(width = width + BLEED_SPREAD, cap = cap)
+    internal val edge = Stroke(width = width + EDGE_SPREAD, cap = cap)
+    internal val mark = Stroke(width = width, cap = cap)
 }
 
-internal fun Color.dried(): Color = lerp(this, Color.Black, EDGE_DEPTH)
+fun DrawScope.inked(
+    path: Path,
+    colour: Color,
+    nib: InkNib,
+    alpha: Float = FULLY_INKED
+) {
+    drawPath(path = path, color = colour, alpha = BLEED_ALPHA * alpha, style = nib.bleed)
+    drawPath(path = path, color = colour.dried(), alpha = EDGE_ALPHA * alpha, style = nib.edge)
+    drawPath(path = path, color = colour, alpha = alpha, style = nib.mark)
+}
+
+/**
+ * Ink dries denser at the edge of the channel the nib cut, which on a daylit page
+ * means darker and on a night page — where the ink is chalk and the paper is the
+ * dark thing — means paler. Either way the edge settles further from the paper
+ * than the mark it rims.
+ */
+internal fun Color.dried(): Color =
+    lerp(this, if (unlit) Color.Black else Color.White, EDGE_DEPTH)

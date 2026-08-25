@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        PaperPalette.night.paper, repeated here for the one frame the window is
+        painted before Compose draws. The two must stay the same colour.
+    -->
+    <color name="paper">#201D19</color>
+</resources>

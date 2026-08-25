@@ -20,6 +20,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import kotlin.math.abs
 
 private const val SIDE = 40
 private const val CENTRE = 20f
@@ -47,6 +48,21 @@ class InkNibTest {
     }
 
     @Test
+    fun `should dry every ink further from the paper it was written on`() {
+        listOf(PaperPalette.light, PaperPalette.night).forEach { sheet ->
+            InkTone.entries.forEach { tone ->
+                val wet = sheet.inked(tone)
+                val paper = sheet.paper.grey()
+
+                val wetGap = abs(wet.grey() - paper)
+                val driedGap = abs(wet.dried().grey() - paper)
+
+                assertTrue("$tone", driedGap > wetGap)
+            }
+        }
+    }
+
+    @Test
     fun `should let a mark bleed past the nib that drew it`() {
         val inked = scan { inked(mark(), palette.ink, NIB) }
         val single = scan { drawPath(mark(), palette.ink, style = Stroke(NIB, cap = StrokeCap.Round)) }
@@ -69,6 +85,30 @@ class InkNibTest {
         val single = scan { drawPath(mark(), palette.ink, style = Stroke(NIB, cap = StrokeCap.Round)) }
 
         assertTrue(inked.ink() > single.ink())
+    }
+
+    /**
+     * A page being flung draws the same marks with the same nib on every frame, so
+     * the nib is cut once. What it lays down has to be the same ink either way.
+     */
+    @Test
+    fun `should lay the same ink down whether the nib is cut once or asked for again`() {
+        val perCall = scan { inked(mark(), palette.ink, NIB) }
+        val cutOnce = InkNib(NIB)
+        val kept = scan { inked(mark(), palette.ink, cutOnce) }
+
+        (0 until SIDE).forEach { x ->
+            assertEquals("column $x", perCall.darkening(x), kept.darkening(x), A_SHADE)
+        }
+    }
+
+    @Test
+    fun `should keep a nib usable for as many marks as the page has rows`() {
+        val nib = InkNib(NIB)
+        val once = scan { inked(mark(), palette.ink, nib) }
+        val again = scan { inked(mark(), palette.ink, nib) }
+
+        assertEquals(once.ink(), again.ink(), A_SHADE)
     }
 
     @Test

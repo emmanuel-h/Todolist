@@ -45,8 +45,18 @@ data class DateSelection(val kind: DateKind, val date: LocalDate?) {
 internal fun dueDateWritten(before: DateSelection, after: DateSelection): Boolean =
     after.dueDate != null && after.dueDate != before.dueDate
 
-fun formatListDate(date: LocalDate, showYear: Boolean, locale: Locale): String {
-    val skeleton = if (showYear) "EEEdMMMy" else "EEEdMMM"
-    val pattern = DateFormat.getBestDateTimePattern(locale, skeleton)
-    return date.format(DateTimeFormatter.ofPattern(pattern, locale))
+private const val SPOKEN_SKELETON = "EEEdMMM"
+private const val SPOKEN_YEAR_SKELETON = "EEEdMMMy"
+
+/**
+ * Resolving a skeleton against a locale and compiling the pattern it yields costs
+ * more than writing the date does, and the answer is the same for every row on the
+ * page — so the hand is asked for once and kept.
+ */
+fun listDateFormatter(locale: Locale, showYear: Boolean): DateTimeFormatter {
+    val skeleton = if (showYear) SPOKEN_YEAR_SKELETON else SPOKEN_SKELETON
+    return DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, skeleton), locale)
 }
+
+fun formatListDate(date: LocalDate, showYear: Boolean, locale: Locale): String =
+    date.format(listDateFormatter(locale, showYear))

@@ -29,6 +29,7 @@ import androidx.compose.ui.zIndex
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.paperSheetFading
+import fr.mandarine.todolist.ui.paper.raised
 import fr.mandarine.todolist.ui.paper.rememberPaperHaptics
 import kotlinx.coroutines.launch
 
@@ -165,11 +166,13 @@ fun Modifier.liftedSlip(session: DragSession, lifted: Boolean, animated: Boolean
             scaleY = scaleX
             rotationZ = LIFT_TILT * held * session.direction
         }
-        .dropShadow(RectangleShape) {
-            radius = LIFT_SHADOW_RADIUS.toPx() * spread.value
-            alpha = LIFT_SHADOW_ALPHA * grip.value
-            color = palette.shadow
-            offset = Offset(FLAT, LIFT_SHADOW_DROP.toPx() * spread.value)
+        .raised(RectangleShape, palette, { grip.value }) {
+            dropShadow(RectangleShape) {
+                radius = LIFT_SHADOW_RADIUS.toPx() * spread.value
+                alpha = LIFT_SHADOW_ALPHA * grip.value
+                color = palette.shadow
+                offset = Offset(FLAT, LIFT_SHADOW_DROP.toPx() * spread.value)
+            }
         }
         .paperSheetFading({ grip.value }, tone = palette.paperSheet)
 }

@@ -142,16 +142,17 @@ fun UndoSlip(
                     rotationZ = SLIP_TILT
                     alpha = lerp(SLIP_SPENT_INK, SLIP_FRESH_INK, left)
                 }
-                .dropShadow(RectangleShape) {
-                    radius = SLIP_SHADOW.toPx()
-                    alpha = SLIP_SHADOW_ALPHA
-                    color = palette.ink
-                    offset = Offset(ON_THE_PAGE, SLIP_DROP.toPx())
-                }
-                .dropShadow(RectangleShape) {
-                    radius = SLIP_CONTACT.toPx()
-                    alpha = SLIP_CONTACT_ALPHA
-                    color = palette.ink
+                .raised(RectangleShape, palette) {
+                    dropShadow(RectangleShape) {
+                        radius = SLIP_SHADOW.toPx()
+                        alpha = SLIP_SHADOW_ALPHA
+                        color = palette.ink
+                        offset = Offset(ON_THE_PAGE, SLIP_DROP.toPx())
+                    }.dropShadow(RectangleShape) {
+                        radius = SLIP_CONTACT.toPx()
+                        alpha = SLIP_CONTACT_ALPHA
+                        color = palette.ink
+                    }
                 }
                 .paperSheet(tone = palette.paperShade, lit = palette.paperSheet)
                 .tornEdge(palette.paperShadeDeep)

@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.paper
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import fr.mandarine.todolist.R
 import kotlinx.coroutines.delay
 
 private const val PREVIEW_PAPER = 0xFFFAF5EA
+private const val PREVIEW_NIGHT_PAPER = 0xFF201D19
 private const val PREVIEW_TAKEN_MILLIS = 900L
 private const val PREVIEW_APPLES = "🍎 Apples"
 private const val PREVIEW_GROCERIES = "🛒 Groceries"
@@ -121,6 +123,41 @@ internal fun InkRolesPreview() {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = PREVIEW_APPLES, color = palette.inked(InkTone.Words))
             Text(text = PREVIEW_OPEN_COUNT, color = palette.inked(InkTone.Margin), style = LocalRuledHand.current.margin)
+            Text(text = PREVIEW_GROCERIES, color = palette.inked(InkTone.Acted))
+            Text(text = PREVIEW_APPLES, color = palette.inked(InkTone.Lost))
+        }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    backgroundColor = PREVIEW_NIGHT_PAPER,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    heightDp = 320
+)
+@Composable
+internal fun PaperSurfaceByLamplightPreview() {
+    PaperTheme {
+        PaperSurface(Modifier.height(320.dp)) {}
+    }
+}
+
+@Preview(
+    showBackground = true,
+    backgroundColor = PREVIEW_NIGHT_PAPER,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+internal fun InkRolesByLamplightPreview() {
+    PaperTheme {
+        val palette = LocalPaperPalette.current
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = PREVIEW_APPLES, color = palette.inked(InkTone.Words))
+            Text(
+                text = PREVIEW_OPEN_COUNT,
+                color = palette.inked(InkTone.Margin),
+                style = LocalRuledHand.current.margin
+            )
             Text(text = PREVIEW_GROCERIES, color = palette.inked(InkTone.Acted))
             Text(text = PREVIEW_APPLES, color = palette.inked(InkTone.Lost))
         }

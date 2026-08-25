@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -74,14 +76,13 @@ private fun StickyNoteSheetSurface(
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val palette = LocalPaperPalette.current
-    val shadowInk = palette.shadow
     val glueInk = palette.stickyNoteBack
     val sunkenInk = palette.paperSunken
     Box(
         modifier = Modifier
             .size(PaperDimens.stickySheet)
             .then(modifier)
-            .then(if (shadowed) Modifier.padShadow(shadowInk) else Modifier)
+            .then(if (shadowed) Modifier.padShadow(palette) else Modifier)
             .clip(SHEET_SHAPE)
             .paperSheet(tone = color, lit = color)
             .innerShadow(SHEET_SHAPE) {
@@ -101,19 +102,19 @@ private fun StickyNoteSheetSurface(
     )
 }
 
-private fun Modifier.padShadow(ink: Color): Modifier = this
-    .dropShadow(SHEET_SHAPE) {
+private fun Modifier.padShadow(palette: PaperPalette): Modifier = raised(SHEET_SHAPE, palette) {
+    dropShadow(SHEET_SHAPE) {
         radius = AMBIENT_RADIUS.toPx()
         offset = Offset(AMBIENT_SIDEWAYS.toPx(), AMBIENT_DROP.toPx())
-        color = ink
+        color = palette.shadow
         alpha = AMBIENT_ALPHA
-    }
-    .dropShadow(SHEET_SHAPE) {
+    }.dropShadow(SHEET_SHAPE) {
         radius = CONTACT_RADIUS.toPx()
         offset = Offset(STRAIGHT_DOWN, CONTACT_DROP.toPx())
-        color = ink
+        color = palette.shadow
         alpha = CONTACT_ALPHA
     }
+}
 
 @Composable
 fun StickyNotePad(
@@ -171,8 +172,13 @@ fun StickyNotePad(
     }
 
     val palette = LocalPaperPalette.current
+    val flying = peeling || settle.isRunning || beckon.isRunning
     Box(
-        modifier = modifier.size(PaperDimens.stickyPad),
+        modifier = modifier
+            .size(PaperDimens.stickyPad)
+            .preferredFrameRate(
+                if (flying) FrameRateCategory.High else FrameRateCategory.Default
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (!taken) {
@@ -216,7 +222,7 @@ fun StickyNotePad(
                 InkIcon(
                     painter = painter,
                     contentDescription = contentDescription,
-                    tint = palette.inked(InkTone.Words)
+                    tint = palette.stickyNoteInk
                 )
             }
         }

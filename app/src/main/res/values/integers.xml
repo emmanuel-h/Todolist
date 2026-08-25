@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        How long the sticky note takes to settle onto the launch paper. The window
+        has to be told the same number the animation is written with, so it is
+        written once here and read by both.
+    -->
+    <integer name="splash_settle_millis">480</integer>
+</resources>

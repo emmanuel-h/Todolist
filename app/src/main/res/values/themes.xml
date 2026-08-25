@@ -13,4 +13,18 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <!--
+        The launch window is the same sheet of paper the page is drawn on, so the
+        splash hands over without a tonal step: one @color/paper ground under both,
+        and the sticky note settling onto it as the only thing that moves.
+    -->
+    <style name="Theme.ToDoList.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/paper</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_sticky_settle</item>
+        <item name="windowSplashScreenAnimationDuration">@integer/splash_settle_millis</item>
+        <item name="postSplashScreenTheme">@style/Theme.ToDoList</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
 </resources>

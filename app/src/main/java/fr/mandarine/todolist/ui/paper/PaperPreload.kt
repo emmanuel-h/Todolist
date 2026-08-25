@@ -10,7 +10,9 @@ import kotlinx.coroutines.withContext
 fun ComponentActivity.preparePaperSheet() {
     val density = resources.displayMetrics.density
     lifecycleScope.launch {
-        withContext(Dispatchers.Default) { paperGrainTile(density) }
+        withContext(Dispatchers.Default) {
+            PaperGrain.entries.forEach { paperGrainTile(density, it) }
+        }
     }
     lifecycleScope.launch {
         createFontFamilyResolver(this@preparePaperSheet).preload(PaperType.hand)

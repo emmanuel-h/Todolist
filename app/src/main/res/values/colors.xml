@@ -2,10 +2,9 @@
 <resources>
     <!--
         The ink-on-paper palette lives in PaperInk, not here — one source of truth,
-        and the only consumer of a colour resource left is the window it is painted
-        on before Compose draws. See docs/paper-design-system.md.
+        and the only consumers of a colour resource left are the window it is painted
+        on before Compose draws, the splash it hands over to, and the sheet the
+        launcher icon is a corner of. See docs/paper-design-system.md.
     -->
     <color name="paper">#FAF5EA</color>
-
-    <color name="launcher_background">#7C3AED</color>
 </resources>

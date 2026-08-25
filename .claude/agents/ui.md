@@ -24,16 +24,29 @@ You are a senior Android UI/UX engineer on the **fr.mandarine.todolist** project
 **You may modify:**
 - `app/src/main/java/fr/mandarine/todolist/ui/` — Compose screens, rows, dialogs and the `ui/paper/` design system. **There is no `res/layout/`; the app is entirely Compose. Never create one.**
 - `app/src/main/res/values/` — the bare window theme, strings, the one screen-width dimension
-- `app/src/main/res/drawable/` — vector icons only
+- `app/src/main/res/values-night/` — the night window theme and the one night window colour
+- `app/src/main/res/drawable/` — vector icons, the launcher layers (`ic_launcher_*`) and the launch animation (`avd_sticky_settle`)
+- `app/src/main/res/mipmap-*/` — the adaptive icon and its legacy raster fallbacks
+- `app/src/main/AndroidManifest.xml` — the launcher Activity's `android:theme` only, and nothing else in the file
 
-The palette, dimensions and motion specs are **Kotlin objects** (`PaperInk`, `PaperDimens`, `PaperMotion`), not resources. There is no `values-night/` and there must not be: the paper design is light-only.
+The palette, dimensions and motion specs are **Kotlin objects** (`PaperPalette`, `PaperDimens`, `PaperMotion`), not resources. The app has two sheets: `PaperPalette.light` and `PaperPalette.night`, chosen once in `PaperTheme` from `isSystemInDarkTheme()`. Night is a **palette swap, not a second design** — same composition, same pitch, same hand. Never branch a component on the theme; add the value to `PaperPalette` and read it. `values-night/` holds only what the window needs before the first composition, and its `paper` colour must equal `PaperPalette.night.paper`.
 
 **You must never modify:**
 - `domain/` — models, use cases, repository interfaces
 - `data/` — repository implementations
 - `presentation/` — ViewModels, UI state classes, the tutorial script
 - Test files outside `app/src/test/java/fr/mandarine/todolist/ui/`
-- `build.gradle.kts` or any Gradle configuration
+- `build.gradle.kts` or any Gradle configuration — **except** the frame-pacing wiring described below, which the user must be asked for explicitly before it is touched
+
+### Frame pacing
+
+The `:baselineprofile` module (`com.android.test` + `androidx.baselineprofile`) writes the profile that pre-compiles the first launch and the first scroll; `:app` applies the same plugin, depends on `androidx.profileinstaller`, and declares `baselineProfile(project(":baselineprofile"))`. Regenerate with `./gradlew :app:generateBaselineProfile` on a connected device, never by hand — a profile is measured, not written.
+
+Three rules follow from it:
+
+- **The display's high rate is asked for only while something moves.** `Modifier.preferredFrameRate(FrameRateCategory.High)` belongs on the dragged row, the peeling sheet and the swiping row, and nowhere else; every one of them returns to `FrameRateCategory.Default` at rest. It is a no-op below API 35, which is the whole compatibility story — never guard it yourself.
+- **Nothing is allocated inside a draw or measure lambda.** Brushes, paths, path measures, colour filters and `InkNib`s are cut in the `drawWithCache` block; only how much of a mark is drawn changes per frame. A new mark means a new field on the cached object, not a `Path()` inside `onDrawBehind`.
+- **Nothing is measured for a reader who is not there.** `Modifier.tutorialAnchor` reports bounds only while `TutorialAnchorHost.recordingAnchors` is set, which the Activities set from the tutorial's own state. Any future per-frame reporting is gated the same way.
 
 ---
 
@@ -135,9 +148,10 @@ Apply Material Design 3 patterns:
 - Row items: use `com.google.android.material.card.MaterialCardView` or a `LinearLayout` with `?attr/selectableItemBackground` ripple
 
 Theme requirements:
-- `themes.xml` must extend `Theme.Material3.DayNight.NoActionBar` (or `.DarkActionBar` if an AppBar is added manually)
-- Define `colorPrimary`, `colorSecondary`, `colorTertiary` using Material3 colour roles
-- Ensure `values-night/themes.xml` exists with a dark-mode override
+- `values/themes.xml` and `values-night/themes.xml` both hold one bare window theme each — window background, transparent bars, and the bar-icon appearance for that sheet. Nothing else: Compose owns every colour past the first frame.
+- Both must stay in step: a colour added to one needs its counterpart in the other, or Android 16 QPR2's expanded dark theme will invert the page for us.
+- `Theme.ToDoList.Splash` is the launcher Activity's theme and is dressed from `androidx.core:core-splashscreen`. Its `windowSplashScreenBackground` must stay `@color/paper` and its `postSplashScreenTheme` must stay `@style/Theme.ToDoList`: the launch window and the first composed frame are one sheet, and any other colour there is a tonal jump the user sees on every cold start. The handover lives in `ui/paper/PaperLaunch.kt` — the launch sheet fades where it stands, it never slides or moves the paper.
+- The launcher tile is the same pad: `@color/paper` behind, the sticky-note tones and one blue tick in front, and the tick alone as the monochrome layer. Keep it to those three tones so it survives both the 48dp mask and the themed-icon tint, and keep every mark inside the 66-of-108 safe circle. `LaunchMarkTest` holds all of this.
 
 ### 4. BUILD CHECK
 

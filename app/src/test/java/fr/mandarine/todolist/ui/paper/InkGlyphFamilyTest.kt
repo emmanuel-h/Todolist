@@ -104,7 +104,7 @@ class InkGlyphFamilyTest {
         val owned = family.values.map { context.resources.getResourceEntryName(it) }.toSet()
         val drawn = R.drawable::class.java.fields
             .map { it.name }
-            .filterNot { it.startsWith(LAUNCHER) }
+            .filterNot { it.startsWith(LAUNCHER) || it.startsWith(LAUNCH_ANIMATION) }
             .toSet()
 
         assertEquals(owned, drawn)
@@ -130,6 +130,7 @@ class InkGlyphFamilyTest {
     private companion object {
         const val ANDROID = "http://schemas.android.com/apk/res/android"
         const val LAUNCHER = "ic_launcher"
+        const val LAUNCH_ANIMATION = "avd_"
         const val VECTOR = "vector"
         const val PATH = "path"
         const val GRID = 24f

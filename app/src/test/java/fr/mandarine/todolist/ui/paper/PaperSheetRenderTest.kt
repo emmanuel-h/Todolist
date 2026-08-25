@@ -107,6 +107,62 @@ class PaperSheetRenderTest {
         assertTrue(sheet.grey(1, 1) <= palette.stickyNote.grey())
     }
 
+    @Test
+    fun `should lay the grain on a night sheet as light rather than as shade`() {
+        val night = PaperPalette.night
+        val sheet = drawSheet(
+            tone = night.paperSheet,
+            lit = night.paperSheet,
+            vignette = Color.Transparent
+        )
+
+        val lit = night.paperSheet.grey()
+        var brightest = lit
+        for (y in 0 until sheet.height step SAMPLE_STEP) {
+            for (x in 0 until sheet.width step SAMPLE_STEP) {
+                brightest = maxOf(brightest, sheet.grey(x, y))
+            }
+        }
+
+        assertTrue("grain lit by ${brightest - lit}", brightest > lit)
+        assertTrue("grain lit by ${brightest - lit}", brightest - lit < GRAIN_BUDGET)
+    }
+
+    @Test
+    fun `should never leave a night sheet a flat fill`() {
+        val night = PaperPalette.night
+        val sheet = drawSheet(tone = night.paper, lit = night.paperSheet, vignette = night.vignette)
+
+        val tones = mutableSetOf<Long>()
+        for (y in 0 until sheet.height step SAMPLE_STEP) {
+            for (x in 0 until sheet.width step SAMPLE_STEP) {
+                tones += sheet[x, y].value.toLong()
+            }
+        }
+
+        assertTrue("night sheet drew only $tones", tones.size > 8)
+    }
+
+    @Test
+    fun `should keep a sticky note grained in shade whatever the light is`() {
+        val night = PaperPalette.night
+        val sheet = drawSheet(
+            tone = night.stickyNote,
+            lit = night.stickyNote,
+            vignette = Color.Transparent
+        )
+
+        val lit = night.stickyNote.grey()
+        var brightest = lit
+        for (y in 0 until sheet.height step SAMPLE_STEP) {
+            for (x in 0 until sheet.width step SAMPLE_STEP) {
+                brightest = maxOf(brightest, sheet.grey(x, y))
+            }
+        }
+
+        assertEquals(lit, brightest, 0f)
+    }
+
     private fun drawSheet(
         tone: Color,
         lit: Color = palette.paperSheet,
@@ -114,6 +170,7 @@ class PaperSheetRenderTest {
     ): PixelMap {
         val bitmap = ImageBitmap(SHEET_SIDE, SHEET_SIDE)
         val size = Size(SHEET_SIDE.toFloat(), SHEET_SIDE.toFloat())
+        val grain = paperGrainOn(tone)
         CanvasDrawScope().draw(
             Density(SHEET_DENSITY),
             LayoutDirection.Ltr,
@@ -122,11 +179,12 @@ class PaperSheetRenderTest {
         ) {
             drawPaperSheet(
                 paperSheetBrushes(
-                    tile = paperGrainTile(SHEET_DENSITY),
+                    tile = paperGrainTile(SHEET_DENSITY, grain),
                     lit = lit,
                     tone = tone,
                     vignette = vignette,
-                    size = size
+                    size = size,
+                    grain = grain
                 )
             )
         }
