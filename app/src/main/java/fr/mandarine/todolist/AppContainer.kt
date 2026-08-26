@@ -22,6 +22,7 @@ import fr.mandarine.todolist.domain.TodoRepository
 import fr.mandarine.todolist.domain.TutorialScript
 import fr.mandarine.todolist.domain.TutorialStateRepository
 import fr.mandarine.todolist.presentation.TutorialViewModel
+import fr.mandarine.todolist.ui.TodoListsActivity
 import java.util.concurrent.Executors
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +32,10 @@ import kotlinx.coroutines.asCoroutineDispatcher
 class AppContainer(
     private val context: Context,
     private val databaseFactory: (Context) -> TodoDatabase = TodoDatabase::getInstance,
-    private val schedulerFactory: (Context) -> NotificationScheduler = { WorkManagerNotificationScheduler(it) },
+    private val schedulerFactory: (Context) -> NotificationScheduler = {
+        WorkManagerNotificationScheduler(it, DailyNotificationWork::class.java)
+    },
+    private val opensOnTap: Class<*> = TodoListsActivity::class.java,
     val databaseDispatcher: CoroutineDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 ) {
     /**
@@ -50,7 +54,7 @@ class AppContainer(
     private val database by lazy { databaseFactory(context) }
     val todoListRepository: TodoListRepository by lazy { RoomTodoListRepository(database.todoListDao()) }
     val todoRepository: TodoRepository by lazy { RoomTodoRepository(database.todoItemDao(), clock) }
-    val listNotifier: ListNotifier by lazy { AndroidListNotifier(context) }
+    val listNotifier: ListNotifier by lazy { AndroidListNotifier(context, opensOnTap) }
     val notificationScheduler: NotificationScheduler by lazy { schedulerFactory(context) }
     val tutorialStateRepository: TutorialStateRepository by lazy {
         SharedPreferencesTutorialStateRepository(context)

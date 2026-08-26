@@ -113,7 +113,7 @@ class ListsStage(
         val name = screenState.addRowText
         if (name.isBlank()) return false
         val selection = screenState.addRowSelection
-        screenState.closeAddRow()
+        screenState.abandonAddRow()
         if (screenState.animationsEnabled) screenState.noteListAdded()
         writeDemoList(name, selection.targetDate, selection.dueDate)
         return true

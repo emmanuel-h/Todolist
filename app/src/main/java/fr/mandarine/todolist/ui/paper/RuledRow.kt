@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 
 fun Modifier.paperRuling(
     pitch: Dp,
@@ -21,7 +22,10 @@ fun Modifier.paperRuling(
     gutter: Dp = PaperDimens.gutter
 ): Modifier = drawWithCache {
     val thickness = PaperDimens.rule.toPx()
-    val start = gutter.toPx()
+    val bare = gutter.toPx()
+    // A DrawScope does not mirror: the gutter is bare paper on the row's start
+    // edge, which is the right one in a right-to-left hand.
+    val start = if (layoutDirection == LayoutDirection.Rtl) 0f else bare
     val step = pitch.toPx().coerceAtLeast(thickness)
     onDrawBehind {
         var line = size.height - thickness
@@ -29,7 +33,7 @@ fun Modifier.paperRuling(
             drawRect(
                 color = color,
                 topLeft = Offset(start, line),
-                size = Size(size.width - start, thickness)
+                size = Size(size.width - bare, thickness)
             )
             line -= step
         }

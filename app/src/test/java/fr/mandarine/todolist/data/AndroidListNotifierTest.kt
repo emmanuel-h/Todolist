@@ -25,7 +25,7 @@ class AndroidListNotifierTest {
 
     private val application = ApplicationProvider.getApplicationContext<TodoListApplication>()
     private val notificationManager = application.getSystemService(NotificationManager::class.java)
-    private val notifier = AndroidListNotifier(application)
+    private val notifier = AndroidListNotifier(application, TodoListsActivity::class.java)
 
     @Test
     fun `should not post any notification when list is empty`() {

@@ -24,10 +24,15 @@ private const val FLINGS = 2
 private const val GESTURE_MARGIN = 5
 
 /**
- * The journey the profile is cut from: the app opens onto its page, a page's worth
- * of lists is written on it, the page is flung both ways, one list is opened and
- * filled, and its items are flung too. Everything a first launch and a first
- * scroll touch is therefore already compiled by the time a reader does it.
+ * Two profiles are cut here, and they are not the same profile.
+ *
+ * The baseline names everything the journey touches, so it is all compiled ahead
+ * of the reader. The startup profile names only what opening the app touches, and
+ * it is a *ranking* — the classes it names are laid out together in the dex so the
+ * first read pulls fewer pages. Naming the whole journey startup-critical, which
+ * one combined collection did, ranks everything equally and therefore ranks
+ * nothing: the two files came out byte-identical and the layout pass had nothing
+ * to sort by.
  *
  * Run on a connected device with `./gradlew :app:generateBaselineProfile`.
  */
@@ -37,10 +42,23 @@ class BaselineProfileGenerator {
     @get:Rule
     val baselineProfileRule = BaselineProfileRule()
 
+    /** Opening the app onto its page, and nothing else. */
     @Test
-    fun openThePageAndWriteOnIt() = baselineProfileRule.collect(
+    fun openThePage() = baselineProfileRule.collect(
         packageName = PACKAGE,
         includeInStartupProfile = true
+    ) {
+        pressHome()
+        startActivityAndWait()
+        device.waitForIdle()
+        SystemClock.sleep(PAGE_SETTLES_MILLIS)
+    }
+
+    /** Everything a reader does once the page is open. */
+    @Test
+    fun writeOnThePage() = baselineProfileRule.collect(
+        packageName = PACKAGE,
+        includeInStartupProfile = false
     ) {
         pressHome()
         startActivityAndWait()

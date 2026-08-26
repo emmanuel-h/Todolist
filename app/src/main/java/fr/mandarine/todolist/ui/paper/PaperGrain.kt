@@ -10,6 +10,7 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
+import java.util.concurrent.ConcurrentHashMap
 
 private const val FINE_SEED = 0x5EED
 private const val COARSE_SEED = 0x0FA1
@@ -53,20 +54,28 @@ internal fun paperGrainOn(tone: Color): PaperGrain =
 
 private class GrainLattice(val cells: Int, val values: FloatArray)
 
-private class BakedGrain(val density: Float, val grain: PaperGrain, val tile: ImageBitmap)
+private data class GrainKey(val density: Float, val grain: PaperGrain)
 
 private object PaperGrainCache {
-    @Volatile
-    var baked: List<BakedGrain> = emptyList()
+    val baked = ConcurrentHashMap<GrainKey, ImageBitmap>()
 }
 
+/**
+ * Baking a tile costs a quarter of a million pixels of noise, so it is done once
+ * per density and kept. The keeping is atomic: a read-modify-write over a plain
+ * field could drop a tile baked concurrently, and two threads arriving together
+ * would each bake their own. Here the second one waits for the first rather than
+ * repeating its work — which is what the preload is for, and what a composition
+ * arriving before the preload finished used to miss.
+ *
+ * Only the density on screen is worth keeping; a tile for a density nothing is
+ * drawn at any more is dropped.
+ */
 fun paperGrainTile(density: Float, grain: PaperGrain): ImageBitmap {
-    val baked = PaperGrainCache.baked
-    val cached = baked.firstOrNull { it.density == density && it.grain == grain }
-    if (cached != null) return cached.tile
-    val tile = bakePaperGrainTile(density, grain)
-    PaperGrainCache.baked = baked.filter { it.density == density } + BakedGrain(density, grain, tile)
-    return tile
+    PaperGrainCache.baked.keys.removeAll { it.density != density }
+    return PaperGrainCache.baked.computeIfAbsent(GrainKey(density, grain)) {
+        bakePaperGrainTile(density, grain)
+    }
 }
 
 internal fun bakePaperGrainTile(density: Float, grain: PaperGrain): ImageBitmap {

@@ -46,12 +46,12 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should forget the typed name and the picked date when the create row closes`() {
+    fun `should forget the typed name and the picked date when the create row is abandoned`() {
         state.openAddRow()
         state.addRowText = "Groceries"
         state.addRowSelection = DateSelection(DateKind.DUE, date)
 
-        state.closeAddRow()
+        state.abandonAddRow()
 
         assertFalse(state.addRowExpanded)
         assertEquals("", state.addRowText)
@@ -178,14 +178,20 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should abandon the typed name when the pen goes down on the create row`() {
+    /**
+     * Putting the pen down folds the line away without tearing up what was on it,
+     * which is what the page of items has always done with a half-written row.
+     */
+    fun `should keep the typed name when the pen goes down on the create row`() {
         state.openAddRow()
         state.addRowText = "Groceries"
+        state.addRowSelection = DateSelection(DateKind.DUE, date)
 
         state.closeAddRow()
 
         assertFalse(state.addRowExpanded)
-        assertEquals("", state.addRowText)
+        assertEquals("Groceries", state.addRowText)
+        assertEquals(DateSelection(DateKind.DUE, date), state.addRowSelection)
     }
 
     @Test

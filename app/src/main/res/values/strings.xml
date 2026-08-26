@@ -1,9 +1,7 @@
 <resources>
     <string name="app_name">To do list</string>
     <string name="add_line_hint">…</string>
-    <string name="create_list">Create list</string>
     <string name="delete_list">Delete list</string>
-    <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="item_mark_completed">Mark item as completed</string>
     <string name="item_mark_incomplete">Mark item as incomplete</string>
@@ -31,10 +29,8 @@
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="undo_delete">Undo delete</string>
-    <string name="save">Save</string>
     <string name="navigate_back">Navigate up</string>
     <string name="edit_list">Edit list name</string>
-    <string name="rename_list">Save list name</string>
     <string name="set_target_date">Set target date</string>
     <string name="clear_target_date">Clear target date</string>
     <string name="set_due_date">Set due date</string>

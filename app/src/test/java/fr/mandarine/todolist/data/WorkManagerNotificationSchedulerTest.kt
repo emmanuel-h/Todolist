@@ -5,6 +5,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import fr.mandarine.todolist.FakeClock
+import fr.mandarine.todolist.DailyNotificationWork
 import fr.mandarine.todolist.TodoListApplication
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -26,7 +27,7 @@ class WorkManagerNotificationSchedulerTest {
 
     @Test
     fun `should enqueue unique periodic work when scheduleDailyCheck is called`() {
-        WorkManagerNotificationScheduler(application, FakeClock()).scheduleDailyCheck()
+        WorkManagerNotificationScheduler(application, DailyNotificationWork::class.java, FakeClock()).scheduleDailyCheck()
 
         val infos = WorkManager.getInstance(application)
             .getWorkInfosForUniqueWork(WorkManagerNotificationScheduler.WORK_NAME)
@@ -37,7 +38,7 @@ class WorkManagerNotificationSchedulerTest {
 
     @Test
     fun `should keep existing schedule when scheduleDailyCheck is called twice`() {
-        val scheduler = WorkManagerNotificationScheduler(application, FakeClock())
+        val scheduler = WorkManagerNotificationScheduler(application, DailyNotificationWork::class.java, FakeClock())
 
         scheduler.scheduleDailyCheck()
         scheduler.scheduleDailyCheck()

@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
@@ -195,8 +196,14 @@ fun Modifier.ruledPage(
 internal fun Density.ruleThickness(): Float =
     maxOf(THINNEST_RULE, PaperDimens.rule.toPx().roundToInt().toFloat())
 
+/**
+ * A DrawScope does not mirror, so the gutter has to be placed by hand: rows pad
+ * from their start edge, which is the right one in a right-to-left hand, and the
+ * ruling has to begin under them rather than 40dp from the left of the sheet.
+ */
 internal fun DrawScope.drawPageRules(ruling: PageRuling, scrolled: Int, headVisible: Boolean) {
     val width = size.width - ruling.start
+    val rules = if (layoutDirection == LayoutDirection.Rtl) 0f else ruling.start
     val headRule = headRuleOffset(ruling.head, scrolled, ruling.thickness)
     val ceiling = if (headVisible) headRule else 0f
     var line = firstRuleOffset(ruling.head, scrolled, ruling.thickness, ruling.pitch)
@@ -204,7 +211,7 @@ internal fun DrawScope.drawPageRules(ruling: PageRuling, scrolled: Int, headVisi
         if (line + PIXEL_TOLERANCE >= ceiling) {
             drawRect(
                 ruling.color,
-                Offset(ruling.start, floor(line)),
+                Offset(rules, floor(line)),
                 Size(width, ruling.thickness)
             )
         }
@@ -213,7 +220,7 @@ internal fun DrawScope.drawPageRules(ruling: PageRuling, scrolled: Int, headVisi
     if (headVisible) {
         drawRect(
             ruling.color,
-            Offset(ruling.start, floor(headRule + ruling.gap)),
+            Offset(rules, floor(headRule + ruling.gap)),
             Size(width, ruling.thickness)
         )
     }

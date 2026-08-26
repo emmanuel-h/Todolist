@@ -70,7 +70,18 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
         addRowExpanded = true
     }
 
+    /**
+     * Putting the pen down folds the line away without tearing up what was on it.
+     * The two pages used to disagree — a name half-written here was destroyed by
+     * a tap on the paper while an item half-written on the other page survived
+     * one — and the page that kept it was right: losing what the reader wrote is
+     * a mistake the app made, not an instruction it was given.
+     */
     fun closeAddRow() {
+        addRowExpanded = false
+    }
+
+    fun abandonAddRow() {
         addRowExpanded = false
         clearAddRow()
     }

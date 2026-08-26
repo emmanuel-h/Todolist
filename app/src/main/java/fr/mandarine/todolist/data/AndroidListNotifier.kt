@@ -13,11 +13,19 @@ import androidx.core.app.TaskStackBuilder
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.ListNotification
 import fr.mandarine.todolist.domain.ListNotifier
-import fr.mandarine.todolist.ui.TodoListActivity
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class AndroidListNotifier(private val context: Context) : ListNotifier {
+/**
+ * Which window a tapped notification opens is a question about the app's shape,
+ * not about notifications, so it is answered by whoever assembles the app. This
+ * layer used to import the window directly, which pointed data/ at ui/ and made
+ * the two mutually dependent.
+ */
+class AndroidListNotifier(
+    private val context: Context,
+    private val opens: Class<*>
+) : ListNotifier {
 
     override fun postNotifications(notifications: List<ListNotification>) {
         if (notifications.isEmpty()) return
@@ -34,7 +42,7 @@ class AndroidListNotifier(private val context: Context) : ListNotifier {
 
     private fun build(notification: ListNotification): android.app.Notification {
         val list = notification.list
-        val intent = Intent(context, TodoListActivity::class.java).apply {
+        val intent = Intent(context, opens).apply {
             data = Uri.parse("todolist://list/" + list.id)
             putExtra("LIST_ID", list.id)
             putExtra("LIST_NAME", list.name)
