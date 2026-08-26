@@ -23,6 +23,7 @@ import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SwipeMark
 import fr.mandarine.todolist.ui.paper.SwipeReveal
 import fr.mandarine.todolist.ui.paper.SwipeRow
+import fr.mandarine.todolist.ui.paper.TearTab
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -48,9 +49,13 @@ fun TodoListRow(
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null
 ) {
+    /**
+     * Delete is not spoken here any more: the row carries a tear tab that says so
+     * out loud and can be pressed. Naming it twice on the one row gave a screen
+     * reader the same verb from two places.
+     */
     val verbs = rowVerbs(
         onRenameRequested?.let { RowVerb(stringResource(R.string.edit_list), it) },
-        RowVerb(stringResource(R.string.delete_list), onDeleteRequested),
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
@@ -64,6 +69,10 @@ fun TodoListRow(
         RuledRow(modifier = Modifier.spokenVerbs(verbs), onClick = onOpen) {
             RowName(summary = summary, animated = animated)
             Marginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
+            TearTab(
+                onTear = onDeleteRequested,
+                contentDescription = stringResource(R.string.delete_list)
+            )
         }
     }
 }

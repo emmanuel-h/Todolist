@@ -48,6 +48,7 @@ import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SwipeMark
 import fr.mandarine.todolist.ui.paper.SwipeReveal
 import fr.mandarine.todolist.ui.paper.SwipeRow
+import fr.mandarine.todolist.ui.paper.TearTab
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -86,7 +87,6 @@ fun TodoRow(
             onToggle
         ),
         RowVerb(stringResource(R.string.item_edit), onEditRequested),
-        RowVerb(stringResource(R.string.item_delete), onDeleteRequested),
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
@@ -122,6 +122,12 @@ fun TodoRow(
                 onEditCommitted = onEditCommitted,
                 onEditDismissed = onEditDismissed
             )
+            if (!editing) {
+                TearTab(
+                    onTear = onDeleteRequested,
+                    contentDescription = stringResource(R.string.item_delete)
+                )
+            }
         }
     }
 }

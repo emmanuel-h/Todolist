@@ -15,7 +15,10 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.hasAnySibling
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
@@ -526,7 +529,7 @@ class TodoListsScreenTest {
         render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
 
         assertEquals(
-            listOf(EDIT_NAME, DELETE_LIST, MOVE_DOWN),
+            listOf(EDIT_NAME, MOVE_DOWN),
             verbsOf("Groceries").map { it.label }
         )
     }
@@ -543,7 +546,7 @@ class TodoListsScreenTest {
     fun `should leave a finished list nothing to reorder`() {
         render(content(done = listOf(summary("1", "Groceries", allDone = true))))
 
-        assertEquals(listOf(EDIT_NAME, DELETE_LIST), verbsOf("Groceries").map { it.label })
+        assertEquals(listOf(EDIT_NAME), verbsOf("Groceries").map { it.label })
     }
 
     @Test
@@ -560,7 +563,7 @@ class TodoListsScreenTest {
         screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        perform("Groceries", DELETE_LIST)
+        tear("Groceries")
 
         composeRule.onNodeWithText("Groceries").assertDoesNotExist()
         composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
@@ -593,7 +596,7 @@ class TodoListsScreenTest {
             )
         )
 
-        perform("Groceries", DELETE_LIST)
+        tear("Groceries")
         perform("Work", MOVE_UP)
 
         assertEquals(listOf(listOf("3", "2")), reordered)
@@ -658,6 +661,20 @@ class TodoListsScreenTest {
 
     private fun moveVerbsOf(text: String): List<String> =
         verbsOf(text).map { it.label }.filter { it == MOVE_UP || it == MOVE_DOWN }
+
+    /**
+     * The tear tab is a mark on the row rather than a verb spoken about it, so it
+     * is reached the way the reader reaches it: the one beside this row's name.
+     */
+    private fun tear(text: String) {
+        composeRule
+            .onNode(
+                hasContentDescription(DELETE_LIST) and hasAnySibling(hasText(text)),
+                useUnmergedTree = true
+            )
+            .performClick()
+        composeRule.waitForIdle()
+    }
 
     private fun perform(text: String, label: String) {
         verbsOf(text).first { it.label == label }.action()

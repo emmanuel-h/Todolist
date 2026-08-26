@@ -188,7 +188,7 @@ the corner is the only affordance.
 - The due date means "finish BEFORE/BY that day" (a hard deadline); overdue status is signalled by tint only; it does not affect list sort order
 - The due date's jot is marked by the ⏰ glyph; the target date's by 📅. Neither appears on the other's row
 
-**Delete a list**
+**Delete a list** — see the tear tab under **Delete an item**; both pages carry the same mark
 - Swipe a row end→start → the row tears off the page and an undo slip takes its place
 - The slip stands for **9 seconds** (`UNDO_SLIP_MILLIS`). Tapping it puts the row back
 - The write happens when the slip expires, when another row is torn off, or when the page
@@ -294,7 +294,9 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Losing focus commits; a blank title is refused
 - Completion state and position are preserved
 
-**Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2)_
+**Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2) · [#42](https://github.com/emmanuel-h/Todolist/issues/42)_
+- Every row carries a **tear tab** in its end margin: a perforation with the trash drawn on it. Pressing it tears the row off exactly as the leftward swipe does, so the tear-off animation and the undo slip are the ones already there. The swipe stays; the tab is what says at rest that it exists
+- Delete is no longer among a row's spoken verbs on either page. The tab names it once, where it can also be pressed
 - Swipe end→start → the row tears off and an undo slip stands in its place for 9 seconds
 - Same rules as a list: tapping the slip restores it, and the write lands when the slip
   expires, when another row is torn off, or when the page leaves — on a scope that outlives

@@ -19,7 +19,11 @@ import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.doubleClick
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -284,7 +288,7 @@ class TodoListScreenTest {
     fun `should carry nothing on an active row but its ring`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        assertEquals(listOf(MARK_COMPLETED, ADD_ITEM, BACK), descriptions())
+        assertEquals(listOf(MARK_COMPLETED, DELETE, ADD_ITEM, BACK), descriptions())
     }
 
     @Test
@@ -620,7 +624,7 @@ class TodoListScreenTest {
         render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
 
         assertEquals(
-            listOf(MARK_COMPLETED, EDIT, DELETE, MOVE_DOWN),
+            listOf(MARK_COMPLETED, EDIT, MOVE_DOWN),
             verbsOf("Apples").map { it.label }
         )
     }
@@ -629,7 +633,7 @@ class TodoListScreenTest {
     fun `should offer a completed row the verb that puts it back`() {
         render(content(completed = listOf(completed("1", "Apples"))))
 
-        assertEquals(listOf(MARK_INCOMPLETE, EDIT, DELETE), verbsOf("Apples").map { it.label })
+        assertEquals(listOf(MARK_INCOMPLETE, EDIT), verbsOf("Apples").map { it.label })
     }
 
     @Test
@@ -664,7 +668,7 @@ class TodoListScreenTest {
         screenState.animationsEnabled = false
         render(content(active = listOf(item("1", "Apples"))))
 
-        perform("Apples", DELETE)
+        tear("Apples")
 
         composeRule.onNodeWithText("Apples").assertDoesNotExist()
         composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
@@ -688,6 +692,22 @@ class TodoListScreenTest {
 
     private fun moveVerbsOf(text: String): List<String> =
         verbsOf(text).map { it.label }.filter { it == MOVE_UP || it == MOVE_DOWN }
+
+    /**
+     * The tear tab is a mark on the row rather than a verb spoken about it, so it
+     * is reached the way the reader reaches it: the tab on the row holding these
+     * words. On this page the words sit one level deeper than the tab, so the row
+     * is found first and the tab is found inside it.
+     */
+    private fun tear(text: String) {
+        composeRule
+            .onNode(
+                hasContentDescription(DELETE) and hasAnyAncestor(hasAnyDescendant(hasText(text))),
+                useUnmergedTree = true
+            )
+            .performClick()
+        composeRule.waitForIdle()
+    }
 
     private fun perform(text: String, label: String) {
         verbsOf(text).first { it.label == label }.action()

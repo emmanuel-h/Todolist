@@ -156,21 +156,25 @@ class TodoListRowTest {
     fun `should leave the tally a mark to be read and not one to be pressed`() {
         render(summary(activeCount = 3))
 
-        assertEquals(listOf(OPENS_THE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, DELETE_LIST), presses())
     }
 
     @Test
     fun `should add the jot to what a row can be pressed for and nothing else`() {
         render(summary(activeCount = 3, dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        assertEquals(listOf(OPENS_THE_LIST, "Set due date"), presses())
+        assertEquals(listOf(OPENS_THE_LIST, "Set due date", DELETE_LIST), presses())
     }
 
     @Test
+    /**
+     * Delete is a mark on the row now rather than a verb spoken about it, so it is
+     * named once, on the tab, and not twice.
+     */
     fun `should keep every verb the row already answered to once the jot takes taps`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        assertEquals(listOf("Edit list name", "Delete list"), verbs())
+        assertEquals(listOf("Edit list name"), verbs())
     }
 
     @Test
@@ -195,10 +199,10 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should carry nothing at rest but the name and its marginalia`() {
+    fun `should carry nothing at rest but the name, its marginalia and its tear tab`() {
         render(summary(activeCount = 2))
 
-        assertEquals(listOf("2 items left"), descriptions())
+        assertEquals(listOf("2 items left", DELETE_LIST), descriptions())
     }
 
     /**
@@ -498,6 +502,7 @@ class TodoListRowTest {
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         val OPENS_THE_LIST: String? = null
+        const val DELETE_LIST = "Delete list"
         const val ROW = "row"
         const val ONE_LINE = 1
         const val ONE_PIXEL = 1f
