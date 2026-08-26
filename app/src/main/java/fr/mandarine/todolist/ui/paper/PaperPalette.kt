@@ -64,10 +64,10 @@ data class PaperPalette(
             inkRedWash = Color(0xFFEFD7CD),
             inkRedWashLit = Color(0xFFFAE7DF),
             inkAmber = Color(0xFF8F5D12),
-            stickyNote = Color(0xFFEBDCA4),
-            stickyNoteMid = Color(0xFFDCCB90),
-            stickyNoteBack = Color(0xFFCBB97C),
-            stickyNoteEdge = Color(0xFFB0995C),
+            stickyNote = Color(0xFFE0D3B6),
+            stickyNoteMid = Color(0xFFD3C5A4),
+            stickyNoteBack = Color(0xFFC3B48F),
+            stickyNoteEdge = Color(0xFFA99872),
             stickyNoteInk = Color(0xFF2B2420),
             rule = Color(0xFFD5CCB6),
             vignette = Color(0x063A2A10),
@@ -80,8 +80,10 @@ data class PaperPalette(
          * The same pad under a lamp rather than a cream page turned inside out: a
          * warm charcoal sheet on a darker desk, chalk-white ink, rules that lie a
          * shade above the paper instead of a shade below it, and pens that keep
-         * their colour by giving up their saturation. The sticky note stays the
-         * one bright object on the desk, so what is written on it stays dark.
+         * their colour by giving up their saturation. The pad is a second stock of
+         * paper rather than a lamp: it lies a shade above the page by lamplight
+         * exactly as it does by daylight, and is written on in the same chalk as
+         * everything else.
          */
         val night = PaperPalette(
             paper = Color(0xFF201D19),
@@ -105,11 +107,11 @@ data class PaperPalette(
             inkRedWash = Color(0xFF3A211C),
             inkRedWashLit = Color(0xFF4A2A24),
             inkAmber = Color(0xFFE4A56A),
-            stickyNote = Color(0xFFB79E58),
-            stickyNoteMid = Color(0xFFA38C4C),
-            stickyNoteBack = Color(0xFF8E7A40),
-            stickyNoteEdge = Color(0xFF6E5D2F),
-            stickyNoteInk = Color(0xFF241E12),
+            stickyNote = Color(0xFF4C443A),
+            stickyNoteMid = Color(0xFF443C33),
+            stickyNoteBack = Color(0xFF3B342C),
+            stickyNoteEdge = Color(0xFF2E2823),
+            stickyNoteInk = Color(0xFFE8E1D4),
             rule = Color(0xFF3A342C),
             vignette = Color(0x14060404),
             keyboardSeam = Color(0x14E8E1D4),

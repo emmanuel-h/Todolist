@@ -34,8 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
@@ -142,9 +144,16 @@ fun TodoListsScreen(
     val headMargin = topInset + pitch
     val palette = LocalPaperPalette.current
     val gutter = LocalPaperGutter.current
+    val headRuleSeat = headRuleSeat(headMargin, gutter)
     val seam = keyboardSeam(deletion.pending == null)
     val bend = rememberPageBend(screenState.animationsEnabled)
-    val padFootprint = if (screenState.addRowExpanded) 0.dp else padFootMargin(bottomInset)
+    /**
+     * The pad keeps its footprint for as long as it is standing there, which is
+     * always: a sheet taken off it leaves the rest of the pad in the corner. Only
+     * the resting inset under it is given up while the line is open, because the
+     * page has already made room for the keyboard by then.
+     */
+    val padFootprint = padFootMargin(if (screenState.addRowExpanded) 0.dp else bottomInset)
     val restingSpace = (bottomInset - padFootprint).coerceAtLeast(0.dp)
 
     val requestDelete: (String) -> Unit = { id ->
@@ -365,7 +374,8 @@ fun TodoListsScreen(
                 .tutorialAnchor(screenState, TutorialAnchor.CreateListButton),
             taken = screenState.addRowExpanded,
             reducedMotion = !screenState.animationsEnabled,
-            beckons = pageEmpty
+            beckons = pageEmpty,
+            landing = headRuleSeat
         )
         UndoSlip(
             pending = deletion.pending?.id,
@@ -461,6 +471,22 @@ private fun AddLineDateRule(screenState: TodoListsScreenState) {
 
 internal fun dateMarksOwed(screenState: TodoListsScreenState): Boolean =
     screenState.addRowText.isNotBlank() || screenState.addRowSelection.date != null
+
+/**
+ * Where on the page the sheet taken off the pad is being put down: the start of
+ * the head rule, which is the line the reader is about to write on. The page is
+ * centred in the window and its rows are indented by the gutter, so the seat is
+ * arithmetic rather than a measurement — a measured one would be dragged around by
+ * the page's own overscroll bend while the sheet was still in the air.
+ */
+@Composable
+private fun headRuleSeat(headMargin: Dp, gutter: Dp): () -> Offset {
+    val density = LocalDensity.current
+    val windowWidth = LocalWindowInfo.current.containerDpSize.width
+    val pageLeft = (windowWidth - minOf(windowWidth, PaperDimens.pageWidth)) / 2
+    val seat = with(density) { Offset((pageLeft + gutter).toPx(), headMargin.toPx()) }
+    return remember(seat) { { seat } }
+}
 
 /**
  * The pad lies on the page itself only when there is no desk around the page to

@@ -99,11 +99,18 @@ class PaperPrimitivesTest {
         assertTrue("night grain lit by $brightest", brightest < 0.15f)
     }
 
+    /**
+     * The pad is a second stock of paper rather than the one bright object on the
+     * desk, so it is grained by the room it is in and not by what it is for. It
+     * used to be the single tone that took daylight grain at night, which is the
+     * same decision that made it read as a lamp.
+     */
     @Test
     fun `should take the grain from the tone the sheet is drawn in`() {
         assertEquals(PaperGrain.DarkFleck, paperGrainOn(PaperPalette.light.paper))
+        assertEquals(PaperGrain.DarkFleck, paperGrainOn(PaperPalette.light.stickyNote))
         assertEquals(PaperGrain.PaleFibre, paperGrainOn(PaperPalette.night.paper))
-        assertEquals(PaperGrain.DarkFleck, paperGrainOn(PaperPalette.night.stickyNote))
+        assertEquals(PaperGrain.PaleFibre, paperGrainOn(PaperPalette.night.stickyNote))
     }
 
     @Test

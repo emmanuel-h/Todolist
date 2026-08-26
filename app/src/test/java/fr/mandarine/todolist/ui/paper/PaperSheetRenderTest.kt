@@ -143,8 +143,33 @@ class PaperSheetRenderTest {
         assertTrue("night sheet drew only $tones", tones.size > 8)
     }
 
+    /**
+     * The pad takes the grain of the room rather than carrying daylight into the
+     * dark with it: shade by daylight, light by lamplight, exactly as the page it
+     * lies on does. Keeping it grained in shade at night is what went with keeping
+     * it bright, and both are gone.
+     */
     @Test
-    fun `should keep a sticky note grained in shade whatever the light is`() {
+    fun `should grain a sticky note in shade by daylight`() {
+        val sheet = drawSheet(
+            tone = palette.stickyNote,
+            lit = palette.stickyNote,
+            vignette = Color.Transparent
+        )
+
+        val lit = palette.stickyNote.grey()
+        var brightest = lit
+        for (y in 0 until sheet.height step SAMPLE_STEP) {
+            for (x in 0 until sheet.width step SAMPLE_STEP) {
+                brightest = maxOf(brightest, sheet.grey(x, y))
+            }
+        }
+
+        assertEquals(lit, brightest, 0f)
+    }
+
+    @Test
+    fun `should grain a sticky note in light by lamplight`() {
         val night = PaperPalette.night
         val sheet = drawSheet(
             tone = night.stickyNote,
@@ -160,7 +185,8 @@ class PaperSheetRenderTest {
             }
         }
 
-        assertEquals(lit, brightest, 0f)
+        assertTrue("grain lit by ${brightest - lit}", brightest > lit)
+        assertTrue("grain lit by ${brightest - lit}", brightest - lit < GRAIN_BUDGET)
     }
 
     private fun drawSheet(

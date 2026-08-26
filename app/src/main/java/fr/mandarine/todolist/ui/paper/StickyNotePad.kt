@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -59,6 +61,7 @@ private val GLUE_DROP = 1.dp
 private val DENT_RADIUS = 2.dp
 private val DENT_DROP = 1.dp
 private val SHEET_STEP = 1.dp
+private val SHEET_INSET = (PaperDimens.stickyPad - PaperDimens.stickySheet) / 2
 
 /**
  * One shadow lies under the whole stack, so the pad reads as a single block of
@@ -116,6 +119,16 @@ private fun Modifier.padShadow(palette: PaperPalette): Modifier = raised(SHEET_S
     }
 }
 
+/**
+ * A pad, not a single sheet. Taking one off it lifts the top sheet and carries it
+ * away; the sheets under it stay in the corner, because a pad that vanishes when a
+ * sheet is taken from it is not a pad.
+ *
+ * [landing] names the point in the pad's own parent that the taken sheet is being
+ * put down on, so the carry ends somewhere rather than in mid-air. Without one the
+ * sheet drifts the pad's own length and is gone, which is all a pad standing on its
+ * own can say.
+ */
 @Composable
 fun StickyNotePad(
     onTake: () -> Unit,
@@ -124,7 +137,8 @@ fun StickyNotePad(
     taken: Boolean = false,
     reducedMotion: Boolean = false,
     beckons: Boolean = false,
-    painter: Painter = painterResource(R.drawable.ic_add)
+    painter: Painter = painterResource(R.drawable.ic_add),
+    landing: (() -> Offset)? = null
 ) {
     val peel = remember { Animatable(STICKY_PEEL_REST) }
     val settle = remember { Animatable(STICKY_SETTLE_DONE) }
@@ -134,6 +148,7 @@ fun StickyNotePad(
     val previouslyTaken = remember { mutableStateOf(taken) }
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    var seat by remember { mutableStateOf(Offset.Zero) }
     val dent = animateFloatAsState(
         targetValue = if (pressed) DENT_PRESSED else NO_DENT,
         animationSpec = PaperMotion.rowEnter,
@@ -176,28 +191,29 @@ fun StickyNotePad(
     Box(
         modifier = modifier
             .size(PaperDimens.stickyPad)
+            .onGloballyPositioned { seat = it.positionInParent() }
             .preferredFrameRate(
                 if (flying) FrameRateCategory.High else FrameRateCategory.Default
             ),
         contentAlignment = Alignment.Center
     ) {
+        StickyNoteSheetSurface(
+            color = palette.stickyNoteBack,
+            modifier = Modifier.graphicsLayer {
+                rotationZ = BACK_SHEET_ROTATION
+                translationX = SHEET_STEP.toPx()
+                translationY = SHEET_STEP.toPx()
+            },
+            shadowed = true
+        )
+        StickyNoteSheetSurface(
+            color = palette.stickyNoteMid,
+            modifier = Modifier.graphicsLayer {
+                rotationZ = MID_SHEET_ROTATION
+                translationX = -SHEET_STEP.toPx()
+            }
+        )
         if (!taken) {
-            StickyNoteSheetSurface(
-                color = palette.stickyNoteBack,
-                modifier = Modifier.graphicsLayer {
-                    rotationZ = BACK_SHEET_ROTATION
-                    translationX = SHEET_STEP.toPx()
-                    translationY = SHEET_STEP.toPx()
-                },
-                shadowed = true
-            )
-            StickyNoteSheetSurface(
-                color = palette.stickyNoteMid,
-                modifier = Modifier.graphicsLayer {
-                    rotationZ = MID_SHEET_ROTATION
-                    translationX = -SHEET_STEP.toPx()
-                }
-            )
             StickyNoteSheetSurface(
                 color = palette.stickyNote,
                 modifier = Modifier
@@ -232,6 +248,15 @@ fun StickyNotePad(
                 color = palette.stickyNote,
                 modifier = Modifier.graphicsLayer {
                     val flying = stickyNotePeelAt(peel.value)
+                    val carried = stickyNoteCarryTo(
+                        landing = landing?.invoke(),
+                        seat = seat,
+                        sheetInset = SHEET_INSET.toPx(),
+                        drift = Offset(
+                            -PaperDimens.stickyPeelTravelX.toPx(),
+                            -PaperDimens.stickyPeelTravelY.toPx()
+                        )
+                    )
                     transformOrigin = GLUED_EDGE
                     cameraDistance = PERSPECTIVE * density
                     rotationX = FOLD_DEGREES * flying.foldFraction
@@ -239,8 +264,8 @@ fun StickyNotePad(
                     scaleX = flying.scale
                     scaleY = flying.scale
                     alpha = flying.alpha
-                    translationX = -PaperDimens.stickyPeelTravelX.toPx() * flying.travelFraction
-                    translationY = -PaperDimens.stickyPeelTravelY.toPx() * flying.travelFraction
+                    translationX = carried.x * flying.travelFraction
+                    translationY = carried.y * flying.travelFraction
                 }
             )
         }
