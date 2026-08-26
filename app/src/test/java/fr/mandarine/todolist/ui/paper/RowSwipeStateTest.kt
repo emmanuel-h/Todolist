@@ -56,13 +56,28 @@ class RowSwipeStateTest {
     }
 
     @Test
-    fun `should lock the row once it is past half the mark`() {
+    fun `should lock the row once it is well past the mark`() {
         val swipe = RowSwipeState(travel, reveals = true)
 
-        swipe.drag(travel / 2f - 1f)
+        swipe.drag(travel * 0.6f - 1f)
         assertFalse(swipe.locked)
 
         swipe.drag(2f)
+        assertTrue(swipe.locked)
+    }
+
+    /**
+     * The lock is set by the furthest the row was ever taken, not by where it
+     * happens to be when the finger leaves it. A row dragged well over and then
+     * eased back a little is still a row that was dragged over.
+     */
+    @Test
+    fun `should keep the lock a row earned even after it is eased back`() {
+        val swipe = RowSwipeState(travel, reveals = true)
+
+        swipe.drag(80f)
+        swipe.drag(-50f)
+
         assertTrue(swipe.locked)
     }
 
@@ -79,27 +94,76 @@ class RowSwipeStateTest {
     fun `should take the mark it was drawing when the finger lifts past the lock`() {
         val swipe = RowSwipeState(travel, reveals = true)
 
-        swipe.drag(70f)
+        swipe.drag(80f)
 
         assertEquals(RowSwipe.Reveal, swipe.landing(velocity = 0f, flick = flick))
     }
 
     @Test
-    fun `should take a flick that never reached the lock`() {
+    fun `should take a flick that got a good way over without reaching the lock`() {
         val swipe = RowSwipeState(travel, reveals = true)
 
-        swipe.drag(-20f)
+        swipe.drag(-40f)
 
         assertEquals(RowSwipe.Delete, swipe.landing(velocity = -900f, flick = flick))
     }
 
+    /**
+     * A flick has to have been going somewhere. Taking any fast movement at all
+     * meant a row barely touched could be torn off by a twitch.
+     */
     @Test
-    fun `should let a row flicked back come home even from past the lock`() {
+    fun `should ignore a flick from a row that was barely moved`() {
+        val swipe = RowSwipeState(travel, reveals = true)
+
+        swipe.drag(-10f)
+
+        assertEquals(RowSwipe.Rest, swipe.landing(velocity = -900f, flick = flick))
+    }
+
+    @Test
+    /**
+     * A finger leaving a swipe very often flicks back a hair. Reading the row where
+     * it happened to be at that instant let the flick land it on the other side of
+     * the page and do the opposite of what the reader had just watched themselves
+     * uncover — the one thing a gesture must never do.
+     */
+    fun `should still do what a row was pulled for when the finger flicks back off it`() {
         val swipe = RowSwipeState(travel, reveals = true)
 
         swipe.drag(-80f)
 
+        assertEquals(RowSwipe.Delete, swipe.landing(velocity = 900f, flick = flick))
+    }
+
+    @Test
+    fun `should never do the opposite of the way a row was pulled`() {
+        val swipe = RowSwipeState(travel, reveals = true)
+
+        swipe.drag(-80f)
+        swipe.drag(90f)
+
         assertEquals(RowSwipe.Rest, swipe.landing(velocity = 900f, flick = flick))
+    }
+
+    @Test
+    fun `should call a swipe off when the row is dragged back past where it started`() {
+        val swipe = RowSwipeState(travel, reveals = true)
+
+        swipe.drag(80f)
+        swipe.drag(-95f)
+
+        assertEquals(RowSwipe.Rest, swipe.landing(velocity = 0f, flick = flick))
+    }
+
+    @Test
+    fun `should forget the last swipe when a new one begins`() {
+        val swipe = RowSwipeState(travel, reveals = true)
+        swipe.drag(-80f)
+
+        swipe.begin()
+
+        assertEquals(RowSwipe.Rest, swipe.landing(velocity = 0f, flick = flick))
     }
 
     @Test

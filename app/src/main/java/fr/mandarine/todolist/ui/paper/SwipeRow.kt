@@ -60,7 +60,8 @@ class SwipeReveal(val mark: SwipeMark, val label: String?, val perform: () -> Un
 
 private val SWIPE_TRAVEL = 96.dp
 private val SWIPE_FLICK = 125.dp
-private const val SWIPE_THRESHOLD = 0.5f
+private const val SWIPE_THRESHOLD = 0.6f
+private const val SWIPE_MEANT_IT = 0.25f
 private const val SWIPE_RESISTANCE = 0.35f
 private const val AT_REST = 0f
 private const val FULLY_DRAWN = 1f
@@ -77,28 +78,46 @@ internal class RowSwipeState(private val travel: Float, private val reveals: Boo
 
     private var pulled by mutableFloatStateOf(AT_REST)
 
+    /**
+     * The furthest the row was ever taken during this one gesture, sign and all.
+     * A finger lifting off a swipe very often flicks back a little, and reading the
+     * row's position at that instant meant the flick could land it on the other
+     * side of the page and do the opposite thing to what the reader had watched
+     * themselves uncover. What was uncovered is what happens.
+     */
+    private var furthest = AT_REST
+
     val offset: Float get() = weightedSwipe(pulled, travel)
 
     val travelling: Boolean get() = pulled != AT_REST
 
-    val locked: Boolean get() = abs(offset) >= travel * SWIPE_THRESHOLD
+    val locked: Boolean get() = abs(furthest) >= travel * SWIPE_THRESHOLD
+
+    fun begin() {
+        furthest = AT_REST
+    }
 
     fun drag(delta: Float) {
         val reached = pulled + delta
         pulled = if (reveals) reached else reached.coerceAtMost(AT_REST)
+        if (abs(offset) > abs(furthest)) furthest = offset
     }
 
+    /**
+     * A swipe is answered in the direction it was taken, or not at all. It counts
+     * when the row was pulled far enough to draw its mark whole, or thrown that way
+     * hard enough from far enough to mean it; and a row dragged back past where it
+     * started has been called off rather than turned around.
+     */
     fun landing(velocity: Float, flick: Float): RowSwipe {
-        val committing = if (abs(velocity) >= flick) {
-            sign(velocity) == sign(offset)
-        } else {
-            locked
-        }
-        return when {
-            !committing || offset == AT_REST -> RowSwipe.Rest
-            offset < AT_REST -> RowSwipe.Delete
-            else -> RowSwipe.Reveal
-        }
+        if (furthest == AT_REST) return RowSwipe.Rest
+        val direction = sign(furthest)
+        if (sign(offset) != direction) return RowSwipe.Rest
+        val thrown = abs(velocity) >= flick &&
+            sign(velocity) == direction &&
+            abs(furthest) >= travel * SWIPE_MEANT_IT
+        if (!locked && !thrown) return RowSwipe.Rest
+        return if (direction < AT_REST) RowSwipe.Delete else RowSwipe.Reveal
     }
 
     suspend fun springHome(spec: AnimationSpec<Float>) {
@@ -177,6 +196,7 @@ fun SwipeRow(
                     state = pull,
                     orientation = Orientation.Horizontal,
                     enabled = enabled,
+                    onDragStarted = { swipe.begin() },
                     onDragStopped = { velocity ->
                         when (swipe.landing(velocity, flick)) {
                             RowSwipe.Rest -> Unit

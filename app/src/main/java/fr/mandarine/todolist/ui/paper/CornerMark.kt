@@ -14,7 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
@@ -24,16 +25,16 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 private val MARK_WIDTH = 52.dp
-private val REACH_AT_REST = 7.dp
-private val REACH_ROLLED = 46.dp
-private val ROLL_AT_REST = 10.dp
-private val ROLL_ROLLED = 16.dp
-private val CLEAR_OF_THE_RULE = 2.dp
-private val GLYPH_INSET = 5.dp
-private val SHADOW_DROP = 2.dp
-private const val SHADOW_ALPHA = 0.22f
+private val CURL_AT_REST = 16.dp
+private val CURL_UNROLLED = 40.dp
+private val CLEAR_OF_THE_EDGE = 11.dp
+private val GLYPH_INSET = 6.dp
+private val SHADOW_DROP = 3.dp
+private const val SHADOW_ALPHA = 0.20f
+private const val PAST_THE_CORNER = 0.2f
+private const val INTO_THE_PAGE = 0.62f
+private const val HALF = 0.5f
 private const val TWO = 2f
-private const val EPSILON = 0.0001f
 private const val REST_INK = 0.6f
 private const val FULLY_OPEN = 1f
 private const val SHUT = 0f
@@ -48,12 +49,14 @@ private const val SHUT = 0f
  * and pressing the corner turns it right back on its own before doing the same
  * thing, so the gesture is an invitation rather than the only way in.
  *
- * At rest the corner is only rounded off — a bead of paper where the point would
- * be, saying the corner is loose without claiming it has been turned. Pulling the
- * row rolls it: the bead lengthens into a tube of paper lying across the corner,
- * lit along its crown and in shade where it meets the page on either side, with a
- * shadow under it and both ends round, because a rolled corner has no points left
- * on it.
+ * The corner curls the way the corner of a note pinned to a wall curls: the tip
+ * lifts off the line the row is written on and rolls back into the page, so what
+ * is left is a crescent of the sheet's own back — lit along its free edge where it
+ * has come away, falling into shade at the crease where it is still attached, and
+ * throwing a shadow on the writing behind it.
+ *
+ * At rest the curl is small, the way a corner that has merely been handled is. It
+ * unrolls the further the row is pulled.
  */
 @Composable
 fun CornerMark(
@@ -67,10 +70,11 @@ fun CornerMark(
 ) {
     val palette = LocalPaperPalette.current
     val lit = palette.paperSheet
-    val shade = palette.paperShade
+    val shade = palette.paperShadeDeep
     val shadowInk = palette.shadow
     val flip = remember { Animatable(SHUT) }
     val scope = rememberCoroutineScope()
+    val curl = Path()
     val turned: () -> Float = { maxOf(opened(), flip.value).coerceIn(SHUT, FULLY_OPEN) }
     Box(
         modifier = modifier
@@ -110,52 +114,70 @@ fun CornerMark(
             )
             .drawBehind {
                 val open = turned()
-                val wanted = REACH_AT_REST.toPx() +
-                    (REACH_ROLLED.toPx() - REACH_AT_REST.toPx()) * open
-                val thickness = ROLL_AT_REST.toPx() +
-                    (ROLL_ROLLED.toPx() - ROLL_AT_REST.toPx()) * open
-                val ink = REST_INK + (FULLY_OPEN - REST_INK) * open
-                val corner = if (atStart) SHUT else size.width
                 /**
-                 * The roll is round at both ends, so one laid on the row's top edge
-                 * would stand half its own thickness above it and cross the rule
-                 * the row above is written on. It sits clear of that line, and is
-                 * only as long as the rule below leaves room for — whatever the
-                 * reader's font scale has done to the space between the two.
+                 * The curl lifts a little past where the corner was, and throws a
+                 * shadow past that again. Both have to stay on the page, so the tip
+                 * is seated inside the row's edge by as much as the widest curl
+                 * will ever need.
                  */
-                val top = thickness / TWO + CLEAR_OF_THE_RULE.toPx()
-                val reach = minOf(wanted, size.height - top * TWO)
-                val inward = if (atStart) reach else -reach
-
-                val from = Offset(corner + inward, top)
-                val to = Offset(corner, top + reach)
-                val across = Offset(to.y - from.y, from.x - to.x).let { edge ->
-                    val length = maxOf(EPSILON, kotlin.math.hypot(edge.x, edge.y))
-                    Offset(edge.x / length, edge.y / length)
-                }
-                val middle = Offset((from.x + to.x) / TWO, (from.y + to.y) / TWO)
-                drawLine(
-                    color = shadowInk,
-                    start = from + across * SHADOW_DROP.toPx(),
-                    end = to + across * SHADOW_DROP.toPx(),
-                    strokeWidth = thickness,
-                    cap = StrokeCap.Round,
-                    alpha = SHADOW_ALPHA * ink
+                val clear = CLEAR_OF_THE_EDGE.toPx()
+                val reach = minOf(
+                    CURL_AT_REST.toPx() + (CURL_UNROLLED.toPx() - CURL_AT_REST.toPx()) * open,
+                    minOf(size.width, size.height) - clear * TWO
                 )
-                drawLine(
-                    brush = Brush.linearGradient(
-                        colors = listOf(shade, lit, shade),
-                        start = middle - across * thickness / TWO,
-                        end = middle + across * thickness / TWO
+                val ink = REST_INK + (FULLY_OPEN - REST_INK) * open
+                val tipX = if (atStart) clear else size.width - clear
+                val tipY = size.height - clear
+                val along = if (atStart) reach else -reach
+
+                /**
+                 * The tip lifts past where the corner was and the crease arcs back
+                 * into the page, so what lies between the two is a crescent rather
+                 * than a triangle — which is the difference between paper that has
+                 * curled and paper that has been cut.
+                 */
+                val fromEdge = Offset(tipX + along, tipY)
+                val toEdge = Offset(tipX, tipY - reach)
+                val outward = Offset(-along * PAST_THE_CORNER, reach * PAST_THE_CORNER)
+                val inward = Offset(along * INTO_THE_PAGE, -reach * INTO_THE_PAGE)
+                val middle = Offset(
+                    (fromEdge.x + toEdge.x) * HALF,
+                    (fromEdge.y + toEdge.y) * HALF
+                )
+
+                curl.reset()
+                curl.moveTo(fromEdge.x, fromEdge.y)
+                curl.quadraticTo(
+                    tipX + outward.x,
+                    tipY + outward.y,
+                    toEdge.x,
+                    toEdge.y
+                )
+                curl.quadraticTo(
+                    middle.x + inward.x,
+                    middle.y + inward.y,
+                    fromEdge.x,
+                    fromEdge.y
+                )
+                curl.close()
+
+                translate(
+                    left = if (atStart) -SHADOW_DROP.toPx() else SHADOW_DROP.toPx(),
+                    top = SHADOW_DROP.toPx()
+                ) {
+                    drawPath(curl, shadowInk, alpha = SHADOW_ALPHA * ink)
+                }
+                drawPath(
+                    curl,
+                    Brush.linearGradient(
+                        colors = listOf(shade, lit),
+                        start = Offset(middle.x + inward.x, middle.y + inward.y),
+                        end = Offset(tipX + outward.x, tipY + outward.y)
                     ),
-                    start = from,
-                    end = to,
-                    strokeWidth = thickness,
-                    cap = StrokeCap.Round,
                     alpha = ink
                 )
             },
-        contentAlignment = if (atStart) Alignment.BottomStart else Alignment.BottomEnd
+        contentAlignment = if (atStart) Alignment.CenterStart else Alignment.CenterEnd
     ) {
         /**
          * The mark is quiet until the corner is being turned. A row carries two of
