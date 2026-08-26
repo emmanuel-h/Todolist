@@ -91,7 +91,7 @@ internal class RowSwipeState(private val travel: Float, private val reveals: Boo
 
     val travelling: Boolean get() = pulled != AT_REST
 
-    val locked: Boolean get() = abs(furthest) >= travel * SWIPE_THRESHOLD
+    val locked: Boolean get() = abs(offset) >= travel * SWIPE_THRESHOLD
 
     fun begin() {
         furthest = AT_REST
@@ -104,10 +104,15 @@ internal class RowSwipeState(private val travel: Float, private val reveals: Boo
     }
 
     /**
-     * A swipe is answered in the direction it was taken, or not at all. It counts
-     * when the row was pulled far enough to draw its mark whole, or thrown that way
-     * hard enough from far enough to mean it; and a row dragged back past where it
-     * started has been called off rather than turned around.
+     * A swipe is answered in the direction it was taken, or not at all — never in
+     * the other one. Which way it was taken is the furthest the row ever got, so a
+     * finger flicking back off it as it lifts cannot turn a tear into an edit.
+     *
+     * Whether it is answered at all is where the row is when the finger goes: it
+     * has to still be held far enough over to have its mark drawn whole, or to have
+     * been thrown that way from far enough to mean it. Easing the row back towards
+     * home is how the reader changes their mind, and it works from anywhere — they
+     * should not have to drag it all the way past the middle to be let off.
      */
     fun landing(velocity: Float, flick: Float): RowSwipe {
         if (furthest == AT_REST) return RowSwipe.Rest

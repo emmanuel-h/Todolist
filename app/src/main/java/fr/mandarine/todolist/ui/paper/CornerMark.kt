@@ -3,6 +3,8 @@ package fr.mandarine.todolist.ui.paper
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -18,17 +20,22 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import fr.mandarine.todolist.R
 import kotlinx.coroutines.launch
 
 private val MARK_WIDTH = 52.dp
 private val CURL_AT_REST = 16.dp
 private val CURL_UNROLLED = 40.dp
 private val CLEAR_OF_THE_EDGE = 11.dp
-private val GLYPH_INSET = 6.dp
+private val GLYPH_INSET = 5.dp
+private val WAY_GLYPH = 13.dp
+private val WAY_GAP = 1.dp
+private const val WAY_INK = 0.75f
 private val SHADOW_DROP = 3.dp
 private const val SHADOW_ALPHA = 0.20f
 private const val PAST_THE_CORNER = 0.2f
@@ -179,19 +186,57 @@ fun CornerMark(
             },
         contentAlignment = if (atStart) Alignment.CenterStart else Alignment.CenterEnd
     ) {
-        /**
-         * The mark is quiet until the corner is being turned. A row carries two of
-         * these and a page carries a dozen rows, so at rest they have to read as
-         * the paper's own edge rather than as a dozen buttons.
-         */
-        InkIcon(
-            painter = painter,
-            contentDescription = null,
-            modifier = Modifier
-                .padding(GLYPH_INSET)
-                .graphicsLayer { alpha = REST_INK + (FULLY_OPEN - REST_INK) * turned() },
-            tint = palette.inked(InkTone.Margin),
-            size = PaperDimens.jotGlyph
-        )
+        Row(
+            modifier = Modifier.padding(GLYPH_INSET),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            /**
+             * A curled corner says the paper is loose. It does not say which way to
+             * pull it, and after several attempts at a corner that would, the
+             * plainest thing in the drawer turns out to be an arrow: the mark, and
+             * beside it the way to go to reach it.
+             *
+             * It points inward from its own corner, because that is the way the
+             * finger travels — the row is dragged towards the middle of the page
+             * and the corner it uncovers is the one left behind.
+             */
+            if (!atStart) Wayfinder(atStart, turned)
+            /**
+             * The mark is quiet until the corner is being turned. A row carries two
+             * of these and a page carries a dozen rows, so at rest they have to
+             * read as the paper's own edge rather than as a dozen buttons.
+             */
+            InkIcon(
+                painter = painter,
+                contentDescription = null,
+                modifier = Modifier.graphicsLayer {
+                    alpha = REST_INK + (FULLY_OPEN - REST_INK) * turned()
+                },
+                tint = palette.inked(InkTone.Margin),
+                size = PaperDimens.jotGlyph
+            )
+            if (atStart) Wayfinder(atStart, turned)
+        }
     }
+}
+
+/**
+ * The arrow beside a corner's mark, pointing the way the row is pulled to reach
+ * it. It fades out as the corner opens: once the reader is pulling, they no longer
+ * need telling which way.
+ */
+@Composable
+private fun Wayfinder(atStart: Boolean, turned: () -> Float) {
+    val palette = LocalPaperPalette.current
+    InkIcon(
+        painter = painterResource(
+            if (atStart) R.drawable.ic_chevron_right else R.drawable.ic_chevron_left
+        ),
+        contentDescription = null,
+        modifier = Modifier
+            .padding(if (atStart) PaddingValues(start = WAY_GAP) else PaddingValues(end = WAY_GAP))
+            .graphicsLayer { alpha = WAY_INK * (FULLY_OPEN - turned()) },
+        tint = palette.inked(InkTone.Margin),
+        size = WAY_GLYPH
+    )
 }

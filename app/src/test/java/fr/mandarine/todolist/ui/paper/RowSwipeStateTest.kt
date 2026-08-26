@@ -67,18 +67,29 @@ class RowSwipeStateTest {
     }
 
     /**
-     * The lock is set by the furthest the row was ever taken, not by where it
-     * happens to be when the finger leaves it. A row dragged well over and then
-     * eased back a little is still a row that was dragged over.
+     * Easing a row back towards home is how the reader changes their mind, and it
+     * has to work from anywhere — having to drag it all the way past the middle to
+     * be let off is not a way out, it is a second gesture.
      */
     @Test
-    fun `should keep the lock a row earned even after it is eased back`() {
+    fun `should let a row eased back towards home off the swipe`() {
         val swipe = RowSwipeState(travel, reveals = true)
 
         swipe.drag(80f)
         swipe.drag(-50f)
 
-        assertTrue(swipe.locked)
+        assertFalse(swipe.locked)
+        assertEquals(RowSwipe.Rest, swipe.landing(velocity = 0f, flick = flick))
+    }
+
+    @Test
+    fun `should still answer a row the reader kept held over`() {
+        val swipe = RowSwipeState(travel, reveals = true)
+
+        swipe.drag(90f)
+        swipe.drag(-15f)
+
+        assertEquals(RowSwipe.Reveal, swipe.landing(velocity = 0f, flick = flick))
     }
 
     @Test
