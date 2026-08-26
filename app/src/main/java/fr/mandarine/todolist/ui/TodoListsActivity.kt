@@ -90,6 +90,13 @@ class TodoListsActivity : ComponentActivity() {
 
     private lateinit var tutorialViewModel: TutorialViewModel
     private lateinit var tutorialController: TutorialOverlayController
+
+    /**
+     * Held on the window rather than inside the collector: the collector is torn
+     * down and rebuilt every time the window stops and starts, and a reader
+     * coming back to an open page must not be read as a demo that has just ended.
+     */
+    private var lastTutorialState: TutorialUiState? = null
     internal val tutorialBackCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
             tutorialController.onSkipRequested()
@@ -202,10 +209,6 @@ class TodoListsActivity : ComponentActivity() {
          * with one window the page can now change without the step changing — the
          * demo walking back out of a list is exactly that. So the beat the
          * controller is asked to play is both together.
-         *
-         * An abandoned demo is torn off by the tutorial itself, which the page of
-         * lists never hears about, so the page is read again the moment the demo
-         * leaves rather than holding a row that is no longer written anywhere.
          */
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -217,10 +220,11 @@ class TodoListsActivity : ComponentActivity() {
                     tutorialBackCallback.isEnabled = running
                     stage.recordingAnchors = running
                     stage.animationsEnabled = animationsAllowed()
-                    if (state is TutorialUiState.Dismissed) {
+                    if (demoJustEnded(state)) {
                         closeDemoPage()
                         viewModel.refresh()
                     }
+                    lastTutorialState = state
                     tutorialController.handleState(state, stage)
                 }
             }
@@ -260,6 +264,26 @@ class TodoListsActivity : ComponentActivity() {
      */
     private fun openedListId(savedInstanceState: Bundle?): String? =
         savedInstanceState?.getString(OPEN_PAGE) ?: intent.getStringExtra(LIST_ID_EXTRA)
+
+    /**
+     * The demo ending is a moment, not a condition.
+     *
+     * The beat is read from two flows at once, and the page is one of them, so
+     * the resting state is offered again every single time the reader turns a
+     * page. Acting on the state alone tore off whatever page they had just
+     * opened — which, once the demo has been seen, is every page there is.
+     *
+     * Only a demo that was actually on the paper can end, so the tear-off is
+     * asked for by the transition out of a running tour and by nothing else.
+     * A page restored from a notification or from a saved window arrives with
+     * the tour long over and is left where it is.
+     */
+    private fun demoJustEnded(state: TutorialUiState): Boolean =
+        state is TutorialUiState.Dismissed &&
+            (
+                lastTutorialState is TutorialUiState.ReadyToStart ||
+                    lastTutorialState is TutorialUiState.Active
+                )
 
     /**
      * The demo is torn off with its list, so a page of it left open would outlive
