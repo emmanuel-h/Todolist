@@ -116,6 +116,19 @@ one window — TodoListsActivity
 
 ## Screen 1 — My Lists
 
+### Masthead — _implemented · [#43](https://github.com/emmanuel-h/Todolist/issues/43)_
+
+The app's name is written in the strip above the head rule, at the top-left, level
+with the `?` that replays the tour — in the page's own hand, at margin ink, not as a
+Material app bar. It takes no rule away from the lists, and it leaves with the `?`
+when the pen comes out, because while a line is being written the page belongs to
+what is being written on it.
+
+This is a deliberate use of the **wordless by default** principle rather than an
+exception to it: a pad with nothing written at the top of it reads as unfinished
+rather than calm. `IconOnlyUiTest` names it, so it stays the only word the empty
+page draws.
+
 ### Empty state
 
 A bare sheet. No illustration, no words — the icon-only rule governs here, and the pad in
