@@ -26,7 +26,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -186,6 +188,16 @@ fun TodoListsScreen(
         if (deletion.pending == null) return@LaunchedEffect
         delay(UNDO_SLIP_MILLIS)
         deletion.commit()?.let(onDeleteList)
+    }
+
+    /**
+     * The slip counts down on the page's own coroutine, so a page that leaves
+     * takes the countdown with it. Leaving commits instead of forgetting: the
+     * tear was the decision, and the reader watched the row come off.
+     */
+    val commitOnLeaving = rememberUpdatedState(onDeleteList)
+    DisposableEffect(deletion) {
+        onDispose { deletion.commit()?.let(commitOnLeaving.value) }
     }
 
     LaunchedEffect(allIds) {

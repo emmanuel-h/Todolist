@@ -25,7 +25,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -154,8 +156,8 @@ fun TodoListScreen(
                 if (item.isCompleted) haptics.untick() else haptics.tick()
                 listState.holdPage { onToggle(item.id) }
             }
-            screenState.pendingToggle == item.id -> screenState.pendingToggle = null
-            else -> screenState.pendingToggle = item.id
+            item.id in screenState.pendingToggles -> screenState.finishToggle(item.id)
+            else -> screenState.startToggle(item.id)
         }
     }
     val requestDelete: (String) -> Unit = { id ->
@@ -171,11 +173,16 @@ fun TodoListScreen(
         }
     }
 
-    LaunchedEffect(screenState.pendingToggle) {
-        val id = screenState.pendingToggle ?: return@LaunchedEffect
-        delay(INK_TICK_MILLIS + INK_STRIKE_MILLIS)
-        screenState.pendingToggle = null
-        if (liveIds.value.contains(id)) listState.holdPage { onToggle(id) }
+    screenState.pendingToggles.forEach { pending ->
+        key(pending) {
+            LaunchedEffect(pending) {
+                delay(INK_TICK_MILLIS + INK_STRIKE_MILLIS)
+                screenState.finishToggle(pending)
+                if (liveIds.value.contains(pending)) {
+                    listState.holdPage { onToggle(pending) }
+                }
+            }
+        }
     }
 
     LaunchedEffect(deletion.pending?.id) {
@@ -183,6 +190,17 @@ fun TodoListScreen(
         delay(UNDO_SLIP_MILLIS)
         deletion.commit()?.let(onDelete)
     }
+
+    /**
+     * The slip counts down on the page's own coroutine, so a page that leaves
+     * takes the countdown with it. Leaving commits instead of forgetting: the
+     * tear was the decision, and the reader watched the row come off.
+     */
+    val commitOnLeaving = rememberUpdatedState(onDelete)
+    DisposableEffect(deletion) {
+        onDispose { deletion.commit()?.let(commitOnLeaving.value) }
+    }
+
 
     LaunchedEffect(allIds) {
         deletion.forget(allIds.toSet())

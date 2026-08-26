@@ -10,6 +10,7 @@ import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,8 @@ class TodoListsViewModel(
     private val editTodoListUseCase: EditTodoListUseCase,
     private val getTodoListsWithStatusUseCase: GetTodoListsWithStatusUseCase,
     private val reorderTodoListsUseCase: ReorderTodoListsUseCase,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val writeScope: CoroutineScope? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<TodoListsState>(TodoListsState.Empty)
@@ -55,8 +57,13 @@ class TodoListsViewModel(
         return true
     }
 
+    /**
+     * A delete is written on a scope the composition root owns, not on this
+     * view model's own. A window torn down mid-slip — a rotation is one — took the
+     * delete with it and the row came back on the next read.
+     */
     fun deleteList(todoListId: String) {
-        applyAndPublish { deleteTodoListUseCase(todoListId) }
+        applyAndPublish(writeScope ?: viewModelScope) { deleteTodoListUseCase(todoListId) }
     }
 
     fun editList(todoListId: String, newName: String, targetDate: LocalDate?, dueDate: LocalDate? = null) {
@@ -68,8 +75,11 @@ class TodoListsViewModel(
         applyAndPublish { reorderTodoListsUseCase(orderedActiveIds) }
     }
 
-    private fun applyAndPublish(action: () -> Unit) {
-        viewModelScope.launch(dispatcher) {
+    private fun applyAndPublish(
+        scope: CoroutineScope = viewModelScope,
+        action: () -> Unit
+    ) {
+        scope.launch(dispatcher) {
             action()
             _state.value = buildState()
         }

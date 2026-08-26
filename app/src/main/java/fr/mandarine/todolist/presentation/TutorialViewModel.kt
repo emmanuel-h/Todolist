@@ -29,7 +29,17 @@ class TutorialViewModel(
 
     private var currentStepIndex: Int = -1
 
+    /**
+     * Called from every onCreate, and a rotation is another one of those. The
+     * first act here is to tear off an abandoned demo list — which, mid-tour, is
+     * the demo list currently being written on. Turning the device sideways
+     * deleted the tour out from under itself and then declared it over, because
+     * the seen flag is written at the opening beat.
+     *
+     * A tour already on the paper is left alone.
+     */
     fun initialize() {
+        if (_uiState.value != TutorialUiState.Hidden) return
         viewModelScope.launch(dispatcher) {
             cleanupAbandonedTutorialUseCase()
             if (shouldRunTutorialUseCase()) {

@@ -18,6 +18,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -206,7 +207,9 @@ private fun ItemsPage(
 ) {
     val viewModel: TodoListViewModel =
         viewModel(factory = remember(listId) { itemsViewModelFactory(listId) })
-    val screenState = remember(listId) { TodoListScreenState() }
+    val screenState = rememberSaveable(listId, saver = TodoListScreenState.Saver) {
+        TodoListScreenState()
+    }
     val itemsStage = remember(viewModel, screenState) {
         ItemsStage(viewModel, screenState, aim) { stage.leave() }
     }

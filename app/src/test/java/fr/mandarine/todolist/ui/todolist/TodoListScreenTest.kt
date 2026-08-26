@@ -289,7 +289,23 @@ class TodoListScreenTest {
         inkSettles()
 
         assertEquals(emptyList<String>(), toggled)
-        assertNull(screenState.pendingToggle)
+        assertTrue(screenState.pendingToggles.isEmpty())
+    }
+
+    /**
+     * The stroke is 440ms long and a shopping list is ticked faster than that.
+     * Both rows have to land, not just the last one touched.
+     */
+    @Test
+    fun `should land both ticks when a second row is ticked inside the first stroke`() {
+        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
+
+        composeRule.onAllNodesWithContentDescription(MARK_COMPLETED)[0].performClick()
+        composeRule.mainClock.advanceTimeBy(INK_TICK_MILLIS / 2)
+        composeRule.onAllNodesWithContentDescription(MARK_COMPLETED)[0].performClick()
+        inkSettles()
+
+        assertEquals(listOf("1", "2"), toggled.sorted())
     }
 
     @Test

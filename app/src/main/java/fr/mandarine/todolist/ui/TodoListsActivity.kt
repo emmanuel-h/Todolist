@@ -123,7 +123,8 @@ class TodoListsActivity : ComponentActivity() {
                     EditTodoListUseCase(todoListRepository),
                     getTodoListsWithStatusUseCase,
                     ReorderTodoListsUseCase(todoListRepository),
-                    container.databaseDispatcher
+                    container.databaseDispatcher,
+                    container.writeScope
                 )
             }
         )[TodoListsViewModel::class.java]
@@ -143,6 +144,7 @@ class TodoListsActivity : ComponentActivity() {
             )
         )
         stage.animationsEnabled = animationsAllowed()
+        savedInstanceState?.let(screenState::restoreFrom)
         openedListId(savedInstanceState)?.let { backStack.add(ItemsRoute(it)) }
 
         notificationAsk = NotificationAsk(this)
@@ -241,6 +243,7 @@ class TodoListsActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         (backStack.lastOrNull() as? ItemsRoute)?.let { outState.putString(OPEN_PAGE, it.listId) }
+        screenState.saveTo(outState)
     }
 
     /**
@@ -261,9 +264,19 @@ class TodoListsActivity : ComponentActivity() {
      * A tapped notification names the list it is about, and a window that is being
      * rebuilt after being thrown away remembers the page it was left open at. Both
      * arrive as one sheet already laid over the page of lists.
+     *
+     * They are asked separately. A saved window that recorded no open page was
+     * left on the page of lists, and falling through to the notification's extra
+     * would have re-opened the list on every rotation for the life of the task —
+     * the extra is never cleared by anything else. Honouring it once takes it off
+     * the intent.
      */
-    private fun openedListId(savedInstanceState: Bundle?): String? =
-        savedInstanceState?.getString(OPEN_PAGE) ?: intent.getStringExtra(LIST_ID_EXTRA)
+    private fun openedListId(savedInstanceState: Bundle?): String? {
+        if (savedInstanceState != null) return savedInstanceState.getString(OPEN_PAGE)
+        val named = intent.getStringExtra(LIST_ID_EXTRA) ?: return null
+        intent.removeExtra(LIST_ID_EXTRA)
+        return named
+    }
 
     /**
      * The demo ending is a moment, not a condition.
@@ -323,7 +336,8 @@ class TodoListsActivity : ComponentActivity() {
                 ReorderTodosUseCase(container.todoRepository),
                 GetTodoListsUseCase(container.todoListRepository),
                 listId = listId,
-                dispatcher = container.databaseDispatcher
+                dispatcher = container.databaseDispatcher,
+                writeScope = container.writeScope
             )
         }
 

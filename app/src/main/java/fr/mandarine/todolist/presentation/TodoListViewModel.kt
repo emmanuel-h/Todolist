@@ -12,6 +12,7 @@ import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,8 @@ class TodoListViewModel(
     private val reorderTodosUseCase: ReorderTodosUseCase,
     private val getTodoListsUseCase: GetTodoListsUseCase,
     private val listId: String,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val writeScope: CoroutineScope? = null
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<TodoListState>(TodoListState.Empty)
@@ -77,8 +79,14 @@ class TodoListViewModel(
         }
     }
 
+    /**
+     * A delete is written on a scope the composition root owns, not on this
+     * view model's own. The page of items lives on an entry of the back stack
+     * and its scope dies with the entry, so a row torn off and then walked away
+     * from within its undo slip never reached the repository at all.
+     */
     fun deleteTodo(todoId: String) {
-        applyAndPublishWithEvent {
+        applyAndPublishWithEvent(writeScope ?: viewModelScope) {
             deleteTodoUseCase(todoId)
             AnimationEvent.ItemDeleted(todoId)
         }
@@ -99,8 +107,11 @@ class TodoListViewModel(
         }
     }
 
-    private fun applyAndPublishWithEvent(action: () -> AnimationEvent) {
-        viewModelScope.launch(dispatcher) {
+    private fun applyAndPublishWithEvent(
+        scope: CoroutineScope = viewModelScope,
+        action: () -> AnimationEvent
+    ) {
+        scope.launch(dispatcher) {
             val event = action()
             _animationEvents.emit(event)
             _state.value = buildState()

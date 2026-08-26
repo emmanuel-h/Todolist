@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.todolists
 
+import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -95,4 +96,57 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
         pendingDropIn = false
         return fresh
     }
+
+    /**
+     * This state belongs to the window rather than to a composition, because the
+     * demo's stage holds it before there is a composition to hold it in — so it
+     * is saved and restored by hand alongside the window.
+     *
+     * What is kept is what the reader was in the middle of writing. A tear
+     * mid-slip and a staged drag order belong to a gesture the rotation ended
+     * anyway; a half-typed list name and the day circled next to it do not.
+     */
+    fun saveTo(outState: Bundle) {
+        outState.putBoolean(ADD_OPEN, addRowExpanded)
+        outState.putString(ADD_TEXT, addRowText)
+        outState.putString(ADD_KIND, addRowSelection.kind.name)
+        addRowSelection.date?.let { outState.putLong(ADD_DAY, it.toEpochDay()) }
+        rename?.let { open ->
+            outState.putString(RENAME_ID, open.listId)
+            outState.putString(RENAME_NAME, open.name)
+            outState.putString(RENAME_KIND, open.selection.kind.name)
+            open.selection.date?.let { outState.putLong(RENAME_DAY, it.toEpochDay()) }
+        }
+    }
+
+    fun restoreFrom(savedInstanceState: Bundle) {
+        addRowExpanded = savedInstanceState.getBoolean(ADD_OPEN)
+        addRowText = savedInstanceState.getString(ADD_TEXT).orEmpty()
+        addRowSelection = DateSelection(
+            savedInstanceState.getString(ADD_KIND)?.let(DateKind::valueOf) ?: DateKind.TARGET,
+            savedInstanceState.dayOrNull(ADD_DAY)
+        )
+        val renamedId = savedInstanceState.getString(RENAME_ID) ?: return
+        rename = RenameState(
+            listId = renamedId,
+            name = savedInstanceState.getString(RENAME_NAME).orEmpty(),
+            selection = DateSelection(
+                savedInstanceState.getString(RENAME_KIND)?.let(DateKind::valueOf)
+                    ?: DateKind.TARGET,
+                savedInstanceState.dayOrNull(RENAME_DAY)
+            )
+        )
+    }
 }
+
+private fun Bundle.dayOrNull(key: String): LocalDate? =
+    if (containsKey(key)) LocalDate.ofEpochDay(getLong(key)) else null
+
+private const val ADD_OPEN = "lists-add-open"
+private const val ADD_TEXT = "lists-add-text"
+private const val ADD_KIND = "lists-add-kind"
+private const val ADD_DAY = "lists-add-day"
+private const val RENAME_ID = "lists-rename-id"
+private const val RENAME_NAME = "lists-rename-name"
+private const val RENAME_KIND = "lists-rename-kind"
+private const val RENAME_DAY = "lists-rename-day"

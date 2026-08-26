@@ -29,9 +29,14 @@ class DeletionState {
     /**
      * Starting a second delete finishes the first one: its slip is gone from the
      * screen, so its id is handed back to be written through immediately.
+     *
+     * Asking twice for the same row is not a second delete. Answering it as one
+     * wrote the row through while its own slip was still on the paper, leaving an
+     * undo that could not undo anything.
      */
     fun request(id: String): String? {
         val previous = pending?.id
+        if (previous == id) return null
         pending = PendingDeletion(id, torn = false)
         if (previous != null) committed = committed + previous
         return previous

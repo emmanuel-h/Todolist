@@ -7,12 +7,14 @@ import fr.mandarine.todolist.domain.ShouldRunTutorialUseCase
 import fr.mandarine.todolist.domain.StartTutorialUseCase
 import fr.mandarine.todolist.domain.TutorialScript
 import fr.mandarine.todolist.domain.TutorialStep
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -66,6 +68,45 @@ class TutorialViewModelTest {
         viewModel.initialize()
 
         assertEquals(TutorialUiState.ReadyToStart, viewModel.uiState.value)
+    }
+
+    /**
+     * Every onCreate calls initialize, and a rotation is another one of those.
+     * Cleanup tears off an abandoned demo list — which, mid-tour, is the list the
+     * tour is being written on.
+     */
+    @Test
+    fun `should not clean up again when a tour is already on the paper`() {
+        every { shouldRunTutorialUseCase() } returns true
+        viewModel.initialize()
+        clearMocks(cleanupAbandonedTutorialUseCase, answers = false)
+
+        viewModel.initialize()
+
+        verify(exactly = 0) { cleanupAbandonedTutorialUseCase() }
+    }
+
+    @Test
+    fun `should leave a running tour running when the window is rebuilt`() {
+        every { shouldRunTutorialUseCase() } returns true
+        viewModel.initialize()
+        viewModel.onDemoListCreated("demo-1")
+
+        viewModel.initialize()
+
+        assertTrue(viewModel.uiState.value is TutorialUiState.Active)
+    }
+
+    @Test
+    fun `should leave a dismissed tour dismissed when the window is rebuilt`() {
+        every { shouldRunTutorialUseCase() } returns false
+        viewModel.initialize()
+        clearMocks(cleanupAbandonedTutorialUseCase, answers = false)
+
+        viewModel.initialize()
+
+        verify(exactly = 0) { cleanupAbandonedTutorialUseCase() }
+        assertEquals(TutorialUiState.Dismissed, viewModel.uiState.value)
     }
 
     @Test
