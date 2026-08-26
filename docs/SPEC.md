@@ -308,7 +308,8 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Completion state and position are preserved
 
 **Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2) · [#42](https://github.com/emmanuel-h/Todolist/issues/42)_
-- **A row is a page and both its corners are turned a little from the start** ([#42](https://github.com/emmanuel-h/Todolist/issues/42)). The corner at the end carries the trash, the corner at the start carries what pulling that way uncovers — the pen on a list, the tick on an item. Pulling the row opens the corner being pulled the rest of the way; the mark grows with it
+- **A row is a page and both its corners are loose** ([#42](https://github.com/emmanuel-h/Todolist/issues/42)). At rest each is only rounded off — a bead of paper where the point would be. Pulling the row *rolls* the corner being pulled: the bead lengthens into a tube of paper lying across it, lit along its crown, in shade where it meets the page, with a shadow under it and both ends round. The corner at the end carries the trash, the corner at the start carries what pulling that way uncovers — the pen on a list, the tick on an item — and the mark inks up as the roll grows
+- The roll sits clear of the rule above and is only as long as the rule below leaves room for, at any font scale
 - **Pressing a corner does what pulling it home does**, so the gesture is an invitation rather than the only way in. The tear-off animation and the undo slip are the ones already there
 - Neither tearing nor editing is spoken about a list row any more. Both are marks on it, named once each, where they can also be pressed. An item's start corner is not named at all: the ring beside it already offers that action and is already named
 - A short-lived tear *tab* in the end margin did this job first; the corners replaced it, and do the same for the edit gesture that the tab never covered

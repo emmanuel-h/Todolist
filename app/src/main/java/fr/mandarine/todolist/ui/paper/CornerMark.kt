@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
@@ -24,14 +24,16 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 private val MARK_WIDTH = 52.dp
-private val FOLD_AT_REST = 20.dp
-private val FOLD_OPEN = 46.dp
-private val CREASE_NIB = 1.dp
+private val REACH_AT_REST = 7.dp
+private val REACH_ROLLED = 46.dp
+private val ROLL_AT_REST = 10.dp
+private val ROLL_ROLLED = 16.dp
+private val CLEAR_OF_THE_RULE = 2.dp
 private val GLYPH_INSET = 5.dp
 private val SHADOW_DROP = 2.dp
-private const val CURL = 0.22f
-private const val SHADOW_ALPHA = 0.18f
-private const val LIT_EDGE = 0.35f
+private const val SHADOW_ALPHA = 0.22f
+private const val TWO = 2f
+private const val EPSILON = 0.0001f
 private const val REST_INK = 0.6f
 private const val FULLY_OPEN = 1f
 private const val SHUT = 0f
@@ -46,10 +48,12 @@ private const val SHUT = 0f
  * and pressing the corner turns it right back on its own before doing the same
  * thing, so the gesture is an invitation rather than the only way in.
  *
- * The flap is not a flat triangle. Paper lifted at a corner bows away from the
- * page: its free edge curves, its back catches the light along that edge and falls
- * into shade at the crease, and it throws a shadow on the writing underneath. A
- * triangle with none of that reads as a cut corner rather than a turned one.
+ * At rest the corner is only rounded off — a bead of paper where the point would
+ * be, saying the corner is loose without claiming it has been turned. Pulling the
+ * row rolls it: the bead lengthens into a tube of paper lying across the corner,
+ * lit along its crown and in shade where it meets the page on either side, with a
+ * shadow under it and both ends round, because a rolled corner has no points left
+ * on it.
  */
 @Composable
 fun CornerMark(
@@ -63,14 +67,10 @@ fun CornerMark(
 ) {
     val palette = LocalPaperPalette.current
     val lit = palette.paperSheet
-    val shade = palette.paperShadeDeep
+    val shade = palette.paperShade
     val shadowInk = palette.shadow
-    val creaseInk = palette.rule
     val flip = remember { Animatable(SHUT) }
     val scope = rememberCoroutineScope()
-    val flap = Path()
-    val cast = Path()
-    val crease = Path()
     val turned: () -> Float = { maxOf(opened(), flip.value).coerceIn(SHUT, FULLY_OPEN) }
     Box(
         modifier = modifier
@@ -110,49 +110,50 @@ fun CornerMark(
             )
             .drawBehind {
                 val open = turned()
-                val side = FOLD_AT_REST.toPx() +
-                    (FOLD_OPEN.toPx() - FOLD_AT_REST.toPx()) * open
+                val wanted = REACH_AT_REST.toPx() +
+                    (REACH_ROLLED.toPx() - REACH_AT_REST.toPx()) * open
+                val thickness = ROLL_AT_REST.toPx() +
+                    (ROLL_ROLLED.toPx() - ROLL_AT_REST.toPx()) * open
                 val ink = REST_INK + (FULLY_OPEN - REST_INK) * open
                 val corner = if (atStart) SHUT else size.width
-                val inward = if (atStart) side else -side
-                val bow = side * CURL
+                /**
+                 * The roll is round at both ends, so one laid on the row's top edge
+                 * would stand half its own thickness above it and cross the rule
+                 * the row above is written on. It sits clear of that line, and is
+                 * only as long as the rule below leaves room for — whatever the
+                 * reader's font scale has done to the space between the two.
+                 */
+                val top = thickness / TWO + CLEAR_OF_THE_RULE.toPx()
+                val reach = minOf(wanted, size.height - top * TWO)
+                val inward = if (atStart) reach else -reach
 
-                cast.reset()
-                cast.moveTo(corner, SHADOW_DROP.toPx())
-                cast.lineTo(corner + inward, SHADOW_DROP.toPx())
-                cast.quadraticTo(
-                    corner + inward * LIT_EDGE + bow * if (atStart) 1f else -1f,
-                    side * LIT_EDGE + bow,
-                    corner,
-                    side + SHADOW_DROP.toPx()
+                val from = Offset(corner + inward, top)
+                val to = Offset(corner, top + reach)
+                val across = Offset(to.y - from.y, from.x - to.x).let { edge ->
+                    val length = maxOf(EPSILON, kotlin.math.hypot(edge.x, edge.y))
+                    Offset(edge.x / length, edge.y / length)
+                }
+                val middle = Offset((from.x + to.x) / TWO, (from.y + to.y) / TWO)
+                drawLine(
+                    color = shadowInk,
+                    start = from + across * SHADOW_DROP.toPx(),
+                    end = to + across * SHADOW_DROP.toPx(),
+                    strokeWidth = thickness,
+                    cap = StrokeCap.Round,
+                    alpha = SHADOW_ALPHA * ink
                 )
-                cast.close()
-                drawPath(cast, shadowInk, alpha = SHADOW_ALPHA * ink)
-
-                flap.reset()
-                flap.moveTo(corner, SHUT)
-                flap.lineTo(corner + inward, SHUT)
-                flap.quadraticTo(
-                    corner + inward * LIT_EDGE + bow * if (atStart) 1f else -1f,
-                    side * LIT_EDGE + bow,
-                    corner,
-                    side
-                )
-                flap.close()
-                drawPath(
-                    flap,
-                    Brush.linearGradient(
-                        colors = listOf(lit, shade),
-                        start = Offset(corner + inward, SHUT),
-                        end = Offset(corner, side)
+                drawLine(
+                    brush = Brush.linearGradient(
+                        colors = listOf(shade, lit, shade),
+                        start = middle - across * thickness / TWO,
+                        end = middle + across * thickness / TWO
                     ),
+                    start = from,
+                    end = to,
+                    strokeWidth = thickness,
+                    cap = StrokeCap.Round,
                     alpha = ink
                 )
-
-                crease.reset()
-                crease.moveTo(corner + inward, SHUT)
-                crease.lineTo(corner, side)
-                inked(crease, creaseInk.copy(alpha = ink), InkNib(CREASE_NIB.toPx()))
             },
         contentAlignment = if (atStart) Alignment.BottomStart else Alignment.BottomEnd
     ) {
