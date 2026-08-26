@@ -374,6 +374,15 @@ fun TodoListScreen(
             onPicked = { date ->
                 screenState.dateSheet = null
                 onWriteDate(sheet.withDate(date))
+            },
+            onKindAsked = { kind -> screenState.dateSheet = sheet.withKind(kind) },
+            onKindChange = { kind ->
+                screenState.dateSheet = sheet.withKind(kind)
+                onWriteDate(sheet.withKind(kind))
+            },
+            onCleared = {
+                screenState.dateSheet = null
+                onWriteDate(sheet.cleared())
             }
         )
     }

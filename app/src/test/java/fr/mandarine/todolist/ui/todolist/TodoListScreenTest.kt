@@ -170,6 +170,32 @@ class TodoListScreenTest {
         assertNull(screenState.dateSheet)
     }
 
+    /**
+     * The date on a list's own head rule opened a bare month, so the day could be
+     * changed but never taken off. The sheet carries the marks now, and the ringed
+     * one rubs the day out from where the reader pressed to see it.
+     */
+    @Test
+    fun `should rub the list's date out from the sheet the head rule opens`() {
+        screenState.animationsEnabled = false
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", targetDate = TODAY),
+                allDone = false
+            )
+        )
+
+        composeRule
+            .onNodeWithContentDescription("Target date ${formatListDate(TODAY, true, locale())}")
+            .performClick()
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(DateSelection(DateKind.TARGET, null)), datesWritten)
+        assertNull(screenState.dateSheet)
+    }
+
     @Test
     fun `should write the list name on the first line of the page`() {
         render(content(active = listOf(item("1", "Apples"))), listName = "Groceries")
@@ -794,6 +820,7 @@ class TodoListScreenTest {
         const val MARK_INCOMPLETE = "Mark item as incomplete"
         const val EDIT = "Edit item"
         const val DELETE = "Delete item"
+        const val CLEAR_TARGET_DATE = "Clear target date"
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
         const val UNDO = "Undo delete"

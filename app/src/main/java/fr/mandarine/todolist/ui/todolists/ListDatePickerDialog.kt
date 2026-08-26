@@ -1,12 +1,19 @@
 package fr.mandarine.todolist.ui.todolists
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperCalendar
+import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperSlipCaption
 import fr.mandarine.todolist.ui.paper.PaperDialog
 import java.time.LocalDate
@@ -20,6 +27,17 @@ import java.time.LocalDate
  * The tutorial no longer reaches for a positive button by id — it sets the date
  * on the screen state and this dialog simply closes.
  */
+/**
+ * A smaller sheet with a month written on it, laid on whatever sheet asked for a
+ * date. There is no confirm row: circling a day is the answer, exactly as ticking
+ * a ring is the answer everywhere else on the page, and putting the sheet down
+ * leaves the date as it was.
+ *
+ * The sheet carries the same two kind marks the line being written and the edit
+ * sheet carry, answering to the same three presses — which is what makes a day
+ * removable from wherever the reader pressed to see it. Reaching the marks used to
+ * mean pressing the list's *name* instead, and nothing on a date said so.
+ */
 @Composable
 fun ListDatePickerDialog(
     initial: LocalDate?,
@@ -27,9 +45,35 @@ fun ListDatePickerDialog(
     kind: DateKind,
     animated: Boolean,
     onDismiss: () -> Unit,
-    onPicked: (LocalDate) -> Unit
+    onPicked: (LocalDate) -> Unit,
+    onKindAsked: (DateKind) -> Unit,
+    onKindChange: (DateKind) -> Unit,
+    onCleared: () -> Unit
 ) {
+    val said = rememberDateKindSaid()
+    val rule = LocalPaperPalette.current.rule
     PaperDialog(onDismissRequest = onDismiss) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(LocalPagePitch.current)
+                .drawBehind {
+                    drawLine(
+                        color = rule,
+                        start = Offset(0f, size.height),
+                        end = Offset(size.width, size.height),
+                        strokeWidth = PaperDimens.rule.toPx()
+                    )
+                }
+        ) {
+            DateMarks(
+                selection = DateSelection(kind, initial),
+                said = said,
+                onKindChange = onKindChange,
+                onPickDate = onKindAsked,
+                onClearDate = onCleared
+            )
+        }
         /**
          * The sheet says which kind of day is being circled, because this is where
          * the reader is looking when it matters. The rule the marks sit on is

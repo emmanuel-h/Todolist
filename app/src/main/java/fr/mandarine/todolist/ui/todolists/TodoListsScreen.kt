@@ -445,6 +445,22 @@ fun TodoListsScreen(
                 }
                 screenState.datePickerRequest = null
                 if (owed) onDueDateSet()
+            },
+            onKindAsked = { kind -> screenState.datePickerRequest = request.copy(kind = kind) },
+            onKindChange = { kind ->
+                val moved = DateSelection(kind, request.initial)
+                val owed = applyDateSelection(screenState, request, moved) { listId, written ->
+                    writeListDate(state, listId, written, onRenameList)
+                }
+                screenState.datePickerRequest = request.copy(kind = kind)
+                if (owed) onDueDateSet()
+            },
+            onCleared = {
+                applyDateSelection(screenState, request, DateSelection(request.kind, null)) {
+                    listId, written ->
+                    writeListDate(state, listId, written, onRenameList)
+                }
+                screenState.datePickerRequest = null
             }
         )
     }
@@ -554,8 +570,18 @@ internal fun applyPickedDate(
     request: DatePickerRequest,
     date: LocalDate,
     writeRowDate: (String, DateSelection) -> Boolean
+): Boolean = applyDateSelection(screenState, request, DateSelection(request.kind, date), writeRowDate)
+
+/**
+ * Whatever the sheet has settled on — a day circled, a day moved to the other
+ * mark, or a day rubbed out — written back to whoever asked for the sheet.
+ */
+internal fun applyDateSelection(
+    screenState: TodoListsScreenState,
+    request: DatePickerRequest,
+    picked: DateSelection,
+    writeRowDate: (String, DateSelection) -> Boolean
 ): Boolean {
-    val picked = DateSelection(request.kind, date)
     return when (val target = request.target) {
         /**
          * A day circled on a line that has not been committed has not created a

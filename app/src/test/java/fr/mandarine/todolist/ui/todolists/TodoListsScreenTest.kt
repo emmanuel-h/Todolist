@@ -703,6 +703,62 @@ class TodoListsScreenTest {
         composeRule.onNodeWithContentDescription(CANCEL).assertDoesNotExist()
     }
 
+    /**
+     * A day already written could be changed but never taken off: the sheet that
+     * opened from the jot held a bare month and nothing else, and the marks that
+     * rub a day out were reachable only by pressing the list's *name*.
+     */
+    @Test
+    fun `should rub a list's date out from the sheet the date itself opens`() {
+        render(content(active = listOf(summary("1", "Groceries", targetDate = DATE))))
+        openDateSheet(DateKind.TARGET, DateTarget.Row("1"), initial = DATE)
+
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(null to null), renamedDates)
+        assertNull(screenState.datePickerRequest)
+    }
+
+    @Test
+    fun `should ring the kind of the day the sheet was opened on`() {
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
+        openDateSheet(DateKind.DUE, DateTarget.Row("1"), initial = DATE)
+
+        composeRule.onNodeWithContentDescription(CLEAR_DUE_DATE).assertIsSelected()
+        composeRule.onNodeWithContentDescription(SET_TARGET_DATE).assertIsNotSelected()
+    }
+
+    @Test
+    fun `should move a day across from the sheet without closing it`() {
+        render(content(active = listOf(summary("1", "Groceries", targetDate = DATE))))
+        openDateSheet(DateKind.TARGET, DateTarget.Row("1"), initial = DATE)
+
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(null to DATE), renamedDates)
+        assertEquals(DateKind.DUE, screenState.datePickerRequest?.kind)
+    }
+
+    /**
+     * With no day on it yet the sheet rings nothing — a ring means a day here too.
+     * Pressing a mark changes which kind of day the sheet is asking for, and the
+     * caption is what says so.
+     */
+    @Test
+    fun `should change which kind the sheet asks for while no day is on it`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.TARGET, DateTarget.Row("1"))
+
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(DateKind.DUE, screenState.datePickerRequest?.kind)
+        assertEquals(emptyList<Pair<LocalDate?, LocalDate?>>(), renamedDates)
+        composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
+    }
+
     @Test
     fun `should ask for notifications the first time a reminder is written`() {
         render(content(active = listOf(summary("1", "Groceries"))))
@@ -926,10 +982,14 @@ class TodoListsScreenTest {
         )
     }
 
-    private fun openDateSheet(kind: DateKind, target: DateTarget = DateTarget.AddRow) {
+    private fun openDateSheet(
+        kind: DateKind,
+        target: DateTarget = DateTarget.AddRow,
+        initial: LocalDate? = null
+    ) {
         composeRule.runOnIdle {
             screenState.animationsEnabled = false
-            screenState.datePickerRequest = DatePickerRequest(target, kind, null)
+            screenState.datePickerRequest = DatePickerRequest(target, kind, initial)
         }
         composeRule.waitForIdle()
     }
@@ -992,6 +1052,7 @@ class TodoListsScreenTest {
         const val CLEAR_TARGET_DATE = "Clear target date"
         const val SET_DUE_DATE = "Set due date"
         const val DUE_CAPTION = "Finish before this day"
+        const val CLEAR_DUE_DATE = "Clear due date"
         const val EDIT_NAME = "Edit list name"
         const val DELETE_LIST = "Delete list"
         const val MOVE_UP = "Move up"
