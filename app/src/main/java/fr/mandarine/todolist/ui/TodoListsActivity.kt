@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -99,12 +98,6 @@ class TodoListsActivity : ComponentActivity() {
      * coming back to an open page must not be read as a demo that has just ended.
      */
     private var lastTutorialState: TutorialUiState? = null
-    internal val tutorialBackCallback = object : OnBackPressedCallback(false) {
-        override fun handleOnBackPressed() {
-            tutorialController.onSkipRequested()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         openOnPaper { pageWritten }
         drawEdgeToEdge()
@@ -206,8 +199,6 @@ class TodoListsActivity : ComponentActivity() {
             }
         }
 
-        onBackPressedDispatcher.addCallback(this, tutorialBackCallback)
-
         /**
          * A scene belongs to a step and to the page that step is played on, and
          * with one window the page can now change without the step changing — the
@@ -221,7 +212,7 @@ class TodoListsActivity : ComponentActivity() {
                 }.collect { state ->
                     val running = state is TutorialUiState.ReadyToStart ||
                         state is TutorialUiState.Active
-                    tutorialBackCallback.isEnabled = running
+                    tutorialController.overlayState.running = running
                     stage.recordingAnchors = running
                     stage.animationsEnabled = animationsAllowed()
                     if (demoJustEnded(state)) {

@@ -163,17 +163,29 @@ class TutorialDirector(
         stage.perform(TutorialAction.NavigateBack)
     }
 
+    /**
+     * The demo tears the row off the way the reader does — a drag from the end of
+     * the row towards its start. It used to mime a tap in the middle of the row,
+     * which is the gesture that opens a list: the same rectangle answered both
+     * beats, so the tour taught the wrong hand for the one destructive thing in
+     * the app.
+     */
     private suspend fun deleteDemoList() {
         delay(1200)
-        point(TutorialAnchor.DeleteListButton, 500)
+        val row = stage.boundsOf(TutorialAnchor.DeleteListButton) ?: return
+        overlay.glideTo(row.alongRow(TEAR_FROM), 500)
         delay(400)
-        overlay.tap()
-        if (!stage.perform(TutorialAction.RequestDeleteFirstList)) return
+        overlay.grip()
+        delay(200)
+        overlay.glideTo(row.alongRow(TEAR_TO), 600)
+        if (!stage.perform(TutorialAction.RequestDeleteFirstList)) {
+            overlay.release()
+            return
+        }
+        delay(300)
+        overlay.release()
         delay(900)
 
-        point(TutorialAnchor.ConfirmDeleteButton, 400)
-        delay(400)
-        overlay.tap()
         stage.perform(TutorialAction.ConfirmDeleteFirstList)
         delay(1200)
 
@@ -211,6 +223,8 @@ class TutorialDirector(
     }
 
     private companion object {
+        const val TEAR_FROM = 0.86f
+        const val TEAR_TO = 0.18f
         const val DEMO_LIST_NAME = "🛒 Groceries"
         const val DEMO_ITEM_FIRST = "🍎 Apples"
         const val DEMO_ITEM_SECOND = "🥖 Bread"

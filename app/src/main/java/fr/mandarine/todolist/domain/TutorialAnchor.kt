@@ -9,7 +9,6 @@ sealed class TutorialAnchor {
     data object SubmitListButton : TutorialAnchor()
     data object FirstListRow : TutorialAnchor()
     data object DeleteListButton : TutorialAnchor()
-    data object ConfirmDeleteButton : TutorialAnchor()
     data object ItemGhostRow : TutorialAnchor()
     data object SubmitItemButton : TutorialAnchor()
     data class ActiveItemToggle(val index: Int) : TutorialAnchor()

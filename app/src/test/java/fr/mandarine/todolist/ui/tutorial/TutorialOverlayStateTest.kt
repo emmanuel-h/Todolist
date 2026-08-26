@@ -133,7 +133,7 @@ class TutorialOverlayStateTest {
         val state = TutorialOverlayState()
         state.aimAt(TutorialAnchor.CreateListButton, TutorialBounds(0, 0, 10, 10))
 
-        state.aimAt(TutorialAnchor.ConfirmDeleteButton, null)
+        state.aimAt(TutorialAnchor.DeleteListButton, null)
 
         assertNull(state.aimedAnchor)
     }

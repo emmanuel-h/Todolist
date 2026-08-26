@@ -33,6 +33,13 @@ private const val RESTING = 1f
  */
 class TutorialOverlayState : TutorialOverlay {
 
+    /**
+     * Whether a demo is on the paper at all, which is a moment wider than
+     * [visible] — the opening beat is running before the hand has arrived. Back
+     * cancels the tour for the whole of it.
+     */
+    var running by mutableStateOf(false)
+
     var visible by mutableStateOf(false)
         private set
     var filledDots by mutableStateOf(0)

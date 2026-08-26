@@ -334,7 +334,7 @@ class TutorialDirectorTest {
             stage.actions
         )
         assertEquals(
-            listOf("glide:DeleteListButton", "tap", "glide:ConfirmDeleteButton", "tap"),
+            listOf("glide:DeleteListButton", "grip", "glide:DeleteListButton", "release"),
             overlay.events
         )
         verify { viewModel.advanceStep() }
@@ -348,6 +348,7 @@ class TutorialDirectorTest {
         directorFor(stage).play(TutorialStep.DELETE_LIST)
 
         assertEquals(listOf(TutorialAction.RequestDeleteFirstList), stage.actions)
+        assertEquals("release", overlay.events.last())
         verify(exactly = 0) { viewModel.advanceStep() }
     }
 
@@ -369,7 +370,18 @@ class TutorialDirectorTest {
             return bounds
         }
 
-        fun labelFor(bounds: TutorialBounds): String = issued[bounds].orEmpty()
+        /**
+         * A beat the hand travels across rather than lands on derives its point
+         * from the row's own bounds, so a derived point is named for the row it
+         * came from.
+         */
+        fun labelFor(bounds: TutorialBounds): String = issued[bounds]
+            ?: issued.entries
+                .firstOrNull { (issued, _) ->
+                    issued.top == bounds.top && issued.height == bounds.height
+                }
+                ?.value
+                .orEmpty()
 
         override suspend fun perform(action: TutorialAction): Boolean {
             actions.add(action)

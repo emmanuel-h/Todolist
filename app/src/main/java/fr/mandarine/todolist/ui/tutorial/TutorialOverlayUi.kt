@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.tutorial
 
+import androidx.activity.compose.BackHandler
 import android.text.format.DateFormat
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -126,6 +127,19 @@ fun TutorialOverlay(
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    /**
+     * Registered here rather than on the window, and above the early return so it
+     * covers the opening beat too.
+     *
+     * setContent composes after onCreate has returned, so a callback added to the
+     * dispatcher during onCreate is registered before the navigation display's
+     * own and before the add line's — and back is dispatched newest first. The
+     * tutorial's callback therefore never won: back peeled the page instead of
+     * cancelling the tour, and the demo stalled with the hand still up. Composed
+     * after the page stack, it outranks it.
+     */
+    BackHandler(enabled = state.running, onBack = onSkip)
+
     if (!state.visible) return
 
     val root = LocalView.current

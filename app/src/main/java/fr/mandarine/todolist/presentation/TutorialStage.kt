@@ -10,7 +10,17 @@ data class TutorialBounds(
     val top: Int,
     val width: Int,
     val height: Int
-)
+) {
+    /**
+     * A point along the row, for a beat the hand travels across rather than lands
+     * on. The height is collapsed to the row's middle so the hand stays on the
+     * rule it is dragging.
+     */
+    fun alongRow(fraction: Float): TutorialBounds = copy(
+        left = left + (width * fraction).toInt(),
+        width = 0
+    )
+}
 
 data class TutorialBannerContent(
     val listName: String,
