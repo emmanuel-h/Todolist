@@ -5,14 +5,28 @@
 A personal to-do list Android app. The user manages multiple named lists; each list holds
 items that can be checked off. All data persists across restarts via Room/SQLite.
 
-### Design principle — icon-only UI
+### Design principle — wordless by default, words where they earn it
 
-**All static labels, screen titles, and empty-state copy are forbidden.** Every affordance must be self-explanatory through icons alone. Specifically:
-- No toolbar title text on any screen.
-- No headline or body text in any empty-state layout — icon only.
-- Text-field hints use `"…"` rather than a descriptive label.
-- Dynamic content (list names, item titles entered by the user) is exempt.
-- **Scoped exception — date-kind wording** (_[#30](https://github.com/emmanuel-h/Todolist/issues/30)_): the 📅 target vs ⏰ due distinction ("to do ON that day" vs "finish BEFORE that day") proved unteachable through icons alone after three wordless iterations. Two locale-translated strings — `date_kind_target_caption` ("To do on this day") and `date_kind_due_caption` ("Finish before this day"), with French in `values-fr/` — may appear in exactly two places: the caption line under the date-kind toggle in the edit-list dialog, and the tutorial's caption pill. No other static words are permitted anywhere, and these strings are deliberately exempt from `IconOnlyUiTest`.
+**The page is wordless wherever an icon does the job, and carries words where one does not.**
+
+This is a default, not a prohibition. It was a prohibition until 2026-08-26. The app had already
+broken it in the one place a reader most needed help — the tutorial's date-kind captions
+([#30](https://github.com/emmanuel-h/Todolist/issues/30)) — and that is the evidence for the rule
+as it now stands rather than an exception to it: three wordless iterations failed to teach the
+📅 target vs ⏰ due distinction before two translated strings taught it at once.
+
+- **Reach for the icon first.** Most of what this app does is a gesture on paper, taught by the
+  tutorial rather than by a label. A word that only restates a glyph is clutter.
+- **Where an icon has been tried and does not teach the thing, write the words.** Clarity wins.
+  Do not spend another three iterations proving a glyph cannot say something a sentence can.
+- **Words are locale-translated string resources**, in `values/` and `values-fr/`. Kotlin string
+  literals are for demo content inside the tutorial, never for anything the app says in earnest.
+- **Dynamic content** — list names, item titles, dates the reader wrote — was never covered by
+  this rule.
+- **`IconOnlyUiTest` is the guard, not the law.** It pins exactly which words each screen draws,
+  so a word nobody decided on fails the build and a word added on purpose comes with a test to
+  update. Update it when you add words deliberately; do not delete it, and do not weaken it into
+  a test that would pass for any string at all.
 
 This principle overrides any contradictory suggestion from a UI agent or the wireframes below.
 

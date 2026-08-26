@@ -44,6 +44,14 @@ in. Core library desugaring is required and enabled.
 
 ## Product specification
 
+**Words are allowed where they make things clearer.** The app is wordless by default — most of
+what it does is a gesture on paper, and a word that only restates a glyph is clutter — but this
+is a default, not a prohibition, and it stopped being a prohibition on 2026-08-26. Where an icon
+has been tried and does not teach the thing, write the words, translated, in `values/` and
+`values-fr/`. `IconOnlyUiTest` pins which words each screen draws so that adding one is a
+deliberate act; update it when you add words on purpose, and never weaken it. See the design
+principle in `docs/SPEC.md`.
+
 **`docs/SPEC.md` is the authoritative product definition.** Every agent must read it before starting any feature work. It defines all screens, behaviors, invariants, and which behaviors are not yet implemented (with linked GitHub issues). Do not implement anything that contradicts it; if a planned feature conflicts with the spec, flag it to the user before proceeding.
 
 ## Agent pipeline

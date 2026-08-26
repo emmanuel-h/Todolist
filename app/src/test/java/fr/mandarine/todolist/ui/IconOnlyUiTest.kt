@@ -28,6 +28,17 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+/**
+ * The guard on what the app says out loud, not a ban on its saying anything. The
+ * page is wordless wherever a glyph does the job and carries words where one does
+ * not — so what this pins is which words each screen draws, exactly. A word nobody
+ * decided on fails here; a word added on purpose comes with an assertion to update,
+ * which is the point. See the design principle in docs/SPEC.md.
+ *
+ * Update these lists when words are added deliberately. Do not loosen them into
+ * assertions that would pass for any string at all — that throws away the only
+ * thing keeping the page from filling up with labels nobody chose.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class IconOnlyUiTest {
