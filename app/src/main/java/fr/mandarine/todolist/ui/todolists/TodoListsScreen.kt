@@ -158,7 +158,7 @@ fun TodoListsScreen(
         when {
             session.dragging -> Unit
             screenState.addRowExpanded -> {
-                submitAddRow(screenState, onCreateList)
+                submitAddRow(screenState, onCreateList, onDueDateSet)
                 screenState.closeAddRow()
             }
             else -> onOpenList(list)
@@ -249,7 +249,9 @@ fun TodoListsScreen(
                                 spoken = stringResource(R.string.add_list),
                                 text = screenState.addRowText,
                                 onTextChange = { screenState.addRowText = it },
-                                onCommit = { _ -> submitAddRow(screenState, onCreateList) },
+                                onCommit = { _ ->
+                                    submitAddRow(screenState, onCreateList, onDueDateSet)
+                                },
                                 armed = screenState.addRowExpanded,
                                 onPenUp = { screenState.openAddRow() },
                                 onPenDown = { screenState.closeAddRow() },
@@ -266,7 +268,7 @@ fun TodoListsScreen(
                                 enter = unfoldFromHeadRule(screenState.animationsEnabled),
                                 exit = foldAwayFromPage(screenState.animationsEnabled)
                             ) {
-                                AddLineDateRule(screenState, onDueDateSet)
+                                AddLineDateRule(screenState)
                             }
                         }
                     }
@@ -431,13 +433,13 @@ fun TodoListsScreen(
  * the sheet taken off the pad still reads as one bare rule until it is written on.
  */
 @Composable
-private fun AddLineDateRule(screenState: TodoListsScreenState, onDueDateSet: () -> Unit) {
+private fun AddLineDateRule(screenState: TodoListsScreenState) {
     val selection = screenState.addRowSelection
     RuledRow {
         DateMarks(
             selection = selection,
             onKindChange = { kind ->
-                if (writeAddRowSelection(screenState, selection.withKind(kind))) onDueDateSet()
+                writeAddRowSelection(screenState, selection.withKind(kind))
             },
             onPickDate = {
                 screenState.datePickerRequest = DatePickerRequest(
@@ -486,12 +488,14 @@ internal fun padLiesOnPage(windowWidth: Dp, pageWidth: Dp, reach: Dp): Boolean =
  */
 internal fun submitAddRow(
     screenState: TodoListsScreenState,
-    onCreateList: (String, LocalDate?, LocalDate?) -> Unit
+    onCreateList: (String, LocalDate?, LocalDate?) -> Unit,
+    onReminderWritten: () -> Unit = {}
 ): Boolean {
     val name = screenState.addRowText
     if (name.isBlank()) return false
     val selection = screenState.addRowSelection
     onCreateList(name, selection.targetDate, selection.dueDate)
+    if (selection.date != null) onReminderWritten()
     screenState.clearAddRow()
     return true
 }
@@ -509,7 +513,16 @@ internal fun applyPickedDate(
 ): Boolean {
     val picked = DateSelection(request.kind, date)
     return when (val target = request.target) {
-        DateTarget.AddRow -> writeAddRowSelection(screenState, picked)
+        /**
+         * A day circled on a line that has not been committed has not created a
+         * reminder yet, and may never — backing out of the line clears it. The ask
+         * waits for the list to exist rather than being spent on a list that does
+         * not.
+         */
+        DateTarget.AddRow -> {
+            writeAddRowSelection(screenState, picked)
+            false
+        }
         DateTarget.Rename -> writeRenameSelection(screenState, picked)
         is DateTarget.Row -> writeRowDate(target.listId, picked)
     }
@@ -528,7 +541,7 @@ internal fun writeListDate(
 ): Boolean {
     val list = listOnPage(state, listId) ?: return false
     onRenameList(list.id, list.name, written.targetDate, written.dueDate)
-    return dueDateWritten(DateSelection.of(list.targetDate, list.dueDate), written)
+    return reminderDateWritten(DateSelection.of(list.targetDate, list.dueDate), written)
 }
 
 private fun listOnPage(state: TodoListsState, listId: String): TodoList? =
@@ -543,7 +556,7 @@ internal fun writeAddRowSelection(
 ): Boolean {
     val before = screenState.addRowSelection
     screenState.addRowSelection = written
-    return dueDateWritten(before, written)
+    return reminderDateWritten(before, written)
 }
 
 internal fun writeRenameSelection(
@@ -552,7 +565,7 @@ internal fun writeRenameSelection(
 ): Boolean {
     val rename = screenState.rename ?: return false
     screenState.rename = rename.copy(selection = written)
-    return dueDateWritten(rename.selection, written)
+    return reminderDateWritten(rename.selection, written)
 }
 
 @Composable

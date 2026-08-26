@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.ui
 
+import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.core.app.NotificationManagerCompat
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -150,7 +152,7 @@ class TodoListsActivity : ComponentActivity() {
         notificationAsk = NotificationAsk(this)
         notificationPermission = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ) {}
+        ) { notificationAsk.markAsked() }
 
         container.notificationScheduler.scheduleDailyCheck()
 
@@ -247,17 +249,31 @@ class TodoListsActivity : ComponentActivity() {
     }
 
     /**
-     * A due date is the first moment a notification could ever fire, which makes
+     * A reminder is the first moment a notification could ever fire, which makes
      * it the first moment the request explains itself. Before that there is
      * nothing to be reminded of, so nothing is asked.
+     *
+     * Once the ask has been spent it is not put again — but a reader who writes
+     * another reminder while notifications are off is asking for something the
+     * app cannot deliver, and an app with no settings screen has nowhere else to
+     * say so. That second time opens the system's own page for it, which is both
+     * the explanation and the remedy.
      */
     internal fun askForNotifications() {
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) return
         val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
-        val asked = notificationAsk.alreadyAsked()
-        if (!shouldAskForNotifications(Build.VERSION.SDK_INT, granted, asked)) return
-        notificationAsk.markAsked()
-        notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        if (shouldAskForNotifications(Build.VERSION.SDK_INT, granted, notificationAsk.alreadyAsked())) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        openNotificationSettings()
+    }
+
+    private fun openNotificationSettings() {
+        val settings = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        if (settings.resolveActivity(packageManager) != null) startActivity(settings)
     }
 
     /**

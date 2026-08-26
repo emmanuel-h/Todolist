@@ -37,13 +37,17 @@ data class DateSelection(val kind: DateKind, val date: LocalDate?) {
 }
 
 /**
- * A due date is what a notification is for, so the ask belongs to the moment one
- * starts existing — whichever hand wrote it. Circling a day while the alarm is
- * ringed and ringing the alarm over a day already written are the same event to
- * the reader, and both have to be answered for.
+ * A reminder is what a notification is for, so the ask belongs to the moment one
+ * starts existing — whichever hand wrote it, and whichever kind it is. Circling a
+ * day while the alarm is ringed and ringing the alarm over a day already written
+ * are the same event to the reader, and both have to be answered for.
+ *
+ * Both kinds fire: a due date on the day it falls, a target date the evening
+ * before. Gating the ask on the alarm alone meant a reader who only ever circles
+ * calendar days was never asked, and never found out why nothing arrived.
  */
-internal fun dueDateWritten(before: DateSelection, after: DateSelection): Boolean =
-    after.dueDate != null && after.dueDate != before.dueDate
+internal fun reminderDateWritten(before: DateSelection, after: DateSelection): Boolean =
+    after.date != null && (after.date != before.date || after.kind != before.kind)
 
 private const val SPOKEN_SKELETON = "EEEdMMM"
 private const val SPOKEN_YEAR_SKELETON = "EEEdMMMy"

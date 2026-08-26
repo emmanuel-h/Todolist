@@ -30,6 +30,16 @@ class NotificationPermissionTest {
         SharedPreferencesTutorialStateRepository(app()).markTutorialSeen()
     }
 
+    /**
+     * The ask is only put when a notification could not otherwise arrive, so the
+     * shadow has to say that it cannot. Robolectric leaves notifications enabled
+     * by default no matter what the permission says.
+     */
+    private fun silenceNotifications() {
+        Shadows.shadowOf(app().getSystemService(android.app.NotificationManager::class.java))
+            .setNotificationsEnabled(false)
+    }
+
     private fun requestedPermissions(activity: TodoListsActivity): List<String> =
         Shadows.shadowOf(activity).lastRequestedPermission
             ?.requestedPermissions
@@ -63,8 +73,9 @@ class NotificationPermissionTest {
     }
 
     @Test
-    fun `should ask for notifications when the first due date is set`() {
+    fun `should ask for notifications when the first reminder is set`() {
         markTutorialSeen()
+        silenceNotifications()
 
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
@@ -85,6 +96,7 @@ class NotificationPermissionTest {
     @Test
     fun `should not ask for notifications a second time once the ask has been spent`() {
         markTutorialSeen()
+        silenceNotifications()
         NotificationAsk(app()).markAsked()
 
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->

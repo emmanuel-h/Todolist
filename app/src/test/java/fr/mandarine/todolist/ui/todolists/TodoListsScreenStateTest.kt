@@ -117,15 +117,64 @@ class TodoListsScreenStateTest {
         state.addRowText = "Groceries"
         state.addRowSelection = DateSelection(DateKind.TARGET, date)
 
-        val submitted = submitAddRow(state) { name, target, due ->
-            created = Triple(name, target, due)
-        }
+        val submitted = submitAddRow(
+            state,
+            onCreateList = { name, target, due -> created = Triple(name, target, due) }
+        )
 
         assertTrue(submitted)
         assertEquals(Triple("Groceries", date, null), created)
         assertTrue(state.addRowExpanded)
         assertEquals("", state.addRowText)
         assertEquals(DateSelection.None, state.addRowSelection)
+    }
+
+    /**
+     * The day was circled on a line, and a line is not a list. The ask is owed
+     * when the list exists — backing out of the line writes no reminder at all,
+     * and spending the one ask on it left the reader silently un-remindable.
+     */
+    @Test
+    fun `should owe the ask once a line carrying a day becomes a list`() {
+        var owed = false
+        state.addRowText = "Groceries"
+        state.addRowSelection = DateSelection(DateKind.TARGET, date)
+
+        submitAddRow(state, onCreateList = { _, _, _ -> }, onReminderWritten = { owed = true })
+
+        assertTrue(owed)
+    }
+
+    @Test
+    fun `should owe the ask for a due date the same way`() {
+        var owed = false
+        state.addRowText = "Groceries"
+        state.addRowSelection = DateSelection(DateKind.DUE, date)
+
+        submitAddRow(state, onCreateList = { _, _, _ -> }, onReminderWritten = { owed = true })
+
+        assertTrue(owed)
+    }
+
+    @Test
+    fun `should owe nothing when the line carries no day`() {
+        var owed = false
+        state.addRowText = "Groceries"
+
+        submitAddRow(state, onCreateList = { _, _, _ -> }, onReminderWritten = { owed = true })
+
+        assertFalse(owed)
+    }
+
+    @Test
+    fun `should owe nothing when a blank line is refused`() {
+        var owed = false
+        state.addRowText = "   "
+        state.addRowSelection = DateSelection(DateKind.DUE, date)
+
+        submitAddRow(state, onCreateList = { _, _, _ -> }, onReminderWritten = { owed = true })
+
+        assertFalse(owed)
     }
 
     @Test
@@ -145,7 +194,7 @@ class TodoListsScreenStateTest {
         state.openAddRow()
         state.addRowText = "   "
 
-        val submitted = submitAddRow(state) { _, _, _ -> created = true }
+        val submitted = submitAddRow(state, onCreateList = { _, _, _ -> created = true })
 
         assertFalse(submitted)
         assertFalse(created)
@@ -181,17 +230,23 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should report the ask owed when a picked day lands under the alarm`() {
+    /**
+     * A day circled on a line owes nothing yet: the line may never become a list.
+     * The ask is owed at the commit, which submitAddRow answers for.
+     */
+    fun `should report no ask owed for a day circled on the line being written`() {
         val request = DatePickerRequest(DateTarget.AddRow, DateKind.DUE, null)
 
-        assertTrue(applyPickedDate(state, request, date, ::writeRow))
+        assertFalse(applyPickedDate(state, request, date, ::writeRow))
     }
 
     @Test
-    fun `should report no ask owed when a picked day lands under the calendar`() {
+    fun `should still write the day circled on the line being written`() {
         val request = DatePickerRequest(DateTarget.AddRow, DateKind.TARGET, null)
 
-        assertFalse(applyPickedDate(state, request, date, ::writeRow))
+        applyPickedDate(state, request, date, ::writeRow)
+
+        assertEquals(DateSelection(DateKind.TARGET, date), state.addRowSelection)
     }
 
     @Test

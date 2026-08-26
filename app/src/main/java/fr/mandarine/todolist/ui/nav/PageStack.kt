@@ -43,7 +43,7 @@ import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
-import fr.mandarine.todolist.ui.todolists.dueDateWritten
+import fr.mandarine.todolist.ui.todolists.reminderDateWritten
 import java.time.LocalDate
 
 private const val PAGE_RISE = 8
@@ -253,7 +253,7 @@ private fun ItemsPage(
                 val list = summary?.list ?: return@TodoListScreen
                 listsViewModel.editList(listId, list.name, written.targetDate, written.dueDate)
                 val before = DateSelection.of(list.targetDate, list.dueDate)
-                if (dueDateWritten(before, written)) onDueDateSet()
+                if (reminderDateWritten(before, written)) onDueDateSet()
             }
         )
     }

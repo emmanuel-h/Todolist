@@ -593,6 +593,22 @@ class TodoListsScreenTest {
         assertNull(screenState.datePickerRequest)
     }
 
+    /**
+     * A day circled on a line that has not been committed has created no
+     * reminder yet — backing out of the line clears it. Spending the one ask on
+     * it left the reader silently un-remindable for a list that never existed.
+     */
+    @Test
+    fun `should not ask for notifications for a day circled on the line being written`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.DUE)
+
+        composeRule.onNodeWithText("20").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(0, dueDatesSet)
+    }
+
     @Test
     fun `should carry no confirm row on the date sheet`() {
         render(content(active = listOf(summary("1", "Groceries"))))
@@ -603,9 +619,9 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should ask for notifications the first time a due date is written`() {
+    fun `should ask for notifications the first time a reminder is written`() {
         render(content(active = listOf(summary("1", "Groceries"))))
-        openDateSheet(DateKind.DUE)
+        openDateSheet(DateKind.DUE, DateTarget.Row("1"))
 
         composeRule.onNodeWithText("20").performClick()
         composeRule.waitForIdle()
@@ -614,14 +630,19 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should not ask for notifications when the day written is a target`() {
+    /**
+     * A target date fires the evening before, so it owes the ask exactly as a due
+     * date does — the reader who only ever circles calendar days was the one
+     * being left silently un-remindable.
+     */
+    fun `should ask for notifications when the day written is a target`() {
         render(content(active = listOf(summary("1", "Groceries"))))
-        openDateSheet(DateKind.TARGET)
+        openDateSheet(DateKind.TARGET, DateTarget.Row("1"))
 
         composeRule.onNodeWithText("20").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(0, dueDatesSet)
+        assertEquals(1, dueDatesSet)
     }
 
     @Test
@@ -646,13 +667,13 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should not ask for notifications when a due date is turned back into a target`() {
+    fun `should ask for notifications when a due date is turned into a target`() {
         screenState.rename = RenameState.of(TodoList("1", "Groceries", dueDate = DATE))
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].performClick()
 
-        assertEquals(0, dueDatesSet)
+        assertEquals(1, dueDatesSet)
     }
 
     // ── The date on the line being written ────────────────────────────────────
@@ -779,10 +800,10 @@ class TodoListsScreenTest {
         )
     }
 
-    private fun openDateSheet(kind: DateKind) {
+    private fun openDateSheet(kind: DateKind, target: DateTarget = DateTarget.AddRow) {
         composeRule.runOnIdle {
             screenState.animationsEnabled = false
-            screenState.datePickerRequest = DatePickerRequest(DateTarget.AddRow, kind, null)
+            screenState.datePickerRequest = DatePickerRequest(target, kind, null)
         }
         composeRule.waitForIdle()
     }

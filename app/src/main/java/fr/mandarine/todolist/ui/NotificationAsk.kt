@@ -4,10 +4,15 @@ import android.content.Context
 import android.os.Build
 
 /**
- * The app asks for notifications once, at the moment a due date makes one
+ * The app asks for notifications once, at the moment a reminder makes one
  * meaningful, and never again — whether that ask was granted or refused. A
  * refusal is only respected if the record of having asked outlives the process
  * that made it, so it is written to disk rather than held in a field.
+ *
+ * The record is written when the answer comes back, not when the dialog is
+ * raised. Marking it beforehand spent the one ask on a question that may never
+ * have been put — the reader could dismiss the window, or the date could have
+ * been circled on a line that was never committed to a list at all.
  */
 class NotificationAsk(context: Context) {
 

@@ -83,7 +83,7 @@ class ListDateTest {
 
     @Test
     fun `should owe the notification ask when a day is written under the alarm`() {
-        val written = dueDateWritten(DateSelection.None, DateSelection(DateKind.DUE, date))
+        val written = reminderDateWritten(DateSelection.None, DateSelection(DateKind.DUE, date))
 
         assertTrue(written)
     }
@@ -92,26 +92,31 @@ class ListDateTest {
     fun `should owe the notification ask when the alarm is rung over a day already written`() {
         val before = DateSelection(DateKind.TARGET, date)
 
-        assertTrue(dueDateWritten(before, before.withKind(DateKind.DUE)))
+        assertTrue(reminderDateWritten(before, before.withKind(DateKind.DUE)))
     }
 
     @Test
-    fun `should owe no notification ask when the day written is a target`() {
-        val written = dueDateWritten(DateSelection.None, DateSelection(DateKind.TARGET, date))
+    /**
+     * A target date fires the evening before, so it is as much a reminder as a
+     * due date is. Asking only for the alarm meant a reader who circles calendar
+     * days was never asked and never found out why nothing arrived.
+     */
+    fun `should owe the notification ask when the day written is a target`() {
+        val written = reminderDateWritten(DateSelection.None, DateSelection(DateKind.TARGET, date))
 
-        assertFalse(written)
+        assertTrue(written)
     }
 
     @Test
-    fun `should owe no notification ask when a due date is turned back into a target`() {
+    fun `should owe the notification ask when a due date is turned into a target`() {
         val before = DateSelection(DateKind.DUE, date)
 
-        assertFalse(dueDateWritten(before, before.withKind(DateKind.TARGET)))
+        assertTrue(reminderDateWritten(before, before.withKind(DateKind.TARGET)))
     }
 
     @Test
     fun `should owe no notification ask when the alarm is rung with no day written`() {
-        val written = dueDateWritten(DateSelection.None, DateSelection(DateKind.DUE, null))
+        val written = reminderDateWritten(DateSelection.None, DateSelection(DateKind.DUE, null))
 
         assertFalse(written)
     }
@@ -120,7 +125,7 @@ class ListDateTest {
     fun `should owe no notification ask when a due date is left exactly as it was`() {
         val before = DateSelection(DateKind.DUE, date)
 
-        assertFalse(dueDateWritten(before, before.withDate(date)))
+        assertFalse(reminderDateWritten(before, before.withDate(date)))
     }
 
     @Test
