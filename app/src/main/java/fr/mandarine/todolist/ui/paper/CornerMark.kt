@@ -29,9 +29,10 @@ import fr.mandarine.todolist.R
 import kotlinx.coroutines.launch
 
 private val MARK_WIDTH = 52.dp
-private val CURL_AT_REST = 16.dp
-private val CURL_UNROLLED = 40.dp
-private val CLEAR_OF_THE_EDGE = 11.dp
+private val CURL_FLAT = 0.dp
+private val CURL_UNROLLED = 44.dp
+private val CLEAR_OF_THE_EDGE = 4.dp
+private const val NOT_YET_A_SHEET = 0.02f
 private val GLYPH_INSET = 5.dp
 private val WAY_GLYPH = 13.dp
 private val WAY_GAP = 1.dp
@@ -56,14 +57,17 @@ private const val SHUT = 0f
  * and pressing the corner turns it right back on its own before doing the same
  * thing, so the gesture is an invitation rather than the only way in.
  *
- * The corner curls the way the corner of a note pinned to a wall curls: the tip
- * lifts off the line the row is written on and rolls back into the page, so what
- * is left is a crescent of the sheet's own back — lit along its free edge where it
- * has come away, falling into shade at the crease where it is still attached, and
- * throwing a shadow on the writing behind it.
+ * At rest a row is not a sheet. It is writing on a page, and a page has no corner
+ * here to curl — which is why a curl drawn on a resting row reads as a mark nobody
+ * can place. What a resting row wears instead is its mark and an arrow saying which
+ * way to pull it.
  *
- * At rest the curl is small, the way a corner that has merely been handled is. It
- * unrolls the further the row is pulled.
+ * Pulled, the row *is* a sheet: it slides over the page with an edge of its own,
+ * and its leading corner curls the way the corner of a note pinned to a wall does.
+ * The tip lifts off the line the row is written on and rolls back into the page,
+ * leaving a crescent of the sheet's own back — lit along its free edge where it has
+ * come away, in shade at the crease where it is still attached, throwing a shadow
+ * on the writing behind it. It opens the further the row is pulled.
  */
 @Composable
 fun CornerMark(
@@ -122,14 +126,20 @@ fun CornerMark(
             .drawBehind {
                 val open = turned()
                 /**
+                 * A row at rest is not a sheet — it is writing on a page, and a
+                 * page has no corner here to curl. It becomes a sheet the moment it
+                 * is pulled aside, sliding over the page with an edge of its own,
+                 * and only then is there a corner for the paper to come away at.
+                 */
+                if (open <= NOT_YET_A_SHEET) return@drawBehind
+                /**
                  * The curl lifts a little past where the corner was, and throws a
-                 * shadow past that again. Both have to stay on the page, so the tip
-                 * is seated inside the row's edge by as much as the widest curl
-                 * will ever need.
+                 * shadow past that again, so the tip is seated inside the row's
+                 * edge by enough to keep both on the paper.
                  */
                 val clear = CLEAR_OF_THE_EDGE.toPx()
                 val reach = minOf(
-                    CURL_AT_REST.toPx() + (CURL_UNROLLED.toPx() - CURL_AT_REST.toPx()) * open,
+                    CURL_FLAT.toPx() + (CURL_UNROLLED.toPx() - CURL_FLAT.toPx()) * open,
                     minOf(size.width, size.height) - clear * TWO
                 )
                 val ink = REST_INK + (FULLY_OPEN - REST_INK) * open
