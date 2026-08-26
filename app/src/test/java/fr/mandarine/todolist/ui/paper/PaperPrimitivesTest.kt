@@ -323,7 +323,7 @@ class PaperPrimitivesTest {
     fun `should follow the finger on a row a demonstration is not holding`() {
         composeRule.setContent {
             PaperTheme {
-                SwipeRow(key = "1", onDelete = {}, staged = { null }) {
+                SwipeRow(key = "1", onDelete = {}, tearLabel = "tear", staged = { null }) {
                     Text("Groceries", modifier = Modifier.testTag(PULLED_ROW))
                 }
             }
@@ -345,7 +345,7 @@ class PaperPrimitivesTest {
         val held = mutableStateOf<Float?>(null)
         composeRule.setContent {
             PaperTheme {
-                SwipeRow(key = "1", onDelete = {}, staged = { held.value }) {
+                SwipeRow(key = "1", onDelete = {}, tearLabel = "tear", staged = { held.value }) {
                     Text("Groceries", modifier = Modifier.testTag(PULLED_ROW))
                 }
             }

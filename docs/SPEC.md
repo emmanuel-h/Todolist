@@ -308,8 +308,10 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Completion state and position are preserved
 
 **Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2) · [#42](https://github.com/emmanuel-h/Todolist/issues/42)_
-- Every row carries a **tear tab** in its end margin: a perforation with the trash drawn on it. Pressing it tears the row off exactly as the leftward swipe does, so the tear-off animation and the undo slip are the ones already there. The swipe stays; the tab is what says at rest that it exists
-- Delete is no longer among a row's spoken verbs on either page. The tab names it once, where it can also be pressed
+- **A row is a page and both its corners are turned a little from the start** ([#42](https://github.com/emmanuel-h/Todolist/issues/42)). The corner at the end carries the trash, the corner at the start carries what pulling that way uncovers — the pen on a list, the tick on an item. Pulling the row opens the corner being pulled the rest of the way; the mark grows with it
+- **Pressing a corner does what pulling it home does**, so the gesture is an invitation rather than the only way in. The tear-off animation and the undo slip are the ones already there
+- Neither tearing nor editing is spoken about a list row any more. Both are marks on it, named once each, where they can also be pressed. An item's start corner is not named at all: the ring beside it already offers that action and is already named
+- A short-lived tear *tab* in the end margin did this job first; the corners replaced it, and do the same for the edit gesture that the tab never covered
 - Swipe end→start → the row tears off and an undo slip stands in its place for 9 seconds
 - Same rules as a list: tapping the slip restores it, and the write lands when the slip
   expires, when another row is torn off, or when the page leaves — on a scope that outlives

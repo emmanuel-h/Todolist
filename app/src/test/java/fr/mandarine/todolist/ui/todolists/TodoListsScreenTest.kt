@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasAnySibling
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -563,7 +564,7 @@ class TodoListsScreenTest {
         render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
 
         assertEquals(
-            listOf(EDIT_NAME, MOVE_DOWN),
+            listOf(MOVE_DOWN),
             verbsOf("Groceries").map { it.label }
         )
     }
@@ -580,14 +581,20 @@ class TodoListsScreenTest {
     fun `should leave a finished list nothing to reorder`() {
         render(content(done = listOf(summary("1", "Groceries", allDone = true))))
 
-        assertEquals(listOf(EDIT_NAME), verbsOf("Groceries").map { it.label })
+        assertEquals(emptyList<String>(), verbsOf("Groceries").map { it.label })
     }
 
     @Test
-    fun `should open the name editor on a list asked to be renamed without a gesture`() {
+    /**
+     * The corner a row is pulled towards the end by carries the pen, and pressing
+     * it does what pulling it home does — so the sheet a list is edited on, which
+     * is the only way onto a list that has no day yet, is reachable without the
+     * gesture as well as with it.
+     */
+    fun `should open the name editor from the corner that carries the pen`() {
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        perform("Groceries", EDIT_NAME)
+        editCorner("Groceries")
 
         assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
     }
@@ -703,7 +710,17 @@ class TodoListsScreenTest {
     private fun tear(text: String) {
         composeRule
             .onNode(
-                hasContentDescription(DELETE_LIST) and hasAnySibling(hasText(text)),
+                hasContentDescription(DELETE_LIST) and hasAnySibling(hasAnyDescendant(hasText(text))),
+                useUnmergedTree = true
+            )
+            .performClick()
+        composeRule.waitForIdle()
+    }
+
+    private fun editCorner(text: String) {
+        composeRule
+            .onNode(
+                hasContentDescription(EDIT_NAME) and hasAnySibling(hasAnyDescendant(hasText(text))),
                 useUnmergedTree = true
             )
             .performClick()

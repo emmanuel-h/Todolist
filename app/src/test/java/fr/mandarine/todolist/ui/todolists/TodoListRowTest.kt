@@ -156,14 +156,14 @@ class TodoListRowTest {
     fun `should leave the tally a mark to be read and not one to be pressed`() {
         render(summary(activeCount = 3))
 
-        assertEquals(listOf(OPENS_THE_LIST, DELETE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, EDIT_NAME, DELETE_LIST), presses())
     }
 
     @Test
     fun `should add the jot to what a row can be pressed for and nothing else`() {
         render(summary(activeCount = 3, dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        assertEquals(listOf(OPENS_THE_LIST, "Set due date", DELETE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, "Set due date", EDIT_NAME, DELETE_LIST), presses())
     }
 
     @Test
@@ -171,10 +171,14 @@ class TodoListRowTest {
      * Delete is a mark on the row now rather than a verb spoken about it, so it is
      * named once, on the tab, and not twice.
      */
-    fun `should keep every verb the row already answered to once the jot takes taps`() {
+    /**
+     * Neither tearing nor editing is spoken about the row any more. Both are marks
+     * on it, named once each, where they can also be pressed.
+     */
+    fun `should leave the row no verb it does not also wear as a mark`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        assertEquals(listOf("Edit list name"), verbs())
+        assertEquals(emptyList<String>(), verbs())
     }
 
     @Test
@@ -199,10 +203,15 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should carry nothing at rest but the name, its marginalia and its tear tab`() {
+    /**
+     * Both corners of a row are turned a little from the start, and each carries
+     * the mark that says what turning it does. They are the only thing on a resting
+     * row besides what is written on it.
+     */
+    fun `should carry nothing at rest but the name, its marginalia and its two corners`() {
         render(summary(activeCount = 2))
 
-        assertEquals(listOf("2 items left", DELETE_LIST), descriptions())
+        assertEquals(listOf("2 items left", EDIT_NAME, DELETE_LIST), descriptions())
     }
 
     /**
@@ -503,6 +512,7 @@ class TodoListRowTest {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         val OPENS_THE_LIST: String? = null
         const val DELETE_LIST = "Delete list"
+        const val EDIT_NAME = "Edit list name"
         const val ROW = "row"
         const val ONE_LINE = 1
         const val ONE_PIXEL = 1f

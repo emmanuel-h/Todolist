@@ -9,7 +9,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.ui.paper.PaperFocusMark
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -48,7 +51,6 @@ import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SwipeMark
 import fr.mandarine.todolist.ui.paper.SwipeReveal
 import fr.mandarine.todolist.ui.paper.SwipeRow
-import fr.mandarine.todolist.ui.paper.TearTab
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -60,6 +62,8 @@ import fr.mandarine.todolist.ui.paper.tearOff
 import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 private const val ROW_BODY_LABEL = "rowBody"
+
+private val CORNER_ROOM = 44.dp
 
 @Composable
 fun TodoRow(
@@ -93,7 +97,8 @@ fun TodoRow(
     SwipeRow(
         key = item.id,
         onDelete = onDeleteRequested,
-        reveal = SwipeReveal(SwipeMark.Check, onToggle),
+        reveal = SwipeReveal(SwipeMark.Check, null, onToggle),
+        tearLabel = stringResource(R.string.item_delete),
         enabled = !editing,
         animated = animated,
         modifier = modifier.tearOff(tearing, animated, onTorn)
@@ -122,12 +127,7 @@ fun TodoRow(
                 onEditCommitted = onEditCommitted,
                 onEditDismissed = onEditDismissed
             )
-            if (!editing) {
-                TearTab(
-                    onTear = onDeleteRequested,
-                    contentDescription = stringResource(R.string.item_delete)
-                )
-            }
+            Spacer(Modifier.width(CORNER_ROOM))
         }
     }
 }

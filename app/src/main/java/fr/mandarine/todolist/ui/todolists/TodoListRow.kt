@@ -1,7 +1,9 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +25,6 @@ import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SwipeMark
 import fr.mandarine.todolist.ui.paper.SwipeReveal
 import fr.mandarine.todolist.ui.paper.SwipeRow
-import fr.mandarine.todolist.ui.paper.TearTab
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -34,6 +35,7 @@ import fr.mandarine.todolist.ui.paper.spokenVerbs
 import fr.mandarine.todolist.ui.paper.tearOff
 
 private val NAME_END_GAP = 8.dp
+private val CORNER_ROOM = 44.dp
 
 @Composable
 fun TodoListRow(
@@ -56,14 +58,16 @@ fun TodoListRow(
      * reader the same verb from two places.
      */
     val verbs = rowVerbs(
-        onRenameRequested?.let { RowVerb(stringResource(R.string.edit_list), it) },
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
     SwipeRow(
         key = summary.list.id,
         onDelete = onDeleteRequested,
-        reveal = onRenameRequested?.let { SwipeReveal(SwipeMark.Pencil, it) },
+        reveal = onRenameRequested?.let {
+            SwipeReveal(SwipeMark.Pencil, stringResource(R.string.edit_list), it)
+        },
+        tearLabel = stringResource(R.string.delete_list),
         animated = animated,
         staged = staged,
         modifier = modifier.tearOff(tearing, animated, onTorn)
@@ -71,10 +75,7 @@ fun TodoListRow(
         RuledRow(modifier = Modifier.spokenVerbs(verbs), onClick = onOpen) {
             RowName(summary = summary, animated = animated)
             Marginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
-            TearTab(
-                onTear = onDeleteRequested,
-                contentDescription = stringResource(R.string.delete_list)
-            )
+            Spacer(Modifier.width(CORNER_ROOM))
         }
     }
 }

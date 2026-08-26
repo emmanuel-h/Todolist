@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -53,7 +54,7 @@ enum class SwipeMark { Check, Pencil }
  * touch; the pencil opens a surface that has none, so the gesture signs off itself.
  */
 @Immutable
-class SwipeReveal(val mark: SwipeMark, val perform: () -> Unit) {
+class SwipeReveal(val mark: SwipeMark, val label: String?, val perform: () -> Unit) {
     internal val answeredInInk: Boolean get() = mark == SwipeMark.Check
 }
 
@@ -63,17 +64,6 @@ private const val SWIPE_THRESHOLD = 0.5f
 private const val SWIPE_RESISTANCE = 0.35f
 private const val AT_REST = 0f
 private const val FULLY_DRAWN = 1f
-private const val MARK_MIN_SCALE = 0.6f
-private const val MARK_GROWTH = 0.4f
-private val MARK_GLYPH = 24.dp
-private val MARK_STROKE = 2.dp
-private val CHECK_START = Offset(0.10f, 0.52f)
-private val CHECK_KNEE = Offset(0.38f, 0.84f)
-private val CHECK_END = Offset(0.92f, 0.12f)
-private const val HALF = 0.5f
-private val FOLD_CORNER = 30.dp
-private val FOLD_CREASE = 1.dp
-private const val FOLD_SHADE_ALPHA = 0.10f
 
 /**
  * A row is paper, not a panel on rails: it follows the finger exactly as far as
@@ -137,6 +127,7 @@ fun SwipeRow(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     reveal: SwipeReveal? = null,
+    tearLabel: String,
     enabled: Boolean = true,
     animated: Boolean = true,
     staged: (() -> Float?)? = null,
@@ -151,6 +142,7 @@ fun SwipeRow(
     val revealMark = reveal?.mark
     val trash = painterResource(R.drawable.ic_delete)
     val pencil = painterResource(R.drawable.ic_edit)
+    val tick = painterResource(R.drawable.ic_check)
 
     val swipe = remember(key, revealMark, travel) { RowSwipeState(travel, revealMark != null) }
     val settle = if (animated) PaperMotion.sheetSettle else snap()
@@ -173,52 +165,11 @@ fun SwipeRow(
 
     val pull = rememberDraggableState { delta -> swipe.drag(delta) }
 
-    Box(
-        modifier = modifier.drawWithCache {
-            val seat = size.height - pitch.toPx() * BASELINE_LIFT
-            val mark = SwipeMarkNib(
-                glyph = MARK_GLYPH.toPx(),
-                nib = InkNib(MARK_STROKE.toPx()),
-                lost = ColorFilter.tint(palette.inked(InkTone.Lost)),
-                margin = ColorFilter.tint(palette.inked(InkTone.Margin)),
-                ink = palette.inked(InkTone.Margin)
-            )
-            onDrawBehind {
-                val travelled = pulled()
-                if (travelled < AT_REST) {
-                    drawStampedGlyph(
-                        glyph = trash,
-                        progress = -travelled / travel,
-                        centre = size.width - travel * HALF,
-                        seat = seat,
-                        foot = GlyphFoot.trash,
-                        mark = mark,
-                        tint = mark.lost
-                    )
-                } else if (travelled > AT_REST) {
-                    val progress = travelled / travel
-                    if (revealMark == SwipeMark.Pencil) {
-                        drawStampedGlyph(
-                            glyph = pencil,
-                            progress = progress,
-                            centre = travel * HALF,
-                            seat = seat,
-                            foot = GlyphFoot.pencil,
-                            mark = mark,
-                            tint = mark.margin
-                        )
-                    } else {
-                        drawCheckMark(progress, travel * HALF, seat, mark)
-                    }
-                }
-            }
-        }
-    ) {
+    Box(modifier = modifier) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(pulled().roundToInt(), 0) }
-                .turnedCorner(pulled, travel, palette)
                 .preferredFrameRate(
                     if (travelling) FrameRateCategory.High else FrameRateCategory.Default
                 )
@@ -240,113 +191,27 @@ fun SwipeRow(
                 )
         ) {
             content()
+            reveal?.let { uncovered ->
+                CornerMark(
+                    painter = if (uncovered.mark == SwipeMark.Check) tick else pencil,
+                    contentDescription = uncovered.label,
+                    atStart = true,
+                    opened = { (pulled() / travel).coerceAtLeast(AT_REST) },
+                    onPress = {
+                        uncovered.perform()
+                        if (!uncovered.answeredInInk) haptics.drop()
+                    },
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+            }
+            CornerMark(
+                painter = trash,
+                contentDescription = tearLabel,
+                atStart = false,
+                opened = { (-pulled() / travel).coerceAtLeast(AT_REST) },
+                onPress = { latestDelete.value() },
+                modifier = Modifier.align(Alignment.TopEnd)
+            )
         }
-    }
-}
-
-/**
- * Everything the drag needs to draw with, cut once for the row: the check is one
- * path and one measure, and the two glyph tints and the nib outlive the gesture.
- * Only how much of the mark is drawn changes from frame to frame.
- */
-@Immutable
-private class SwipeMarkNib(
-    val glyph: Float,
-    val nib: InkNib,
-    val lost: ColorFilter,
-    val margin: ColorFilter,
-    val ink: Color
-) {
-    private val check = Path().apply {
-        moveTo(glyph * CHECK_START.x, glyph * CHECK_START.y)
-        lineTo(glyph * CHECK_KNEE.x, glyph * CHECK_KNEE.y)
-        lineTo(glyph * CHECK_END.x, glyph * CHECK_END.y)
-    }
-    private val measure = PathMeasure().apply { setPath(check, false) }
-    private val length = measure.length
-    private val drawn = Path()
-
-    fun checkedAsFarAs(progress: Float): Path {
-        drawn.reset()
-        measure.getSegment(AT_REST, length * progress.coerceIn(AT_REST, FULLY_DRAWN), drawn, true)
-        return drawn
-    }
-}
-
-private fun DrawScope.drawStampedGlyph(
-    glyph: Painter,
-    progress: Float,
-    centre: Float,
-    seat: Float,
-    foot: Float,
-    mark: SwipeMarkNib,
-    tint: ColorFilter
-) {
-    val drawn = progress.coerceIn(AT_REST, FULLY_DRAWN)
-    val scaled = mark.glyph * (MARK_MIN_SCALE + MARK_GROWTH * drawn)
-    translate(centre - scaled * HALF, seat - scaled * foot) {
-        with(glyph) {
-            draw(Size(scaled, scaled), alpha = drawn, tint)
-        }
-    }
-}
-
-private fun DrawScope.drawCheckMark(
-    progress: Float,
-    centre: Float,
-    seat: Float,
-    mark: SwipeMarkNib
-) {
-    val drawn = mark.checkedAsFarAs(progress)
-    translate(centre - mark.glyph * HALF, seat - mark.glyph * CHECK_KNEE.y) {
-        inked(drawn, mark.ink, mark.nib)
-    }
-}
-
-/**
- * The corner a pulled row is turned back on.
- *
- * A row is a page, and a page pulled aside does not slide out from under a straight
- * cut — the corner it is pulled by turns back on itself and what was written under
- * it shows through the gap. The fold opens as far as the pull goes and shuts again
- * when the finger lifts, so the gesture reads as paper being lifted rather than a
- * panel being run along rails.
- *
- * It is drawn on the corner beside the strip the row has uncovered, because that is
- * the corner the reader has hold of: pulling towards the start uncovers the end, and
- * the other way about.
- */
-private fun Modifier.turnedCorner(
-    pulled: () -> Float,
-    travel: Float,
-    palette: PaperPalette
-): Modifier = drawWithCache {
-    val back = palette.paperShadeDeep
-    val creaseInk = palette.rule
-    val shade = palette.shadow
-    val nib = InkNib(FOLD_CREASE.toPx())
-    val fold = Path()
-    val crease = Path()
-    onDrawWithContent {
-        drawContent()
-        val travelled = pulled()
-        if (travelled == AT_REST) return@onDrawWithContent
-        val opened = (abs(travelled) / travel).coerceIn(AT_REST, FULLY_DRAWN)
-        val side = FOLD_CORNER.toPx() * opened
-        if (side <= AT_REST) return@onDrawWithContent
-        val atEnd = travelled < AT_REST
-        val corner = if (atEnd) size.width else AT_REST
-        val inward = if (atEnd) -side else side
-        fold.reset()
-        fold.moveTo(corner, AT_REST)
-        fold.lineTo(corner + inward, AT_REST)
-        fold.lineTo(corner, side)
-        fold.close()
-        drawPath(fold, back)
-        drawPath(fold, shade, alpha = FOLD_SHADE_ALPHA * opened)
-        crease.reset()
-        crease.moveTo(corner + inward, AT_REST)
-        crease.lineTo(corner, side)
-        inked(crease, creaseInk, nib)
     }
 }
