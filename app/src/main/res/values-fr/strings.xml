@@ -27,6 +27,7 @@
     </plurals>
     <string name="add_list_fab_description">Créer une nouvelle liste</string>
     <string name="add_list">Ajouter une liste</string>
+    <string name="discard_list">Abandonner la liste commencée</string>
     <string name="add_item">Ajouter une tâche</string>
     <string name="item_edit">Modifier la tâche</string>
     <string name="item_delete">Supprimer la tâche</string>

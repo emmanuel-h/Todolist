@@ -23,6 +23,7 @@
     </plurals>
     <string name="add_list_fab_description">Create new list</string>
     <string name="add_list">Add a list</string>
+    <string name="discard_list">Discard the list being written</string>
     <string name="add_item">Add an item</string>
     <string name="item_edit">Edit item</string>
     <string name="item_delete">Delete item</string>

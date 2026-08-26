@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -120,9 +121,26 @@ private fun Modifier.padShadow(palette: PaperPalette): Modifier = raised(SHEET_S
 }
 
 /**
+ * What the sheet under the taken one says and does. Taking a sheet off the pad
+ * starts something, and the sheet now showing is how that is called off again — so
+ * the pad goes on answering to a press for as long as the sheet it handed over is
+ * still out.
+ */
+@Immutable
+class StickyNotePutBack(
+    val painter: Painter,
+    val contentDescription: String,
+    val onPress: () -> Unit
+)
+
+/**
  * A pad, not a single sheet. Taking one off it lifts the top sheet and carries it
  * away; the sheets under it stay in the corner, because a pad that vanishes when a
- * sheet is taken from it is not a pad.
+ * sheet is taken from it is not a pad. What is left showing answers to [putBack].
+ *
+ * The lift is quick and the carry is not: coming free of the glue is a snap of the
+ * wrist, and crossing the page is the length of the page, which is the one thing
+ * the slow spring is for.
  *
  * [landing] names the point in the pad's own parent that the taken sheet is being
  * put down on, so the carry ends somewhere rather than in mid-air. Without one the
@@ -138,13 +156,15 @@ fun StickyNotePad(
     reducedMotion: Boolean = false,
     beckons: Boolean = false,
     painter: Painter = painterResource(R.drawable.ic_add),
-    landing: (() -> Offset)? = null
+    landing: (() -> Offset)? = null,
+    putBack: StickyNotePutBack? = null
 ) {
     val peel = remember { Animatable(STICKY_PEEL_REST) }
     val settle = remember { Animatable(STICKY_SETTLE_DONE) }
     val beckon = remember { Animatable(STICKY_FLAT) }
     val haptics = rememberPaperHaptics()
     var peeling by remember { mutableStateOf(false) }
+    var returning by remember { mutableStateOf(false) }
     val previouslyTaken = remember { mutableStateOf(taken) }
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -165,13 +185,29 @@ fun StickyNotePad(
                 peeling = true
                 peel.snapTo(STICKY_PEEL_REST)
                 peel.animateTo(STICKY_PEEL_LIFTED, PaperMotion.pickUp)
-                peel.animateTo(STICKY_PEEL_GONE, PaperMotion.sheetSettle)
+                peel.animateTo(STICKY_PEEL_GONE, PaperMotion.pageMove)
                 peeling = false
             }
             haptics.land()
-        } else if (!reducedMotion) {
+        } else if (reducedMotion) {
+            return@LaunchedEffect
+        } else if (landing == null) {
             settle.snapTo(STICKY_SETTLE_START)
             settle.animateTo(STICKY_SETTLE_DONE, PaperMotion.sheetSettle)
+        } else {
+            /**
+             * Putting the sheet back is the same journey walked the other way: it
+             * comes up off the line, is carried down the page on the same slow
+             * spring, and lies flat on the pad — where it is indistinguishable from
+             * the sheet at rest, so the two change places with nothing to see.
+             */
+            haptics.pickUp()
+            returning = true
+            peel.snapTo(STICKY_PEEL_GONE)
+            peel.animateTo(STICKY_PEEL_LIFTED, PaperMotion.pageMove)
+            peel.animateTo(STICKY_PEEL_REST, PaperMotion.pickUp)
+            returning = false
+            haptics.land()
         }
     }
 
@@ -187,7 +223,7 @@ fun StickyNotePad(
     }
 
     val palette = LocalPaperPalette.current
-    val flying = peeling || settle.isRunning || beckon.isRunning
+    val flying = peeling || returning || settle.isRunning || beckon.isRunning
     Box(
         modifier = modifier
             .size(PaperDimens.stickyPad)
@@ -206,14 +242,37 @@ fun StickyNotePad(
             },
             shadowed = true
         )
+        val showing = putBack.takeIf { taken }
         StickyNoteSheetSurface(
             color = palette.stickyNoteMid,
-            modifier = Modifier.graphicsLayer {
-                rotationZ = MID_SHEET_ROTATION
-                translationX = -SHEET_STEP.toPx()
+            modifier = Modifier
+                .graphicsLayer {
+                    rotationZ = MID_SHEET_ROTATION
+                    translationX = -SHEET_STEP.toPx()
+                }
+                .then(
+                    if (showing == null) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(
+                            interactionSource = interactionSource,
+                            indication = PaperFocusMark,
+                            role = Role.Button,
+                            onClick = showing.onPress
+                        )
+                    }
+                ),
+            dent = { if (showing == null) NO_DENT else dent.value }
+        ) {
+            if (showing != null) {
+                InkIcon(
+                    painter = showing.painter,
+                    contentDescription = showing.contentDescription,
+                    tint = palette.stickyNoteInk
+                )
             }
-        )
-        if (!taken) {
+        }
+        if (!taken && !returning) {
             StickyNoteSheetSurface(
                 color = palette.stickyNote,
                 modifier = Modifier
@@ -243,7 +302,7 @@ fun StickyNotePad(
             }
         }
 
-        if (peeling) {
+        if (peeling || returning) {
             StickyNoteSheetSurface(
                 color = palette.stickyNote,
                 modifier = Modifier.graphicsLayer {
@@ -267,7 +326,19 @@ fun StickyNotePad(
                     translationX = carried.x * flying.travelFraction
                     translationY = carried.y * flying.travelFraction
                 }
-            )
+            ) {
+                /**
+                 * The glyph is written on the sheet, not on the pad, so it goes
+                 * where the sheet goes and comes back with it. Leaving it behind
+                 * meant the sheet arrived home blank and the glyph appeared on it a
+                 * beat later, out of nowhere.
+                 */
+                InkIcon(
+                    painter = painter,
+                    contentDescription = null,
+                    tint = palette.stickyNoteInk
+                )
+            }
         }
     }
 }

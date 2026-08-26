@@ -332,6 +332,55 @@ class PaperPrimitivesTest {
         composeRule.onNodeWithContentDescription("add").assertDoesNotExist()
     }
 
+    /**
+     * The pad is still standing there with a sheet gone off it, so the sheet now
+     * showing is what answers a press — and it says the opposite thing, because the
+     * only thing left to do about a sheet already taken is to put it back.
+     */
+    @Test
+    fun `should let the sheet now showing take back the one that was handed over`() {
+        var putBack = false
+        composeRule.setContent {
+            PaperTheme {
+                StickyNotePad(
+                    onTake = {},
+                    contentDescription = "add",
+                    taken = true,
+                    putBack = StickyNotePutBack(
+                        painter = painterResource(R.drawable.ic_remove),
+                        contentDescription = "put back",
+                        onPress = { putBack = true }
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("put back").performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(putBack)
+    }
+
+    @Test
+    fun `should offer nothing to put back while the pad is whole`() {
+        composeRule.setContent {
+            PaperTheme {
+                StickyNotePad(
+                    onTake = {},
+                    contentDescription = "add",
+                    putBack = StickyNotePutBack(
+                        painter = painterResource(R.drawable.ic_remove),
+                        contentDescription = "put back",
+                        onPress = {}
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("put back").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("add").assertIsDisplayed()
+    }
+
     @Test
     fun `should hand over a sheet without peeling it when motion is reduced`() {
         var taken = false

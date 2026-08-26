@@ -27,6 +27,7 @@ class InkGlyphFamilyTest {
         "check" to R.drawable.ic_check,
         "x" to R.drawable.ic_close,
         "plus" to R.drawable.ic_add,
+        "minus" to R.drawable.ic_remove,
         "arrow-left" to R.drawable.ic_arrow_back,
         "chevron-left" to R.drawable.ic_chevron_left,
         "chevron-right" to R.drawable.ic_chevron_right,

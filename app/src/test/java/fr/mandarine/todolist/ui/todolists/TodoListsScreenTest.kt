@@ -35,6 +35,7 @@ import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -149,13 +150,44 @@ class TodoListsScreenTest {
         addLine().assertIsFocused()
     }
 
+    /**
+     * The pad does not leave — a sheet was taken off it, not the whole thing — but
+     * what it offers changes: the sheet now showing tears up the line rather than
+     * starting another one.
+     */
     @Test
-    fun `should hide the pad and the replay affordance while the add line is on the page`() {
+    fun `should offer to tear the line up rather than start another while it is being written`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
         composeRule.onNodeWithContentDescription(CREATE_LIST).assertDoesNotExist()
         composeRule.onNodeWithContentDescription(REPLAY).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(DISCARD_LIST).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should tear up the line and what was written on it when the pad is pressed again`() {
+        armAddLine()
+        render(TodoListsState.Empty)
+        addLine().performTextReplacement("Throwaway")
+
+        composeRule.onNodeWithContentDescription(DISCARD_LIST).performClick()
+        composeRule.waitForIdle()
+
+        assertFalse(screenState.addRowExpanded)
+        assertEquals("", screenState.addRowText)
+        assertEquals(emptyList<Triple<String, LocalDate?, LocalDate?>>(), created)
+    }
+
+    @Test
+    fun `should leave the date written beside a torn-up line behind with it`() {
+        armAddLine(selection = DateSelection(DateKind.DUE, DATE))
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(DISCARD_LIST).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(DateSelection.None, screenState.addRowSelection)
     }
 
     @Test
@@ -174,7 +206,7 @@ class TodoListsScreenTest {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        assertEquals(listOf(ADD_LIST), descriptions())
+        assertEquals(listOf(ADD_LIST, DISCARD_LIST), descriptions())
     }
 
     @Test
@@ -915,6 +947,7 @@ class TodoListsScreenTest {
         const val REPLAY = "Replay tutorial"
         const val ADD_LIST = "Add a list"
         const val CREATE_LIST = "Create new list"
+        const val DISCARD_LIST = "Discard the list being written"
         const val UNDO = "Undo delete"
         const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L
         const val SPENT_NUMERATOR = 3L

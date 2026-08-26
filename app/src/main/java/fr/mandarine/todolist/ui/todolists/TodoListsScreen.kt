@@ -63,6 +63,7 @@ import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.paper.StickyNotePad
+import fr.mandarine.todolist.ui.paper.StickyNotePutBack
 import fr.mandarine.todolist.ui.paper.UndoSlip
 import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.inked
@@ -375,7 +376,15 @@ fun TodoListsScreen(
             taken = screenState.addRowExpanded,
             reducedMotion = !screenState.animationsEnabled,
             beckons = pageEmpty,
-            landing = headRuleSeat
+            landing = headRuleSeat,
+            putBack = StickyNotePutBack(
+                painter = painterResource(R.drawable.ic_remove),
+                contentDescription = stringResource(R.string.discard_list),
+                onPress = {
+                    focusManager.clearFocus()
+                    screenState.abandonAddRow()
+                }
+            )
         )
         UndoSlip(
             pending = deletion.pending?.id,
