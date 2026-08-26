@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -105,6 +106,7 @@ private const val ADD_TYPE = "list-add"
 private const val ACTIVE_TYPE = "active"
 private const val SKIP_TYPE = "skip"
 private const val DONE_TYPE = "done"
+private const val NOT_PULLED = 0f
 private const val REPLAY_ALPHA = 0.8f
 private const val ONE_LINE = 1
 private val CORNER_MARGIN = 8.dp
@@ -382,18 +384,15 @@ fun TodoListsScreen(
             enter = fadeIn(PaperMotion.rowEnter),
             exit = fadeOut(PaperMotion.rowExit)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = gutter, end = CORNER_MARGIN),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Masthead(Modifier.weight(1f))
+            Box(modifier = Modifier.fillMaxSize().padding(horizontal = CORNER_MARGIN)) {
+                Masthead(Modifier.align(Alignment.Center))
                 InkIconButton(
                     painter = painterResource(R.drawable.ic_help),
                     contentDescription = stringResource(R.string.replay_tutorial),
                     onClick = onReplayTutorial,
-                    modifier = Modifier.alpha(REPLAY_ALPHA),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .alpha(REPLAY_ALPHA),
                     tint = palette.inked(InkTone.Margin)
                 )
             }
@@ -785,6 +784,7 @@ private fun LazyItemScope.ActiveListRow(
                 )
                 .then(rowAnchor(screenState, firstRow, TutorialAnchor.FirstListRow))
                 .then(rowAnchor(screenState, firstRow, TutorialAnchor.DeleteListButton)),
+            staged = if (firstRow) ({ screenState.demoPull.takeIf { it != NOT_PULLED } }) else null,
             tearing = deletion.tearing(summary.list.id),
             onTorn = { onTorn(summary.list.id) },
             onRenameRequested = { screenState.rename = RenameState.of(summary.list) },

@@ -46,6 +46,10 @@ class ListsStage(
         is TutorialAction.PickDueDate -> pickDueDate(action.date)
         TutorialAction.SubmitList -> submitList()
         TutorialAction.OpenFirstList -> openFirstList()
+        is TutorialAction.PullFirstList -> pullFirstList(action.pixels)
+        TutorialAction.LetFirstListGo -> letFirstListGo()
+        TutorialAction.OpenFirstListEditor -> openFirstListEditor()
+        TutorialAction.CloseEditor -> closeEditor()
         TutorialAction.RequestDeleteFirstList -> armDeleteOnFirstList()
         TutorialAction.ConfirmDeleteFirstList -> confirmDeleteOnFirstList()
         else -> false
@@ -116,6 +120,30 @@ class ListsStage(
         screenState.abandonAddRow()
         if (screenState.animationsEnabled) screenState.noteListAdded()
         writeDemoList(name, selection.targetDate, selection.dueDate)
+        return true
+    }
+
+    private fun pullFirstList(pixels: Float): Boolean {
+        if (firstSummary() == null) return false
+        screenState.pullFirstRow(pixels)
+        return true
+    }
+
+    private fun letFirstListGo(): Boolean {
+        screenState.letFirstRowGo()
+        return true
+    }
+
+    private fun openFirstListEditor(): Boolean {
+        val summary = firstSummary() ?: return false
+        screenState.letFirstRowGo()
+        screenState.rename = RenameState.of(summary.list)
+        return true
+    }
+
+    private fun closeEditor(): Boolean {
+        if (screenState.rename == null) return false
+        screenState.rename = null
         return true
     }
 

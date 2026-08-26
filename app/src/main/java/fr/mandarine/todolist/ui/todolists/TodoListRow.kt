@@ -47,7 +47,8 @@ fun TodoListRow(
     onRenameRequested: (() -> Unit)? = null,
     onRewriteDate: ((DateSelection) -> Unit)? = null,
     onMoveUp: (() -> Unit)? = null,
-    onMoveDown: (() -> Unit)? = null
+    onMoveDown: (() -> Unit)? = null,
+    staged: (() -> Float?)? = null
 ) {
     /**
      * Delete is not spoken here any more: the row carries a tear tab that says so
@@ -64,6 +65,7 @@ fun TodoListRow(
         onDelete = onDeleteRequested,
         reveal = onRenameRequested?.let { SwipeReveal(SwipeMark.Pencil, it) },
         animated = animated,
+        staged = staged,
         modifier = modifier.tearOff(tearing, animated, onTorn)
     ) {
         RuledRow(modifier = Modifier.spokenVerbs(verbs), onClick = onOpen) {

@@ -71,6 +71,9 @@ private val CHECK_START = Offset(0.10f, 0.52f)
 private val CHECK_KNEE = Offset(0.38f, 0.84f)
 private val CHECK_END = Offset(0.92f, 0.12f)
 private const val HALF = 0.5f
+private val FOLD_CORNER = 30.dp
+private val FOLD_CREASE = 1.dp
+private const val FOLD_SHADE_ALPHA = 0.10f
 
 /**
  * A row is paper, not a panel on rails: it follows the finger exactly as far as
@@ -136,6 +139,7 @@ fun SwipeRow(
     reveal: SwipeReveal? = null,
     enabled: Boolean = true,
     animated: Boolean = true,
+    staged: (() -> Float?)? = null,
     content: @Composable () -> Unit
 ) {
     val palette = LocalPaperPalette.current
@@ -152,6 +156,15 @@ fun SwipeRow(
     val settle = if (animated) PaperMotion.sheetSettle else snap()
     val latestDelete = rememberUpdatedState(onDelete)
     val latestReveal = rememberUpdatedState(reveal)
+
+    /**
+     * How far the row is pulled aside, which is usually the finger and is sometimes
+     * the tour: a demonstration has no finger, and a row that does not move while
+     * the hand crosses it teaches nothing about what moving it does. The tour
+     * answers with nothing when it is not demonstrating, so the row a demonstration
+     * happens to use still comes away in the reader's own hand.
+     */
+    val pulled: () -> Float = { staged?.invoke() ?: swipe.offset }
 
     val locked by remember(swipe) { derivedStateOf { swipe.locked } }
     val travelling by remember(swipe) { derivedStateOf { swipe.travelling } }
@@ -171,7 +184,7 @@ fun SwipeRow(
                 ink = palette.inked(InkTone.Margin)
             )
             onDrawBehind {
-                val travelled = swipe.offset
+                val travelled = pulled()
                 if (travelled < AT_REST) {
                     drawStampedGlyph(
                         glyph = trash,
@@ -204,7 +217,8 @@ fun SwipeRow(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset { IntOffset(swipe.offset.roundToInt(), 0) }
+                .offset { IntOffset(pulled().roundToInt(), 0) }
+                .turnedCorner(pulled, travel, palette)
                 .preferredFrameRate(
                     if (travelling) FrameRateCategory.High else FrameRateCategory.Default
                 )
@@ -286,5 +300,53 @@ private fun DrawScope.drawCheckMark(
     val drawn = mark.checkedAsFarAs(progress)
     translate(centre - mark.glyph * HALF, seat - mark.glyph * CHECK_KNEE.y) {
         inked(drawn, mark.ink, mark.nib)
+    }
+}
+
+/**
+ * The corner a pulled row is turned back on.
+ *
+ * A row is a page, and a page pulled aside does not slide out from under a straight
+ * cut — the corner it is pulled by turns back on itself and what was written under
+ * it shows through the gap. The fold opens as far as the pull goes and shuts again
+ * when the finger lifts, so the gesture reads as paper being lifted rather than a
+ * panel being run along rails.
+ *
+ * It is drawn on the corner beside the strip the row has uncovered, because that is
+ * the corner the reader has hold of: pulling towards the start uncovers the end, and
+ * the other way about.
+ */
+private fun Modifier.turnedCorner(
+    pulled: () -> Float,
+    travel: Float,
+    palette: PaperPalette
+): Modifier = drawWithCache {
+    val back = palette.paperShadeDeep
+    val creaseInk = palette.rule
+    val shade = palette.shadow
+    val nib = InkNib(FOLD_CREASE.toPx())
+    val fold = Path()
+    val crease = Path()
+    onDrawWithContent {
+        drawContent()
+        val travelled = pulled()
+        if (travelled == AT_REST) return@onDrawWithContent
+        val opened = (abs(travelled) / travel).coerceIn(AT_REST, FULLY_DRAWN)
+        val side = FOLD_CORNER.toPx() * opened
+        if (side <= AT_REST) return@onDrawWithContent
+        val atEnd = travelled < AT_REST
+        val corner = if (atEnd) size.width else AT_REST
+        val inward = if (atEnd) -side else side
+        fold.reset()
+        fold.moveTo(corner, AT_REST)
+        fold.lineTo(corner + inward, AT_REST)
+        fold.lineTo(corner, side)
+        fold.close()
+        drawPath(fold, back)
+        drawPath(fold, shade, alpha = FOLD_SHADE_ALPHA * opened)
+        crease.reset()
+        crease.moveTo(corner + inward, AT_REST)
+        crease.lineTo(corner, side)
+        inked(crease, creaseInk, nib)
     }
 }

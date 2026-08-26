@@ -321,24 +321,82 @@ class TutorialDirectorTest {
     }
 
     @Test
-    fun `should delete and confirm then advance on the lists screen`() = runTest {
+    /**
+     * The scene shows a row coming away in the hand both ways before it tears one
+     * off: towards the end it opens the sheet the list is edited on, which is the
+     * only way onto a list that has no day yet, and towards the start it tears.
+     */
+    fun `should show both ways a row comes away then tear one off and advance`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
 
         directorFor(stage).play(TutorialStep.DELETE_LIST)
 
         assertEquals(
             listOf(
-                TutorialAction.RequestDeleteFirstList,
-                TutorialAction.ConfirmDeleteFirstList
+                "PullFirstList",
+                "OpenFirstListEditor",
+                "CloseEditor",
+                "PullFirstList",
+                "RequestDeleteFirstList",
+                "LetFirstListGo",
+                "ConfirmDeleteFirstList"
             ),
-            stage.actions
-        )
-        assertEquals(
-            listOf("glide:DeleteListButton", "grip", "glide:DeleteListButton", "release"),
-            overlay.events
+            stage.actions.beats()
         )
         verify { viewModel.advanceStep() }
     }
+
+    @Test
+    fun `should pull the row towards the end for the editor and the start for the tear`() =
+        runTest {
+            val stage = RecordingStage(TutorialScreen.LISTS)
+
+            directorFor(stage).play(TutorialStep.DELETE_LIST)
+
+            val pulls = stage.actions
+                .filterIsInstance<TutorialAction.PullFirstList>()
+                .map { it.pixels }
+            val towardsTheEditor = pulls.takeWhile { it > 0f }
+            val towardsTheTear = pulls.dropWhile { it > 0f }
+
+            /**
+             * The stage hands out rows ten wide, so the reaches are exact: a
+             * quarter of the row towards the editor and a little under a third of
+             * it towards the tear, arrived at a sixth at a time.
+             */
+            assertSteps(listOf(0.4333f, 0.8667f, 1.3f, 1.7333f, 2.1667f, 2.6f), towardsTheEditor)
+            assertSteps(listOf(-0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f), towardsTheTear)
+        }
+
+    /**
+     * A scene that cannot open the sheet has nothing left to show, and must not go
+     * on to tear the row off — the reader would be shown the destructive half of
+     * the lesson with the harmless half missing.
+     */
+    @Test
+    fun `should give up the scene and let the row go when the editor refuses`() = runTest {
+        val stage = RecordingStage(TutorialScreen.LISTS)
+        stage.canPerform = { it != TutorialAction.OpenFirstListEditor }
+
+        directorFor(stage).play(TutorialStep.DELETE_LIST)
+
+        assertEquals(
+            listOf("PullFirstList", "OpenFirstListEditor", "LetFirstListGo"),
+            stage.actions.beats()
+        )
+        verify(exactly = 0) { viewModel.advanceStep() }
+    }
+
+    @Test
+    fun `should let the row go rather than leave it held aside when the tear is refused`() =
+        runTest {
+            val stage = RecordingStage(TutorialScreen.LISTS)
+            stage.canPerform = { it != TutorialAction.RequestDeleteFirstList }
+
+            directorFor(stage).play(TutorialStep.DELETE_LIST)
+
+            assertEquals(TutorialAction.LetFirstListGo, stage.actions.last())
+        }
 
     /**
      * The demo tears the row off by dragging across it, so it needs the row's own
@@ -363,10 +421,29 @@ class TutorialDirectorTest {
 
         directorFor(stage).play(TutorialStep.DELETE_LIST)
 
-        assertEquals(listOf(TutorialAction.RequestDeleteFirstList), stage.actions)
+        assertEquals("RequestDeleteFirstList", stage.actions.beats().last { it != "LetFirstListGo" })
         assertEquals("release", overlay.events.last())
         verify(exactly = 0) { viewModel.advanceStep() }
     }
+
+    /**
+     * A pull is a run of steps, not one event — the hand and the paper move a
+     * fraction at a time. What matters to a scene is the beats in order, so a run
+     * of pulls counts as the one beat the reader sees.
+     */
+    private val stepTolerance = 0.001f
+
+    private fun assertSteps(expected: List<Float>, actual: List<Float>) {
+        assertEquals("$actual", expected.size, actual.size)
+        expected.zip(actual).forEach { (want, got) -> assertEquals("$actual", want, got, stepTolerance) }
+    }
+
+    private fun List<TutorialAction>.beats(): List<String> =
+        map { it::class.simpleName.orEmpty() }
+            .fold(mutableListOf<String>()) { beats, name ->
+                if (beats.lastOrNull() != name) beats += name
+                beats
+            }
 
     private class RecordingStage(override val screen: TutorialScreen) : TutorialStage {
 
@@ -453,5 +530,42 @@ class TutorialDirectorTest {
             events.add("banner:${content.listName}")
             yield()
         }
+    }
+}
+
+/**
+ * The hand and the paper are read off one fraction, so a pull that is a third of
+ * the way along has the hand a third of the way across the row and the row a third
+ * of the way aside. They used to be worked out separately, which is how a hand can
+ * arrive somewhere the page has not.
+ */
+class PullStepTest {
+
+    @Test
+    fun `should put the hand and the paper a third of the way through a third of a pull`() {
+        val at = pullStepAt(from = 0.2f, to = 0.8f, reach = -30f, step = 1, steps = 3)
+
+        assertEquals(0.4f, at.handAt, TOLERANCE)
+        assertEquals(-10f, at.pixels, TOLERANCE)
+    }
+
+    @Test
+    fun `should end a pull with the hand at its far end and the paper at full reach`() {
+        val at = pullStepAt(from = 0.2f, to = 0.8f, reach = -30f, step = 3, steps = 3)
+
+        assertEquals(0.8f, at.handAt, TOLERANCE)
+        assertEquals(-30f, at.pixels, TOLERANCE)
+    }
+
+    @Test
+    fun `should carry the hand backwards along the row when the pull goes that way`() {
+        val at = pullStepAt(from = 0.9f, to = 0.1f, reach = -20f, step = 2, steps = 4)
+
+        assertEquals(0.5f, at.handAt, TOLERANCE)
+        assertEquals(-10f, at.pixels, TOLERANCE)
+    }
+
+    private companion object {
+        const val TOLERANCE = 0.0001f
     }
 }

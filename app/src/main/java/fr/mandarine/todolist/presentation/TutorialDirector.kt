@@ -170,18 +170,44 @@ class TutorialDirector(
      * beats, so the tour taught the wrong hand for the one destructive thing in
      * the app.
      */
+    /**
+     * A row is a page and it comes away in the hand, both ways: pulled towards the
+     * end it opens the sheet the list is edited on — which is where a day is put on
+     * a list that has none — and pulled towards the start it tears off. The row is
+     * held aside for real while the hand crosses it, so the reader watches the
+     * corner turn and sees what is underneath rather than watching a hand travel
+     * over a row that never moves.
+     */
     private suspend fun deleteDemoList() {
         delay(1200)
         val row = stage.boundsOf(TutorialAnchor.DeleteListButton) ?: return
+
+        overlay.glideTo(row.alongRow(EDIT_FROM), 500)
+        delay(400)
+        overlay.grip()
+        delay(200)
+        pullAcross(row, EDIT_FROM, EDIT_TO, row.width * EDIT_REACH)
+        delay(300)
+        overlay.release()
+        if (!stage.perform(TutorialAction.OpenFirstListEditor)) {
+            stage.perform(TutorialAction.LetFirstListGo)
+            return
+        }
+        delay(1600)
+        stage.perform(TutorialAction.CloseEditor)
+        delay(700)
+
         overlay.glideTo(row.alongRow(TEAR_FROM), 500)
         delay(400)
         overlay.grip()
         delay(200)
-        overlay.glideTo(row.alongRow(TEAR_TO), 600)
+        pullAcross(row, TEAR_FROM, TEAR_TO, -row.width * TEAR_REACH)
         if (!stage.perform(TutorialAction.RequestDeleteFirstList)) {
+            stage.perform(TutorialAction.LetFirstListGo)
             overlay.release()
             return
         }
+        stage.perform(TutorialAction.LetFirstListGo)
         delay(300)
         overlay.release()
         delay(900)
@@ -190,6 +216,24 @@ class TutorialDirector(
         delay(1200)
 
         tutorialViewModel.advanceStep()
+    }
+
+    /**
+     * The hand and the paper move together. Gliding the hand and then jumping the
+     * row to where it ended up read as two things happening near each other rather
+     * than as one hand dragging one page.
+     */
+    private suspend fun pullAcross(
+        row: TutorialBounds,
+        from: Float,
+        to: Float,
+        reach: Float
+    ) {
+        for (step in 1..PULL_STEPS) {
+            val at = pullStepAt(from, to, reach, step, PULL_STEPS)
+            overlay.glideTo(row.alongRow(at.handAt), PULL_STEP_MILLIS)
+            stage.perform(TutorialAction.PullFirstList(at.pixels))
+        }
     }
 
     private suspend fun tapToggle(
@@ -225,8 +269,26 @@ class TutorialDirector(
     private companion object {
         const val TEAR_FROM = 0.86f
         const val TEAR_TO = 0.18f
+        const val TEAR_REACH = 0.30f
+        const val EDIT_FROM = 0.14f
+        const val EDIT_TO = 0.62f
+        const val EDIT_REACH = 0.26f
+        const val PULL_STEPS = 6
+        const val PULL_STEP_MILLIS = 110L
         const val DEMO_LIST_NAME = "🛒 Groceries"
         const val DEMO_ITEM_FIRST = "🍎 Apples"
         const val DEMO_ITEM_SECOND = "🥖 Bread"
     }
+}
+
+internal class PullStep(val handAt: Float, val pixels: Float)
+
+/**
+ * Where the hand has got to and how far the paper has come with it, a fraction of
+ * the way through a pull. Both are read off the one fraction, which is what makes
+ * the hand and the page move together rather than merely near each other.
+ */
+internal fun pullStepAt(from: Float, to: Float, reach: Float, step: Int, steps: Int): PullStep {
+    val fraction = step.toFloat() / steps
+    return PullStep(handAt = from + (to - from) * fraction, pixels = reach * fraction)
 }
