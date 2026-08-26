@@ -20,12 +20,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -67,6 +69,7 @@ import fr.mandarine.todolist.ui.paper.StickyNotePad
 import fr.mandarine.todolist.ui.paper.StickyNotePutBack
 import fr.mandarine.todolist.ui.paper.UndoSlip
 import fr.mandarine.todolist.ui.paper.headMarginFade
+import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
@@ -352,6 +355,17 @@ fun TodoListsScreen(
         AnimatedVisibility(
             visible = !screenState.addRowExpanded,
             modifier = Modifier
+                .align(Alignment.TopStart)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(CORNER_MARGIN),
+            enter = fadeIn(PaperMotion.rowEnter),
+            exit = fadeOut(PaperMotion.rowExit)
+        ) {
+            Masthead()
+        }
+        AnimatedVisibility(
+            visible = !screenState.addRowExpanded,
+            modifier = Modifier
                 .align(Alignment.TopEnd)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(CORNER_MARGIN),
@@ -470,6 +484,31 @@ fun TodoListsScreen(
             }
         )
     }
+}
+
+/**
+ * The app's name written where a name goes on a real pad: the top of the page, in
+ * the same hand as everything on it, level with the mark that replays the tour and
+ * leaving with that mark when the pen comes out.
+ *
+ * It sits in the strip above the head rule, so it takes no rule away from the
+ * lists. It is one of the few places this app says anything in words rather than
+ * showing it — the page is wordless by default, not by law, and a pad with nothing
+ * written at the top of it is the one page that reads as unfinished rather than
+ * calm.
+ */
+@Composable
+private fun Masthead() {
+    val palette = LocalPaperPalette.current
+    Text(
+        text = handwritten(stringResource(R.string.app_name)),
+        modifier = Modifier
+            .height(PaperDimens.iconButton)
+            .wrapContentHeight(Alignment.CenterVertically)
+            .alpha(REPLAY_ALPHA),
+        style = MaterialTheme.typography.titleMedium,
+        color = palette.inked(InkTone.Margin)
+    )
 }
 
 /**

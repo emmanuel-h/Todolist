@@ -101,11 +101,17 @@ class IconOnlyUiTest {
         composeRule.onNodeWithText(GHOST_HINT).assertIsDisplayed()
     }
 
+    /**
+     * The masthead is the one word the empty page draws, and it is deliberate
+     * ([#43]): a pad with nothing written at the top of it reads as unfinished
+     * rather than calm. Anything else appearing here has to justify itself in this
+     * list first.
+     */
     @Test
-    fun `should not contain any static text in the empty state of lists screen`() {
+    fun `should draw nothing on the empty lists page but its own name`() {
         composeRule.setContent { PaperTheme { EmptyListsScreen() } }
 
-        assertEquals(emptyList<String>(), composeRule.onRoot().fetchSemanticsNode().staticText())
+        assertEquals(listOf(APP_NAME), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     /**
@@ -147,6 +153,7 @@ class IconOnlyUiTest {
         const val BACK_DESCRIPTION = "Navigate up"
         const val REPLAY_DESCRIPTION = "Replay tutorial"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
+        const val APP_NAME = "To do list"
     }
 }
 

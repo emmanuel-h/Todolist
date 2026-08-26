@@ -84,21 +84,21 @@ class TodoListsScreenTest {
             )
         )
 
-        assertEquals(listOf("Groceries", "1", "Old"), texts())
+        assertEquals(listOf("Groceries", "1", "Old", APP_NAME), texts())
     }
 
     @Test
     fun `should not show the divider when every list is still active`() {
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        assertEquals(listOf("Groceries"), texts())
+        assertEquals(listOf("Groceries", APP_NAME), texts())
     }
 
     @Test
     fun `should not show the divider when every list is done`() {
         render(content(done = listOf(summary("1", "Old", allDone = true))))
 
-        assertEquals(listOf("Old"), texts())
+        assertEquals(listOf("Old", APP_NAME), texts())
     }
 
     @Test
@@ -110,8 +110,7 @@ class TodoListsScreenTest {
             )
         )
 
-        val names = texts().filter { it.toIntOrNull() == null }
-        assertEquals(listOf("Groceries", "Old"), names)
+        assertEquals(listOf("Groceries", "Old"), names())
     }
 
     @Test
@@ -119,8 +118,43 @@ class TodoListsScreenTest {
         screenState.previewOrder = listOf("2", "1")
         render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
 
-        val names = texts().filter { it.toIntOrNull() == null }
-        assertEquals(listOf("Weekend", "Groceries"), names)
+        assertEquals(listOf("Weekend", "Groceries"), names())
+    }
+
+    /**
+     * The masthead leaves with the mark that replays the tour: while the pen is out
+     * the page belongs to what is being written on it.
+     */
+    @Test
+    fun `should take the masthead off the page while the add line is being written`() {
+        screenState.addRowExpanded = true
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithText(APP_NAME).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should write the app's name at the top of the page at rest`() {
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithText(APP_NAME).assertIsDisplayed()
+    }
+
+    /**
+     * The name is written in the strip above the head rule, beside the mark that
+     * replays the tour, so it takes no rule away from the lists.
+     */
+    @Test
+    fun `should keep the masthead off the rules the lists are written on`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        val masthead = composeRule.onNodeWithText(APP_NAME).fetchSemanticsNode()
+        val firstRow = composeRule.onNodeWithText("Groceries").fetchSemanticsNode()
+
+        assertTrue(
+            "masthead at ${masthead.boundsInRoot} over row at ${firstRow.boundsInRoot}",
+            masthead.boundsInRoot.bottom <= firstRow.boundsInRoot.top
+        )
     }
 
     @Test
@@ -1083,7 +1117,12 @@ class TodoListsScreenTest {
 
     private fun texts(): List<String> = collectText(composeRule.onRoot().fetchSemanticsNode())
 
-    private fun names(): List<String> = texts().filter { it.toIntOrNull() == null }
+    /**
+     * What is written on the page's rules: the tallies in the margin are numbers
+     * and the masthead is the page's own name, neither of which is a list.
+     */
+    private fun names(): List<String> =
+        texts().filter { it.toIntOrNull() == null }.filterNot { it == APP_NAME }
 
     private fun collectText(node: SemanticsNode): List<String> =
         node.config.getOrNull(SemanticsProperties.Text).orEmpty()
@@ -1101,6 +1140,7 @@ class TodoListsScreenTest {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         const val REPLAY = "Replay tutorial"
         const val ADD_LIST = "Add a list"
+        const val APP_NAME = "To do list"
         const val CREATE_LIST = "Create new list"
         const val DISCARD_LIST = "Discard the list being written"
         const val UNDO = "Undo delete"
