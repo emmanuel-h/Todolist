@@ -201,6 +201,7 @@ fun SwipeRow(
                         uncovered.perform()
                         if (!uncovered.answeredInInk) haptics.drop()
                     },
+                    animated = animated,
                     modifier = Modifier.align(Alignment.TopStart)
                 )
             }
@@ -210,6 +211,7 @@ fun SwipeRow(
                 atStart = false,
                 opened = { (-pulled() / travel).coerceAtLeast(AT_REST) },
                 onPress = { latestDelete.value() },
+                animated = animated,
                 modifier = Modifier.align(Alignment.TopEnd)
             )
         }

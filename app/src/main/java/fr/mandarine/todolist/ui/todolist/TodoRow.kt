@@ -63,7 +63,7 @@ import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 private const val ROW_BODY_LABEL = "rowBody"
 
-private val CORNER_ROOM = 44.dp
+private val CORNER_ROOM = 52.dp
 
 @Composable
 fun TodoRow(
