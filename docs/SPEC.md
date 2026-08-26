@@ -308,10 +308,9 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Completion state and position are preserved
 
 **Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2) · [#42](https://github.com/emmanuel-h/Todolist/issues/42)_
-- **A row is a page and both its bottom corners curl** ([#42](https://github.com/emmanuel-h/Todolist/issues/42)), the way the corner of a note pinned to a wall curls: the tip lifts off the line the row is written on and rolls back into the page, leaving a crescent of the sheet's own back — lit along its free edge, in shade at the crease, throwing a shadow on the writing behind it. Small at rest, unrolling the further the row is pulled. The corner at the end carries the trash, the corner at the start carries what pulling that way uncovers — the pen on a list, the tick on an item — and the mark inks up as the curl opens
-- The curl is seated inside the row's edge by as much as the widest curl will ever need, so neither it nor its shadow is ever clipped
+- **A resting row wears its two marks and an arrow beside each** ([#42](https://github.com/emmanuel-h/Todolist/issues/42)): at the end the trash, at the start what pulling that way uncovers — the pen on a list, the tick on an item — each with a chevron pointing the way the row is pulled to reach it. Pressing a mark does what pulling it home does
+- **Pulled, the row curls at its leading corner.** A resting row is not a sheet — it is writing on a page, and a page has no corner there to curl, which is why a curl drawn on a resting row reads as a mark nobody can place. Pulled, the row *is* a sheet, sliding over the page with an edge of its own: its corner lifts off the line the row is written on and rolls back into the page, leaving a crescent of the sheet's own back — lit along its free edge, in shade at the crease, throwing a shadow on the writing behind it. It opens the further the row is pulled, and the arrow fades out as it does, because by then the reader is already pulling
 
-- Beside each mark is an arrow pointing the way the row is pulled to reach it, fading out as the corner opens — once the reader is pulling, they no longer need telling which way. A curled corner says the paper is loose; it does not say which way to pull it
 
 **A swipe is answered in the direction it was taken, or not at all.** Two separate rules:
 
