@@ -4,27 +4,32 @@
         draws the paper itself. All this theme still has to do is dress the window
         for the frames before the first composition and keep the system bars out of
         the way. See docs/compose-teardown.md.
+
+        The light navigation bar arrived in API 27 and the app opens at 24, so it
+        is added by the -v27 overlay rather than declared here.
     -->
-    <style name="Theme.ToDoList" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Base.Theme.ToDoList" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/paper</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <style name="Theme.ToDoList" parent="Base.Theme.ToDoList" />
 
     <!--
         The launch window is the same sheet of paper the page is drawn on, so the
         splash hands over without a tonal step: one @color/paper ground under both,
         and the sticky note settling onto it as the only thing that moves.
     -->
-    <style name="Theme.ToDoList.Splash" parent="Theme.SplashScreen">
+    <style name="Base.Theme.ToDoList.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/paper</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/avd_sticky_settle</item>
         <item name="windowSplashScreenAnimationDuration">@integer/splash_settle_millis</item>
         <item name="postSplashScreenTheme">@style/Theme.ToDoList</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <style name="Theme.ToDoList.Splash" parent="Base.Theme.ToDoList.Splash" />
 </resources>

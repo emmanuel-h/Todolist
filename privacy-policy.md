@@ -37,12 +37,11 @@ We have no access to these backups. They belong to your Google account and are g
 
 ## 4. Permissions We Request
 
-To Do List requests only the permissions it needs to deliver reminders:
+To Do List requests only the permission it needs to deliver reminders:
 
 - **Notifications** (`POST_NOTIFICATIONS`) — to show you a reminder when a list is due today or scheduled for tomorrow. Reminders are generated entirely on your device from data you entered. Declining this permission disables reminders; every other feature keeps working.
-- **Run at startup** (`RECEIVE_BOOT_COMPLETED`) — to re-schedule your daily reminder after the device restarts, since Android clears pending alarms on reboot.
 
-Neither permission is used to collect or transmit information.
+This permission is not used to collect or transmit information. The app declares no other permission; the daily check is re-scheduled after a restart by Android's own WorkManager, so no run-at-startup permission is needed.
 
 ## 5. Third-Party Services
 

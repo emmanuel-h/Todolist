@@ -7,7 +7,9 @@ A simple Android to-do list app built with Kotlin. Organize your tasks into mult
 - Create and manage multiple to-do lists
 - Add, edit, and delete items within each list
 - Check/uncheck items to track completion
-- Clean, native Android UI following Material Design
+- Give a list a target date (📅) or a due date (⏰) and get a reminder at 08:00
+- Reorder by dragging; delete by swiping, with a few seconds to undo
+- An icon-only interface drawn as ink on ruled paper, in daylight or by lamplight
 
 ## Tech Stack
 
@@ -24,10 +26,18 @@ A simple Android to-do list app built with Kotlin. Organize your tasks into mult
 
 ## Project Structure
 
+The app is entirely Jetpack Compose — there is no `res/layout/` and no View-system
+dependency. The palette, dimensions and motion specs are Kotlin objects in
+`ui/paper/`, not resources.
+
 ```
 app/src/main/
-├── java/fr/mandarine/todolist/   # Kotlin source files
-└── res/                          # Layouts, drawables, strings
+├── java/fr/mandarine/todolist/
+│   ├── domain/       # Pure Kotlin: models, repository interfaces, use cases
+│   ├── data/         # Room + WorkManager implementations
+│   ├── presentation/ # ViewModels and UI state
+│   └── ui/           # Compose screens and the paper/ design system
+└── res/              # Vector icons, strings, a bare window theme
 ```
 
 ## License

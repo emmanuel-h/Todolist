@@ -60,6 +60,14 @@ abstract class TodoDatabase : RoomDatabase() {
                     "todo_database"
                 )
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    /**
+                     * Auto Backup copies the database file and its sidecars
+                     * independently. Under WAL a snapshot can catch a committed
+                     * row that lives only in the -wal half, so the restore is a
+                     * torn one; truncating keeps every commit in the file that
+                     * gets backed up.
+                     */
+                    .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                     .build()
                     .also { instance = it }
             }

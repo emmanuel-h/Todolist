@@ -5,21 +5,23 @@
         dark-themed one and leaves the paper alone rather than force-inverting the
         cream. PaperPalette.night owns every colour past this point.
     -->
-    <style name="Theme.ToDoList" parent="android:Theme.Material.NoActionBar">
+    <style name="Base.Theme.ToDoList" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/paper</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
-    <style name="Theme.ToDoList.Splash" parent="Theme.SplashScreen">
+    <style name="Theme.ToDoList" parent="Base.Theme.ToDoList" />
+
+    <style name="Base.Theme.ToDoList.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/paper</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/avd_sticky_settle</item>
         <item name="windowSplashScreenAnimationDuration">@integer/splash_settle_millis</item>
         <item name="postSplashScreenTheme">@style/Theme.ToDoList</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
+
+    <style name="Theme.ToDoList.Splash" parent="Base.Theme.ToDoList.Splash" />
 </resources>

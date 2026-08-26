@@ -1,0 +1,13 @@
+<resources>
+    <!--
+        android:windowLightNavigationBar arrived in API 27. Everything else about
+        the window is declared on Base.Theme.ToDoList in values/.
+    -->
+    <style name="Theme.ToDoList" parent="Base.Theme.ToDoList">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <style name="Theme.ToDoList.Splash" parent="Base.Theme.ToDoList.Splash">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

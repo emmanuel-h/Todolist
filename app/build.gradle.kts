@@ -84,6 +84,24 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // The whole app dates its rows with java.time, which arrived in API 26.
+        // minSdk is 24, so the library is backported into the dex rather than
+        // taken from the platform.
+        isCoreLibraryDesugaringEnabled = true
+    }
+    androidResources {
+        // Without a generated locale config the French copy is unreachable from
+        // the per-app language picker, and an icon-only app has no settings
+        // screen to offer instead.
+        generateLocaleConfig = true
+    }
+    lint {
+        // NewApi is what caught java.time running under minSdk 24; it stays fatal
+        // so the floor can never silently drop again.
+        abortOnError = true
+        checkReleaseBuilds = true
+        fatal += "NewApi"
+        warningsAsErrors = false
     }
     testOptions {
         unitTests {
@@ -191,6 +209,8 @@ tasks.register<JavaExec>("pitest") {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     testImplementation(platform(libs.androidx.compose.bom))

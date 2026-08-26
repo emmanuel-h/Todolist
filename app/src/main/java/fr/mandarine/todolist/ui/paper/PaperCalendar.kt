@@ -104,7 +104,7 @@ fun PaperCalendar(
     modifier: Modifier = Modifier,
     animated: Boolean = true
 ) {
-    val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val locale = formatLocale
     val pitch = LocalPagePitch.current
     val haptics = rememberPaperHaptics()
     val scope = rememberCoroutineScope()

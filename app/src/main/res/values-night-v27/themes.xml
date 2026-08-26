@@ -1,0 +1,13 @@
+<resources>
+    <!--
+        Night mode outranks the version qualifier, so an API 27 device by lamplight
+        would otherwise fall back to values-night/ and never see the attribute.
+    -->
+    <style name="Theme.ToDoList" parent="Base.Theme.ToDoList">
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <style name="Theme.ToDoList.Splash" parent="Base.Theme.ToDoList.Splash">
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

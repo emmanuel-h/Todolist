@@ -22,6 +22,7 @@ import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.LocalRuledHand
 import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.formatLocale
 import fr.mandarine.todolist.ui.paper.seatOnRule
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
@@ -54,7 +55,7 @@ fun DateJot(
     modifier: Modifier = Modifier,
     onRewrite: ((DateSelection) -> Unit)? = null
 ) {
-    val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val locale = formatLocale
     val formatter = remember(locale, showYear) { jotFormatter(locale, showYear) }
     val jotted = remember(date, formatter) { date.format(formatter) }
     val spokenFormatter = remember(locale) { listDateFormatter(locale, showYear = true) }

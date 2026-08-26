@@ -25,6 +25,7 @@ import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.LocalRuledHand
+import fr.mandarine.todolist.ui.paper.formatLocale
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.circledInInk
 import fr.mandarine.todolist.ui.paper.inked
@@ -55,7 +56,7 @@ fun RowScope.DateMarks(
     dueModifier: Modifier = Modifier
 ) {
     val palette = LocalPaperPalette.current
-    val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val locale = formatLocale
     KindGlyph(
         iconRes = R.drawable.ic_event,
         descriptionRes = R.string.set_target_date,
