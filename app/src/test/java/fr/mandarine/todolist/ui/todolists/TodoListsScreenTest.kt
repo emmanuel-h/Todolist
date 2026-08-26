@@ -776,6 +776,48 @@ class TodoListsScreenTest {
         composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
     }
 
+    /**
+     * The slip that drops carries the name the reader gave the list, not the bare
+     * fact that something somewhere now rings — so whoever raises it has to be able
+     * to say whose reminder it is, whichever surface the day was written on.
+     */
+    @Test
+    fun `should name the list a reminder was written on from the line being written`() {
+        val note = reminderNoteFor(
+            screenState.also { it.addRowText = "Work" },
+            TodoListsState.Empty,
+            DatePickerRequest(DateTarget.AddRow, DateKind.DUE, DATE),
+            DATE
+        )
+
+        assertEquals("Work", note?.listName)
+        assertEquals(DATE, note?.day)
+    }
+
+    @Test
+    fun `should name the list a reminder was written on from a row on the page`() {
+        val note = reminderNoteFor(
+            screenState,
+            content(active = listOf(summary("1", "Groceries"))),
+            DatePickerRequest(DateTarget.Row("1"), DateKind.DUE, DATE),
+            DATE
+        )
+
+        assertEquals("Groceries", note?.listName)
+    }
+
+    @Test
+    fun `should raise nothing for a list that is no longer on the page`() {
+        val note = reminderNoteFor(
+            screenState,
+            TodoListsState.Empty,
+            DatePickerRequest(DateTarget.Row("gone"), DateKind.DUE, DATE),
+            DATE
+        )
+
+        assertNull(note)
+    }
+
     @Test
     fun `should ask for notifications the first time a reminder is written`() {
         render(content(active = listOf(summary("1", "Groceries"))))

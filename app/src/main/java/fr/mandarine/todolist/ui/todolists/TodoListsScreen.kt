@@ -60,6 +60,7 @@ import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
+import fr.mandarine.todolist.ui.paper.ReminderNote
 import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.paper.StickyNotePad
@@ -109,7 +110,7 @@ fun TodoListsScreen(
     onDeleteList: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
     onReplayTutorial: () -> Unit,
-    onDueDateSet: () -> Unit = {}
+    onDueDateSet: (ReminderNote) -> Unit = {}
 ) {
     val content = state as? TodoListsState.Content
     val deletion = screenState.deletion
@@ -401,8 +402,9 @@ fun TodoListsScreen(
             state = rename,
             onNameChange = { screenState.rename = rename.copy(name = it) },
             onKindChange = { kind ->
-                if (writeRenameSelection(screenState, rename.selection.withKind(kind))) {
-                    onDueDateSet()
+                val moved = rename.selection.withKind(kind)
+                if (writeRenameSelection(screenState, moved)) {
+                    onDueDateSet(ReminderNote(rename.name, moved.date))
                 }
             },
             onPickDate = { kind ->
@@ -444,7 +446,9 @@ fun TodoListsScreen(
                     writeListDate(state, listId, written, onRenameList)
                 }
                 screenState.datePickerRequest = null
-                if (owed) onDueDateSet()
+                if (owed) {
+                    reminderNoteFor(screenState, state, request, date)?.let(onDueDateSet)
+                }
             },
             onKindAsked = { kind -> screenState.datePickerRequest = request.copy(kind = kind) },
             onKindChange = { kind ->
@@ -453,7 +457,9 @@ fun TodoListsScreen(
                     writeListDate(state, listId, written, onRenameList)
                 }
                 screenState.datePickerRequest = request.copy(kind = kind)
-                if (owed) onDueDateSet()
+                if (owed) {
+                    reminderNoteFor(screenState, state, request, moved.date)?.let(onDueDateSet)
+                }
             },
             onCleared = {
                 applyDateSelection(screenState, request, DateSelection(request.kind, null)) {
@@ -549,13 +555,13 @@ internal fun padLiesOnPage(windowWidth: Dp, pageWidth: Dp, reach: Dp): Boolean =
 internal fun submitAddRow(
     screenState: TodoListsScreenState,
     onCreateList: (String, LocalDate?, LocalDate?) -> Unit,
-    onReminderWritten: () -> Unit = {}
+    onReminderWritten: (ReminderNote) -> Unit = {}
 ): Boolean {
     val name = screenState.addRowText
     if (name.isBlank()) return false
     val selection = screenState.addRowSelection
     onCreateList(name, selection.targetDate, selection.dueDate)
-    if (selection.date != null) onReminderWritten()
+    if (selection.date != null) onReminderWritten(ReminderNote(name, selection.date))
     screenState.clearAddRow()
     return true
 }
@@ -614,7 +620,25 @@ internal fun writeListDate(
     return reminderDateWritten(DateSelection.of(list.targetDate, list.dueDate), written)
 }
 
-private fun listOnPage(state: TodoListsState, listId: String): TodoList? =
+/**
+ * Whose reminder was just written, so the slip that drops can carry the name the
+ * reader gave it rather than the fact that something somewhere now rings.
+ */
+internal fun reminderNoteFor(
+    screenState: TodoListsScreenState,
+    state: TodoListsState,
+    request: DatePickerRequest,
+    day: LocalDate?
+): ReminderNote? {
+    val name = when (val target = request.target) {
+        DateTarget.AddRow -> screenState.addRowText
+        DateTarget.Rename -> screenState.rename?.name
+        is DateTarget.Row -> listOnPage(state, target.listId)?.name
+    }
+    return name?.takeIf { it.isNotBlank() }?.let { ReminderNote(it, day) }
+}
+
+internal fun listOnPage(state: TodoListsState, listId: String): TodoList? =
     (state as? TodoListsState.Content)
         ?.let { it.activeSummaries + it.doneSummaries }
         ?.firstOrNull { it.list.id == listId }

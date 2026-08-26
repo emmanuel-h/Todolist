@@ -335,6 +335,24 @@ ticking a list faster than the stroke lands every tick rather than only the last
 
 ---
 
+### Reminder slip — _implemented · [#39](https://github.com/emmanuel-h/Todolist/issues/39)_
+
+Writing a day on a list drops a paper slip from the top of the page saying what was
+just written — `🔔 <list name> ⏰ <day>` — which slides in and away on its own. It is
+the same slip, the same wording and the same paper the tutorial ends on, lifted out
+of the overlay (`ui/paper/ReminderSlip.kt`) so both can raise it: the promise the
+tour makes is then kept in the reader's own handwriting.
+
+- It rises on exactly the signal that asks for notification permission —
+  `reminderDateWritten`. So: setting a day raises it, moving a day to the other
+  mark raises it, and rubbing a day out does not. A day written again unchanged
+  does not raise it twice
+- It lives above both pages (`PageStack`), because a day may be written on the page
+  of lists or on a list's own page and the slip is the same either way
+- A day circled on a line not yet committed raises nothing — that reminder does not
+  exist until the list does, and backing out of the line takes it with it. The slip
+  comes with the list
+
 ## Daily notifications — _implemented · [#12](https://github.com/emmanuel-h/Todolist/issues/12)_
 
 Every day at 08:00 the app posts one Android notification per list that qualifies:

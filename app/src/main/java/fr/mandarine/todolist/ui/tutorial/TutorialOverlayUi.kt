@@ -57,6 +57,8 @@ import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.byLamplight
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperSlipCaption
+import fr.mandarine.todolist.ui.paper.ReminderNote
+import fr.mandarine.todolist.ui.paper.reminderSlipText
 import fr.mandarine.todolist.ui.paper.paperSlip
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperType
@@ -317,12 +319,13 @@ internal fun captionStringRes(caption: TutorialCaption): Int = when (caption) {
     TutorialCaption.DUE_DATE -> R.string.date_kind_due_caption
 }
 
+/**
+ * The slip the tour ends on says what a reminder will look like, so it has to be
+ * written by whatever writes the real ones. It was its own sentence here until the
+ * page started raising real slips of its own.
+ */
 internal fun bannerTextFor(content: TutorialBannerContent): String =
-    "🔔 ${content.listName}${bannerDateSuffix(content.dueDate)}"
-
-private fun bannerDateSuffix(dueDate: LocalDate?): String {
-    if (dueDate == null) return ""
-    val locale = Locale.getDefault(Locale.Category.FORMAT)
-    val pattern = DateFormat.getBestDateTimePattern(locale, "dM")
-    return " ⏰ ${dueDate.format(DateTimeFormatter.ofPattern(pattern, locale))}"
-}
+    reminderSlipText(
+        ReminderNote(content.listName, content.dueDate),
+        Locale.getDefault(Locale.Category.FORMAT)
+    )

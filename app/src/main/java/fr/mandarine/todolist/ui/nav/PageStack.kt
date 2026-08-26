@@ -11,7 +11,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -19,7 +23,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -37,6 +43,9 @@ import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
 import fr.mandarine.todolist.presentation.TutorialBounds
 import fr.mandarine.todolist.ui.paper.PaperMotion
+import fr.mandarine.todolist.ui.paper.ReminderNote
+import fr.mandarine.todolist.ui.paper.ReminderSlip
+import fr.mandarine.todolist.ui.paper.rememberReminderNotes
 import fr.mandarine.todolist.ui.todolist.ItemsStage
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
@@ -69,6 +78,17 @@ fun PageStack(
     onReplayTutorial: () -> Unit
 ) {
     val listsState by listsViewModel.state.collectAsStateWithLifecycle()
+    /**
+     * A reminder announces itself from above both pages rather than from either
+     * one: the day may be written on the page of lists or on a list's own page,
+     * and the slip that says so is the same slip either way.
+     */
+    val notes = rememberReminderNotes()
+    val written: (ReminderNote) -> Unit = { note ->
+        notes.raise(note)
+        onDueDateSet()
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
     SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
         NavDisplay(
             backStack = backStack,
@@ -90,7 +110,7 @@ fun PageStack(
                             screenState = listsScreenState,
                             stage = stage,
                             today = today,
-                            onDueDateSet = onDueDateSet,
+                            onDueDateSet = written,
                             onReplayTutorial = onReplayTutorial
                         )
                     }
@@ -105,14 +125,25 @@ fun PageStack(
                             today = today,
                             itemsViewModelFactory = itemsViewModelFactory,
                             aim = aim,
-                            onDueDateSet = onDueDateSet
+                            onDueDateSet = written
                         )
                     }
                 }
             }
         )
     }
+        ReminderSlip(
+            notes = notes,
+            animated = stage.animationsEnabled,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(top = SLIP_MARGIN)
+        )
+    }
 }
+
+private val SLIP_MARGIN = 12.dp
 
 /**
  * The page being opened rises a little as it lands, and the page underneath does not
@@ -165,7 +196,7 @@ private fun ListsPage(
     screenState: TodoListsScreenState,
     stage: NavStage,
     today: LocalDate,
-    onDueDateSet: () -> Unit,
+    onDueDateSet: (ReminderNote) -> Unit,
     onReplayTutorial: () -> Unit
 ) {
     screenState.animationsEnabled = stage.animationsEnabled
@@ -203,7 +234,7 @@ private fun ItemsPage(
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
     aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
-    onDueDateSet: () -> Unit
+    onDueDateSet: (ReminderNote) -> Unit
 ) {
     val viewModel: TodoListViewModel =
         viewModel(factory = remember(listId) { itemsViewModelFactory(listId) })
@@ -253,7 +284,9 @@ private fun ItemsPage(
                 val list = summary?.list ?: return@TodoListScreen
                 listsViewModel.editList(listId, list.name, written.targetDate, written.dueDate)
                 val before = DateSelection.of(list.targetDate, list.dueDate)
-                if (reminderDateWritten(before, written)) onDueDateSet()
+                if (reminderDateWritten(before, written)) {
+                    onDueDateSet(ReminderNote(list.name, written.date))
+                }
             }
         )
     }
