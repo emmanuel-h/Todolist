@@ -340,6 +340,22 @@ class TutorialDirectorTest {
         verify { viewModel.advanceStep() }
     }
 
+    /**
+     * The demo tears the row off by dragging across it, so it needs the row's own
+     * rectangle. A page with no row on it has none to give.
+     */
+    @Test
+    fun `should abandon the delete scene when the row cannot be found`() = runTest {
+        val stage = RecordingStage(TutorialScreen.LISTS)
+        stage.anchorAvailable = { it != TutorialAnchor.DeleteListButton }
+
+        directorFor(stage).play(TutorialStep.DELETE_LIST)
+
+        assertEquals(emptyList<TutorialAction>(), stage.actions)
+        assertEquals(emptyList<String>(), overlay.events)
+        verify(exactly = 0) { viewModel.advanceStep() }
+    }
+
     @Test
     fun `should abort the delete scene when the delete button refuses`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
