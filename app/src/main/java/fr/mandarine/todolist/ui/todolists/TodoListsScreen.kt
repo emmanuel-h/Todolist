@@ -12,13 +12,18 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,6 +50,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
@@ -62,6 +68,7 @@ import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
+import fr.mandarine.todolist.ui.paper.PaperType
 import fr.mandarine.todolist.ui.paper.ReminderNote
 import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SectionSkip
@@ -99,6 +106,7 @@ private const val ACTIVE_TYPE = "active"
 private const val SKIP_TYPE = "skip"
 private const val DONE_TYPE = "done"
 private const val REPLAY_ALPHA = 0.8f
+private const val ONE_LINE = 1
 private val CORNER_MARGIN = 8.dp
 private val DROP_IN_TRAVEL = 16.dp
 
@@ -352,33 +360,43 @@ fun TodoListsScreen(
             }
         }
 
+        /**
+         * The head strip: the page's own name written at the margin the lists are
+         * written at, and the mark that replays the tour opposite it. They share
+         * one rule's worth of height above the head rule so they are level with
+         * each other and clear of the writing, and they leave together when the pen
+         * comes out.
+         */
         AnimatedVisibility(
             visible = !screenState.addRowExpanded,
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(CORNER_MARGIN),
+                .align(Alignment.TopCenter)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                    )
+                )
+                .widthIn(max = PaperDimens.pageWidth)
+                .fillMaxWidth()
+                .height(pitch),
             enter = fadeIn(PaperMotion.rowEnter),
             exit = fadeOut(PaperMotion.rowExit)
         ) {
-            Masthead()
-        }
-        AnimatedVisibility(
-            visible = !screenState.addRowExpanded,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(CORNER_MARGIN),
-            enter = fadeIn(PaperMotion.rowEnter),
-            exit = fadeOut(PaperMotion.rowExit)
-        ) {
-            InkIconButton(
-                painter = painterResource(R.drawable.ic_help),
-                contentDescription = stringResource(R.string.replay_tutorial),
-                onClick = onReplayTutorial,
-                modifier = Modifier.alpha(REPLAY_ALPHA),
-                tint = LocalPaperPalette.current.inked(InkTone.Margin)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = gutter, end = CORNER_MARGIN),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Masthead(Modifier.weight(1f))
+                InkIconButton(
+                    painter = painterResource(R.drawable.ic_help),
+                    contentDescription = stringResource(R.string.replay_tutorial),
+                    onClick = onReplayTutorial,
+                    modifier = Modifier.alpha(REPLAY_ALPHA),
+                    tint = palette.inked(InkTone.Margin)
+                )
+            }
         }
         StickyNotePad(
             onTake = { screenState.openAddRow() },
@@ -498,16 +516,21 @@ fun TodoListsScreen(
  * calm.
  */
 @Composable
-private fun Masthead() {
+private fun Masthead(modifier: Modifier = Modifier) {
     val palette = LocalPaperPalette.current
+    /**
+     * The hands the rows are written in seat their words on the rule beneath them,
+     * which is what a rule is for. The name is not written on a rule — it is
+     * written above the first one — so it takes the hand that sits in the middle of
+     * its own line instead, or the head rule is drawn straight through it.
+     */
     Text(
         text = handwritten(stringResource(R.string.app_name)),
-        modifier = Modifier
-            .height(PaperDimens.iconButton)
-            .wrapContentHeight(Alignment.CenterVertically)
-            .alpha(REPLAY_ALPHA),
-        style = MaterialTheme.typography.titleMedium,
-        color = palette.inked(InkTone.Margin)
+        modifier = modifier.alpha(REPLAY_ALPHA),
+        style = PaperType.field,
+        color = palette.inked(InkTone.Margin),
+        maxLines = ONE_LINE,
+        overflow = TextOverflow.Ellipsis
     )
 }
 

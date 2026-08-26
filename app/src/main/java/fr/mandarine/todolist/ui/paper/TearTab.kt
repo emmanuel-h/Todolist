@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 
+private val TAB_LEAD = 8.dp
 private val TAB_WIDTH = 44.dp
 private val PERFORATION_HEIGHT = 26.dp
 private val PERFORATION_STROKE = 1.5.dp
@@ -43,6 +45,7 @@ fun TearTab(onTear: () -> Unit, contentDescription: String, modifier: Modifier =
     val ink = palette.inked(InkTone.Margin)
     Row(
         modifier = modifier
+            .padding(start = TAB_LEAD)
             .width(TAB_WIDTH)
             .clickable(onClickLabel = contentDescription, role = Role.Button, onClick = onTear)
             .semantics(mergeDescendants = true) { this.contentDescription = contentDescription },
