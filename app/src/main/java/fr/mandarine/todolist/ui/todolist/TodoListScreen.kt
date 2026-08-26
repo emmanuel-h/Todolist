@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.todolist
 
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -133,12 +134,11 @@ fun TodoListScreen(
      * see, so measuring it against a set that still holds a torn-off row made it
      * the wrong length and threw the whole preview away on every frame.
      */
-    val activeItems = orderedBy(
-        content?.activeItems.orEmpty().filterNot { deletion.hides(it.id) },
-        screenState.previewOrder
-    ) { it.id }
+    val publishedItems = content?.activeItems.orEmpty().filterNot { deletion.hides(it.id) }
+    val activeItems = orderedBy(publishedItems, screenState.previewOrder) { it.id }
     val completedItems = content?.completedItems.orEmpty().filterNot { deletion.hides(it.id) }
     val activeIds = activeItems.map { it.id }
+    val publishedIds = publishedItems.map { it.id }
     val showSkip = activeItems.isNotEmpty() && completedItems.isNotEmpty()
     val allDone = activeItems.isEmpty() && completedItems.isNotEmpty()
 
@@ -209,6 +209,8 @@ fun TodoListScreen(
     LaunchedEffect(allIds) {
         deletion.forget(allIds.toSet())
     }
+
+    LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
 
     LaunchedEffect(screenState.hideKeyboardSignal) {
         if (screenState.hideKeyboardSignal > 0) keyboard?.hide()
@@ -397,9 +399,10 @@ private fun LazyItemScope.ActiveRow(
         val destination = position + step
         if (destination in rowIds.indices) {
             {
+                val ordered = rowIds.moved(position, destination)
                 listState.holdPage {
-                    screenState.previewOrder = null
-                    onReorder(rowIds.moved(position, destination))
+                    screenState.stageOrder(ordered)
+                    onReorder(ordered)
                 }
             }
         } else {
@@ -418,7 +421,7 @@ private fun LazyItemScope.ActiveRow(
             onEditDismissed = { screenState.editingItemId = null },
             onDeleteRequested = { onDeleteRequested(item.id) },
             modifier = Modifier
-                .then(if (lifted) Modifier else animatedRow(screenState))
+                .then(animatedRow(screenState, lifted))
                 .liftedSlip(session, lifted, screenState.animationsEnabled)
                 .liftToReorder(
                     listState = listState,
@@ -427,8 +430,12 @@ private fun LazyItemScope.ActiveRow(
                     id = item.id,
                     ids = rowIds,
                     onDrop = { reorder ->
-                        screenState.previewOrder = null
-                        if (reorder != null) onReorder(reorder.orderedIds)
+                        if (reorder == null) {
+                            screenState.previewOrder = null
+                        } else {
+                            screenState.stageOrder(reorder.orderedIds)
+                            onReorder(reorder.orderedIds)
+                        }
                     }
                 )
                 .tutorialAnchor(screenState, TutorialAnchor.ActiveItemRow(position))
@@ -449,17 +456,33 @@ private inline fun LazyListState.holdPage(change: () -> Unit) {
     change()
 }
 
+/**
+ * A lifted row is carried by the finger, not by the list, so the list must not
+ * animate it — but it must not stop tracking it either. Taking the animation off
+ * a row for the length of a drag detached the only node that remembered where
+ * that row had been, so the drop handed the list a row it had no history for and
+ * the list played it in as new. Snapping keeps the row where the finger leaves it
+ * and keeps the page's memory of it intact.
+ */
 @Composable
-private fun LazyItemScope.animatedRow(screenState: TodoListScreenState): Modifier =
-    if (screenState.animationsEnabled) {
-        Modifier.animateItem(
-            fadeInSpec = PaperMotion.rowEnter,
-            placementSpec = PaperMotion.rowPlacement,
-            fadeOutSpec = PaperMotion.rowExit
-        )
-    } else {
-        Modifier.animateItem(fadeInSpec = null, placementSpec = null, fadeOutSpec = null)
-    }
+private fun LazyItemScope.animatedRow(
+    screenState: TodoListScreenState,
+    lifted: Boolean = false
+): Modifier = when {
+    lifted -> Modifier.animateItem(
+        fadeInSpec = snap(),
+        placementSpec = snap(),
+        fadeOutSpec = snap()
+    )
+
+    screenState.animationsEnabled -> Modifier.animateItem(
+        fadeInSpec = PaperMotion.rowEnter,
+        placementSpec = PaperMotion.rowPlacement,
+        fadeOutSpec = PaperMotion.rowExit
+    )
+
+    else -> Modifier.animateItem(fadeInSpec = snap(), placementSpec = snap(), fadeOutSpec = snap())
+}
 
 /**
  * The name of the list, written on the first rule of its own page. It is the same

@@ -36,6 +36,24 @@ class TodoListsScreenStateTest {
     }
 
     @Test
+    fun `should hold the staged order while the page is still handed the old one`() {
+        state.stageOrder(listOf("list-2", "list-1"))
+
+        state.releaseOrder(listOf("list-1", "list-2"))
+
+        assertEquals(listOf("list-2", "list-1"), state.previewOrder)
+    }
+
+    @Test
+    fun `should let the staged order go once the page is handed exactly it`() {
+        state.stageOrder(listOf("list-2", "list-1"))
+
+        state.releaseOrder(listOf("list-2", "list-1"))
+
+        assertNull(state.previewOrder)
+    }
+
+    @Test
     fun `should leave a pending deletion alone when the create row opens`() {
         state.deletion.request("list-1")
 

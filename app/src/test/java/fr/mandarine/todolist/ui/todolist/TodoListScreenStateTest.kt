@@ -19,6 +19,24 @@ class TodoListScreenStateTest {
     }
 
     @Test
+    fun `should hold the staged order while the page is still handed the old one`() {
+        state.stageOrder(listOf("item-2", "item-1"))
+
+        state.releaseOrder(listOf("item-1", "item-2"))
+
+        assertEquals(listOf("item-2", "item-1"), state.previewOrder)
+    }
+
+    @Test
+    fun `should let the staged order go once the page is handed exactly it`() {
+        state.stageOrder(listOf("item-2", "item-1"))
+
+        state.releaseOrder(listOf("item-2", "item-1"))
+
+        assertNull(state.previewOrder)
+    }
+
+    @Test
     fun `should hand back nothing for an anchor that was never recorded`() {
         assertNull(state.boundsOf(TutorialAnchor.SubmitItemButton))
     }

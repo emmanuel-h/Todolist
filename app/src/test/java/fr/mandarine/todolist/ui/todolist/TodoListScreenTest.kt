@@ -3,6 +3,8 @@ package fr.mandarine.todolist.ui.todolist
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
@@ -479,6 +481,55 @@ class TodoListScreenTest {
         assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
     }
 
+    /**
+     * The repository is written to off the main thread, so the read that answers
+     * a drop lands frames later. Until it does, the page is still being handed
+     * the order the rows had before the drag — and rendering that would walk
+     * every row back to where it came from and then forward again.
+     */
+    @Test
+    fun `should hold the dropped order while the repository still answers with the old one`() {
+        val published = renderChanging(
+            content(active = listOf(item("1", "Apples"), item("2", "Bread")))
+        )
+
+        composeRule.runOnIdle { screenState.stageOrder(listOf("2", "1")) }
+        composeRule.waitForIdle()
+
+        assertEquals(listOf("2", "1"), screenState.previewOrder)
+        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+        assertEquals(
+            listOf("Apples", "Bread"),
+            (published.value as TodoListState.Content).activeItems.map { it.title }
+        )
+    }
+
+    @Test
+    fun `should let the dropped order go once the repository answers with it`() {
+        val published = renderChanging(
+            content(active = listOf(item("1", "Apples"), item("2", "Bread")))
+        )
+        composeRule.runOnIdle { screenState.stageOrder(listOf("2", "1")) }
+        composeRule.waitForIdle()
+
+        composeRule.runOnIdle {
+            published.value = content(active = listOf(item("2", "Bread"), item("1", "Apples")))
+        }
+        composeRule.waitForIdle()
+
+        assertNull(screenState.previewOrder)
+        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+    }
+
+    @Test
+    fun `should show an item asked to move where it was moved to before the repository answers`() {
+        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
+
+        perform("Bread", MOVE_UP)
+
+        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+    }
+
     // ── Tearing a row off ─────────────────────────────────────────────────────
 
     @Test
@@ -643,6 +694,12 @@ class TodoListScreenTest {
 
     private fun render(state: TodoListState, summary: TodoListSummary?) {
         composeRule.setContent { PaperTheme { Screen(state, summary) } }
+    }
+
+    private fun renderChanging(initial: TodoListState): MutableState<TodoListState> {
+        val published = mutableStateOf(initial)
+        composeRule.setContent { PaperTheme { Screen(published.value, null) } }
+        return published
     }
 
     @Composable

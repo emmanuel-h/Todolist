@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -114,12 +115,13 @@ fun TodoListsScreen(
      * see, so measuring it against a set that still holds a torn-off row made it
      * the wrong length and threw the whole preview away on every frame.
      */
-    val activeSummaries = orderedBy(
-        content?.activeSummaries.orEmpty().filterNot { deletion.hides(it.list.id) },
-        screenState.previewOrder
-    ) { it.list.id }
+    val publishedSummaries =
+        content?.activeSummaries.orEmpty().filterNot { deletion.hides(it.list.id) }
+    val activeSummaries = orderedBy(publishedSummaries, screenState.previewOrder) { it.list.id }
     val doneSummaries = content?.doneSummaries.orEmpty().filterNot { deletion.hides(it.list.id) }
     val activeIds = activeSummaries.map { it.list.id }
+    val publishedIds = publishedSummaries.map { it.list.id }
+    LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
     val dropInListId = remember(activeIds) { screenState.dropInFor(activeIds) }
     val firstRowId = (activeSummaries.firstOrNull() ?: doneSummaries.firstOrNull())?.list?.id
     val allIds = (content?.activeSummaries.orEmpty() + content?.doneSummaries.orEmpty())
@@ -587,18 +589,16 @@ private fun LazyItemScope.ActiveListRow(
 ) {
     val lifted = session.dragging && session.index == position
     val deletion = screenState.deletion
-    val resting = if (lifted) {
-        Modifier
-    } else {
-        animatedRow(screenState).dropIn(dropIn && screenState.animationsEnabled)
-    }
+    val resting = animatedRow(screenState, lifted)
+        .dropIn(dropIn && screenState.animationsEnabled)
     val move: (Int) -> (() -> Unit)? = { step ->
         val destination = position + step
         if (destination in rowIds.indices) {
             {
+                val ordered = rowIds.moved(position, destination)
                 listState.holdPage {
-                    screenState.previewOrder = null
-                    onReorder(rowIds.moved(position, destination))
+                    screenState.stageOrder(ordered)
+                    onReorder(ordered)
                 }
             }
         } else {
@@ -621,8 +621,12 @@ private fun LazyItemScope.ActiveListRow(
                     id = summary.list.id,
                     ids = rowIds,
                     onDrop = { reorder ->
-                        screenState.previewOrder = null
-                        if (reorder != null) onReorder(reorder.orderedIds)
+                        if (reorder == null) {
+                            screenState.previewOrder = null
+                        } else {
+                            screenState.stageOrder(reorder.orderedIds)
+                            onReorder(reorder.orderedIds)
+                        }
                     }
                 )
                 .then(rowAnchor(screenState, firstRow, TutorialAnchor.FirstListRow))
@@ -658,17 +662,33 @@ private fun rowAnchor(
     Modifier
 }
 
+/**
+ * A lifted row is carried by the finger, not by the list, so the list must not
+ * animate it — but it must not stop tracking it either. Taking the animation off
+ * a row for the length of a drag detached the only node that remembered where
+ * that row had been, so the drop handed the list a row it had no history for and
+ * the list played it in as new. Snapping keeps the row where the finger leaves it
+ * and keeps the page's memory of it intact.
+ */
 @Composable
-private fun LazyItemScope.animatedRow(screenState: TodoListsScreenState): Modifier =
-    if (screenState.animationsEnabled) {
-        Modifier.animateItem(
-            fadeInSpec = PaperMotion.rowEnter,
-            placementSpec = PaperMotion.rowPlacement,
-            fadeOutSpec = PaperMotion.rowExit
-        )
-    } else {
-        Modifier.animateItem(fadeInSpec = null, placementSpec = null, fadeOutSpec = null)
-    }
+private fun LazyItemScope.animatedRow(
+    screenState: TodoListsScreenState,
+    lifted: Boolean = false
+): Modifier = when {
+    lifted -> Modifier.animateItem(
+        fadeInSpec = snap(),
+        placementSpec = snap(),
+        fadeOutSpec = snap()
+    )
+
+    screenState.animationsEnabled -> Modifier.animateItem(
+        fadeInSpec = PaperMotion.rowEnter,
+        placementSpec = PaperMotion.rowPlacement,
+        fadeOutSpec = PaperMotion.rowExit
+    )
+
+    else -> Modifier.animateItem(fadeInSpec = snap(), placementSpec = snap(), fadeOutSpec = snap())
+}
 
 /**
  * The sheet taken off the pad lands as line one and unfolds down from the head

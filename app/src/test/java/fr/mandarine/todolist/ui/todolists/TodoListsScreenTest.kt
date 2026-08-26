@@ -1,6 +1,8 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
@@ -564,6 +566,56 @@ class TodoListsScreenTest {
         assertEquals(listOf(listOf("3", "2")), reordered)
     }
 
+    /**
+     * The repository is written to off the main thread, so the read that answers
+     * a drop lands frames later. Until it does, the page is still being handed
+     * the order the rows had before the drag — and rendering that would walk
+     * every row back to where it came from and then forward again.
+     */
+    @Test
+    fun `should hold the dropped order while the repository still answers with the old one`() {
+        val published = renderChanging(
+            content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend")))
+        )
+
+        composeRule.runOnIdle { screenState.stageOrder(listOf("2", "1")) }
+        composeRule.waitForIdle()
+
+        assertEquals(listOf("2", "1"), screenState.previewOrder)
+        assertEquals(listOf("Weekend", "Groceries"), names())
+        assertEquals(
+            listOf("Groceries", "Weekend"),
+            (published.value as TodoListsState.Content).activeSummaries.map { it.list.name }
+        )
+    }
+
+    @Test
+    fun `should let the dropped order go once the repository answers with it`() {
+        val published = renderChanging(
+            content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend")))
+        )
+        composeRule.runOnIdle { screenState.stageOrder(listOf("2", "1")) }
+        composeRule.waitForIdle()
+
+        composeRule.runOnIdle {
+            published.value =
+                content(active = listOf(summary("2", "Weekend"), summary("1", "Groceries")))
+        }
+        composeRule.waitForIdle()
+
+        assertNull(screenState.previewOrder)
+        assertEquals(listOf("Weekend", "Groceries"), names())
+    }
+
+    @Test
+    fun `should show a list asked to move where it was moved to before the repository answers`() {
+        render(content(active = listOf(summary("1", "Groceries"), summary("2", "Weekend"))))
+
+        perform("Weekend", MOVE_UP)
+
+        assertEquals(listOf("Weekend", "Groceries"), names())
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun verbsOf(text: String): List<CustomAccessibilityAction> =
@@ -781,6 +833,12 @@ class TodoListsScreenTest {
         composeRule.setContent { PaperTheme { Screen(state) } }
     }
 
+    private fun renderChanging(initial: TodoListsState): MutableState<TodoListsState> {
+        val published = mutableStateOf(initial)
+        composeRule.setContent { PaperTheme { Screen(published.value) } }
+        return published
+    }
+
     @Composable
     private fun Screen(state: TodoListsState) {
         TodoListsScreen(
@@ -837,6 +895,8 @@ class TodoListsScreenTest {
         composeRule.onNodeWithContentDescription(UNDO).fetchSemanticsNode().boundsInRoot
 
     private fun texts(): List<String> = collectText(composeRule.onRoot().fetchSemanticsNode())
+
+    private fun names(): List<String> = texts().filter { it.toIntOrNull() == null }
 
     private fun collectText(node: SemanticsNode): List<String> =
         node.config.getOrNull(SemanticsProperties.Text).orEmpty()

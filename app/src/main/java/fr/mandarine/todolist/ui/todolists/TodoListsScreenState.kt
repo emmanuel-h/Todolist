@@ -61,6 +61,22 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
 
     var previewOrder by mutableStateOf<List<String>?>(null)
 
+    /**
+     * The order the reader left the rows in outlives the drag that made it. The
+     * repository is written to on another dispatcher, so between the drop and the
+     * read that answers it the page would be handed the old order once more and
+     * would glide every row back before gliding it forward again — which is what
+     * read as the dropped row arriving from somewhere else entirely. The staged
+     * order is held until the page is handed exactly it, and let go of then.
+     */
+    fun stageOrder(order: List<String>) {
+        previewOrder = order
+    }
+
+    fun releaseOrder(published: List<String>) {
+        if (previewOrder == published) previewOrder = null
+    }
+
     var animationsEnabled by mutableStateOf(true)
 
     private var knownListIds: Set<String> = emptySet()
