@@ -104,6 +104,7 @@ private fun Marginalia(
             kind = DateKind.TARGET,
             showYear = summary.showTargetYear,
             tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
+            struck = summary.isTargetDateElapsed,
             onRewrite = onRewriteDate
         )
     }
@@ -123,6 +124,10 @@ private fun Marginalia(
  * A date the reader set for themselves is marginalia until the day is behind them,
  * and then it is spent like anything else that is done. A due date is the one jot
  * allowed to raise its voice: amber the day it falls, red once it is missed.
+ *
+ * Spent is carried by the strike through the date rather than by this tone alone:
+ * the two greys sit a twentieth of a step apart, which is a distinction only the
+ * code can see.
  */
 internal fun targetTone(elapsed: Boolean): InkTone =
     if (elapsed) InkTone.Crossed else InkTone.Margin

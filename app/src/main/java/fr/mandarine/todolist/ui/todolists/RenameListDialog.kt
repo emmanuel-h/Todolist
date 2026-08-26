@@ -15,6 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import fr.mandarine.todolist.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -101,6 +105,7 @@ private fun NameLine(name: String, onNameChange: (String) -> Unit, onDone: () ->
     val palette = LocalPaperPalette.current
     val hand = LocalRuledHand.current.listLine
     val focusRequester = remember { FocusRequester() }
+    val naming = stringResource(R.string.edit_list)
     var value by remember {
         mutableStateOf(TextFieldValue(name, TextRange(name.length)))
     }
@@ -117,6 +122,7 @@ private fun NameLine(name: String, onNameChange: (String) -> Unit, onDone: () ->
                 modifier = Modifier
                     .fillMaxWidth()
                     .seatOnRule()
+                    .semantics { contentDescription = naming }
                     .focusRequester(focusRequester),
                 textStyle = hand.trimmedToGlyphs().copy(color = palette.inked(InkTone.Words)),
                 singleLine = true,

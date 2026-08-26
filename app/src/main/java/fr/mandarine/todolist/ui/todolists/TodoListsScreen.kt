@@ -38,6 +38,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -245,6 +246,7 @@ fun TodoListsScreen(
                     ) {
                         Column {
                             InkAddLine(
+                                spoken = stringResource(R.string.add_list),
                                 text = screenState.addRowText,
                                 onTextChange = { screenState.addRowText = it },
                                 onCommit = { _ -> submitAddRow(screenState, onCreateList) },
@@ -295,6 +297,11 @@ fun TodoListsScreen(
                     item(key = SKIP_KEY, contentType = SKIP_TYPE) {
                         SectionSkip(
                             completedCount = doneSummaries.size,
+                            spoken = pluralStringResource(
+                                R.plurals.done_lists,
+                                doneSummaries.size,
+                                doneSummaries.size
+                            ),
                             modifier = animatedRow(screenState),
                             animated = screenState.animationsEnabled
                         )

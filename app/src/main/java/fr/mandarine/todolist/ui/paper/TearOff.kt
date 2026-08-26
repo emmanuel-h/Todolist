@@ -149,7 +149,7 @@ fun UndoSlip(
                 .padding(SLIP_MARGIN)
                 .width(SLIP_WIDTH)
                 .height(LocalPagePitch.current)
-                .clickable(interactionSource = press, indication = null, onClick = onUndo)
+                .clickable(interactionSource = press, indication = PaperFocusMark, onClick = onUndo)
                 .semantics(mergeDescendants = true) {
                     liveRegion = LiveRegionMode.Polite
                     contentDescription = spoken

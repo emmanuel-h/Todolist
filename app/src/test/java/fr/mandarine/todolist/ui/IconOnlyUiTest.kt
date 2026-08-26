@@ -37,21 +37,21 @@ class IconOnlyUiTest {
 
     @Test
     fun `should show only numeric count in the section skip without the word Completed`() {
-        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 2) } }
+        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 2, spoken = "2 items done") } }
 
         assertEquals(listOf("2"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
     fun `should show count of one in the section skip when exactly one completed item exists`() {
-        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 1) } }
+        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 1, spoken = "1 item done") } }
 
         assertEquals(listOf("1"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
     fun `should not contain the word Completed in the section skip text`() {
-        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 12) } }
+        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 12, spoken = "12 items done") } }
 
         val labels = composeRule.onRoot().fetchSemanticsNode().staticText().map { it.lowercase() }
 
@@ -68,11 +68,17 @@ class IconOnlyUiTest {
     }
 
     @Test
-    fun `should expose only the back affordance in the empty state of todo list`() {
+    /**
+     * The rule forbids words drawn on the paper, not words spoken about it. The
+     * line every row is written on is named for a screen reader — it draws
+     * nothing but a rule and a ghost ellipsis, so without a name it is the one
+     * affordance on an empty page that cannot be found at all.
+     */
+    fun `should expose only the back affordance and the add line in the empty state of todo list`() {
         composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
 
         assertEquals(
-            listOf(BACK_DESCRIPTION),
+            listOf(ADD_ITEM_DESCRIPTION, BACK_DESCRIPTION),
             composeRule.onRoot().fetchSemanticsNode().contentDescriptions()
         )
     }
@@ -126,6 +132,7 @@ class IconOnlyUiTest {
         const val GHOST_HINT = "…"
         const val LIST_NAME = "Groceries"
         const val ITEM_TITLE = "Apples"
+        const val ADD_ITEM_DESCRIPTION = "Add an item"
         const val BACK_DESCRIPTION = "Navigate up"
         const val REPLAY_DESCRIPTION = "Replay tutorial"
         const val CREATE_LIST_DESCRIPTION = "Create new list"

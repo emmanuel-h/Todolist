@@ -137,16 +137,33 @@ private fun RowScope.WrittenDate(
     modifier: Modifier
 ) {
     val palette = LocalPaperPalette.current
-    val description = stringResource(
+    val date = selection.date
+    /**
+     * The field says the day it is holding, and the verb is what pressing it
+     * does. Naming the field after the verb meant it read the same whether the
+     * list was due tomorrow, due last month, or had no day on it at all.
+     */
+    val pressing = stringResource(
         if (selection.kind == DateKind.TARGET) R.string.set_target_date else R.string.set_due_date
     )
-    val date = selection.date
+    val spoken = if (date == null) {
+        pressing
+    } else {
+        stringResource(
+            if (selection.kind == DateKind.TARGET) {
+                R.string.target_date_description
+            } else {
+                R.string.due_date_description
+            },
+            formatListDate(date, showYear = true, locale = locale)
+        )
+    }
     Box(
         modifier = modifier
             .align(Alignment.Bottom)
             .height(LocalPagePitch.current)
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = description }
+            .clickable(onClickLabel = pressing, onClick = onClick)
+            .semantics(mergeDescendants = true) { contentDescription = spoken }
             .padding(start = DATE_GAP)
     ) {
         Text(

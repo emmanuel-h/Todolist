@@ -213,7 +213,7 @@ fun StickyNotePad(
                     }
                     .clickable(
                         interactionSource = interactionSource,
-                        indication = null,
+                        indication = PaperFocusMark,
                         role = Role.Button,
                         onClick = onTake
                     ),

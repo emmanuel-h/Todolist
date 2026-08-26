@@ -101,7 +101,7 @@ fun InkRing(
             .toggleable(
                 value = checked,
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = PaperFocusMark,
                 role = Role.Checkbox,
                 onValueChange = { onToggle() }
             )

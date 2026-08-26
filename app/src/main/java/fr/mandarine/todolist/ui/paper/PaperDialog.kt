@@ -99,7 +99,7 @@ fun PaperDialog(
                     .matchParentSize()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
+                        indication = PaperFocusMark,
                         onClick = leave
                     )
             )

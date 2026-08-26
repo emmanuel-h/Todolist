@@ -256,7 +256,7 @@ class TodoListScreenTest {
     fun `should carry nothing on an active row but its ring`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        assertEquals(listOf(MARK_COMPLETED, BACK), descriptions())
+        assertEquals(listOf(MARK_COMPLETED, ADD_ITEM, BACK), descriptions())
     }
 
     @Test
@@ -414,10 +414,14 @@ class TodoListScreenTest {
     }
 
     @Test
+    /**
+     * The add line is named but carries no send glyph: the keyboard's own Done
+     * commits it. A name is not an affordance drawn on the paper.
+     */
     fun `should carry no submit affordance on the add line`() {
         render(TodoListState.Empty)
 
-        assertEquals(listOf(BACK), descriptions())
+        assertEquals(listOf(ADD_ITEM, BACK), descriptions())
     }
 
     @Test
@@ -727,6 +731,7 @@ class TodoListScreenTest {
         val TODAY: LocalDate = LocalDate.of(2026, 1, 1)
         const val LIST_ID = "list-1"
         const val GHOST_HINT = "…"
+        const val ADD_ITEM = "Add an item"
         const val BACK = "Navigate up"
         const val MARK_COMPLETED = "Mark item as completed"
         const val MARK_INCOMPLETE = "Mark item as incomplete"

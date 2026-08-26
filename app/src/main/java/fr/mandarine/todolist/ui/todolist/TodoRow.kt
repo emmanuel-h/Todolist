@@ -23,6 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import fr.mandarine.todolist.ui.paper.PaperFocusMark
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -183,7 +186,8 @@ private fun RowTitle(
             .penStrike(strike, ink)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = PaperFocusMark,
+                onClickLabel = stringResource(R.string.item_edit),
                 onClick = onEditRequested
             )
             .spokenVerbs(verbs),
@@ -206,6 +210,7 @@ internal fun RowTitleEditor(
     }
     var everFocused by remember { mutableStateOf(false) }
     val palette = LocalPaperPalette.current
+    val editing = stringResource(R.string.item_edit)
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -216,6 +221,7 @@ internal fun RowTitleEditor(
             modifier = Modifier
                 .fillMaxWidth()
                 .seatOnRule()
+                .semantics { contentDescription = editing }
                 .focusRequester(focusRequester)
                 .onFocusChanged { focusState ->
                     if (focusState.isFocused) {

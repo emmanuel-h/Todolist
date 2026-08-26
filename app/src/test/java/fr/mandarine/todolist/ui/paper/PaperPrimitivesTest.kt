@@ -161,6 +161,7 @@ class PaperPrimitivesTest {
                     armed = false,
                     onPenUp = { penUp = true },
                     onPenDown = {},
+                    spoken = "Add an item",
                     modifier = Modifier.testTag("add-line")
                 )
             }

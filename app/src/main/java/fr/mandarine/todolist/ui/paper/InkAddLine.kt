@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -37,8 +39,15 @@ import fr.mandarine.todolist.R
 import kotlinx.coroutines.delay
 
 private const val HINT_INK = 1f
-private const val HINT_BREATH_IN = 0.35f
-private const val HINT_BREATH_OUT = 0.55f
+
+/**
+ * The breath moves the hint without moving it out of reach: the low end used to
+ * put pencil over paper at 1.6:1, and the rule spends most of its cycle down
+ * there. It now breathes across the top of the range, where the difference still
+ * reads as movement and the hint stays legible the whole way.
+ */
+private const val HINT_BREATH_IN = 0.85f
+private const val HINT_BREATH_OUT = 1f
 private const val BREATH_LABEL = "hintBreath"
 private const val BREATH_ALPHA_LABEL = "hintAlpha"
 private const val PEN_SETTLE_MILLIS = 250L
@@ -58,6 +67,7 @@ fun InkAddLine(
     armed: Boolean,
     onPenUp: () -> Unit,
     onPenDown: () -> Unit,
+    spoken: String,
     modifier: Modifier = Modifier,
     fieldModifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
@@ -86,6 +96,7 @@ fun InkAddLine(
                 modifier = fieldModifier
                     .fillMaxWidth()
                     .seatOnRule()
+                    .semantics { contentDescription = spoken }
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {

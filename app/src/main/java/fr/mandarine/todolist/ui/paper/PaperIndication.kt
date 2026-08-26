@@ -29,19 +29,39 @@ private const val PENCIL_UNDERLINE_ALPHA = 0.65f
 private const val PENCIL_UNDERLINE_RULES = 2f
 private const val NO_WASH = 0f
 private const val PAPER_INDICATION_HASH = 0x9A9E5
+private const val PAPER_FOCUS_HASH = 0x9A9E6
 
 object PaperIndication : IndicationNodeFactory {
 
     override fun create(interactionSource: InteractionSource): DelegatableNode =
-        PressWashNode(interactionSource)
+        PressWashNode(interactionSource, washes = true)
 
     override fun equals(other: Any?): Boolean = other === PaperIndication
 
     override fun hashCode(): Int = PAPER_INDICATION_HASH
 }
 
-private class PressWashNode(private val interactionSource: InteractionSource) :
-    Modifier.Node(), DrawModifierNode, CompositionLocalConsumerModifierNode {
+/**
+ * The pencil underline without the press wash, for a control that already draws
+ * its own press — a ring that fills, a note that peels, a glyph that presses into
+ * the paper. Those all used to opt out of indication entirely, which took the
+ * focus mark with it and left a keyboard or switch reaching them with nothing on
+ * the page to say where it had got to.
+ */
+object PaperFocusMark : IndicationNodeFactory {
+
+    override fun create(interactionSource: InteractionSource): DelegatableNode =
+        PressWashNode(interactionSource, washes = false)
+
+    override fun equals(other: Any?): Boolean = other === PaperFocusMark
+
+    override fun hashCode(): Int = PAPER_FOCUS_HASH
+}
+
+private class PressWashNode(
+    private val interactionSource: InteractionSource,
+    private val washes: Boolean
+) : Modifier.Node(), DrawModifierNode, CompositionLocalConsumerModifierNode {
 
     private val wash = Animatable(NO_WASH)
     private var focused by mutableStateOf(false)
@@ -70,7 +90,7 @@ private class PressWashNode(private val interactionSource: InteractionSource) :
         drawContent()
         val palette = currentValueOf(LocalPaperPalette)
         val pressed = wash.value
-        if (pressed > NO_WASH) {
+        if (washes && pressed > NO_WASH) {
             drawRect(palette.ink.copy(alpha = PRESS_WASH_ALPHA * pressed))
         }
         if (focused && currentValueOf(LocalInputModeManager).inputMode == InputMode.Keyboard) {

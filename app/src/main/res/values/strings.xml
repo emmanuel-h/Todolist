@@ -15,11 +15,17 @@
         <item quantity="one">%d item left</item>
         <item quantity="other">%d items left</item>
     </plurals>
+    <plurals name="done_lists">
+        <item quantity="one">%d list done</item>
+        <item quantity="other">%d lists done</item>
+    </plurals>
     <plurals name="done_items">
         <item quantity="one">%d item done</item>
         <item quantity="other">%d items done</item>
     </plurals>
     <string name="add_list_fab_description">Create new list</string>
+    <string name="add_list">Add a list</string>
+    <string name="add_item">Add an item</string>
     <string name="item_edit">Edit item</string>
     <string name="item_delete">Delete item</string>
     <string name="move_up">Move up</string>

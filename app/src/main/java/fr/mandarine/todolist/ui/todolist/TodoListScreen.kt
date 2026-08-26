@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -32,10 +33,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import fr.mandarine.todolist.ui.paper.PaperFocusMark
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
@@ -74,6 +77,7 @@ import fr.mandarine.todolist.ui.paper.rememberPaperHaptics
 import fr.mandarine.todolist.ui.paper.rememberPenStrike
 import fr.mandarine.todolist.ui.paper.ruledPage
 import fr.mandarine.todolist.ui.paper.seatOnRule
+import fr.mandarine.todolist.ui.paper.pitchHeight
 import fr.mandarine.todolist.ui.paper.settleOnRule
 import fr.mandarine.todolist.ui.reorder.AutoScrollWhileDragging
 import fr.mandarine.todolist.ui.reorder.DragSession
@@ -282,6 +286,7 @@ fun TodoListScreen(
                 }
                 item(key = INLINE_ADD_KEY, contentType = INLINE_ADD_TYPE) {
                     InkAddLine(
+                        spoken = stringResource(R.string.add_item),
                         text = screenState.addRowText,
                         onTextChange = { screenState.addRowText = it },
                         onCommit = { title ->
@@ -303,6 +308,11 @@ fun TodoListScreen(
                     item(key = SKIP_KEY, contentType = SKIP_TYPE) {
                         SectionSkip(
                             completedCount = completedItems.size,
+                            spoken = pluralStringResource(
+                                R.plurals.done_items,
+                                completedItems.size,
+                                completedItems.size
+                            ),
                             modifier = animatedRow(screenState),
                             animated = screenState.animationsEnabled
                         )
@@ -474,10 +484,16 @@ private fun HeadLine(
         return
     }
     val style = MaterialTheme.typography.titleLarge
+    /**
+     * The head rule grows in whole pitches the way every other row does. Pinned to
+     * one, a name long enough to wrap had its second line cut off with nothing to
+     * say so — and the name is the only thing identifying the open page.
+     */
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(pitch)
+            .pitchHeight(pitch)
+            .heightIn(min = pitch)
             .padding(
                 start = LocalPaperGutter.current + PaperDimens.iconButton,
                 end = PaperDimens.rowEndPadding
@@ -527,7 +543,7 @@ private fun HeadName(
             .travellingName(summary.list.id)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = PaperFocusMark,
                 onClickLabel = stringResource(R.string.edit_list),
                 onClick = onRenameRequested
             ),

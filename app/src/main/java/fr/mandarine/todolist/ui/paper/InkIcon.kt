@@ -82,7 +82,7 @@ fun InkIconButton(
             .height(if (onRule) LocalPagePitch.current else PaperDimens.iconButton)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = PaperFocusMark,
                 enabled = enabled,
                 role = Role.Button,
                 onClick = onClick

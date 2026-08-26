@@ -16,11 +16,17 @@
         <item quantity="one">%d tâche restante</item>
         <item quantity="other">%d tâches restantes</item>
     </plurals>
+    <plurals name="done_lists">
+        <item quantity="one">%d liste terminée</item>
+        <item quantity="other">%d listes terminées</item>
+    </plurals>
     <plurals name="done_items">
         <item quantity="one">%d tâche terminée</item>
         <item quantity="other">%d tâches terminées</item>
     </plurals>
     <string name="add_list_fab_description">Créer une nouvelle liste</string>
+    <string name="add_list">Ajouter une liste</string>
+    <string name="add_item">Ajouter une tâche</string>
     <string name="item_edit">Modifier la tâche</string>
     <string name="item_delete">Supprimer la tâche</string>
     <string name="move_up">Déplacer vers le haut</string>

@@ -164,11 +164,15 @@ class TodoListsScreenTest {
     }
 
     @Test
+    /**
+     * The line being written is named but carries no glyph of its own: the
+     * keyboard's own Done commits it. A name is not a glyph on the paper.
+     */
     fun `should carry no glyph of its own on the add line`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        assertEquals(emptyList<String>(), descriptions())
+        assertEquals(listOf(ADD_LIST), descriptions())
     }
 
     @Test
@@ -828,6 +832,7 @@ class TodoListsScreenTest {
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         const val REPLAY = "Replay tutorial"
+        const val ADD_LIST = "Add a list"
         const val CREATE_LIST = "Create new list"
         const val UNDO = "Undo delete"
         const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L

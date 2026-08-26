@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.InkIcon
@@ -53,6 +54,7 @@ fun DateJot(
     showYear: Boolean,
     tint: Color,
     modifier: Modifier = Modifier,
+    struck: Boolean = false,
     onRewrite: ((DateSelection) -> Unit)? = null
 ) {
     val locale = formatLocale
@@ -105,6 +107,7 @@ fun DateJot(
             modifier = Modifier.seatOnRule(),
             style = LocalRuledHand.current.margin,
             color = tint,
+            textDecoration = if (struck) TextDecoration.LineThrough else null,
             softWrap = false,
             maxLines = ONE_LINE
         )

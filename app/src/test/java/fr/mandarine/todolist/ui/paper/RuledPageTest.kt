@@ -205,7 +205,7 @@ class RuledPageTest {
     @Test
     fun `should skip exactly one line where the completed section starts`() {
         composeRule.setContent {
-            PaperTheme { SectionSkip(completedCount = 3, modifier = Modifier.testTag(SKIP)) }
+            PaperTheme { SectionSkip(completedCount = 3, spoken = "3 done", modifier = Modifier.testTag(SKIP)) }
         }
 
         composeRule.onNodeWithTag(SKIP).assertHeightIsEqualTo(56.dp)
