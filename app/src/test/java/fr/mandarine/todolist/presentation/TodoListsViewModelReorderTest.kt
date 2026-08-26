@@ -42,24 +42,24 @@ class TodoListsViewModelReorderTest {
     }
 
     @Test
-    fun `should delegate reorderLists to use case with fromIndex and toIndex`() {
-        viewModel.reorderLists(0, 2)
+    fun `should hand the named order to the use case`() {
+        viewModel.reorderLists(listOf("a", "b", "c"))
 
-        verify { reorderTodoListsUseCase(0, 2) }
+        verify { reorderTodoListsUseCase(listOf("a", "b", "c")) }
     }
 
     @Test
-    fun `should delegate reorderLists to use case with another pair of indices`() {
-        viewModel.reorderLists(1, 3)
+    fun `should hand a different named order to the use case`() {
+        viewModel.reorderLists(listOf("c", "a", "b"))
 
-        verify { reorderTodoListsUseCase(1, 3) }
+        verify { reorderTodoListsUseCase(listOf("c", "a", "b")) }
     }
 
     @Test
-    fun `should delegate reorderLists when moving upward`() {
-        viewModel.reorderLists(2, 0)
+    fun `should hand an order naming a single list to the use case`() {
+        viewModel.reorderLists(listOf("only"))
 
-        verify { reorderTodoListsUseCase(2, 0) }
+        verify { reorderTodoListsUseCase(listOf("only")) }
     }
 
     @Test
@@ -70,7 +70,7 @@ class TodoListsViewModelReorderTest {
         val summary2 = TodoListSummary(list2, allDone = false)
         every { getTodoListsWithStatusUseCase() } returns listOf(summary1, summary2)
 
-        viewModel.reorderLists(1, 0)
+        viewModel.reorderLists(listOf("2", "1"))
 
         val content = currentState() as TodoListsState.Content
         assertEquals(listOf(summary1, summary2), content.activeSummaries)

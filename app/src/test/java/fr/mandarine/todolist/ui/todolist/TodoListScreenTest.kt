@@ -69,7 +69,7 @@ class TodoListScreenTest {
     private val deleted = mutableListOf<String>()
     private val edited = mutableListOf<Pair<String, String>>()
     private val submitted = mutableListOf<String>()
-    private val reordered = mutableListOf<Pair<Int, Int>>()
+    private val reordered = mutableListOf<List<String>>()
     private val renamed = mutableListOf<String>()
     private val datesWritten = mutableListOf<DateSelection>()
     private var backPressed = 0
@@ -579,7 +579,7 @@ class TodoListScreenTest {
 
         perform("Bread", MOVE_UP)
 
-        assertEquals(listOf(1 to 0), reordered)
+        assertEquals(listOf(listOf("2", "1")), reordered)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -638,7 +638,7 @@ class TodoListScreenTest {
             onEdit = { id, title -> edited += id to title },
             onDelete = { deleted += it },
             onSubmitInline = { submitted += it },
-            onReorder = { from, to -> reordered += from to to },
+            onReorder = { orderedIds -> reordered += orderedIds },
             onRenameList = { renamed += it },
             onWriteDate = { datesWritten += it }
         )

@@ -1,6 +1,5 @@
 package fr.mandarine.todolist.domain
 
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertThrows
@@ -10,88 +9,51 @@ import org.junit.Test
 class ReorderTodoListsUseCaseTest {
 
     private lateinit var repository: TodoListRepository
-    private lateinit var getTodoListsWithStatusUseCase: GetTodoListsWithStatusUseCase
     private lateinit var useCase: ReorderTodoListsUseCase
 
     @Before
     fun setUp() {
         repository = mockk(relaxed = true)
-        getTodoListsWithStatusUseCase = mockk()
-        useCase = ReorderTodoListsUseCase(repository, getTodoListsWithStatusUseCase)
-    }
-
-    private fun summary(id: String, allDone: Boolean = false) =
-        TodoListSummary(TodoList(id, "List $id"), allDone)
-
-    @Test
-    fun `should reorder with unchanged indices when all lists are active`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(summary("a"), summary("b"), summary("c"))
-
-        useCase(0, 2)
-
-        verify { repository.reorder(0, 2) }
+        useCase = ReorderTodoListsUseCase(repository)
     }
 
     @Test
-    fun `should reorder upward with unchanged indices when all lists are active`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(summary("a"), summary("b"), summary("c"))
+    fun `should hand the named order to the repository`() {
+        useCase(listOf("a", "b", "c"))
 
-        useCase(2, 0)
-
-        verify { repository.reorder(2, 0) }
+        verify { repository.reorder(listOf("a", "b", "c")) }
     }
 
     @Test
-    fun `should map active indices to global indices when a done list precedes active lists`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(
-            summary("done", allDone = true), summary("a"), summary("b")
-        )
+    fun `should hand a reordered set of names through unchanged`() {
+        useCase(listOf("c", "a", "b"))
 
-        useCase(0, 1)
-
-        verify { repository.reorder(1, 2) }
+        verify { repository.reorder(listOf("c", "a", "b")) }
     }
 
     @Test
-    fun `should map active indices to global indices when a done list sits between active lists`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(
-            summary("a"), summary("done", allDone = true), summary("b")
-        )
+    fun `should carry an order naming a single list`() {
+        useCase(listOf("only"))
 
-        useCase(1, 0)
-
-        verify { repository.reorder(2, 0) }
+        verify { repository.reorder(listOf("only")) }
     }
 
     @Test
-    fun `should throw IllegalArgumentException when fromIndex points past the active lists`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(
-            summary("a"), summary("done", allDone = true)
-        )
+    fun `should carry an order naming nothing`() {
+        useCase(emptyList())
 
-        assertThrows(IllegalArgumentException::class.java) { useCase(1, 0) }
+        verify { repository.reorder(emptyList()) }
     }
 
     @Test
-    fun `should throw IllegalArgumentException when toIndex points past the active lists`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(summary("a"), summary("b"))
-
-        assertThrows(IllegalArgumentException::class.java) { useCase(0, 2) }
+    fun `should throw IllegalArgumentException when the same list is named twice`() {
+        assertThrows(IllegalArgumentException::class.java) { useCase(listOf("a", "b", "a")) }
     }
 
     @Test
-    fun `should not reorder when fromIndex is negative`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(summary("a"))
+    fun `should not reach the repository when the same list is named twice`() {
+        runCatching { useCase(listOf("a", "a")) }
 
-        runCatching { useCase(-1, 0) }
-
-        verify(exactly = 0) { repository.reorder(-1, 0) }
-    }
-
-    @Test
-    fun `should throw IllegalArgumentException when toIndex is negative`() {
-        every { getTodoListsWithStatusUseCase() } returns listOf(summary("a"), summary("b"))
-
-        assertThrows(IllegalArgumentException::class.java) { useCase(0, -1) }
+        verify(exactly = 0) { repository.reorder(listOf("a", "a")) }
     }
 }

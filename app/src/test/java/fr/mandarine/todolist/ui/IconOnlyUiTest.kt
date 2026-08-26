@@ -146,7 +146,7 @@ private fun EmptyItemsScreen() {
         onEdit = { _, _ -> },
         onDelete = {},
         onSubmitInline = {},
-        onReorder = { _, _ -> }
+        onReorder = {}
     )
 }
 
@@ -162,7 +162,7 @@ private fun OneItemScreen() {
         onEdit = { _, _ -> },
         onDelete = {},
         onSubmitInline = {},
-        onReorder = { _, _ -> }
+        onReorder = {}
     )
 }
 
@@ -176,7 +176,7 @@ private fun EmptyListsScreen() {
         onCreateList = { _, _, _ -> },
         onRenameList = { _, _, _, _ -> },
         onDeleteList = {},
-        onReorder = { _, _ -> },
+        onReorder = {},
         onReplayTutorial = {}
     )
 }

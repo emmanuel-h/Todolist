@@ -88,8 +88,16 @@ class ItemsStage(
     }
 
     private fun commitReorder(from: Int, to: Int): Boolean {
+        val staged = screenState.previewOrder
+        val ordered = if (staged != null) {
+            staged
+        } else {
+            val ids = activeItems().map { it.id }
+            if (from !in ids.indices || to !in ids.indices) return false
+            ids.moved(from, to)
+        }
         screenState.previewOrder = null
-        viewModel.reorderTodos(from, to)
+        viewModel.reorderTodos(ordered)
         return true
     }
 

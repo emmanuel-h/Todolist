@@ -46,15 +46,24 @@ class RoomTodoRepository(
         dao.deleteAllByListId(listId)
     }
 
-    override fun reorder(listId: String, fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
-        val activeItems = dao.getAllByListId(listId)
+    /**
+     * The page names the rows it is showing, in the order it is showing them, and
+     * nothing else. Those rows are laid back into the slots they already occupy
+     * between them, so an item the page is not showing — one held behind an undo
+     * slip — keeps the place it had rather than being renumbered around a row
+     * that was never on screen. Completed items are named by nobody and are never
+     * touched.
+     */
+    override fun reorder(listId: String, orderedActiveIds: List<String>) {
+        if (orderedActiveIds.isEmpty()) return
+        val active = dao.getAllByListId(listId)
             .filter { !it.completed }
             .sortedBy { it.position }
-            .toMutableList()
-        if (activeItems.isEmpty()) return
-        val item = activeItems.removeAt(fromIndex)
-        activeItems.add(toIndex, item)
-        dao.updatePositions(activeItems.map { it.id })
+        val named = orderedActiveIds.toSet()
+        val slots = active.withIndex().filter { it.value.id in named }.map { it.index }
+        if (slots.size != orderedActiveIds.size) return
+        val result = active.map { it.id }.toMutableList()
+        slots.forEachIndexed { slot, at -> result[at] = orderedActiveIds[slot] }
+        dao.updatePositions(result)
     }
 }

@@ -185,9 +185,9 @@ private fun ListsPage(
         },
         onDeleteList = { listId -> viewModel.deleteList(listId) },
         onDueDateSet = onDueDateSet,
-        onReorder = { from, to ->
+        onReorder = { orderedActiveIds ->
             screenState.previewOrder = null
-            viewModel.reorderLists(from, to)
+            viewModel.reorderLists(orderedActiveIds)
         },
         onReplayTutorial = onReplayTutorial
     )
@@ -238,9 +238,9 @@ private fun ItemsPage(
             onEdit = { todoId, newTitle -> viewModel.editTodo(todoId, newTitle) },
             onDelete = { todoId -> viewModel.deleteTodo(todoId) },
             onSubmitInline = { title -> viewModel.submitInlineInput(title) },
-            onReorder = { from, to ->
+            onReorder = { orderedActiveIds ->
                 screenState.previewOrder = null
-                viewModel.reorderTodos(from, to)
+                viewModel.reorderTodos(orderedActiveIds)
             },
             onRenameList = { name ->
                 val list = summary?.list ?: return@TodoListScreen

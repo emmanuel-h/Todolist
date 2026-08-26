@@ -39,8 +39,8 @@ class NonShiftingTodoListRepository(
         page.update(todoListId, name, targetDate, dueDate)
     }
 
-    override fun reorder(fromIndex: Int, toIndex: Int) {
-        page.reorder(fromIndex, toIndex)
+    override fun reorder(orderedActiveIds: List<String>) {
+        page.reorder(orderedActiveIds)
     }
 
     private fun aboveEveryRow(): Int =

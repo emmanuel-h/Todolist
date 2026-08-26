@@ -210,7 +210,8 @@ private fun edgeScrollDelta(
     edgeScroll: EdgeScroll
 ): Float {
     val info = listState.layoutInfo
-    val dragged = info.visibleItemsInfo.firstOrNull { it.index == session.index } ?: return 0f
+    val draggedKey = session.draggedId ?: return 0f
+    val dragged = info.visibleItemsInfo.firstOrNull { it.key == draggedKey } ?: return 0f
     val top = dragged.offset - info.viewportStartOffset + session.offset
     return autoScrollDelta(
         rowTop = top,

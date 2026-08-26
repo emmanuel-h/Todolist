@@ -8,5 +8,5 @@ interface TodoListRepository {
     fun addAtTop(todoList: TodoList)
     fun delete(todoListId: String)
     fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?)
-    fun reorder(fromIndex: Int, toIndex: Int)
+    fun reorder(orderedActiveIds: List<String>)
 }

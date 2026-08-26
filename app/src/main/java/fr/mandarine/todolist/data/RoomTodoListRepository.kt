@@ -32,12 +32,21 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
         dao.update(todoListId, name, targetDate?.toEpochDay(), dueDate?.toEpochDay())
     }
 
-    override fun reorder(fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
-        val sorted = dao.getAll().sortedBy { it.position }.toMutableList()
-        if (sorted.isEmpty()) return
-        val item = sorted.removeAt(fromIndex)
-        sorted.add(toIndex, item)
-        dao.updatePositions(sorted.map { it.id })
+    /**
+     * The page names the rows it is showing, in the order it is showing them, and
+     * nothing else. Those rows are laid back into the slots they already occupy
+     * between them, so a list the page is not showing — one finished, or one held
+     * behind an undo slip — keeps the place it had rather than being renumbered
+     * around a row that was never on screen.
+     */
+    override fun reorder(orderedActiveIds: List<String>) {
+        if (orderedActiveIds.isEmpty()) return
+        val sorted = dao.getAll().sortedBy { it.position }
+        val named = orderedActiveIds.toSet()
+        val slots = sorted.withIndex().filter { it.value.id in named }.map { it.index }
+        if (slots.size != orderedActiveIds.size) return
+        val result = sorted.map { it.id }.toMutableList()
+        slots.forEachIndexed { slot, at -> result[at] = orderedActiveIds[slot] }
+        dao.updatePositions(result)
     }
 }

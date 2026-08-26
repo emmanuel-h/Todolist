@@ -11,7 +11,17 @@ import kotlin.math.sign
 
 data class DragPosition(val index: Int, val offset: Float)
 
-data class Reorder(val from: Int, val to: Int)
+/**
+ * Where the row started, where it landed, and — the only one of the three the
+ * repository is allowed to act on — the rows of the section in the order the
+ * reader left them.
+ *
+ * The indices describe a section the page has already filtered, and the page
+ * hides a row for the whole length of an undo slip. Handing those indices down
+ * meant the repository resolved them against a set that still held the hidden
+ * row and moved a different list. The names cannot be misread that way.
+ */
+data class Reorder(val from: Int, val to: Int, val orderedIds: List<String>)
 
 const val NO_DRAG_INDEX = -1
 
@@ -38,6 +48,15 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
     private var heights: List<Int> = emptyList()
 
     val dragging: Boolean get() = index != NO_DRAG_INDEX
+
+    /**
+     * The row under the finger, named rather than numbered. [index] counts within
+     * the reorderable section, which is not the numbering a LazyColumn lays its
+     * items out in — the section starts one row down on the page of items and two
+     * on the page of lists — so anything asking the list for the dragged row's
+     * geometry has to ask by key.
+     */
+    val draggedId: String? get() = ids.getOrNull(index)
 
     fun start(from: Int, rowIds: List<String>, rowHeights: List<Int>) {
         require(rowIds.size == rowHeights.size) {
@@ -90,8 +109,9 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
     fun end(): Reorder? {
         val from = startIndex
         val to = index
+        val settled = ids
         cancel()
-        return if (from != to && from != NO_DRAG_INDEX) Reorder(from, to) else null
+        return if (from != to && from != NO_DRAG_INDEX) Reorder(from, to, settled) else null
     }
 
     fun cancel() {

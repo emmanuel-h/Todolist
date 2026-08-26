@@ -121,7 +121,7 @@ class TodoListsViewModelAnimationTest {
 
     @Test
     fun `should not emit any event when reorderLists is called`() {
-        val events = collectEvents { viewModel.reorderLists(0, 1) }
+        val events = collectEvents { viewModel.reorderLists(listOf("a", "b")) }
 
         assertTrue(events.isEmpty())
     }

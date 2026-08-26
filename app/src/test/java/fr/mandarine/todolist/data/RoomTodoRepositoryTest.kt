@@ -191,7 +191,7 @@ class RoomTodoRepositoryTest {
         repository.add(TodoItem("b", "Beta", "list-1", position = 1))
         repository.add(TodoItem("c", "Gamma", "list-1", position = 2))
         repository.toggle("a")
-        repository.reorder("list-1", 0, 1)
+        repository.reorder("list-1", listOf("c", "b"))
         repository.toggle("a")
         val alpha = repository.getAllByListId("list-1").first { it.id == "a" }
         assertEquals(2, alpha.position)

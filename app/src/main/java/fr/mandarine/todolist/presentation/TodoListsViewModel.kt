@@ -64,8 +64,8 @@ class TodoListsViewModel(
         applyAndPublish { editTodoListUseCase(todoListId, newName, targetDate, dueDate) }
     }
 
-    fun reorderLists(fromIndex: Int, toIndex: Int) {
-        applyAndPublish { reorderTodoListsUseCase(fromIndex, toIndex) }
+    fun reorderLists(orderedActiveIds: List<String>) {
+        applyAndPublish { reorderTodoListsUseCase(orderedActiveIds) }
     }
 
     private fun applyAndPublish(action: () -> Unit) {

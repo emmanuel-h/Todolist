@@ -122,7 +122,7 @@ class TodoListsActivity : ComponentActivity() {
                     DeleteTodoListUseCase(todoListRepository, todoRepository),
                     EditTodoListUseCase(todoListRepository),
                     getTodoListsWithStatusUseCase,
-                    ReorderTodoListsUseCase(todoListRepository, getTodoListsWithStatusUseCase),
+                    ReorderTodoListsUseCase(todoListRepository),
                     container.databaseDispatcher
                 )
             }

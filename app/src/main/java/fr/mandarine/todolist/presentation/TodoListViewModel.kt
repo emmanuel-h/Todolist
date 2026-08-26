@@ -88,8 +88,8 @@ class TodoListViewModel(
         applyAndPublish { editTodoUseCase(todoId, newTitle) }
     }
 
-    fun reorderTodos(fromIndex: Int, toIndex: Int) {
-        applyAndPublish { reorderTodosUseCase(listId, fromIndex, toIndex) }
+    fun reorderTodos(orderedActiveIds: List<String>) {
+        applyAndPublish { reorderTodosUseCase(listId, orderedActiveIds) }
     }
 
     private fun applyAndPublish(action: () -> Unit) {

@@ -54,17 +54,17 @@ class TodoListViewModelReorderTest {
     }
 
     @Test
-    fun `should delegate reorderTodos to use case with listId fromIndex and toIndex`() {
-        viewModel.reorderTodos(0, 2)
+    fun `should hand the named order to the use case with the list it happened on`() {
+        viewModel.reorderTodos(listOf("a", "b", "c"))
 
-        verify { reorderTodosUseCase("list-1", 0, 2) }
+        verify { reorderTodosUseCase("list-1", listOf("a", "b", "c")) }
     }
 
     @Test
-    fun `should delegate reorderTodos to use case with another fromIndex and toIndex`() {
-        viewModel.reorderTodos(1, 3)
+    fun `should hand a different named order to the use case`() {
+        viewModel.reorderTodos(listOf("c", "a", "b"))
 
-        verify { reorderTodosUseCase("list-1", 1, 3) }
+        verify { reorderTodosUseCase("list-1", listOf("c", "a", "b")) }
     }
 
     @Test
@@ -73,16 +73,16 @@ class TodoListViewModelReorderTest {
         val item2 = TodoItem("2", "First", "list-1", position = 1)
         every { getTodosUseCase("list-1") } returns listOf(item1, item2)
 
-        viewModel.reorderTodos(1, 0)
+        viewModel.reorderTodos(listOf("2", "1"))
 
         val content = viewModel.state.value as TodoListState.Content
         assertEquals(listOf(item1, item2), content.activeItems)
     }
 
     @Test
-    fun `should pass listId to reorderTodos use case`() {
-        viewModel.reorderTodos(0, 1)
+    fun `should pass the list it happened on to the use case`() {
+        viewModel.reorderTodos(listOf("a", "b"))
 
-        verify { reorderTodosUseCase("list-1", 0, 1) }
+        verify { reorderTodosUseCase("list-1", listOf("a", "b")) }
     }
 }

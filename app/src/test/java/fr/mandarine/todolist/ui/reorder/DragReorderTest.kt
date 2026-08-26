@@ -199,7 +199,7 @@ class DragReorderTest {
         session.start(0, listOf("a", "b", "c"), uniform.take(3))
         session.drag(60f)
 
-        assertEquals(Reorder(0, 1), session.end())
+        assertEquals(Reorder(0, 1, listOf("b", "a", "c")), session.end())
     }
 
     @Test
@@ -319,7 +319,7 @@ class DragReorderTest {
             session.settle(snap())
         }
 
-        assertEquals(Reorder(0, 1), reorder)
+        assertEquals(Reorder(0, 1, listOf("b", "a", "c")), reorder)
         assertEquals(0f, session.offset, 0.01f)
         assertFalse(session.dragging)
     }

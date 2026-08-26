@@ -79,6 +79,7 @@ import fr.mandarine.todolist.ui.reorder.EdgeScroll
 import fr.mandarine.todolist.ui.reorder.LiftHold
 import fr.mandarine.todolist.ui.reorder.liftToReorder
 import fr.mandarine.todolist.ui.reorder.liftedSlip
+import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
 import fr.mandarine.todolist.ui.todolists.DateKind
@@ -115,14 +116,21 @@ fun TodoListScreen(
     onEdit: (String, String) -> Unit,
     onDelete: (String) -> Unit,
     onSubmitInline: (String) -> Unit,
-    onReorder: (Int, Int) -> Unit,
+    onReorder: (List<String>) -> Unit,
     onRenameList: (String) -> Unit = {},
     onWriteDate: (DateSelection) -> Unit = {}
 ) {
     val content = state as? TodoListState.Content
     val deletion = screenState.deletion
-    val activeItems = orderedBy(content?.activeItems.orEmpty(), screenState.previewOrder) { it.id }
-        .filterNot { deletion.hides(it.id) }
+    /**
+     * Hidden first, then staged. A staged order names the rows the reader can
+     * see, so measuring it against a set that still holds a torn-off row made it
+     * the wrong length and threw the whole preview away on every frame.
+     */
+    val activeItems = orderedBy(
+        content?.activeItems.orEmpty().filterNot { deletion.hides(it.id) },
+        screenState.previewOrder
+    ) { it.id }
     val completedItems = content?.completedItems.orEmpty().filterNot { deletion.hides(it.id) }
     val activeIds = activeItems.map { it.id }
     val showSkip = activeItems.isNotEmpty() && completedItems.isNotEmpty()
@@ -353,7 +361,7 @@ private fun LazyItemScope.ActiveRow(
     onEdit: (String, String) -> Unit,
     onDeleteRequested: (String) -> Unit,
     onTorn: (String) -> Unit,
-    onReorder: (Int, Int) -> Unit
+    onReorder: (List<String>) -> Unit
 ) {
     val lifted = session.dragging && session.index == position
     val deletion = screenState.deletion
@@ -363,7 +371,7 @@ private fun LazyItemScope.ActiveRow(
             {
                 listState.holdPage {
                     screenState.previewOrder = null
-                    onReorder(position, destination)
+                    onReorder(rowIds.moved(position, destination))
                 }
             }
         } else {
@@ -392,7 +400,7 @@ private fun LazyItemScope.ActiveRow(
                     ids = rowIds,
                     onDrop = { reorder ->
                         screenState.previewOrder = null
-                        if (reorder != null) onReorder(reorder.from, reorder.to)
+                        if (reorder != null) onReorder(reorder.orderedIds)
                     }
                 )
                 .tutorialAnchor(screenState, TutorialAnchor.ActiveItemRow(position))

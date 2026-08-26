@@ -109,7 +109,7 @@ class NonShiftingTodoListRepositoryTest {
         page.lists += TodoList(id = "a", name = "Travail", position = 0)
         page.lists += TodoList(id = "b", name = "Voyage", position = 1)
 
-        repository.reorder(1, 0)
+        repository.reorder(listOf("b", "a"))
 
         assertEquals(listOf("b", "a"), page.lists.map { it.id })
         assertEquals(1, page.renumberings)
@@ -146,10 +146,12 @@ class NonShiftingTodoListRepositoryTest {
             lists[index] = lists[index].copy(name = name, targetDate = targetDate, dueDate = dueDate)
         }
 
-        override fun reorder(fromIndex: Int, toIndex: Int) {
+        override fun reorder(orderedActiveIds: List<String>) {
             renumberings += 1
-            val moved = lists.removeAt(fromIndex)
-            lists.add(toIndex, moved)
+            val byId = lists.associateBy { it.id }
+            val reordered = orderedActiveIds.mapNotNull { byId[it] }
+            lists.clear()
+            lists += reordered
         }
     }
 

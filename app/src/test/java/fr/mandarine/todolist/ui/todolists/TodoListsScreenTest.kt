@@ -53,7 +53,7 @@ class TodoListsScreenTest {
     private val renamed = mutableListOf<String>()
     private val renamedDates = mutableListOf<Pair<LocalDate?, LocalDate?>>()
     private val deleted = mutableListOf<String>()
-    private val reordered = mutableListOf<Pair<Int, Int>>()
+    private val reordered = mutableListOf<List<String>>()
     private val opened = mutableListOf<String>()
     private var replayed = 0
     private var dueDatesSet = 0
@@ -533,7 +533,31 @@ class TodoListsScreenTest {
 
         perform("Weekend", MOVE_UP)
 
-        assertEquals(listOf(1 to 0), reordered)
+        assertEquals(listOf(listOf("2", "1")), reordered)
+    }
+
+    /**
+     * A torn-off row is hidden on the page but still held by the repository for
+     * the length of its undo slip. The order the page hands down must name only
+     * the rows it is showing, or the row the reader moved and the row the
+     * repository moves are two different lists.
+     */
+    @Test
+    fun `should never name a torn-off list in the order it hands down`() {
+        render(
+            content(
+                active = listOf(
+                    summary("1", "Groceries"),
+                    summary("2", "Weekend"),
+                    summary("3", "Work")
+                )
+            )
+        )
+
+        perform("Groceries", DELETE_LIST)
+        perform("Work", MOVE_UP)
+
+        assertEquals(listOf(listOf("3", "2")), reordered)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -745,7 +769,7 @@ class TodoListsScreenTest {
                 renamedDates += target to due
             },
             onDeleteList = { deleted += it },
-            onReorder = { from, to -> reordered += from to to },
+            onReorder = { orderedIds -> reordered += orderedIds },
             onReplayTutorial = { replayed += 1 },
             onDueDateSet = { dueDatesSet += 1 }
         )
