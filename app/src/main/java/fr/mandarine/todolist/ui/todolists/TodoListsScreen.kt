@@ -405,16 +405,17 @@ fun TodoListsScreen(
                     onDueDateSet()
                 }
             },
-            onPickDate = {
+            onPickDate = { kind ->
                 screenState.datePickerRequest = DatePickerRequest(
                     target = DateTarget.Rename,
-                    kind = rename.selection.kind,
+                    kind = kind,
                     initial = rename.selection.date
                 )
             },
             onClearDate = {
                 screenState.rename = rename.copy(selection = rename.selection.cleared())
             },
+            animated = screenState.animationsEnabled,
             onDismiss = { screenState.rename = null },
             onConfirm = {
                 if (rename.name.isNotBlank()) {
@@ -435,6 +436,7 @@ fun TodoListsScreen(
         ListDatePickerDialog(
             initial = request.initial,
             today = today,
+            kind = request.kind,
             animated = screenState.animationsEnabled,
             onDismiss = { screenState.datePickerRequest = null },
             onPicked = { date ->
@@ -456,16 +458,19 @@ fun TodoListsScreen(
 @Composable
 private fun AddLineDateRule(screenState: TodoListsScreenState) {
     val selection = screenState.addRowSelection
+    val said = rememberDateKindSaid()
+    Column {
     RuledRow {
         DateMarks(
             selection = selection,
+            said = said,
             onKindChange = { kind ->
                 writeAddRowSelection(screenState, selection.withKind(kind))
             },
-            onPickDate = {
+            onPickDate = { kind ->
                 screenState.datePickerRequest = DatePickerRequest(
                     target = DateTarget.AddRow,
-                    kind = selection.kind,
+                    kind = kind,
                     initial = selection.date
                 )
             },
@@ -475,6 +480,8 @@ private fun AddLineDateRule(screenState: TodoListsScreenState) {
             dueModifier = Modifier
                 .tutorialAnchor(screenState, TutorialAnchor.DueDateButton)
         )
+    }
+    DateKindCaption(said = said, animated = screenState.animationsEnabled)
     }
 }
 

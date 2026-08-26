@@ -12,6 +12,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.hasSetTextAction
@@ -476,14 +477,14 @@ class TodoListsScreenTest {
         screenState.rename = RenameState.of(TodoList("1", "Groceries"))
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
+        composeRule.onNodeWithContentDescription(SET_TARGET_DATE).performClick()
 
         assertEquals(DateTarget.Rename, screenState.datePickerRequest?.target)
         assertEquals(DateKind.TARGET, screenState.datePickerRequest?.kind)
     }
 
     @Test
-    fun `should clear the date of a list from the edit surface`() {
+    fun `should rub the date off a list from the edit surface`() {
         screenState.rename = RenameState.of(TodoList("1", "Groceries", targetDate = DATE))
         render(content(active = listOf(summary("1", "Groceries"))))
 
@@ -779,8 +780,43 @@ class TodoListsScreenTest {
         addLine().performTextReplacement("Work")
         composeRule.waitForIdle()
 
-        composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].assertIsSelected()
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(SET_TARGET_DATE).assertIsNotSelected()
+    }
+
+    @Test
+    fun `should ask for a due day when the alarm is pressed on a bare line`() {
+        armAddLine(text = "Work")
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+
+        assertEquals(DateTarget.AddRow, screenState.datePickerRequest?.target)
+        assertEquals(DateKind.DUE, screenState.datePickerRequest?.kind)
+    }
+
+    /**
+     * The sheet the day is circled on says which kind of day it is, because that is
+     * where the reader is looking by then — the rule the marks sit on is behind it.
+     */
+    @Test
+    fun `should say which kind of day the calendar sheet is asking for`() {
+        armAddLine(text = "Work")
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+
+        composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should say which kind was chosen when a day is moved to the other glyph`() {
+        armAddLine(text = "Work", selection = DateSelection(DateKind.TARGET, DATE))
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+
+        composeRule.onNodeWithText(DUE_CAPTION).assertIsDisplayed()
     }
 
     @Test
@@ -788,7 +824,7 @@ class TodoListsScreenTest {
         armAddLine(text = "Work")
         render(TodoListsState.Empty)
 
-        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
+        composeRule.onNodeWithContentDescription(SET_TARGET_DATE).performClick()
 
         assertEquals(DateTarget.AddRow, screenState.datePickerRequest?.target)
         assertEquals(DateKind.TARGET, screenState.datePickerRequest?.kind)
@@ -799,7 +835,7 @@ class TodoListsScreenTest {
         armAddLine(text = "Work")
         render(TodoListsState.Empty)
 
-        composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[1].performClick()
+        composeRule.onNodeWithContentDescription(SET_TARGET_DATE).performClick()
         composeRule.onNodeWithText("20").performClick()
         addLine().performImeAction()
 
@@ -819,7 +855,7 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should rub the date off the line when the strike-out is tapped`() {
+    fun `should rub the date off the line when the ringed mark is pressed again`() {
         armAddLine(text = "Work", selection = DateSelection(DateKind.TARGET, DATE))
         render(TodoListsState.Empty)
 
@@ -955,6 +991,7 @@ class TodoListsScreenTest {
         const val SET_TARGET_DATE = "Set target date"
         const val CLEAR_TARGET_DATE = "Clear target date"
         const val SET_DUE_DATE = "Set due date"
+        const val DUE_CAPTION = "Finish before this day"
         const val EDIT_NAME = "Edit list name"
         const val DELETE_LIST = "Delete list"
         const val MOVE_UP = "Move up"

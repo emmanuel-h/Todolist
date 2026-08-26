@@ -1,7 +1,13 @@
 package fr.mandarine.todolist.ui.todolists
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.PaperCalendar
+import fr.mandarine.todolist.ui.paper.PaperSlipCaption
 import fr.mandarine.todolist.ui.paper.PaperDialog
 import java.time.LocalDate
 
@@ -18,11 +24,33 @@ import java.time.LocalDate
 fun ListDatePickerDialog(
     initial: LocalDate?,
     today: LocalDate,
+    kind: DateKind,
     animated: Boolean,
     onDismiss: () -> Unit,
     onPicked: (LocalDate) -> Unit
 ) {
     PaperDialog(onDismissRequest = onDismiss) {
+        /**
+         * The sheet says which kind of day is being circled, because this is where
+         * the reader is looking when it matters. The rule the marks sit on is
+         * behind this sheet by then, so a caption raised there would be telling
+         * the reader something they cannot see.
+         */
+        PaperSlipCaption(
+            painter = painterResource(
+                when (kind) {
+                    DateKind.TARGET -> R.drawable.ic_event
+                    DateKind.DUE -> R.drawable.ic_alarm
+                }
+            ),
+            text = stringResource(
+                when (kind) {
+                    DateKind.TARGET -> R.string.date_kind_target_caption
+                    DateKind.DUE -> R.string.date_kind_due_caption
+                }
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
         PaperCalendar(
             selected = initial,
             today = today,

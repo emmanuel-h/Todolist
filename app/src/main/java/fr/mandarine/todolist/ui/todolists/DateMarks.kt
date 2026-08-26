@@ -3,6 +3,7 @@ package fr.mandarine.todolist.ui.todolists
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -40,95 +41,137 @@ private val KIND_GLYPH = 20.dp
 private val DATE_GAP = 8.dp
 
 /**
+ * What pressing a kind glyph does, which is decided by what is written beside it
+ * rather than by the glyph. A kind is something a date has, not something chosen
+ * before there is one — so a bare rule asks for a day, the other glyph moves a day
+ * already written across to itself, and the glyph already ringed rubs it out.
+ */
+internal enum class KindPress { AskForADay, MoveTheDay, RubItOut }
+
+internal fun kindPressOn(selection: DateSelection, pressed: DateKind): KindPress = when {
+    selection.date == null -> KindPress.AskForADay
+    selection.kind != pressed -> KindPress.MoveTheDay
+    else -> KindPress.RubItOut
+}
+
+/**
  * The marks a date wears on a rule, wherever that rule is: the two kinds as
- * glyphs with the chosen one circled in ink, the day written out beside them and
- * a strike-out to rub it away. The line being written on the page and the sheet an
+ * glyphs with the ringed one saying which kind the day beside it is, and the day
+ * written out after them. The line being written on the page and the sheet an
  * existing list is edited on carry the same marks, so a date is jotted the same
  * way whether the list exists yet or not.
+ *
+ * With nothing written the rule is bare: neither glyph is ringed and nothing
+ * trails them. A ring means a day, so a ring cannot appear before there is one.
  */
 @Composable
 fun RowScope.DateMarks(
     selection: DateSelection,
+    said: DateKindSaid,
     onKindChange: (DateKind) -> Unit,
-    onPickDate: () -> Unit,
+    onPickDate: (DateKind) -> Unit,
     onClearDate: () -> Unit,
     targetModifier: Modifier = Modifier,
     dueModifier: Modifier = Modifier
 ) {
-    val palette = LocalPaperPalette.current
     val locale = formatLocale
     KindGlyph(
         iconRes = R.drawable.ic_event,
-        descriptionRes = R.string.set_target_date,
+        setRes = R.string.set_target_date,
+        clearRes = R.string.clear_target_date,
         seed = TARGET_RING_SEED,
-        selected = selection.kind == DateKind.TARGET,
-        onClick = { onKindChange(DateKind.TARGET) },
+        kind = DateKind.TARGET,
+        selection = selection,
+        said = said,
+        onKindChange = onKindChange,
+        onPickDate = onPickDate,
+        onClearDate = onClearDate,
         modifier = targetModifier
     )
     KindGlyph(
         iconRes = R.drawable.ic_alarm,
-        descriptionRes = R.string.set_due_date,
+        setRes = R.string.set_due_date,
+        clearRes = R.string.clear_due_date,
         seed = DUE_RING_SEED,
-        selected = selection.kind == DateKind.DUE,
-        onClick = { onKindChange(DateKind.DUE) },
+        kind = DateKind.DUE,
+        selection = selection,
+        said = said,
+        onKindChange = onKindChange,
+        onPickDate = onPickDate,
+        onClearDate = onClearDate,
         modifier = dueModifier
     )
     WrittenDate(
         selection = selection,
         locale = locale,
-        onClick = onPickDate,
+        onClick = { onPickDate(selection.kind) },
         modifier = Modifier.weight(1f)
     )
-    if (selection.date != null) {
-        InkIconButton(
-            painter = painterResource(R.drawable.ic_close),
-            contentDescription = stringResource(
-                if (selection.kind == DateKind.TARGET) {
-                    R.string.clear_target_date
-                } else {
-                    R.string.clear_due_date
-                }
-            ),
-            onClick = onClearDate,
-            modifier = Modifier.align(Alignment.Bottom),
-            tint = palette.inked(InkTone.Margin)
-        )
-    }
 }
 
 @Composable
 private fun RowScope.KindGlyph(
     iconRes: Int,
-    descriptionRes: Int,
+    setRes: Int,
+    clearRes: Int,
     seed: Int,
-    selected: Boolean,
-    onClick: () -> Unit,
+    kind: DateKind,
+    selection: DateSelection,
+    said: DateKindSaid,
+    onKindChange: (DateKind) -> Unit,
+    onPickDate: (DateKind) -> Unit,
+    onClearDate: () -> Unit,
     modifier: Modifier
 ) {
     val palette = LocalPaperPalette.current
+    val press = kindPressOn(selection, kind)
+    val ringed = press == KindPress.RubItOut
     Box(
         modifier = modifier
             .align(Alignment.Bottom)
             .size(PaperDimens.iconButton)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+            .selectable(
+                selected = ringed,
+                role = Role.RadioButton,
+                onClick = {
+                    when (press) {
+                        KindPress.AskForADay -> onPickDate(kind)
+
+                        KindPress.MoveTheDay -> {
+                            said.say(kind)
+                            onKindChange(kind)
+                        }
+
+                        KindPress.RubItOut -> {
+                            said.hush()
+                            onClearDate()
+                        }
+                    }
+                }
+            ),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
                 .size(RING_BOX)
-                .circledInInk(circled = selected, seed = seed, color = palette.inked(InkTone.Acted)),
+                .circledInInk(circled = ringed, seed = seed, color = palette.inked(InkTone.Acted)),
             contentAlignment = Alignment.Center
         ) {
             InkIcon(
                 painter = painterResource(iconRes),
-                contentDescription = stringResource(descriptionRes),
-                tint = palette.inked(if (selected) InkTone.Acted else InkTone.Margin),
+                contentDescription = stringResource(if (ringed) clearRes else setRes),
+                tint = palette.inked(if (ringed) InkTone.Acted else InkTone.Margin),
                 size = KIND_GLYPH
             )
         }
     }
 }
 
+/**
+ * The day, once there is one. There is nothing to write before then and nothing to
+ * press either: the glyphs are what ask for a day, so a placeholder here was a
+ * mark on the rule that said only that the reader had not done anything yet.
+ */
 @Composable
 private fun RowScope.WrittenDate(
     selection: DateSelection,
@@ -137,27 +180,21 @@ private fun RowScope.WrittenDate(
     modifier: Modifier
 ) {
     val palette = LocalPaperPalette.current
-    val date = selection.date
-    /**
-     * The field says the day it is holding, and the verb is what pressing it
-     * does. Naming the field after the verb meant it read the same whether the
-     * list was due tomorrow, due last month, or had no day on it at all.
-     */
+    val date = selection.date ?: run {
+        Spacer(modifier)
+        return
+    }
     val pressing = stringResource(
         if (selection.kind == DateKind.TARGET) R.string.set_target_date else R.string.set_due_date
     )
-    val spoken = if (date == null) {
-        pressing
-    } else {
-        stringResource(
-            if (selection.kind == DateKind.TARGET) {
-                R.string.target_date_description
-            } else {
-                R.string.due_date_description
-            },
-            formatListDate(date, showYear = true, locale = locale)
-        )
-    }
+    val spoken = stringResource(
+        if (selection.kind == DateKind.TARGET) {
+            R.string.target_date_description
+        } else {
+            R.string.due_date_description
+        },
+        formatListDate(date, showYear = true, locale = locale)
+    )
     Box(
         modifier = modifier
             .align(Alignment.Bottom)
@@ -167,11 +204,10 @@ private fun RowScope.WrittenDate(
             .padding(start = DATE_GAP)
     ) {
         Text(
-            text = date?.let { formatListDate(it, showYear = true, locale = locale) }
-                ?: stringResource(R.string.add_line_hint),
+            text = formatListDate(date, showYear = true, locale = locale),
             modifier = Modifier.seatOnRule(),
             style = LocalRuledHand.current.margin,
-            color = palette.inked(if (date == null) InkTone.Margin else InkTone.Words),
+            color = palette.inked(InkTone.Words),
             maxLines = ONE_LINE,
             overflow = TextOverflow.Ellipsis
         )

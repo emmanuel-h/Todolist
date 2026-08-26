@@ -56,6 +56,8 @@ import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.byLamplight
 import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.PaperSlipCaption
+import fr.mandarine.todolist.ui.paper.paperSlip
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperType
 import fr.mandarine.todolist.ui.paper.inked
@@ -78,9 +80,6 @@ private const val HAND_AIM_LABEL = "handAim"
 private const val OFF_THE_PAGE = 0f
 private const val ON_THE_PAGE = 1f
 
-private val SLIP_SHADOW = 6.dp
-private val SLIP_DROP = 3.dp
-private const val SLIP_SHADOW_ALPHA = 0.16f
 private val SLIP_PADDING = 16.dp
 private val CAPTION_PADDING = 14.dp
 private val CAPTION_GLYPH_GAP = 8.dp
@@ -90,27 +89,6 @@ private val BANNER_GAP = 32.dp
 private val PROGRESS_BOTTOM_MARGIN = 12.dp
 private val PROGRESS_DOT_SIZE = 8.dp
 private val PROGRESS_DOT_GAP = 6.dp
-
-/**
- * A slip of the same paper the sheets are cut from, laid on the page: square
- * corners, the page's grain, one shallow warm shadow to lift it off the writing
- * and no outline at all.
- */
-@Composable
-private fun Modifier.paperSlip(): Modifier {
-    val palette = LocalPaperPalette.current
-    val shadowInk = palette.shadow
-    return this
-        .raised(RectangleShape, palette) {
-            dropShadow(RectangleShape) {
-                radius = SLIP_SHADOW.toPx()
-                offset = Offset(OFF_THE_PAGE, SLIP_DROP.toPx())
-                color = shadowInk
-                alpha = SLIP_SHADOW_ALPHA
-            }
-        }
-        .paperSheet(tone = palette.paperShade)
-}
 
 /**
  * The demo drives the screen underneath itself, so while it runs that screen is
@@ -262,7 +240,6 @@ private fun BoxScope.BannerSlip(
 
 @Composable
 private fun BoxScope.CaptionSlip(caption: TutorialCaption, state: TutorialOverlayState) {
-    val palette = LocalPaperPalette.current
     Box(
         Modifier
             .align(Alignment.TopCenter)
@@ -270,27 +247,12 @@ private fun BoxScope.CaptionSlip(caption: TutorialCaption, state: TutorialOverla
                 alpha = state.captionAlpha.value
                 translationY = state.captionTop
             }
-            .paperSlip()
     ) {
-        Row(
-            modifier = Modifier
-                .padding(CAPTION_PADDING)
-                .graphicsLayer { alpha = state.captionTextAlpha.value },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            InkIcon(
-                painter = painterResource(captionGlyph(caption)),
-                contentDescription = null,
-                tint = palette.inked(InkTone.Margin),
-                size = PaperDimens.iconGlyph
-            )
-            Text(
-                text = stringResource(captionStringRes(caption)),
-                modifier = Modifier.padding(start = CAPTION_GLYPH_GAP),
-                color = palette.inked(InkTone.Words),
-                style = PaperType.prose
-            )
-        }
+        PaperSlipCaption(
+            painter = painterResource(captionGlyph(caption)),
+            text = stringResource(captionStringRes(caption)),
+            modifier = Modifier.graphicsLayer { alpha = state.captionTextAlpha.value }
+        )
     }
 }
 

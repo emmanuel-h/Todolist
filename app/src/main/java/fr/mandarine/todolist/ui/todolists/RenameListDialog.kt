@@ -53,12 +53,14 @@ fun RenameListDialog(
     state: RenameState,
     onNameChange: (String) -> Unit,
     onKindChange: (DateKind) -> Unit,
-    onPickDate: () -> Unit,
+    onPickDate: (DateKind) -> Unit,
     onClearDate: () -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    animated: Boolean = true
 ) {
     val haptics = rememberPaperHaptics()
+    val said = rememberDateKindSaid()
     val putDown: () -> Unit = {
         if (state.name.isBlank()) {
             onDismiss()
@@ -72,11 +74,13 @@ fun RenameListDialog(
         SheetLine {
             DateMarks(
                 selection = state.selection,
+                said = said,
                 onKindChange = onKindChange,
                 onPickDate = onPickDate,
                 onClearDate = onClearDate
             )
         }
+        DateKindCaption(said = said, animated = animated)
     }
 }
 

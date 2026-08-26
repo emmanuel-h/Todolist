@@ -164,8 +164,10 @@ the corner is the only affordance.
 - The name updates immediately; items and position are unaffected
 
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
-- At creation: tap the 📅 mark on the add line's date rule → the paper calendar (`ui/paper/PaperCalendar.kt`) → the day attaches to the list the line commits; circling a target date clears any due date
-- On an existing list: open the edit sheet → the 📅 mark is ringed by default when no date is set; tap the date field beside the marks to open the calendar; the clear mark (drawn only when a date is set) removes the date without changing which mark is ringed; ringing ⏰ instead moves the existing date across to the due-date kind
+- **A ring means a day** ([#36](https://github.com/emmanuel-h/Todolist/issues/36), [#37](https://github.com/emmanuel-h/Todolist/issues/37)). A kind is something a date has, not something chosen before there is one, so with nothing written neither mark is ringed and nothing trails them. `DateSelection.kind` is still non-nullable; it is simply not read while `date` is null.
+- Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**. There is no separate clear mark — the ringed mark is the clear, which is also the only way back to the neutral state
+- The calendar sheet carries the caption for the kind it is asking for, and moving a day across raises the same caption on a slip under the marks for a beat. Same words and same slip the tutorial teaches with (`PaperSlipCaption`), so a reader who skipped the tour is told the same thing in the same voice
+- The day attaches to the list the line commits; circling a target date clears any due date
 - The date is displayed on a second line of the list row, below the list name, with a calendar icon
 - A target date whose day has passed is **struck through** and drawn in `InkTone.Crossed`; one still ahead is plain `InkTone.Margin` pencil. The strike carries the distinction — the two tones alone sit a twentieth of a step apart, which is a difference only the code can see
 - The year is shown only when the target date falls in a different year from the current year
@@ -176,9 +178,9 @@ the corner is the only affordance.
 - **Mutual exclusion with due date**: a list may have EITHER a target date OR a due date, never both; enforced in `TodoList.init` and in the create/edit use cases via `require`
 
 **Set a due date on a list** — _implemented · [#8](https://github.com/emmanuel-h/Todolist/issues/8)_
-- At creation: tap the ⏰ mark on the add line's date rule → the paper calendar → the day attaches as a due date; circling a due date clears any target date
-- On an existing list: open the edit sheet → ring the ⏰ mark; tap the date field to open the calendar; the clear mark removes the due date without changing which mark is ringed; ringing 📅 instead moves the existing date across. The two marks share one sheet — the kind set is always the ringed one. Note: the add line opens the calendar directly on mark tap, by design
-- The two `date_kind_*_caption` strings are the app's only sanctioned copy ([#30](https://github.com/emmanuel-h/Todolist/issues/30)). They are currently spoken only by the tutorial's caption pill — **the edit sheet does not show them.** Either restore a caption rule under the date marks or record here how the 📅/⏰ distinction is taught to a reader who skipped the tour; it must not be left to two glyphs differing by an ink circle
+- The ⏰ mark answers to the same three presses as the 📅 one — see **Set a target date** above. The two marks share one rule and one day between them, and the kind set is always the ringed one; circling a due date clears any target date
+- The add line and the edit sheet behave identically. They used to differ — the line opened the calendar on a mark tap while the sheet only moved the ring — and that difference is gone
+- The 📅/⏰ distinction is taught outside the tutorial as well as inside it: the calendar sheet carries the caption for the kind it is asking for, and moving a day from one mark to the other raises the same caption under the marks for a beat. It is never left to two glyphs differing by an ink circle
 - The due date is displayed on a second line of the list row (alarm icon + formatted date), below any target date line
 - Three-tier tinting based on the current date via the `Clock` abstraction: FUTURE → `InkTone.Margin`, TODAY → `InkTone.Today` (amber), OVERDUE → `InkTone.Lost` (red)
 - The year is shown only when the due date falls in a different year from the current year

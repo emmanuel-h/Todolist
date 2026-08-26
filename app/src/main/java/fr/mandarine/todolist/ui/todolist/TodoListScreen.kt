@@ -368,6 +368,7 @@ fun TodoListScreen(
         ListDatePickerDialog(
             initial = sheet.date,
             today = today,
+            kind = sheet.kind,
             animated = screenState.animationsEnabled,
             onDismiss = { screenState.dateSheet = null },
             onPicked = { date ->
