@@ -32,6 +32,16 @@ Android native to-do list app (`fr.mandarine.todolist`). Kotlin, single `:app` m
 
 Every feature must reach **100% JaCoCo line+branch coverage** and **100% Pitest mutation score** before it is considered done. The `developer` agent (`.claude/agents/developer.md`) enforces this automatically.
 
+**Know what the gate actually covers.** Pitest's `--targetClasses` is `domain.*`, `data.*`,
+`presentation.*` — the whole of `ui.*` is never mutated, and seven `data` classes are
+excluded by name. So "100%" means 100% of those packages. `domain/` and `presentation/` are
+genuinely at 100% line+branch; `ui/` is not measured by the gate and sits lower. When you
+change something under `ui/`, the gate passing is not evidence that you tested it.
+
+**Lint is a gate too.** `NewApi` is fatal (`app/build.gradle.kts`). `./gradlew :app:lintDebug`
+must be clean; it is what stands between `minSdk 24` and the `java.time` the app is written
+in. Core library desugaring is required and enabled.
+
 ## Product specification
 
 **`docs/SPEC.md` is the authoritative product definition.** Every agent must read it before starting any feature work. It defines all screens, behaviors, invariants, and which behaviors are not yet implemented (with linked GitHub issues). Do not implement anything that contradicts it; if a planned feature conflicts with the spec, flag it to the user before proceeding.
@@ -62,7 +72,9 @@ app/src/main/java/fr/mandarine/todolist/
     └── tutorial/    # Anchor registry and the first-launch overlay
 ```
 
-**The app is entirely Compose.** There is no `res/layout/`, no View-system dependency in the graph (`appcompat`, `recyclerview` and Views `material` were dropped in the Compose migration), and no `AppCompatActivity`. The palette, dimensions and motion specs are Kotlin objects, not resources — `res/values/` holds a bare window theme, the strings, and one screen-width dimension.
+**The app is entirely Compose.** There is no `res/layout/`, no View-system dependency in the graph (`appcompat`, `recyclerview` and Views `material` were dropped in the Compose migration), and no `AppCompatActivity`. The palette, dimensions and motion specs are Kotlin objects, not resources — `res/values/` holds the window themes, `colors.xml`, `strings.xml` and `integers.xml`, and nothing else. There is no `dimens.xml` and no `attrs.xml`.
+
+**The layers point downhill and nothing else.** There are no upward imports in the tree: where `data/` needs to know which window a notification opens or which worker runs the daily check, the composition root hands it down. Keep it that way.
 
 Test sources mirror the main layout under `app/src/test/java/fr/mandarine/todolist/`.
 

@@ -1,7 +1,13 @@
 # App Icons
 
 ## What it does
-Replaces the default Android Studio green-robot launcher icon with a custom checklist icon using the app's brand purple (`#6750A4`) background and white foreground artwork. The icon renders correctly in light, dark, and themed-icon (Android 13+) modes at all densities.
+Replaces the default Android Studio green-robot launcher icon with a custom checklist icon. The icon renders correctly in light, dark, and themed-icon (Android 13+) modes at all densities.
+
+> **Note (2026-08-26).** The colours below are historical. The icon was repainted during the
+> paper redesign and now uses `@color/paper` with the `stickyNote*` tones, and flips with
+> `values-night/`. The brand purple `#6750A4` no longer appears anywhere in the project —
+> `SPEC.md` forbids it. The structure described here (background / foreground / monochrome
+> layers, `evenOdd` cutout, the checklist motif) is still accurate.
 
 ## Architecture
 - **Layers**: ui only (no domain, data, or ViewModel code touched)

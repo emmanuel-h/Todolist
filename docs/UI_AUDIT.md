@@ -1,5 +1,13 @@
 # UI/UX Audit — Todolist
 
+> **Superseded.** This audit was carried out on 2026-08-09, against the View-system app
+> that existed before the Compose migration and the paper redesign. Nearly every identifier
+> it cites — layouts, view ids, theme attributes — no longer exists, and the bugs it opens
+> with were fixed long ago. It is kept as a record of what the app used to be and of how
+> the icon-only principle was reasoned about; it is **not** a description of the app and
+> must not be used as one. For current behaviour read [SPEC.md](SPEC.md); for the most
+> recent audit see the findings recorded in the commits of 2026-08-26.
+
 **Date:** 2026-08-09
 **Method:** Spec review (`docs/SPEC.md`), full layout/code review, and live testing on the API 36 phone emulator (light + dark, portrait + landscape). Every UI claim was cross-checked against the Room database (`todo_database`) pulled from the device. A quick pass was also done on the Pixel Tablet emulator.
 

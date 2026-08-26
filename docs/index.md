@@ -1,6 +1,11 @@
 # Feature index
 
 > **Root specification**: [SPEC.md](SPEC.md) — authoritative definition of all screens, behaviors, and planned work. Read this first before making any change.
+>
+> Each entry below describes a feature **as it was when that doc was written**. This file is
+> a changelog, not a description of the app: where a later change overtook an earlier one,
+> the entry carries a _superseded by_ marker. When an entry and `SPEC.md` disagree, `SPEC.md`
+> is right.
 
 
 - [Todo List Screen](todo-list-screen.md) — single-list view with checkbox rows, inline add bar, and empty state
@@ -8,14 +13,14 @@
 - [Room Persistence](room-persistence.md) — SQLite storage via Room so data survives restarts; migration from v1 to v2
 - [Complete Todo](complete-todo.md) — toggle completed state per item with strikethrough + fade, persisted in Room
 - [UI Polish](ui-polish.md) — illustrated empty states, fixed inline add bar, M3 theme tokens, dark mode
-- [Completed Section](completed-section.md) — completed items move to a timestamped bottom section with a labeled divider; uncompleting returns item to active with no position memory
-- [Edit and Delete Todo](edit-delete-todo.md) — inline title editing (tap ✎ or double-tap title) and immediate delete with colorError affordance; no dialog, no confirmation
-- [Reorder Active Todo Items](reorder-todos.md) — always-visible drag handle on every active row; handle-only drag (no long-press) reorders within active section; drag clamped at completed section boundary; position persisted in Room (migration 3→4)
+- [Completed Section](completed-section.md) — completed items move to a timestamped bottom section with a labeled divider; uncompleting returns item to active with no position memory. Ordering is most-recently-completed **first**
+- [Edit and Delete Todo](edit-delete-todo.md) — _gestures superseded by gesture-driven rows (#33): the title is tapped, and delete is a swipe behind a 9-second undo slip_ — inline title editing and immediate delete with colorError affordance; no dialog, no confirmation
+- [Reorder Active Todo Items](reorder-todos.md) — _handle superseded by long-press drag (#33); the reorder is now addressed by row id rather than by index_ — always-visible drag handle on every active row; drag clamped at completed section boundary; position persisted in Room (migration 3→4)
 - [Inline-Add Row UX Polish](inline-add-ux-polish.md) — top-divider affordance, raised ghost-text alpha, no-width-jump expanded row, concise empty-state copy
 - [Icon-Only UI](icon-only-ui.md) — toolbar removed, dialogs icon-only, completed divider shows count badge only, ghost row "…", empty states illustration-only at 120dp
-- [Rename Todo List](rename-todo-list.md) — dimmed pencil icon on each list row opens a pre-filled rename dialog; blank confirm discards silently
+- [Rename Todo List](rename-todo-list.md) — _superseded by gesture-driven rows (#33): the sheet is opened by a start→end swipe and dismissing it commits_ — dimmed pencil icon on each list row opens a pre-filled rename dialog; blank confirm discards silently
 - [Drag Handle Alignment Fix](drag-handle-alignment.md) — completed rows use `INVISIBLE` instead of `GONE` on the drag handle so item text stays horizontally aligned with the active section
-- [Reorder Todo Lists](reorder-todo-lists.md) — always-visible drag handle on each list row; handle-only drag (no long-press) reorders lists; position persisted in Room (migration 4→5); long-press on row disabled
+- [Reorder Todo Lists](reorder-todo-lists.md) — _handle superseded by long-press drag (#33); the reorder is now addressed by row id rather than by index_ — always-visible drag handle on each list row; position persisted in Room (migration 4→5)
 - [Empty-State Icon Fix](empty-state-icon-fix.md) — _superseded by [Paper Background](paper-background.md); empty state is a bare page_ — replaces incoherent three-path white-hardcoded ic_checklist with a coherent Material clipboard-with-checkmark tinted via colorOnSurfaceVariant
 - [Inline List Create](inline-list-create.md) — FAB opens an ephemeral tinted inline row pinned below the toolbar instead of a modal dialog; FAB and empty state hide while the row is active
 - [Create List — Insert at Top](create-list-top-insert.md) — newly created lists are inserted at position 0, pushing existing lists down; drag-to-reorder remains the only subsequent reordering mechanism
@@ -27,12 +32,12 @@
 - [Inline List Create — IME Key Submit Fix](inline-list-ime-submit.md) — extends the inline list-name field to accept IME_ACTION_UNSPECIFIED and KEYCODE_ENTER in addition to IME_ACTION_DONE so all keyboards commit the new list on their primary action key
 - [List Target Date](list-target-date.md) — optional informational target date per list, settable at creation and via rename dialog, displayed below the list name with elapsed-date muting; does not affect sort order
 - [List Due Date](list-due-date.md) — optional deadline per list with three-tier overdue tinting (future/today/overdue); mutually exclusive with the target date; enforced in the domain layer
-- [Daily Notifications](daily-notifications.md) — 08:00 alarm fires one notification per list whose due date is today or target date is tomorrow; deep-links into the list; POST_NOTIFICATIONS requested once on API 33+
-- [App Icons](app-icons.md) — custom checklist launcher icon (brand-purple background, white foreground) replacing the template asset; adaptive icon with monochrome layer for themed-icon mode; 512×512 Play Store asset
+- [Daily Notifications](daily-notifications.md) — _the ask is now owed by a reminder of **either** kind, is recorded when answered, and routes to system settings once spent_ — 08:00 alarm fires one notification per list whose due date is today or target date is tomorrow; deep-links into the list
+- [App Icons](app-icons.md) — _colours superseded by the paper palette; the icon is `@color/paper` and the sticky-note tones and flips with `values-night/`_ — custom checklist launcher icon replacing the template asset; adaptive icon with monochrome layer for themed-icon mode; 512×512 Play Store asset
 - [First-Launch Tutorial](first-launch-tutorial.md) — _overlay half superseded by [Tutorial Overlay in Compose](tutorial-overlay-compose.md); the script is unchanged_ — phantom-hand overlay plays a five-scene scripted tour on first launch; teaches ON-vs-BEFORE date distinction in scene 2; bottom-center progress pill; dimmed replay button; ⇥ glyph on all due-date rows; crash-safe and skippable
 - [Date Kind Wording](date-kind-wording.md) — scoped exception to the icon-only rule: translated caption under the date-kind toggle and inside the tutorial scene 2 pill to distinguish target ("to do on this day") from due ("finish before this day")
 - [Dynamic Color + Tonal Surfaces](dynamic-color-tonal-surfaces.md) — _dynamic-color half superseded by [Paper Background](paper-background.md)_ — Android 12+ wallpaper palette via DynamicColors; refined-violet fallback (seed #7C3AED) on older APIs; tonal surface hierarchy replaces drop shadows
-- [Paper Background](paper-background.md) — _the XML half superseded by [Paper Design System](paper-design-system.md) and [Compose Teardown](compose-teardown.md); the palette and its rules stand_ — both screens become one sheet of ruled loose-leaf paper: fixed ink-on-paper palette, light-only (no `values-night/`, no `DynamicColors`), 40dp gutter with punched holes (no margin rule), per-row ruling replacing the `InsetItemDivider` decoration, card-free list rows, no background watermarks, paper dialogs
+- [Paper Background](paper-background.md) — _the XML half superseded by [Paper Design System](paper-design-system.md) and [Compose Teardown](compose-teardown.md); the palette and its rules stand_ — both screens become one sheet of ruled loose-leaf paper: fixed ink-on-paper palette, a fixed palette (no `DynamicColors`) that later gained a night half, 40dp bare gutter, per-row ruling replacing the `InsetItemDivider` decoration, card-free list rows, no background watermarks, paper dialogs
 - [Sticky-Note Add Button](sticky-note-fab.md) — the Screen 1 FAB becomes a pad of three rotated muted-yellow sticky sheets; tapping peels the top sheet off (lift → tilt → drift toward the list → fade) via a two-phase `AnimatorSet` on a decorative ghost view, with the IME delayed until the peel finishes so the keyboard does not cover it
 - [Paper Design System](paper-design-system.md) — the ink-on-paper look ported to Compose as `ui/paper/`: palette and dimension objects, named spring specs, and previewable primitives (`PaperSurface`, `RuledRow`, `GhostRow`, `InkIcon`, `CountBadge`, `StickyNotePad`, `SectionDivider`, `PaperDialog`); grain and hole punches now drawn instead of tiled from PNGs; consumed by [the items screen](items-screen-compose.md) from phase 3 and [the lists screen](lists-screen-compose.md) from phase 4
 - [Items Screen in Compose](items-screen-compose.md) — screen 2 becomes `setContent`: `LazyColumn` keyed by item id retires `TodoItemAnimator`, a completed row now travels into the completed section instead of fading out and growing back, drag reorder is hand-rolled on `detectDragGestures`, and the tutorial reaches the screen through state and `onGloballyPositioned` anchors rather than view holders
