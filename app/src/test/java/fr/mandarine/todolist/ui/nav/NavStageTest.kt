@@ -132,12 +132,31 @@ class NavStageTest {
         assertNull(items.anchors.boundsOf(TutorialAnchor.FirstListRow))
     }
 
+    /**
+     * The page the demo left something on is often the one underneath: it opens a
+     * create row on the page of lists and then walks into a list.
+     */
+    @Test
+    fun `should put both pages back when the tour is abandoned`() {
+        val items = FakePage(TutorialScreen.ITEMS)
+        val lists = FakePage(TutorialScreen.LISTS)
+        val backStack = mutableListOf<NavKey>(ListsRoute, ItemsRoute("list-1"))
+        val stage = NavStage(backStack, lists)
+        stage.attach(items)
+
+        stage.abandon()
+
+        assertEquals(1, lists.abandoned)
+        assertEquals(1, items.abandoned)
+    }
+
     private class FakePage(
         override val screen: TutorialScreen,
         override val anchors: TutorialAnchorHost = TutorialAnchors()
     ) : PageStage {
 
         var played: TutorialAction? = null
+        var abandoned = 0
 
         override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? = anchors.boundsOf(anchor)
 
@@ -149,5 +168,9 @@ class NavStageTest {
         override suspend fun awaitDemoListId(): String? = null
 
         override fun bannerContent(): TutorialBannerContent? = null
+
+        override fun abandon() {
+            abandoned += 1
+        }
     }
 }

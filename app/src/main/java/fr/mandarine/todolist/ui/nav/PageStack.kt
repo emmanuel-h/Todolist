@@ -42,6 +42,7 @@ import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
 import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.ReminderNote
 import fr.mandarine.todolist.ui.paper.ReminderSlip
@@ -74,6 +75,7 @@ fun PageStack(
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
     aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
+    pace: TutorialPace,
     onDueDateSet: () -> Unit,
     onReplayTutorial: () -> Unit
 ) {
@@ -125,6 +127,7 @@ fun PageStack(
                             today = today,
                             itemsViewModelFactory = itemsViewModelFactory,
                             aim = aim,
+                            pace = pace,
                             onDueDateSet = written
                         )
                     }
@@ -234,6 +237,7 @@ private fun ItemsPage(
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
     aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
+    pace: TutorialPace,
     onDueDateSet: (ReminderNote) -> Unit
 ) {
     val viewModel: TodoListViewModel =
@@ -242,7 +246,7 @@ private fun ItemsPage(
         TodoListScreenState()
     }
     val itemsStage = remember(viewModel, screenState) {
-        ItemsStage(viewModel, screenState, aim) { stage.leave() }
+        ItemsStage(viewModel, screenState, aim, pace) { stage.leave() }
     }
     screenState.animationsEnabled = stage.animationsEnabled
     screenState.recordingAnchors = stage.recordingAnchors

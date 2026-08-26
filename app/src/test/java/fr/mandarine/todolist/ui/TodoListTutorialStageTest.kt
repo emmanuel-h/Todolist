@@ -20,6 +20,7 @@ import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.ui.todolist.ItemsStage
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import kotlinx.coroutines.runBlocking
@@ -287,7 +288,20 @@ class TodoListTutorialStageTest {
             dispatcher = container.databaseDispatcher
         )
         viewModel.refresh()
-        block(ItemsStage(viewModel, TodoListScreenState(), { _, bounds -> bounds }) { left += 1 })
+        block(ItemsStage(viewModel, TodoListScreenState(), { _, bounds -> bounds }, TutorialPace()) { left += 1 })
+    }
+
+    @Test
+    fun `should close the add row the demo left open when the tour is abandoned`() {
+        onActivity { stage ->
+            perform(stage, TutorialAction.OpenItemAddRow)
+            perform(stage, TutorialAction.TypeItemTitle("🍎 Apples"))
+
+            stage.abandon()
+
+            assertFalse(stage.screenState.addRowExpanded)
+            assertEquals("", stage.screenState.addRowText)
+        }
     }
 
     private fun perform(activity: ItemsStage, action: TutorialAction): Boolean =

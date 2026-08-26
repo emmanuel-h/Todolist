@@ -421,24 +421,32 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 1. Taps the FAB and types "🛒 Groceries" into the inline create row.
 2. Hovers the target-date icon while a caption pill anchored just below the inline create row shows "📅 To do on this day" (without opening the picker), then moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow on the real paper calendar, submits (the caption fades out once the date is picked), then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
 3. Opens the list and adds "🍎 Apples" and "🥖 Bread".
-4. Completes an item, restores it, drags it back to the top by the handle, then completes both items.
+4. Completes an item, restores it, then drags a row to the top by the handle and completes it. It stops there: a second completion taught nothing the first had not, and it left the demo list finished, so the last scene went looking for "the first row on the page" and found the reader's rather than the demo's.
 5. Returns to the lists screen and tears the demo list off the page with the same end→start
    drag a reader would use — not a tap, which on that same rectangle is the gesture that
    opens a list — then fades out leaving the app empty.
 
-**Skip control**: a bottom-center floating elevated pill containing 5 progress dots (filled up to the current scene) and a ✕ skip button; on the items screen it floats above the pinned inline add bar (88dp bottom margin). The back gesture also cancels. Both cancel paths delete the demo list and prevent the tutorial from ever showing again automatically.
+**Pace**: roughly 25 seconds end to end. Every rest between beats is taken through `TutorialPace`, never a bare `delay`.
+
+**Controls**: a bottom-center floating elevated pill containing 5 progress dots (filled up to the current scene), a ▸ next button and a ✕ skip button; on the items screen it floats above the pinned inline add bar. The back gesture cancels as ✕ does.
+
+▸ says *I have understood this one*: `TutorialPace.hurry()` ends the rest being taken and drops every rest left in the scene, while the scene still drives every one of its remaining actions in order — so the page arrives at the next scene exactly where the unhurried scene would have left it, and the hand snaps rather than glides for the rest of it. The next scene settles the pace and plays at the ordinary speed. On the last scene ▸ simply finishes the tour, demo list torn off and all.
+
+**Leaving nothing behind**: every way out of the tour — ✕, back, and any beat the script cannot play — deletes the demo list *and* puts the reader's page back through `TutorialStage.abandon()`: create row closed and emptied, calendar closed, edit sheet closed, held-aside row let go, on both pages of the stack rather than only the one on top. A scene that cannot play a beat ends the tour rather than returning quietly; returning quietly left the hand up over a page nothing was driving, with the demo's half-written row still in the reader's composer, where their next tap on the page submitted it as a list of their own.
 
 **Replay**: a dimmed circular-arrow glyph pinned top-right of the lists screen. Tap calls `TutorialViewModel.replay()`, which transitions `Hidden`/`Dismissed` → `ReadyToStart`; no-op while already `ReadyToStart` or `Active`. Does NOT touch the seen flag — the automatic tutorial still shows exactly once ever. The glyph is taken off the page while the add line is open and returns when the line folds away.
 
 **Crash safety**: the seen flag is persisted the moment the demo starts. The demo list id is persisted until cleanup, so a killed-mid-demo leftover is deleted on next launch by `CleanupAbandonedTutorialUseCase`.
 
-`TutorialViewModel.initialize()` is called from every `onCreate` and is **idempotent**: it returns early unless the state is still `Hidden`. Cleanup's first act is to tear off whatever demo list is recorded, which mid-tour is the list the tour is being written on — so without the guard a rotation deleted the demo out from under itself and then declared the tour over, the seen flag having been written at the opening beat.
+`TutorialViewModel.initialize()` is called from every `onCreate` and is **idempotent**: it returns early only while a tour is on the paper (`ReadyToStart` or `Active`). A tour that is over does not skip the sweep — the window is rebuilt far more often than the process is, and a demo list that outlived its tour would otherwise never be found while the app stayed alive. Cleanup's first act is to tear off whatever demo list is recorded, which mid-tour is the list the tour is being written on — so without the guard a rotation deleted the demo out from under itself and then declared the tour over, the seen flag having been written at the opening beat.
 
 **Demo strings** ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals — no string resources are introduced, preserving the icon-only-UI rule. The caption pill is the one sanctioned exception ([#30](https://github.com/emmanuel-h/Todolist/issues/30)): it displays the two `date_kind_*_caption` string resources shared with the edit-list dialog, with the 📅/⏰ emoji prefixes added as Kotlin literals.
 
 ### Must NOT happen
 - Tutorial reappearing after the first launch has started it (seen flag is written before the overlay appears).
 - The demo list surviving a skip or a mid-demo kill (cleanup runs on next launch).
+- Anything the demo opened on the reader's page outliving the tour — most of all a create row still holding the demo's name.
+- A scene that cannot play a beat leaving the tour running with the hand up.
 - A rotation mid-tour deleting the demo list or ending the tour.
 - Static text introduced anywhere in resources by the tutorial (demo strings are Kotlin-only; the two `date_kind_*_caption` resources are the sole sanctioned exception · [#30](https://github.com/emmanuel-h/Todolist/issues/30)).
 - `replay()` resetting the seen flag or allowing the automatic first-launch tutorial to fire a second time.

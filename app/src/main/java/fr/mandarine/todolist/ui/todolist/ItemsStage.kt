@@ -8,12 +8,12 @@ import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.ui.nav.PageStage
 import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
-import kotlinx.coroutines.delay
 
-private const val TYPE_CHAR_MILLIS = 80L
+private const val TYPE_CHAR_MILLIS = 45L
 
 /**
  * The items of one list as the demo's hand finds them. The page it drives is the
@@ -24,6 +24,7 @@ class ItemsStage(
     val viewModel: TodoListViewModel,
     val screenState: TodoListScreenState,
     private val aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
+    private val pace: TutorialPace,
     private val onLeave: () -> Unit
 ) : PageStage {
 
@@ -51,6 +52,11 @@ class ItemsStage(
 
     override suspend fun awaitDemoListId(): String? = null
 
+    override fun abandon() {
+        screenState.addRowExpanded = false
+        screenState.addRowText = ""
+    }
+
     override fun bannerContent(): TutorialBannerContent? = null
 
     private fun openAddRow(): Boolean {
@@ -61,7 +67,7 @@ class ItemsStage(
 
     private suspend fun typeItemTitle(text: String): Boolean {
         for (character in text) {
-            delay(TYPE_CHAR_MILLIS)
+            pace.beat(TYPE_CHAR_MILLIS)
             screenState.addRowText += character
         }
         screenState.requestHideKeyboard()

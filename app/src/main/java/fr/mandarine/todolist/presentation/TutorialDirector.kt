@@ -5,53 +5,60 @@ import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.domain.TutorialStep
 import java.time.LocalDate
-import kotlinx.coroutines.delay
 
 class TutorialDirector(
     private val stage: TutorialStage,
     private val overlay: TutorialOverlay,
     private val tutorialViewModel: TutorialViewModel,
+    private val pace: TutorialPace,
     private val today: () -> LocalDate
 ) {
 
     suspend fun playOpening() {
         if (stage.screen != TutorialScreen.LISTS) return
 
-        delay(1200)
-        point(TutorialAnchor.CreateListButton, 600)
-        delay(400)
+        pace.beat(500)
+        point(TutorialAnchor.CreateListButton, 300)
+        pace.beat(200)
         overlay.tap()
-        if (!stage.perform(TutorialAction.OpenListCreateRow)) return
-        delay(700)
+        if (!stage.perform(TutorialAction.OpenListCreateRow)) {
+            abandon()
+            return
+        }
+        pace.beat(350)
 
-        point(TutorialAnchor.ListNameField, 400)
-        delay(300)
+        point(TutorialAnchor.ListNameField, 200)
+        pace.beat(150)
         stage.perform(TutorialAction.TypeListName(DEMO_LIST_NAME))
-        delay(600)
+        pace.beat(300)
 
-        point(TutorialAnchor.TargetDateButton, 500)
+        point(TutorialAnchor.TargetDateButton, 250)
         stage.boundsOf(TutorialAnchor.ListCreateRow)?.let {
             overlay.showCaption(TutorialCaption.TARGET_DATE, it)
         }
-        delay(1800)
+        pace.beat(900)
 
-        point(TutorialAnchor.DueDateButton, 500)
+        point(TutorialAnchor.DueDateButton, 250)
         overlay.updateCaption(TutorialCaption.DUE_DATE)
-        delay(1500)
+        pace.beat(750)
         overlay.tap()
         stage.perform(TutorialAction.OpenDueDatePicker)
-        delay(1400)
+        pace.beat(700)
 
         stage.perform(TutorialAction.PickDueDate(today().plusDays(1)))
         overlay.hideCaption()
-        delay(600)
+        pace.beat(300)
 
-        point(TutorialAnchor.SubmitListButton, 400)
-        delay(400)
+        point(TutorialAnchor.SubmitListButton, 200)
+        pace.beat(200)
         overlay.tap()
         stage.perform(TutorialAction.SubmitList)
 
-        val listId = stage.awaitDemoListId() ?: return
+        val listId = stage.awaitDemoListId()
+        if (listId == null) {
+            abandon()
+            return
+        }
         tutorialViewModel.onDemoListCreated(listId)
     }
 
@@ -72,104 +79,103 @@ class TutorialDirector(
     }
 
     private suspend fun showBannerThenAdvance() {
-        delay(500)
+        pace.beat(250)
         stage.bannerContent()?.let { overlay.showBanner(it) }
         tutorialViewModel.advanceStep()
     }
 
     private suspend fun openDemoList() {
-        delay(800)
-        point(TutorialAnchor.FirstListRow, 500)
-        delay(400)
+        pace.beat(400)
+        point(TutorialAnchor.FirstListRow, 250)
+        pace.beat(200)
         overlay.tap()
-        if (!stage.perform(TutorialAction.OpenFirstList)) return
+        if (!stage.perform(TutorialAction.OpenFirstList)) {
+            abandon()
+            return
+        }
         tutorialViewModel.advanceStep()
     }
 
     private suspend fun addDemoItems() {
-        delay(1400)
-        point(TutorialAnchor.ItemGhostRow, 500)
-        delay(400)
+        pace.beat(700)
+        point(TutorialAnchor.ItemGhostRow, 250)
+        pace.beat(200)
         overlay.tap()
         if (stage.perform(TutorialAction.OpenItemAddRow)) {
-            delay(700)
+            pace.beat(350)
         }
 
         addItem(DEMO_ITEM_FIRST)
-        delay(900)
+        pace.beat(450)
         addItem(DEMO_ITEM_SECOND)
-        delay(800)
+        pace.beat(400)
 
         tutorialViewModel.advanceStep()
     }
 
     private suspend fun addItem(title: String) {
         stage.perform(TutorialAction.TypeItemTitle(title))
-        delay(400)
-        point(TutorialAnchor.SubmitItemButton, 300)
-        delay(300)
+        pace.beat(200)
+        point(TutorialAnchor.SubmitItemButton, 150)
+        pace.beat(150)
         overlay.tap()
         stage.perform(TutorialAction.SubmitItem)
     }
 
+    /**
+     * A tick, the same tick rubbed out, and a row carried up the page. It used to
+     * tick a second row afterwards as well, which taught nothing the first tick
+     * had not and left the demo list finished — so the last scene went looking for
+     * "the first row" and found the reader's, not the demo's.
+     */
     private suspend fun completeAndReorder() {
-        delay(800)
-        tapToggle(TutorialAnchor.ActiveItemToggle(0), TutorialAction.ToggleActiveItem(0), 500, 400, 900)
+        pace.beat(400)
+        tapToggle(TutorialAnchor.ActiveItemToggle(0), TutorialAction.ToggleActiveItem(0), 250, 200, 450)
 
-        delay(300)
+        pace.beat(150)
         tapToggle(
             TutorialAnchor.CompletedItemToggle(0),
             TutorialAction.ToggleCompletedItem(0),
-            500,
-            400,
-            900
+            250,
+            200,
+            450
         )
 
-        delay(300)
+        pace.beat(150)
         dragActiveItemToTop()
 
-        delay(300)
-        tapToggle(TutorialAnchor.ActiveItemToggle(0), TutorialAction.ToggleActiveItem(0), 400, 300, 700)
+        pace.beat(150)
+        tapToggle(TutorialAnchor.ActiveItemToggle(0), TutorialAction.ToggleActiveItem(0), 200, 150, 350)
 
-        delay(300)
-        tapToggle(TutorialAnchor.ActiveItemToggle(0), TutorialAction.ToggleActiveItem(0), 400, 300, 800)
-
-        delay(400)
+        pace.beat(200)
         tutorialViewModel.advanceStep()
     }
 
     private suspend fun dragActiveItemToTop() {
         if (stage.boundsOf(TutorialAnchor.ActiveItemDragHandle(1)) == null) return
 
-        point(TutorialAnchor.ActiveItemDragHandle(1), 500)
-        delay(400)
+        point(TutorialAnchor.ActiveItemDragHandle(1), 250)
+        pace.beat(200)
         overlay.grip()
-        delay(200)
+        pace.beat(100)
 
         stage.perform(TutorialAction.MoveActiveItem(1, 0))
-        delay(100)
+        pace.beat(50)
 
-        point(TutorialAnchor.ActiveItemRow(0), 600)
-        delay(400)
+        point(TutorialAnchor.ActiveItemRow(0), 300)
+        pace.beat(200)
         overlay.release()
-        delay(200)
+        pace.beat(100)
 
         stage.perform(TutorialAction.CommitReorder(1, 0))
-        delay(800)
+        pace.beat(400)
     }
 
     private suspend fun returnToLists() {
-        delay(600)
-        stage.perform(TutorialAction.NavigateBack)
+        pace.beat(300)
+        if (!stage.perform(TutorialAction.NavigateBack)) abandon()
     }
 
-    /**
-     * The demo tears the row off the way the reader does — a drag from the end of
-     * the row towards its start. It used to mime a tap in the middle of the row,
-     * which is the gesture that opens a list: the same rectangle answered both
-     * beats, so the tour taught the wrong hand for the one destructive thing in
-     * the app.
-     */
     /**
      * A row is a page and it comes away in the hand, both ways: pulled towards the
      * end it opens the sheet the list is edited on — which is where a day is put on
@@ -179,43 +185,62 @@ class TutorialDirector(
      * over a row that never moves.
      */
     private suspend fun deleteDemoList() {
-        delay(1200)
-        val row = stage.boundsOf(TutorialAnchor.DeleteListButton) ?: return
+        pace.beat(600)
+        val row = stage.boundsOf(TutorialAnchor.DeleteListButton)
+        if (row == null) {
+            abandon()
+            return
+        }
 
-        overlay.glideTo(row.alongRow(EDIT_FROM), 500)
-        delay(400)
+        overlay.glideTo(row.alongRow(EDIT_FROM), 250)
+        pace.beat(200)
         overlay.grip()
-        delay(200)
+        pace.beat(100)
         pullAcross(row, EDIT_FROM, EDIT_TO, row.width * EDIT_REACH)
-        delay(300)
+        pace.beat(150)
         overlay.release()
         if (!stage.perform(TutorialAction.OpenFirstListEditor)) {
             stage.perform(TutorialAction.LetFirstListGo)
+            abandon()
             return
         }
-        delay(1600)
+        pace.beat(900)
         stage.perform(TutorialAction.CloseEditor)
-        delay(700)
+        pace.beat(350)
 
-        overlay.glideTo(row.alongRow(TEAR_FROM), 500)
-        delay(400)
+        overlay.glideTo(row.alongRow(TEAR_FROM), 250)
+        pace.beat(200)
         overlay.grip()
-        delay(200)
+        pace.beat(100)
         pullAcross(row, TEAR_FROM, TEAR_TO, -row.width * TEAR_REACH)
         if (!stage.perform(TutorialAction.RequestDeleteFirstList)) {
             stage.perform(TutorialAction.LetFirstListGo)
             overlay.release()
+            abandon()
             return
         }
         stage.perform(TutorialAction.LetFirstListGo)
-        delay(300)
+        pace.beat(150)
         overlay.release()
-        delay(900)
+        pace.beat(450)
 
-        stage.perform(TutorialAction.ConfirmDeleteFirstList)
-        delay(1200)
+        if (!stage.perform(TutorialAction.ConfirmDeleteFirstList)) {
+            abandon()
+            return
+        }
+        pace.beat(600)
 
         tutorialViewModel.advanceStep()
+    }
+
+    /**
+     * A beat that cannot be played is the end of the demonstration, not a pause in
+     * it. Returning quietly left the hand up over a page the tour had stopped
+     * driving, and left the demo's own list on that page for the reader to find
+     * and wonder about; ending it tears the list off the way the way out does.
+     */
+    private fun abandon() {
+        tutorialViewModel.skip()
     }
 
     /**
@@ -245,10 +270,10 @@ class TutorialDirector(
     ) {
         if (stage.boundsOf(anchor) == null) return
         point(anchor, glideMillis)
-        delay(beforeTapMillis)
+        pace.beat(beforeTapMillis)
         overlay.tap()
         stage.perform(action)
-        delay(afterTapMillis)
+        pace.beat(afterTapMillis)
     }
 
     private suspend fun point(anchor: TutorialAnchor, durationMillis: Long) {
@@ -274,7 +299,7 @@ class TutorialDirector(
         const val EDIT_TO = 0.62f
         const val EDIT_REACH = 0.26f
         const val PULL_STEPS = 6
-        const val PULL_STEP_MILLIS = 110L
+        const val PULL_STEP_MILLIS = 70L
         const val DEMO_LIST_NAME = "🛒 Groceries"
         const val DEMO_ITEM_FIRST = "🍎 Apples"
         const val DEMO_ITEM_SECOND = "🥖 Bread"

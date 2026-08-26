@@ -104,6 +104,7 @@ fun Modifier.behindTutorial(active: Boolean): Modifier =
 fun TutorialOverlay(
     state: TutorialOverlayState,
     anchors: TutorialAnchorHost,
+    onNext: () -> Unit,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -144,6 +145,7 @@ fun TutorialOverlay(
         state.caption?.let { CaptionSlip(it, state) }
         ProgressSlip(
             filledDots = state.filledDots,
+            onNext = onNext,
             onSkip = onSkip,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -258,8 +260,17 @@ private fun BoxScope.CaptionSlip(caption: TutorialCaption, state: TutorialOverla
     }
 }
 
+/**
+ * Where the demonstration has got to, and the two ways out of the beat it is on:
+ * done with this one, and done with all of them.
+ */
 @Composable
-private fun ProgressSlip(filledDots: Int, onSkip: () -> Unit, modifier: Modifier = Modifier) {
+private fun ProgressSlip(
+    filledDots: Int,
+    onNext: () -> Unit,
+    onSkip: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .paperSlip()
@@ -273,10 +284,16 @@ private fun ProgressSlip(filledDots: Int, onSkip: () -> Unit, modifier: Modifier
             )
         }
         InkIconButton(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = stringResource(R.string.tutorial_next),
+            onClick = onNext,
+            modifier = Modifier.padding(start = 8.dp),
+            tint = LocalPaperPalette.current.inkSoft
+        )
+        InkIconButton(
             painter = painterResource(R.drawable.ic_close),
             contentDescription = stringResource(R.string.cancel),
             onClick = onSkip,
-            modifier = Modifier.padding(start = 8.dp),
             tint = LocalPaperPalette.current.inkSoft
         )
     }

@@ -3,6 +3,7 @@ package fr.mandarine.todolist.ui.tutorial
 import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.domain.TutorialStep
 import fr.mandarine.todolist.presentation.TutorialDirector
+import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
@@ -25,14 +26,25 @@ class TutorialOverlayController(
     private val sceneContext: CoroutineContext = AndroidUiDispatcher.Main
 ) {
 
-    val overlayState = TutorialOverlayState()
+    val pace = TutorialPace()
+    val overlayState = TutorialOverlayState(pace)
 
     private var sceneJob: Job? = null
     private var playing: Pair<TutorialUiState, TutorialScreen>? = null
 
-    fun onSkipRequested() {
+    /**
+     * A reader who has understood the beat being played is not made to sit
+     * through the rest of it. The scene keeps every action and drops every rest,
+     * so the page arrives at the next scene exactly as it would have.
+     */
+    fun onNextRequested() {
+        pace.hurry()
+    }
+
+    fun onSkipRequested(stage: TutorialStage) {
         sceneJob?.cancel()
         sceneJob = null
+        stage.abandon()
         tutorialViewModel.skip()
         scope.launch(sceneContext) { overlayState.fadeOut() }
     }
@@ -48,7 +60,7 @@ class TutorialOverlayController(
         if (playing == beat) return
         playing = beat
         overlayState.filledDots = filledDotsFor(state)
-        val director = TutorialDirector(stage, overlayState, tutorialViewModel, today)
+        val director = TutorialDirector(stage, overlayState, tutorialViewModel, pace, today)
         when (state) {
             TutorialUiState.Hidden -> {}
             TutorialUiState.ReadyToStart -> {
@@ -73,6 +85,7 @@ class TutorialOverlayController(
 
     private fun launchScene(block: suspend () -> Unit) {
         sceneJob?.cancel()
+        pace.settle()
         sceneJob = scope.launch(sceneContext) { block() }
     }
 }

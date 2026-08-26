@@ -123,11 +123,27 @@ class TutorialOverlayControllerTest {
         controller.handleState(TutorialUiState.ReadyToStart, stage)
         drain()
 
-        controller.onSkipRequested()
+        controller.onSkipRequested(stage)
         drain()
 
         verify { tutorialViewModel.skip() }
         assertFalse(controller.overlayState.visible)
+    }
+
+    /**
+     * The demo drives the reader's own controls, so the way out has to put them
+     * back: a create row left open with the demo's name in it becomes the
+     * reader's list on their very next tap.
+     */
+    @Test
+    fun `should put the page back the way the demo found it when skip is requested`() {
+        val stage = FakeStage(TutorialScreen.LISTS)
+        controller.handleState(TutorialUiState.ReadyToStart, stage)
+        drain()
+
+        controller.onSkipRequested(stage)
+
+        assertEquals(1, stage.abandoned)
     }
 
     private fun drain() {
@@ -135,10 +151,15 @@ class TutorialOverlayControllerTest {
     }
 
     private class FakeStage(override val screen: TutorialScreen) : TutorialStage {
+        var abandoned = 0
+
         override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? = null
         override suspend fun perform(action: TutorialAction): Boolean = false
         override suspend fun awaitDemoListId(): String? = null
         override fun bannerContent(): TutorialBannerContent? = null
+        override fun abandon() {
+            abandoned += 1
+        }
     }
 
     private class ImmediateFrameClock : MonotonicFrameClock {

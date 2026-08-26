@@ -48,6 +48,7 @@ class TutorialOverlayUiTest {
     private val state = TutorialOverlayState()
     private val anchors = TutorialAnchors()
     private var skipped = 0
+    private var hurried = 0
 
     @Test
     fun `should draw nothing while the tutorial is not running`() {
@@ -72,6 +73,24 @@ class TutorialOverlayUiTest {
         composeRule.onNodeWithContentDescription(skipDescription()).performClick()
 
         assertEquals(1, skipped)
+    }
+
+    @Test
+    fun `should offer a way past the beat being played once the tutorial is running`() {
+        onFrames { state.begin() }
+        render()
+
+        composeRule.onNodeWithContentDescription(nextDescription()).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should report a request to move past the beat being played`() {
+        onFrames { state.begin() }
+        render()
+
+        composeRule.onNodeWithContentDescription(nextDescription()).performClick()
+
+        assertEquals(1, hurried)
     }
 
     @Test
@@ -152,6 +171,7 @@ class TutorialOverlayUiTest {
                 TutorialOverlay(
                     state = state,
                     anchors = anchors,
+                    onNext = { hurried += 1 },
                     onSkip = { skipped += 1 }
                 )
             }
@@ -178,6 +198,8 @@ class TutorialOverlayUiTest {
     private fun onFrames(block: suspend () -> Unit) = runBlocking(ImmediateFrameClock()) { block() }
 
     private fun skipDescription(): String = string(R.string.cancel)
+
+    private fun nextDescription(): String = string(R.string.tutorial_next)
 
     private fun string(resId: Int): String =
         ApplicationProvider.getApplicationContext<Context>().getString(resId)

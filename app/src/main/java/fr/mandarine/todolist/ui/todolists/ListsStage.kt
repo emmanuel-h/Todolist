@@ -9,13 +9,13 @@ import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
+import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.ui.nav.PageStage
 import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
 import java.time.LocalDate
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
-private const val TYPE_CHAR_MILLIS = 80L
+private const val TYPE_CHAR_MILLIS = 45L
 
 /**
  * The page of lists as the demo's hand finds it. Every beat the script plays on
@@ -25,6 +25,7 @@ class ListsStage(
     private val viewModel: TodoListsViewModel,
     val screenState: TodoListsScreenState,
     private val aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
+    private val pace: TutorialPace,
     private val writeDemoList: suspend (String, LocalDate?, LocalDate?) -> Unit,
     private val onOpen: (TodoList) -> Unit
 ) : PageStage {
@@ -69,6 +70,13 @@ class ListsStage(
         return content.activeSummaries.firstOrNull { it.list.id !in written }?.list?.id
     }
 
+    override fun abandon() {
+        screenState.abandonAddRow()
+        screenState.datePickerRequest = null
+        screenState.rename = null
+        screenState.letFirstRowGo()
+    }
+
     override fun bannerContent(): TutorialBannerContent? {
         val summary = firstActiveSummary() ?: return null
         return TutorialBannerContent(summary.list.name, summary.list.dueDate)
@@ -84,7 +92,7 @@ class ListsStage(
     private suspend fun typeListName(text: String): Boolean {
         if (!screenState.addRowExpanded) return false
         for (character in text) {
-            delay(TYPE_CHAR_MILLIS)
+            pace.beat(TYPE_CHAR_MILLIS)
             screenState.addRowText += character
         }
         return true

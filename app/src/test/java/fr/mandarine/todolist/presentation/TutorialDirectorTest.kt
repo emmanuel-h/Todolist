@@ -7,6 +7,8 @@ import fr.mandarine.todolist.domain.TutorialStep
 import io.mockk.mockk
 import io.mockk.verify
 import java.time.LocalDate
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
@@ -21,15 +23,17 @@ class TutorialDirectorTest {
 
     private lateinit var overlay: RecordingOverlay
     private lateinit var viewModel: TutorialViewModel
+    private lateinit var pace: TutorialPace
 
     @Before
     fun setUp() {
         viewModel = mockk(relaxed = true)
+        pace = TutorialPace()
     }
 
     private fun directorFor(stage: RecordingStage): TutorialDirector {
         overlay = RecordingOverlay(stage)
-        return TutorialDirector(stage, overlay, viewModel) { today }
+        return TutorialDirector(stage, overlay, viewModel, pace) { today }
     }
 
     // ── Opening scene ──
@@ -73,7 +77,7 @@ class TutorialDirectorTest {
     fun `should hold the scripted pacing of the opening scene`() = runTest {
         directorFor(RecordingStage(TutorialScreen.LISTS)).playOpening()
 
-        assertEquals(8900L, testScheduler.currentTime)
+        assertEquals(4350L, testScheduler.currentTime)
     }
 
     @Test
@@ -95,6 +99,7 @@ class TutorialDirectorTest {
 
         assertEquals(listOf(TutorialAction.OpenListCreateRow), stage.actions)
         verify(exactly = 0) { viewModel.onDemoListCreated("demo-list") }
+        verify { viewModel.skip() }
     }
 
     @Test
@@ -105,6 +110,7 @@ class TutorialDirectorTest {
         directorFor(stage).playOpening()
 
         verify(exactly = 0) { viewModel.onDemoListCreated("demo-list") }
+        verify { viewModel.skip() }
     }
 
     @Test
@@ -181,6 +187,7 @@ class TutorialDirectorTest {
         directorFor(stage).play(TutorialStep.SET_DUE_DATE)
 
         verify(exactly = 0) { viewModel.advanceStep() }
+        verify { viewModel.skip() }
     }
 
     @Test
@@ -220,7 +227,7 @@ class TutorialDirectorTest {
             ),
             stage.actions
         )
-        assertEquals(5600L, testScheduler.currentTime)
+        assertEquals(2800L, testScheduler.currentTime)
         verify { viewModel.advanceStep() }
     }
 
@@ -233,7 +240,7 @@ class TutorialDirectorTest {
 
         assertTrue(stage.actions.contains(TutorialAction.TypeItemTitle("🍎 Apples")))
         assertTrue(stage.actions.contains(TutorialAction.TypeItemTitle("🥖 Bread")))
-        assertEquals(4900L, testScheduler.currentTime)
+        assertEquals(2450L, testScheduler.currentTime)
         verify { viewModel.advanceStep() }
     }
 
@@ -260,7 +267,6 @@ class TutorialDirectorTest {
                 TutorialAction.ToggleCompletedItem(0),
                 TutorialAction.MoveActiveItem(1, 0),
                 TutorialAction.CommitReorder(1, 0),
-                TutorialAction.ToggleActiveItem(0),
                 TutorialAction.ToggleActiveItem(0)
             ),
             stage.actions
@@ -274,7 +280,7 @@ class TutorialDirectorTest {
     fun `should hold the scripted pacing of the complete and reorder step`() = runTest {
         directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.COMPLETE_AND_REORDER)
 
-        assertEquals(9200L, testScheduler.currentTime)
+        assertEquals(3900L, testScheduler.currentTime)
     }
 
     @Test
@@ -385,6 +391,7 @@ class TutorialDirectorTest {
             stage.actions.beats()
         )
         verify(exactly = 0) { viewModel.advanceStep() }
+        verify { viewModel.skip() }
     }
 
     @Test
@@ -412,6 +419,7 @@ class TutorialDirectorTest {
         assertEquals(emptyList<TutorialAction>(), stage.actions)
         assertEquals(emptyList<String>(), overlay.events)
         verify(exactly = 0) { viewModel.advanceStep() }
+        verify { viewModel.skip() }
     }
 
     @Test
@@ -424,6 +432,82 @@ class TutorialDirectorTest {
         assertEquals("RequestDeleteFirstList", stage.actions.beats().last { it != "LetFirstListGo" })
         assertEquals("release", overlay.events.last())
         verify(exactly = 0) { viewModel.advanceStep() }
+        verify { viewModel.skip() }
+    }
+
+    /**
+     * A demonstration whose last beat cannot be played must still tear off its own
+     * list. It used to return quietly, which left the hand up over a page nothing
+     * was driving and the demo's list sitting on it for the reader to find.
+     */
+    @Test
+    fun `should end the tour when the tear is never written through`() = runTest {
+        val stage = RecordingStage(TutorialScreen.LISTS)
+        stage.canPerform = { it != TutorialAction.ConfirmDeleteFirstList }
+
+        directorFor(stage).play(TutorialStep.DELETE_LIST)
+
+        assertEquals("ConfirmDeleteFirstList", stage.actions.beats().last())
+        verify(exactly = 0) { viewModel.advanceStep() }
+        verify { viewModel.skip() }
+    }
+
+    @Test
+    fun `should end the tour when the demo cannot walk back out of the list`() = runTest {
+        val stage = RecordingStage(TutorialScreen.ITEMS)
+        stage.canPerform = { it != TutorialAction.NavigateBack }
+
+        directorFor(stage).play(TutorialStep.DELETE_LIST)
+
+        verify { viewModel.skip() }
+    }
+
+    // ── Seen enough ──
+
+    /**
+     * The reader saying they have understood the beat does not skip it: every
+     * action is still driven through, in order, so the page arrives at the next
+     * scene exactly where the unhurried scene would have left it.
+     */
+    @Test
+    fun `should drive every action of a scene the reader has seen enough of`() = runTest {
+        val stage = RecordingStage(TutorialScreen.ITEMS)
+        pace.hurry()
+
+        directorFor(stage).play(TutorialStep.OPEN_LIST)
+
+        assertEquals(
+            listOf(
+                TutorialAction.OpenItemAddRow,
+                TutorialAction.TypeItemTitle("🍎 Apples"),
+                TutorialAction.SubmitItem,
+                TutorialAction.TypeItemTitle("🥖 Bread"),
+                TutorialAction.SubmitItem
+            ),
+            stage.actions
+        )
+        verify { viewModel.advanceStep() }
+    }
+
+    @Test
+    fun `should take no time at all over a scene the reader has seen enough of`() = runTest {
+        pace.hurry()
+
+        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.OPEN_LIST)
+
+        assertEquals(0L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun `should end the rest that is already being taken when the reader says so`() = runTest {
+        val director = directorFor(RecordingStage(TutorialScreen.ITEMS))
+        val scene = launch { director.play(TutorialStep.OPEN_LIST) }
+
+        advanceTimeBy(100)
+        pace.hurry()
+        scene.join()
+
+        assertEquals(100L, testScheduler.currentTime)
     }
 
     /**
@@ -452,6 +536,7 @@ class TutorialDirectorTest {
         var anchorAvailable: (TutorialAnchor) -> Boolean = { true }
         var demoListId: String? = "demo-list"
         var banner: TutorialBannerContent? = null
+        var abandoned = 0
 
         private val issued = mutableMapOf<TutorialBounds, String>()
         private var nextLeft = 1
@@ -485,6 +570,10 @@ class TutorialDirectorTest {
         override suspend fun awaitDemoListId(): String? = demoListId
 
         override fun bannerContent(): TutorialBannerContent? = banner
+
+        override fun abandon() {
+            abandoned += 1
+        }
     }
 
     private class RecordingOverlay(private val stage: RecordingStage) : TutorialOverlay {

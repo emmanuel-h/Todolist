@@ -37,4 +37,14 @@ interface TutorialStage {
     suspend fun awaitDemoListId(): String?
 
     fun bannerContent(): TutorialBannerContent?
+
+    /**
+     * Put the page back the way the demo found it. A tour that stops partway
+     * through has half-driven controls open on the reader's own page — a create
+     * row with the demo's name typed into it, a calendar, a sheet, a row held
+     * aside — and those are the demo's, not theirs. The half-written row was the
+     * worse one: the next tap anywhere on the page submitted it, and the reader
+     * was left owning a list they had watched somebody else start.
+     */
+    fun abandon()
 }

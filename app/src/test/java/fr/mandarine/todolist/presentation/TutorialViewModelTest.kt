@@ -101,12 +101,27 @@ class TutorialViewModelTest {
     fun `should leave a dismissed tour dismissed when the window is rebuilt`() {
         every { shouldRunTutorialUseCase() } returns false
         viewModel.initialize()
+
+        viewModel.initialize()
+
+        assertEquals(TutorialUiState.Dismissed, viewModel.uiState.value)
+    }
+
+    /**
+     * The window is rebuilt far more often than the process is, and a demo list
+     * that outlived its own tour has to be found by somebody. Skipping the sweep
+     * once the tour was over left it on the page for as long as the app stayed
+     * alive, which is where the reader kept finding a list they never wrote.
+     */
+    @Test
+    fun `should sweep up an abandoned demo list when the window is rebuilt after the tour`() {
+        every { shouldRunTutorialUseCase() } returns false
+        viewModel.initialize()
         clearMocks(cleanupAbandonedTutorialUseCase, answers = false)
 
         viewModel.initialize()
 
-        verify(exactly = 0) { cleanupAbandonedTutorialUseCase() }
-        assertEquals(TutorialUiState.Dismissed, viewModel.uiState.value)
+        verify { cleanupAbandonedTutorialUseCase() }
     }
 
     @Test

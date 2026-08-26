@@ -36,10 +36,13 @@ class TutorialViewModel(
      * deleted the tour out from under itself and then declared it over, because
      * the seen flag is written at the opening beat.
      *
-     * A tour already on the paper is left alone.
+     * A tour already on the paper is left alone. A tour that is over is not: the
+     * window is rebuilt far more often than the process is, so a demo list that
+     * outlived its tour would never have been swept up while the app stayed
+     * alive, and the reader would keep finding it.
      */
     fun initialize() {
-        if (_uiState.value != TutorialUiState.Hidden) return
+        if (tourIsOnThePaper()) return
         viewModelScope.launch(dispatcher) {
             cleanupAbandonedTutorialUseCase()
             if (shouldRunTutorialUseCase()) {
@@ -49,6 +52,11 @@ class TutorialViewModel(
                 _uiState.value = TutorialUiState.Dismissed
             }
         }
+    }
+
+    private fun tourIsOnThePaper(): Boolean {
+        val current = _uiState.value
+        return current is TutorialUiState.Active || current is TutorialUiState.ReadyToStart
     }
 
     fun onDemoListCreated(listId: String) {

@@ -337,6 +337,60 @@ class TodoListsTutorialStageTest {
         }
     }
 
+    /**
+     * A tour that stops partway through has the reader's own create row open with
+     * the demo's name typed into it. Left there, the reader's next tap on the page
+     * submits it and they own a list they watched somebody else start.
+     */
+    @Test
+    fun `should close the create row the demo left open when the tour is abandoned`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
+            perform(activity, TutorialAction.TypeListName("🛒 Groceries"))
+
+            activity.stage.abandon()
+
+            assertFalse(activity.screenState.addRowExpanded)
+            assertEquals("", activity.screenState.addRowText)
+        }
+    }
+
+    @Test
+    fun `should close the calendar the demo left open when the tour is abandoned`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
+            perform(activity, TutorialAction.OpenDueDatePicker)
+
+            activity.stage.abandon()
+
+            assertNull(activity.screenState.datePickerRequest)
+        }
+    }
+
+    @Test
+    fun `should close the sheet the demo left open when the tour is abandoned`() {
+        onActivity { activity ->
+            createList(activity, "Reader's own")
+            perform(activity, TutorialAction.OpenFirstListEditor)
+
+            activity.stage.abandon()
+
+            assertNull(activity.screenState.rename)
+        }
+    }
+
+    @Test
+    fun `should let go of the row the demo left held aside when the tour is abandoned`() {
+        onActivity { activity ->
+            createList(activity, "Reader's own")
+            perform(activity, TutorialAction.PullFirstList(-40f))
+
+            activity.stage.abandon()
+
+            assertEquals(0f, activity.screenState.demoPull, 0.001f)
+        }
+    }
+
     private fun perform(activity: TodoListsActivity, action: TutorialAction): Boolean =
         runBlocking { activity.stage.perform(action) }
 

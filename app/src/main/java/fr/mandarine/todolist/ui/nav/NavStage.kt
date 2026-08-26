@@ -69,6 +69,16 @@ class NavStage(
 
     override fun bannerContent(): TutorialBannerContent? = onTop?.bannerContent()
 
+    /**
+     * Both pages, not the one on top: the demo opens a create row on the page of
+     * lists and then walks into a list, so the page that has something of the
+     * demo's left on it is often the one underneath.
+     */
+    override fun abandon() {
+        lists.abandon()
+        items?.abandon()
+    }
+
     private val onTop: TutorialStage? get() = if (onItems) items else lists
 }
 

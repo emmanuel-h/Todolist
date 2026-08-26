@@ -46,6 +46,7 @@
     <string name="choose_month">Choisir le mois</string>
     <string name="notification_channel_name">Rappels</string>
     <string name="replay_tutorial">Revoir le tutoriel</string>
+    <string name="tutorial_next">Étape suivante</string>
     <string name="date_kind_target_caption">À faire ce jour-là</string>
     <string name="date_kind_due_caption">À terminer avant ce jour</string>
 </resources>

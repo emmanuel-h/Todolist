@@ -132,6 +132,7 @@ class TodoListsActivity : ComponentActivity() {
                 viewModel = viewModel,
                 screenState = screenState,
                 aim = tutorialController.overlayState::aimAt,
+                pace = tutorialController.pace,
                 writeDemoList = { name, targetDate, dueDate ->
                     writeDemoList(name, targetDate, dueDate)
                 },
@@ -178,6 +179,7 @@ class TodoListsActivity : ComponentActivity() {
                             today = clock.today(),
                             itemsViewModelFactory = { listId -> itemsViewModelFactory(listId) },
                             aim = overlayState::aimAt,
+                            pace = tutorialController.pace,
                             onDueDateSet = { askForNotifications() },
                             onReplayTutorial = { tutorialViewModel.replay() }
                         )
@@ -185,7 +187,8 @@ class TodoListsActivity : ComponentActivity() {
                     TutorialOverlay(
                         state = overlayState,
                         anchors = stage.anchors,
-                        onSkip = { tutorialController.onSkipRequested() }
+                        onNext = { tutorialController.onNextRequested() },
+                        onSkip = { tutorialController.onSkipRequested(stage) }
                     )
                 }
             }
@@ -216,6 +219,7 @@ class TodoListsActivity : ComponentActivity() {
                     stage.recordingAnchors = running
                     stage.animationsEnabled = animationsAllowed()
                     if (demoJustEnded(state)) {
+                        stage.abandon()
                         closeDemoPage()
                         viewModel.refresh()
                     }
