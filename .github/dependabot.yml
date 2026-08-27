@@ -1,19 +1,16 @@
 version: 2
 
+# Only gradle. There is a github-actions updater too, and it was declared here
+# until it failed on every single run with `dependency_file_not_found`: this
+# repository has no .github/workflows/ for it to read, and that updater treats
+# having nothing to do as an error rather than as a no-op. Add it back in the
+# same commit that adds the first workflow, not before.
 updates:
   - package-ecosystem: gradle
     directory: "/"
     schedule:
       interval: daily
     open-pull-requests-limit: 10
-    commit-message:
-      prefix: chore
-      include: scope
-
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
     commit-message:
       prefix: chore
       include: scope
