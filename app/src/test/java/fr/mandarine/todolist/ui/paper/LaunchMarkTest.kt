@@ -91,7 +91,24 @@ class LaunchMarkTest {
 
         assertEquals(palette.stickyNote.toArgb(), face.pixelAt(36f, 45f))
         assertEquals(palette.stickyNoteEdge.toArgb(), face.pixelAt(77f, 50f))
-        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(57.7f, 57.5f))
+        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(40.1f, 56.7f))
+    }
+
+    /**
+     * A bare tick said "done"; it did not say "list". The mark the tile carries is a
+     * written page: three ruled lines, the first two ticked off and the last still
+     * waiting, which is the smallest drawing of this app that is still this app.
+     */
+    @Test
+    fun `should draw the tile as a list of lines, two struck and one still open`() {
+        val face = icon().foreground
+
+        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(40.1f, 47.2f))
+        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(40.1f, 56.7f))
+        assertEquals(palette.pencil.toArgb(), face.pixelAt(35.8f, 66.5f))
+        for (rule in listOf(47.5f, 57f, 66.5f)) {
+            assertEquals("rule at $rule", palette.pencil.toArgb(), face.pixelAt(60f, rule))
+        }
     }
 
     @Test
@@ -166,7 +183,8 @@ class LaunchMarkTest {
         assertTrue("$settle", settle is AnimatedVectorDrawable)
         assertEquals(palette.stickyNote.toArgb(), settle.pixelAt(36f, 45f))
         assertEquals(palette.stickyNoteEdge.toArgb(), settle.pixelAt(77f, 50f))
-        assertEquals(palette.inkBlue.toArgb(), settle.pixelAt(57.7f, 57.5f))
+        assertEquals(palette.inkBlue.toArgb(), settle.pixelAt(40.1f, 56.7f))
+        assertEquals(palette.pencil.toArgb(), settle.pixelAt(60f, 66.5f))
     }
 
     private fun icon(): AdaptiveIconDrawable =

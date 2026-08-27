@@ -1,162 +1,116 @@
 #!/usr/bin/env python3
 """Draw the 1024x500 Play Store feature graphic.
 
-The graphic is the app's own sheet: PaperPalette.light tones, the ruling the
-page is drawn on, the launcher's sticky card, and Patrick Hand — the typeface
-the app writes in. Re-run whenever the palette or the launcher icon changes.
+The composition is the one the listing has always used: the launcher icon and
+the wordmark on a flat field, a tilted phone standing off the right edge. What
+changed underneath is the app — the icon is the checklist card and the screen
+is ruled paper, so the field is what has to carry the contrast.
 
-    python3 make-feature-graphic.py
+    python3 make-feature-graphic.py [purple|kraft]
 """
 import os
-import random
+import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FONT = os.path.join(HERE, "..", "..", "app", "src", "main", "res", "font", "patrick_hand.ttf")
-OUT = os.path.join(HERE, "feature-graphic.png")
+SHOT = os.path.join(HERE, "..", "screenshots", "phone-01-lists.png")
+SANS = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"
+SANS_TEXT = "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"
 
 W, H = 1024, 500
 S = 4  # supersampling
 
+FIELDS = {
+    "purple": ((103, 80, 164), (122, 102, 178), (255, 255, 255), (223, 214, 240)),
+    "kraft": ((74, 62, 48), (95, 80, 62), (250, 245, 234), (214, 200, 176)),
+}
+
 PAPER = (250, 245, 234)
-RULE = (213, 204, 182)
-INK = (43, 36, 32)
-INK_DONE = (107, 110, 117)
-PENCIL = (111, 106, 94)
-INK_BLUE = (46, 90, 168)
-INK_AMBER = (143, 93, 18)
 STICKY_FACE = (224, 211, 182)
 STICKY_HEAD = (217, 204, 173)
 STICKY_EDGE = (169, 152, 114)
-STICKY_BACK = (195, 180, 143)
+PENCIL = (111, 106, 94)
+INK_BLUE = (46, 90, 168)
+BEZEL = (28, 27, 31)
 
-GUTTER = 56
-HEAD_RULE = 76
-PITCH = 62
-RULES = [HEAD_RULE + PITCH * i for i in range(1, 7)]
-COLUMN = 470
-DATE_X = 748
-COUNT_X = 928
-
-ROWS = [
-    ("Groceries", "alarm", "Aug 29", PENCIL, "4"),
-    ("Weekend trip", "calendar", "Sep 2", PENCIL, "3"),
-    ("Birthday party", "alarm", "Aug 27", INK_AMBER, "5"),
-    ("Reading list", None, None, None, "4"),
-]
-
-
-def font(size):
-    return ImageFont.truetype(FONT, size * S)
+ICON = (56, 175, 156)          # x, y, size
+TILT = -8
+PHONE = (682, 0, 270, 500)     # x, y, width, height, before the tilt
+CROP = (101, 0, 979, 1560)     # the screenshot without its empty tail
+BEZEL_R, SCREEN_R, SCREEN_INSET = 38, 28, 10
+PIVOT = (840, 250)
 
 
 def scale(*v):
-    return tuple(c * S for c in v)
-
-
-def grain(img):
-    random.seed(7)
-    px = img.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            n = random.randint(-3, 3)
-            r, g, b = px[x, y]
-            px[x, y] = (max(0, min(255, r + n)),
-                        max(0, min(255, g + n)),
-                        max(0, min(255, b + n)))
+    return tuple(round(c * S) for c in v)
 
 
 def rounded(d, box, radius, fill):
-    d.rounded_rectangle(scale(*box), radius=radius * S, fill=fill)
+    d.rounded_rectangle(scale(*box), radius=round(radius * S), fill=fill)
 
 
-def sticky_card(d, x, y, size):
-    """The launcher's card: a back edge, a face, a head strip, a blue tick."""
-    r = max(2, size // 18)
-    face = size * 23 // 24
-    rounded(d, (x + size // 24, y + size // 24, x + size, y + size), r, STICKY_EDGE)
-    rounded(d, (x, y, x + face, y + size // 4), r, STICKY_HEAD)
-    rounded(d, (x, y + size // 10, x + face, y + face), r, STICKY_FACE)
-    p = lambda fx, fy: (x + size * fx, y + size * fy)
-    d.line([scale(*p(0.21, 0.59)), scale(*p(0.39, 0.77)), scale(*p(0.78, 0.38))],
-           fill=INK_BLUE, width=int(size * 0.075) * S, joint="curve")
-    for point in (p(0.21, 0.59), p(0.78, 0.38)):
-        cap = size * 0.037
-        d.ellipse(scale(point[0] - cap, point[1] - cap, point[0] + cap, point[1] + cap),
-                  fill=INK_BLUE)
+def launcher_icon(d, x, y, size):
+    """The adaptive icon as a launcher masks it: 72 of its 108 units, squircled."""
+    u = size / 72
+    p = lambda ux, uy: (x + ux * u, y + uy * u)
+    rounded(d, (x, y, x + size, y + size), size * 0.23, PAPER)
+    rounded(d, (*p(14, 14), *p(60, 60)), 4 * u, STICKY_EDGE)
+    rounded(d, (*p(12, 12), *p(58, 58)), 4 * u, STICKY_FACE)
+    rounded(d, (*p(12, 12), *p(58, 26)), 4 * u, STICKY_HEAD)
+    d.rectangle(scale(*p(12, 20), *p(58, 26)), fill=STICKY_FACE)
+
+    for uy in (29.5, 39.0, 48.5):
+        d.line(scale(*p(28, uy), *p(51, uy)), fill=PENCIL, width=round(2.4 * u * S))
+    for uy in (29.5, 39.0):
+        d.line([scale(*p(17.2, uy)), scale(*p(19.8, uy + 2.6)), scale(*p(24.4, uy - 3.2))],
+               fill=INK_BLUE, width=round(2.8 * u * S), joint="curve")
+    cx, cy, rad = *p(20.8, 48.5), 3 * u
+    d.ellipse(scale(cx - rad, cy - rad, cx + rad, cy + rad),
+              outline=PENCIL, width=round(2.2 * u * S))
 
 
-def sticky_pad(d, x, y, size):
-    """The pad the plus sign is peeled from: three sheets and a stroke."""
-    rounded(d, (x + 7, y + 7, x + size + 7, y + size + 7), 3, STICKY_BACK)
-    rounded(d, (x + 4, y + 4, x + size + 4, y + size + 4), 3, STICKY_EDGE)
-    rounded(d, (x, y, x + size, y + size), 3, STICKY_FACE)
-    m, arm = x + size // 2, size // 5
-    d.line(scale(m - arm, y + size // 2, m + arm, y + size // 2), fill=INK, width=3 * S)
-    d.line(scale(m, y + size // 2 - arm, m, y + size // 2 + arm), fill=INK, width=3 * S)
+def phone_layer(size):
+    """The tilted phone, drawn upright on its own layer and rotated into place."""
+    layer = Image.new("RGBA", size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    x, y, w, h = PHONE
 
+    d.rounded_rectangle(scale(x + 6, y + 8, x + w + 6, y + h + 8),
+                        radius=BEZEL_R * S, fill=(0, 0, 0, 70))
+    d.rounded_rectangle(scale(x, y, x + w, y + h),
+                        radius=BEZEL_R * S, fill=BEZEL + (255,))
 
-def calendar_mark(d, x, y, size, colour):
-    """drawable/ic_event.xml, on a 24-unit grid."""
-    u = size / 24
-    w = max(1, int(1.8 * u)) * S
-    box = (x + 3 * u, y + 4 * u, x + 21 * u, y + 22 * u)
-    d.rounded_rectangle(scale(*box), radius=int(2 * u) * S, outline=colour, width=w)
-    d.line(scale(x + 3 * u, y + 10 * u, x + 21 * u, y + 10 * u), fill=colour, width=w)
-    d.line(scale(x + 8 * u, y + 2 * u, x + 8 * u, y + 6 * u), fill=colour, width=w)
-    d.line(scale(x + 16 * u, y + 2 * u, x + 16 * u, y + 6 * u), fill=colour, width=w)
+    sx, sy = x + SCREEN_INSET, y + SCREEN_INSET
+    sw, sh = w - SCREEN_INSET * 2, h - SCREEN_INSET * 2
+    shot = Image.open(SHOT).convert("RGB").crop(CROP).resize(scale(sw, sh), Image.LANCZOS)
+    mask = Image.new("L", shot.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, shot.width - 1, shot.height - 1), radius=SCREEN_R * S, fill=255)
+    layer.paste(shot, scale(sx, sy), mask)
 
-
-def alarm_mark(d, x, y, size, colour):
-    """drawable/ic_alarm.xml, on a 24-unit grid."""
-    u = size / 24
-    w = max(1, int(1.8 * u)) * S
-    d.ellipse(scale(x + 4 * u, y + 5 * u, x + 20 * u, y + 21 * u), outline=colour, width=w)
-    d.line(scale(x + 12 * u, y + 9.5 * u, x + 12 * u, y + 13.5 * u), fill=colour, width=w)
-    d.line(scale(x + 12 * u, y + 13.5 * u, x + 14.5 * u, y + 15.5 * u), fill=colour, width=w)
-    d.line(scale(x + 5 * u, y + 3 * u, x + 2.5 * u, y + 5.5 * u), fill=colour, width=w)
-    d.line(scale(x + 19 * u, y + 3 * u, x + 21.5 * u, y + 5.5 * u), fill=colour, width=w)
+    return layer.rotate(TILT, resample=Image.BICUBIC, center=scale(*PIVOT))
 
 
 def main():
-    img = Image.new("RGB", (W * S, H * S), PAPER)
-    d = ImageDraw.Draw(img)
+    which = sys.argv[1] if len(sys.argv) > 1 else "purple"
+    field, glow, title_ink, sub_ink = FIELDS[which]
+    out = os.path.join(HERE, "feature-graphic.png" if len(sys.argv) <= 1
+                       else "feature-graphic-%s.png" % which)
 
-    d.line(scale(0, HEAD_RULE, W, HEAD_RULE), fill=RULE, width=2 * S)
-    d.line(scale(0, HEAD_RULE + 5, W, HEAD_RULE + 5), fill=RULE, width=2 * S)
-    for y in RULES:
-        d.line(scale(0, y, W, y), fill=RULE, width=2 * S)
+    img = Image.new("RGBA", (W * S, H * S), field + (255,))
+    d = ImageDraw.Draw(img, "RGBA")
+    d.ellipse(scale(650, -210, 1150, 290), fill=glow + (128,))
 
-    sticky_card(d, GUTTER + 2, 150, 106)
+    launcher_icon(d, *ICON)
+    d.text(scale(252, 255), "To do list",
+           font=ImageFont.truetype(SANS, 78 * S), fill=title_ink, anchor="ls")
+    d.text(scale(255, 313), "Simple lists. Nothing else.",
+           font=ImageFont.truetype(SANS_TEXT, 32 * S), fill=sub_ink, anchor="ls")
 
-    d.text(scale(GUTTER, RULES[3] - 4), "To do list", font=font(72), fill=INK, anchor="ls")
-    d.text(scale(GUTTER + 3, RULES[4] - 6), "Lists on paper.", font=font(30), fill=PENCIL, anchor="ls")
-
-    name_font, date_font, count_font = font(38), font(26), font(26)
-    for (name, kind, date, tone, count), y in zip(ROWS, RULES):
-        d.text(scale(COLUMN, y - 4), name, font=name_font, fill=INK, anchor="ls")
-        if kind:
-            mark = alarm_mark if kind == "alarm" else calendar_mark
-            mark(d, DATE_X, y - 24, 22, tone)
-            d.text(scale(DATE_X + 30, y - 5), date, font=date_font, fill=tone, anchor="ls")
-        d.text(scale(COUNT_X, y - 5), count, font=count_font, fill=PENCIL, anchor="ls")
-
-    tally = RULES[4]
-    d.text(scale(COLUMN + 232, tally - 5), "2", font=count_font, fill=PENCIL, anchor="ls")
-
-    done = RULES[5]
-    d.text(scale(COLUMN, done - 4), "Home office setup", font=name_font, fill=INK_DONE, anchor="ls")
-    box = d.textbbox(scale(COLUMN, done - 4), "Home office setup", font=name_font, anchor="ls")
-    d.line((box[0] - 6 * S, (done - 14) * S, box[2] + 6 * S, (done - 14) * S),
-           fill=INK_DONE, width=2 * S)
-
-    sticky_pad(d, 892, 372, 88)
-
-    img = img.resize((W, H), Image.LANCZOS)
-    grain(img)
-    img.save(OUT)
-    print("wrote", OUT, img.size)
+    img.alpha_composite(phone_layer(img.size))
+    img.convert("RGB").resize((W, H), Image.LANCZOS).save(out)
+    print("wrote", out)
 
 
 main()
