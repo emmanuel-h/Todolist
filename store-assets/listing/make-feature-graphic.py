@@ -6,7 +6,10 @@ the wordmark on a flat field, a tilted phone standing off the right edge. What
 changed underneath is the app — the icon is the checklist card and the screen
 is ruled paper, so the field is what has to carry the contrast.
 
-    python3 make-feature-graphic.py [purple|kraft]
+The field is the pen the app ticks with, not the Material purple the listing
+was born in: every colour here is one the pad itself could draw.
+
+    python3 make-feature-graphic.py [ink|shadow|desk|red]
 """
 import os
 import sys
@@ -22,8 +25,13 @@ W, H = 1024, 500
 S = 4  # supersampling
 
 FIELDS = {
-    "purple": ((103, 80, 164), (122, 102, 178), (255, 255, 255), (223, 214, 240)),
-    "kraft": ((74, 62, 48), (95, 80, 62), (250, 245, 234), (214, 200, 176)),
+    # field, the tonal blob behind the phone, the wordmark, the catchphrase.
+    # Every field is one of the pad's own darks, so the sheet is never on a
+    # colour the app itself could not draw.
+    "ink": ((22, 48, 92), (35, 68, 120), (250, 245, 234), (185, 200, 226)),
+    "shadow": ((58, 42, 16), (78, 58, 27), (250, 245, 234), (214, 200, 176)),
+    "desk": ((20, 18, 16), (34, 30, 25), (250, 245, 234), (201, 191, 172)),
+    "red": ((90, 30, 24), (116, 42, 34), (250, 245, 234), (227, 196, 188)),
 }
 
 PAPER = (250, 245, 234)
@@ -93,7 +101,7 @@ def phone_layer(size):
 
 
 def main():
-    which = sys.argv[1] if len(sys.argv) > 1 else "purple"
+    which = sys.argv[1] if len(sys.argv) > 1 else "ink"
     field, glow, title_ink, sub_ink = FIELDS[which]
     out = os.path.join(HERE, "feature-graphic.png" if len(sys.argv) <= 1
                        else "feature-graphic-%s.png" % which)
