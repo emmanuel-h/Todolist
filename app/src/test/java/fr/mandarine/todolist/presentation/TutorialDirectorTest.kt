@@ -26,6 +26,12 @@ import org.junit.Test
 private const val SCRIPTED_TOUR_MILLIS = 20_132L
 
 /** How many times the paper is moved during one demonstrated swipe. */
+private val DEMO_WORDS = TutorialDemoWords(
+    listName = "🛒 Groceries",
+    firstItem = "🍎 Apples",
+    secondItem = "🥖 Bread"
+)
+
 private const val PULLS_PER_SWIPE = 14
 
 /** How many times the hand moves while carrying a row up the page. */
@@ -52,7 +58,7 @@ class TutorialDirectorTest {
 
     private fun directorFor(stage: RecordingStage): TutorialDirector {
         overlay = RecordingOverlay(stage)
-        return TutorialDirector(stage, overlay, viewModel, pace) { today }
+        return TutorialDirector(stage, overlay, viewModel, pace, { today }, DEMO_WORDS)
     }
 
     // ── Opening scene ──

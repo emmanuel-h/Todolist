@@ -16,7 +16,11 @@ in the tour — shared the first dot with the beat after it, so the pill did not
 third of the tour was over. Six scenes, six dots.
 
 **3. Every scene says what it is doing**, in one translated line on a paper slip pinned
-top-centre under the status bar, up for the whole of the scene.
+top-centre under the status bar, up for the whole of the scene. **The demo's own words are
+translated too** — the list it writes and the two items it puts on it were Kotlin literals in
+`TutorialDirector`, so a French reader watched a hand write "🛒 Groceries" onto a page whose
+every other word had been translated. `presentation/` cannot read a resource, so they are
+handed down from the composition root as a `TutorialDemoWords`.
 
 **4. The time was redistributed toward the beats nobody can guess.** The pacing was inverted:
 the long-press drag — the one gesture no reader discovers unaided — held its grip for 100 ms

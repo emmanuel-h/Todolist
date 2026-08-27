@@ -42,7 +42,9 @@ import fr.mandarine.todolist.domain.SaveDemoListIdUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
+import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TodoListsViewModel
+import fr.mandarine.todolist.presentation.TutorialDemoWords
 import fr.mandarine.todolist.presentation.TutorialUiState
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import fr.mandarine.todolist.ui.nav.ItemsRoute
@@ -125,7 +127,7 @@ class TodoListsActivity : ComponentActivity() {
         )[TodoListsViewModel::class.java]
 
         tutorialViewModel = container.tutorialViewModel
-        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope)
+        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope, demoWords())
         stage = NavStage(
             backStack,
             ListsStage(
@@ -254,6 +256,18 @@ class TodoListsActivity : ComponentActivity() {
      * say so. That second time opens the system's own page for it, which is both
      * the explanation and the remedy.
      */
+    /**
+     * The demonstration's own shopping list, read here because this is the layer
+     * that can read a resource. It is fetched once at `onCreate`; the tour does not
+     * outlive a configuration change, so a locale switch mid-demonstration is not a
+     * thing that happens.
+     */
+    private fun demoWords(): TutorialDemoWords = TutorialDemoWords(
+        listName = getString(R.string.tutorial_demo_list),
+        firstItem = getString(R.string.tutorial_demo_item_first),
+        secondItem = getString(R.string.tutorial_demo_item_second)
+    )
+
     internal fun askForNotifications() {
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) return
         val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==

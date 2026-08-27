@@ -45,6 +45,15 @@
     <string name="notification_channel_name">Reminders</string>
     <string name="replay_tutorial">Replay tutorial</string>
     <string name="tutorial_next">Next step</string>
+    <!--
+        What the demonstration writes on the page. Translators: these are a short
+        shopping list and two things on it, each with an emoji in front. Pick a list
+        and items that read naturally in the language, and an emoji that fits them —
+        this is not a literal translation, it is a plausible list.
+    -->
+    <string name="tutorial_demo_list">🛒 Groceries</string>
+    <string name="tutorial_demo_item_first">🍎 Apples</string>
+    <string name="tutorial_demo_item_second">🥖 Bread</string>
     <string name="tutorial_write_a_list">Take a sheet and write a list on it</string>
     <string name="tutorial_a_day_and_a_note">Circle a day and you get a reminder that morning</string>
     <string name="tutorial_open_it">Tap a list to open it</string>

@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui.tutorial
 
 import fr.mandarine.todolist.domain.TutorialScreen
 import fr.mandarine.todolist.domain.TutorialStep
+import fr.mandarine.todolist.presentation.TutorialDemoWords
 import fr.mandarine.todolist.presentation.TutorialDirector
 import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.presentation.TutorialStage
@@ -22,6 +23,7 @@ import kotlinx.coroutines.launch
 class TutorialOverlayController(
     private val tutorialViewModel: TutorialViewModel,
     private val scope: CoroutineScope,
+    private val words: TutorialDemoWords,
     private val today: () -> LocalDate = { LocalDate.now() },
     private val sceneContext: CoroutineContext = AndroidUiDispatcher.Main
 ) {
@@ -60,7 +62,7 @@ class TutorialOverlayController(
         if (playing == beat) return
         playing = beat
         overlayState.filledDots = filledDotsFor(state)
-        val director = TutorialDirector(stage, overlayState, tutorialViewModel, pace, today)
+        val director = TutorialDirector(stage, overlayState, tutorialViewModel, pace, today, words)
         when (state) {
             TutorialUiState.Hidden -> {}
             TutorialUiState.ReadyToStart -> {

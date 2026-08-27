@@ -11,7 +11,8 @@ class TutorialDirector(
     private val overlay: TutorialOverlay,
     private val tutorialViewModel: TutorialViewModel,
     private val pace: TutorialPace,
-    private val today: () -> LocalDate
+    private val today: () -> LocalDate,
+    private val words: TutorialDemoWords
 ) {
 
     suspend fun playOpening() {
@@ -30,7 +31,7 @@ class TutorialDirector(
 
         point(TutorialAnchor.ListNameField, 200)
         pace.beat(150)
-        stage.perform(TutorialAction.TypeListName(DEMO_LIST_NAME))
+        stage.perform(TutorialAction.TypeListName(words.listName))
         pace.beat(300)
 
         point(TutorialAnchor.TargetDateButton, 250)
@@ -131,9 +132,9 @@ class TutorialDirector(
             pace.beat(350)
         }
 
-        addItem(DEMO_ITEM_FIRST)
+        addItem(words.firstItem)
         pace.beat(450)
-        addItem(DEMO_ITEM_SECOND)
+        addItem(words.secondItem)
         pace.beat(400)
 
         tutorialViewModel.advanceStep()
@@ -353,9 +354,6 @@ class TutorialDirector(
 
         /** Just past halfway, so the row changes places under a hand already moving. */
         const val LIFT_SWAPS_AT = 7
-        const val DEMO_LIST_NAME = "🛒 Groceries"
-        const val DEMO_ITEM_FIRST = "🍎 Apples"
-        const val DEMO_ITEM_SECOND = "🥖 Bread"
     }
 }
 

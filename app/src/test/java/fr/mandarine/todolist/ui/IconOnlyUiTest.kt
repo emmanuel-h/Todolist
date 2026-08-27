@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
@@ -18,6 +19,7 @@ import fr.mandarine.todolist.presentation.TutorialLine
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.ui.tutorial.narrationStringRes
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.SectionSkip
@@ -217,6 +219,42 @@ class TutorialWordsTest {
 
         assertEquals(lines.size, lines.toSet().size)
         assertEquals(TutorialStep.entries.size + 1, lines.size)
+    }
+
+    /**
+     * The demonstration's own shopping list. It was three Kotlin literals in the
+     * director for as long as the tour existed, so a French reader watched a hand
+     * write "🛒 Groceries" onto a page whose every other word had been translated.
+     */
+    @Test
+    fun `should write the demo list and its items in the reader's own language`() {
+        val english = demoWordsIn(java.util.Locale.ENGLISH)
+        val french = demoWordsIn(java.util.Locale.FRENCH)
+
+        assertEquals(listOf("🛒 Groceries", "🍎 Apples", "🥖 Bread"), english)
+        assertEquals(listOf("🛒 Courses", "🍎 Pommes", "🥖 Pain"), french)
+    }
+
+    @Test
+    fun `should keep an emoji in front of every demo word in every language`() {
+        for (locale in listOf(java.util.Locale.ENGLISH, java.util.Locale.FRENCH)) {
+            for (word in demoWordsIn(locale)) {
+                assertTrue("$locale: $word", Character.isSurrogate(word.first()))
+            }
+        }
+    }
+
+    private fun demoWordsIn(locale: java.util.Locale): List<String> {
+        val scoped = context.createConfigurationContext(
+            android.content.res.Configuration(context.resources.configuration).apply {
+                setLocale(locale)
+            }
+        )
+        return listOf(
+            R.string.tutorial_demo_list,
+            R.string.tutorial_demo_item_first,
+            R.string.tutorial_demo_item_second
+        ).map { scoped.getString(it) }
     }
 
     @Test

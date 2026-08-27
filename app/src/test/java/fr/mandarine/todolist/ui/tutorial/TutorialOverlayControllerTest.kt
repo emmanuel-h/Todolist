@@ -10,6 +10,7 @@ import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
 import fr.mandarine.todolist.presentation.TutorialStage
 import fr.mandarine.todolist.presentation.TutorialUiState
+import fr.mandarine.todolist.presentation.TutorialDemoWords
 import fr.mandarine.todolist.presentation.TutorialViewModel
 import io.mockk.mockk
 import io.mockk.verify
@@ -37,6 +38,7 @@ class TutorialOverlayControllerTest {
     private val controller = TutorialOverlayController(
         tutorialViewModel = tutorialViewModel,
         scope = scope,
+        words = TutorialDemoWords("🛒 Groceries", "🍎 Apples", "🥖 Bread"),
         today = { TODAY },
         sceneContext = Dispatchers.Main + ImmediateFrameClock()
     )

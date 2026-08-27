@@ -49,6 +49,9 @@
     <string name="notification_channel_name">Rappels</string>
     <string name="replay_tutorial">Revoir le tutoriel</string>
     <string name="tutorial_next">Étape suivante</string>
+    <string name="tutorial_demo_list">🛒 Courses</string>
+    <string name="tutorial_demo_item_first">🍎 Pommes</string>
+    <string name="tutorial_demo_item_second">🥖 Pain</string>
     <string name="tutorial_write_a_list">Prenez une feuille et écrivez-y une liste</string>
     <string name="tutorial_a_day_and_a_note">Entourez un jour et vous serez rappelé ce matin-là</string>
     <string name="tutorial_open_it">Touchez une liste pour l’ouvrir</string>
