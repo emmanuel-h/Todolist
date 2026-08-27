@@ -29,9 +29,13 @@ val hasSigningConfig = listOf(
 
 android {
     namespace = "fr.mandarine.todolist"
+    // Compiled against 37 because compose-ui 1.12.0 (Compose BOM 2026.08.00)
+    // refuses to be consumed by anything older. targetSdk stays at 36 on purpose:
+    // compiling against a newer SDK is not the same as opting in to its runtime
+    // behaviour, and only the first of those is being asked for here.
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
+        version = release(37) {
+            minorApiLevel = 0
         }
     }
 
