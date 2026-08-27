@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui.todolist
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.setValue
@@ -62,6 +63,22 @@ class TodoListScreenState : TutorialAnchorHost by TutorialAnchors() {
     }
 
     var animationsEnabled by mutableStateOf(true)
+
+    /**
+     * Where the reader last put a finger on the page, so a flourish can be thrown
+     * from there rather than from the middle of the sheet. Read off the pointer
+     * itself rather than off a row's bounds: by the time a finishing tick is
+     * reported the row it was written on has already travelled into the completed
+     * section, and the place worth celebrating from is where the hand was.
+     */
+    var lastTouch by mutableStateOf(Offset.Zero)
+
+    /**
+     * The item a finishing tick was written on, handed over by the view model and
+     * taken back by the page once the flourish has run. Not saved: a tour of the
+     * confetti is not something to restore on a rotation.
+     */
+    var finishedOn by mutableStateOf<String?>(null)
 
     var hideKeyboardSignal by mutableStateOf(0)
         private set

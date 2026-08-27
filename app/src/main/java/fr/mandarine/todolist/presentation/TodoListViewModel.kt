@@ -36,8 +36,13 @@ class TodoListViewModel(
     private val _state = MutableStateFlow<TodoListState>(TodoListState.Empty)
     val state: StateFlow<TodoListState> = _state
 
+    /**
+     * Deep enough that one action's events cannot push each other out. A finishing
+     * tick reports twice — the tick, then the list it emptied — and with room for
+     * one the second dropped the first on the floor.
+     */
     private val _animationEvents = MutableSharedFlow<AnimationEvent>(
-        extraBufferCapacity = 1,
+        extraBufferCapacity = 4,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val animationEvents: SharedFlow<AnimationEvent> = _animationEvents
@@ -47,36 +52,62 @@ class TodoListViewModel(
     }
 
     fun addTodo(title: String) {
-        applyAndPublishWithEvent {
+        applyAndPublishWithEvents {
             val item = addTodoUseCase(title, listId)
-            AnimationEvent.ItemAdded(item.id)
+            listOf(AnimationEvent.ItemAdded(item.id))
         }
     }
 
     fun submitInlineInput(title: String): Boolean {
         if (title.isBlank()) return false
-        applyAndPublishWithEvent {
+        applyAndPublishWithEvents {
             val item = addTodoUseCase(title, listId)
-            AnimationEvent.ItemAdded(item.id)
+            listOf(AnimationEvent.ItemAdded(item.id))
         }
         return true
     }
 
     fun toggleTodo(todoId: String) {
-        var wasCompleted = false
-        val current = state.value
-        if (current is TodoListState.Content) {
-            for (item in current.completedItems) {
-                if (item.id == todoId) {
-                    wasCompleted = true
-                    break
-                }
-            }
-        }
-        applyAndPublishWithEvent {
+        val wasCompleted = isShownCompleted(todoId)
+        applyAndPublishWithEvents {
             toggleTodoUseCase(todoId)
-            if (wasCompleted) AnimationEvent.ItemRestored(todoId) else AnimationEvent.ItemCompleted(todoId)
+            toggleEvents(todoId, wasCompleted)
         }
+    }
+
+    private fun isShownCompleted(todoId: String): Boolean {
+        val current = state.value
+        if (current !is TodoListState.Content) return false
+        for (item in current.completedItems) {
+            if (item.id == todoId) return true
+        }
+        return false
+    }
+
+    /**
+     * Read after the toggle has been written, so "did that finish the list" is a
+     * question about the list rather than a prediction about it. It is asked only
+     * on a toggle, which is why opening a list that was already finished says
+     * nothing — there was no tick.
+     */
+    private fun toggleEvents(todoId: String, wasCompleted: Boolean): List<AnimationEvent> {
+        if (wasCompleted) return listOf(AnimationEvent.ItemRestored(todoId))
+        if (nothingLeftActive()) {
+            return listOf(
+                AnimationEvent.ItemCompleted(todoId),
+                AnimationEvent.ListCompleted(todoId)
+            )
+        }
+        return listOf(AnimationEvent.ItemCompleted(todoId))
+    }
+
+    private fun nothingLeftActive(): Boolean {
+        var written = false
+        for (item in getTodosUseCase(listId)) {
+            if (!item.isCompleted) return false
+            written = true
+        }
+        return written
     }
 
     /**
@@ -86,9 +117,9 @@ class TodoListViewModel(
      * from within its undo slip never reached the repository at all.
      */
     fun deleteTodo(todoId: String) {
-        applyAndPublishWithEvent(writeScope ?: viewModelScope) {
+        applyAndPublishWithEvents(writeScope ?: viewModelScope) {
             deleteTodoUseCase(todoId)
-            AnimationEvent.ItemDeleted(todoId)
+            listOf(AnimationEvent.ItemDeleted(todoId))
         }
     }
 
@@ -107,13 +138,15 @@ class TodoListViewModel(
         }
     }
 
-    private fun applyAndPublishWithEvent(
+    private fun applyAndPublishWithEvents(
         scope: CoroutineScope = viewModelScope,
-        action: () -> AnimationEvent
+        action: () -> List<AnimationEvent>
     ) {
         scope.launch(dispatcher) {
-            val event = action()
-            _animationEvents.emit(event)
+            val events = action()
+            for (event in events) {
+                _animationEvents.emit(event)
+            }
             _state.value = buildState()
         }
     }

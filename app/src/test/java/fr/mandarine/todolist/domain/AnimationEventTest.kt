@@ -81,4 +81,24 @@ class AnimationEventTest {
     fun `ListAdded should be the singleton object`() {
         assertEquals(AnimationEvent.ListAdded, AnimationEvent.ListAdded)
     }
+
+    @Test
+    fun `should carry the item the finishing tick was written on`() {
+        val event = AnimationEvent.ListCompleted("id-5")
+
+        assertEquals("id-5", event.lastItemId)
+    }
+
+    @Test
+    fun `should treat two ListCompleted for the same item as the same event`() {
+        assertEquals(AnimationEvent.ListCompleted("x"), AnimationEvent.ListCompleted("x"))
+    }
+
+    @Test
+    fun `should treat ListCompleted for different items as different events`() {
+        val a = AnimationEvent.ListCompleted("a")
+        val b = AnimationEvent.ListCompleted("b")
+
+        assert(a != b)
+    }
 }

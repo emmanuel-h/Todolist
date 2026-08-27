@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import fr.mandarine.todolist.ui.paper.PaperFocusMark
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -54,6 +55,9 @@ import fr.mandarine.todolist.ui.listmeta.DateJot
 import fr.mandarine.todolist.ui.nav.travellingName
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkAddLine
+import fr.mandarine.todolist.ui.paper.PaperFinish
+import fr.mandarine.todolist.ui.paper.noteWhereTheHandWent
+import fr.mandarine.todolist.ui.paper.rememberFinishFlourish
 import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
@@ -227,12 +231,36 @@ fun TodoListScreen(
     val seam = keyboardSeam(deletion.pending == null)
     val bend = rememberPageBend(screenState.animationsEnabled)
 
-    PaperSurface(
-        modifier = Modifier.pointerInput(Unit) {
-            detectTapGestures(onTap = { focusManager.clearFocus() })
+    val flourish = rememberFinishFlourish()
+    /**
+     * The buzz is owed whether or not the confetti is: a reader who has asked for
+     * stillness has asked about the screen, not about being told they are done.
+     */
+    LaunchedEffect(screenState.finishedOn) {
+        val finished = screenState.finishedOn ?: return@LaunchedEffect
+        haptics.submit()
+        if (screenState.animationsEnabled) {
+            flourish.play(screenState.lastTouch, finished)
         }
+        screenState.finishedOn = null
+    }
+
+    PaperSurface(
+        modifier = Modifier
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
+            .noteWhereTheHandWent { screenState.lastTouch = it }
     ) {
-        Box(modifier = Modifier.pageFrame(bend).align(Alignment.TopCenter)) {
+        Box(
+            modifier = Modifier
+                .pageFrame(bend)
+                .align(Alignment.TopCenter)
+                .graphicsLayer {
+                    scaleX = flourish.settle.value
+                    scaleY = flourish.settle.value
+                }
+        ) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -355,6 +383,7 @@ fun TodoListScreen(
                 headMargin = headMargin,
                 pitch = pitch
             )
+            PaperFinish(flourish)
         }
         UndoSlip(
             pending = deletion.pending?.id,
