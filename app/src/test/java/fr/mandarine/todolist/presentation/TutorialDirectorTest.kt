@@ -23,10 +23,13 @@ import org.junit.Test
  * The banner's own 2.2s hold and every tap's 130ms are not in here: they are taken
  * inside the overlay, and the fake this is measured against does not take them.
  */
-private const val SCRIPTED_TOUR_MILLIS = 20_122L
+private const val SCRIPTED_TOUR_MILLIS = 20_132L
 
 /** How many times the paper is moved during one demonstrated swipe. */
 private const val PULLS_PER_SWIPE = 14
+
+/** How many times the hand moves while carrying a row up the page. */
+private const val LIFTS_PER_DRAG = 12
 private const val PULL_TOLERANCE = 0.0001f
 
 private fun evenlyTo(reach: Float, steps: Int): List<Float> =
@@ -316,16 +319,67 @@ class TutorialDirectorTest {
     }
 
     /**
+     * The one beat in the tour that teaches a row can be picked up must show it
+     * being held. Moving the row and gliding the hand after it — which is what this
+     * did — showed a row reordering itself and a disc arriving late.
+     */
+    @Test
+    fun `should carry the row up the page under the hand rather than after it`() = runTest {
+        val stage = RecordingStage(TutorialScreen.ITEMS)
+
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
+
+        val carrying = stage.timeline.indexOfFirst { it.startsWith("drag:") }
+        val moved = stage.timeline.indexOf("do:MoveActiveItem")
+        val lastCarry = stage.timeline.indexOfLast { it.startsWith("drag:") }
+
+        assertTrue("${stage.timeline}", carrying in 0 until moved)
+        assertTrue("${stage.timeline}", moved < lastCarry)
+        assertTrue("${stage.timeline}", stage.timeline.count { it.startsWith("drag:") } > 1)
+    }
+
+    @Test
+    fun `should carry the hand the whole way from the handle to the row it lands on`() = runTest {
+        val stage = RecordingStage(TutorialScreen.ITEMS)
+        stage.anchorAvailable = { it !is TutorialAnchor.ActiveItemToggle }
+
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
+
+        val handle = checkNotNull(stage.firstIssued("ActiveItemDragHandle"))
+        val landing = checkNotNull(stage.firstIssued("ActiveItemRow"))
+        val carried = overlay.carriedTo
+
+        assertEquals(LIFTS_PER_DRAG, carried.size)
+        assertEquals(handle.liftedTowards(landing, 1f).top, carried.last())
+        assertTrue("$carried", carried.first() < carried.last())
+        assertTrue("$carried", carried.zipWithNext().all { (a, b) -> a <= b })
+    }
+
+    @Test
+    fun `should keep hold of the row for the whole of the carry`() = runTest {
+        val stage = RecordingStage(TutorialScreen.ITEMS)
+
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
+
+        val gripped = stage.timeline.indexOf("grip")
+        val lastCarry = stage.timeline.indexOfLast { it.startsWith("drag:") }
+        val released = stage.timeline.indexOf("release")
+
+        assertTrue("${stage.timeline}", gripped in 0 until lastCarry)
+        assertTrue("${stage.timeline}", lastCarry < released)
+    }
+
+    /**
      * Nine hundred milliseconds longer than it was, and almost all of it inside the
-     * drag: the grip is held for 400 rather than 100 before the row moves, and the
-     * row is held at its new place for 250 rather than 50. A long-press-to-drag that
-     * is over in a tenth of a second reads as a row that jumped by itself.
+     * drag: the grip is held before the carry starts, and the carry itself is twelve
+     * steps of the hand with the row changing places under it. A long-press-to-drag
+     * that is over in a tenth of a second reads as a row that jumped by itself.
      */
     @Test
     fun `should hold the scripted pacing of the tick and move step`() = runTest {
         directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.TICK_AND_MOVE)
 
-        assertEquals(4800L, testScheduler.currentTime)
+        assertEquals(4810L, testScheduler.currentTime)
     }
 
     /**
@@ -624,6 +678,13 @@ class TutorialDirectorTest {
     private class RecordingStage(override val screen: TutorialScreen) : TutorialStage {
 
         val actions = mutableListOf<TutorialAction>()
+
+        /**
+         * The stage's beats and the overlay's, in the order they happened. Kept
+         * here rather than in either one because the only questions worth asking of
+         * a drag are about the order the two of them went in.
+         */
+        val timeline = mutableListOf<String>()
         var canPerform: (TutorialAction) -> Boolean = { true }
         var anchorAvailable: (TutorialAnchor) -> Boolean = { true }
         var demoListId: String? = "demo-list"
@@ -633,9 +694,19 @@ class TutorialDirectorTest {
         private val issued = mutableMapOf<TutorialBounds, String>()
         private var nextLeft = 1
 
+        private companion object {
+            const val ROW_PITCH = 10
+        }
+
+        /**
+         * Rows ten wide and ten tall, each one lower down the page than the last.
+         * They all used to sit at the same top, which made every question about
+         * where the hand was carried have the same answer.
+         */
         override fun boundsOf(anchor: TutorialAnchor): TutorialBounds? {
             if (!anchorAvailable(anchor)) return null
-            val bounds = TutorialBounds(nextLeft++, 0, 10, 10)
+            val bounds = TutorialBounds(nextLeft, nextLeft * ROW_PITCH, 10, 10)
+            nextLeft++
             issued[bounds] = anchor::class.simpleName.orEmpty()
             return bounds
         }
@@ -645,6 +716,14 @@ class TutorialDirectorTest {
          * from the row's own bounds, so a derived point is named for the row it
          * came from.
          */
+        /**
+         * The first rectangle handed out for a kind of anchor. Bounds are minted
+         * fresh on every ask, so asking again after the scene has run gives a
+         * different row than the one the scene was driven with.
+         */
+        fun firstIssued(label: String): TutorialBounds? =
+            issued.entries.firstOrNull { it.value == label }?.key
+
         fun labelFor(bounds: TutorialBounds): String = issued[bounds]
             ?: issued.entries
                 .firstOrNull { (issued, _) ->
@@ -654,6 +733,7 @@ class TutorialDirectorTest {
                 .orEmpty()
 
         override suspend fun perform(action: TutorialAction): Boolean {
+            timeline.add("do:${action::class.simpleName}")
             actions.add(action)
             yield()
             return canPerform(action)
@@ -672,33 +752,41 @@ class TutorialDirectorTest {
 
         val events = mutableListOf<String>()
 
+        private fun note(event: String) {
+            events.add(event)
+            stage.timeline.add(event)
+        }
+
         override suspend fun narrate(line: TutorialLine) {
-            events.add("narrate:$line")
+            note("narrate:$line")
             yield()
         }
 
         override suspend fun glideTo(bounds: TutorialBounds, durationMillis: Long) {
-            events.add("glide:${stage.labelFor(bounds)}")
+            note("glide:${stage.labelFor(bounds)}")
             yield()
         }
 
+        val carriedTo = mutableListOf<Int>()
+
         override suspend fun dragTo(bounds: TutorialBounds) {
-            events.add("drag:${stage.labelFor(bounds)}")
+            note("drag:${stage.labelFor(bounds)}")
+            carriedTo.add(bounds.top)
             yield()
         }
 
         override suspend fun tap() {
-            events.add("tap")
+            note("tap")
             yield()
         }
 
         override suspend fun grip() {
-            events.add("grip")
+            note("grip")
             yield()
         }
 
         override suspend fun release() {
-            events.add("release")
+            note("release")
             yield()
         }
 
@@ -734,6 +822,46 @@ class TutorialDirectorTest {
  * of the way aside. They used to be worked out separately, which is how a hand can
  * arrive somewhere the page has not.
  */
+class LiftedTowardsTest {
+
+    private val handle = TutorialBounds(left = 4, top = 100, width = 20, height = 40)
+    private val landing = TutorialBounds(left = 9, top = 300, width = 20, height = 60)
+
+    @Test
+    fun `should start a carry at the middle of the row being picked up`() {
+        assertEquals(120, handle.liftedTowards(landing, 0f).top)
+    }
+
+    @Test
+    fun `should end a carry at the middle of the row being landed on`() {
+        assertEquals(330, handle.liftedTowards(landing, 1f).top)
+    }
+
+    @Test
+    fun `should be halfway between the two middles halfway through a carry`() {
+        assertEquals(225, handle.liftedTowards(landing, 0.5f).top)
+    }
+
+    @Test
+    fun `should carry a row upwards when it is landing above where it started`() {
+        assertEquals(120, landing.liftedTowards(handle, 1f).top)
+        assertEquals(330, landing.liftedTowards(handle, 0f).top)
+    }
+
+    /**
+     * A hand dragging by a handle stays over the handle, so the column is the one
+     * the carry started in and only the height collapses.
+     */
+    @Test
+    fun `should keep the carrying hand in the column it gripped in`() {
+        val carried = handle.liftedTowards(landing, 0.5f)
+
+        assertEquals(handle.left, carried.left)
+        assertEquals(handle.width, carried.width)
+        assertEquals(0, carried.height)
+    }
+}
+
 class PullStepTest {
 
     @Test

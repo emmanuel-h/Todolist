@@ -20,6 +20,17 @@ data class TutorialBounds(
         left = left + (width * fraction).toInt(),
         width = 0
     )
+
+    /**
+     * A point on the way from this row's middle to another's, for a row being
+     * carried up the page. The column is this row's, because a hand dragging by a
+     * handle stays over the handle.
+     */
+    fun liftedTowards(other: TutorialBounds, fraction: Float): TutorialBounds {
+        val here = top + height / 2
+        val there = other.top + other.height / 2
+        return copy(top = here + ((there - here) * fraction).toInt(), height = 0)
+    }
 }
 
 data class TutorialBannerContent(

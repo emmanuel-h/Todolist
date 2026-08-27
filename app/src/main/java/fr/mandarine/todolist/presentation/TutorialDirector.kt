@@ -177,19 +177,32 @@ class TutorialDirector(
         tutorialViewModel.advanceStep()
     }
 
+    /**
+     * The hand carries the row up the page, rather than the row going up the page
+     * and the hand following it there.
+     *
+     * It used to move the row and only then glide the hand after it, so the reader
+     * watched a row reorder itself and a disc arrive afterwards — the one beat in
+     * the tour meant to teach that a row can be *picked up* was the one beat where
+     * nothing appeared to be held. The row now changes places under the hand,
+     * halfway through a carry the hand is making.
+     */
     private suspend fun dragActiveItemToTop() {
-        if (stage.boundsOf(TutorialAnchor.ActiveItemDragHandle(1)) == null) return
+        val handle = stage.boundsOf(TutorialAnchor.ActiveItemDragHandle(1)) ?: return
+        val landing = stage.boundsOf(TutorialAnchor.ActiveItemRow(0)) ?: return
 
         point(TutorialAnchor.ActiveItemDragHandle(1), 250)
         pace.beat(250)
         overlay.grip()
-        pace.beat(400)
+        pace.beat(350)
 
-        stage.perform(TutorialAction.MoveActiveItem(1, 0))
+        for (step in 1..LIFT_STEPS) {
+            overlay.dragTo(handle.liftedTowards(landing, step.toFloat() / LIFT_STEPS))
+            if (step == LIFT_SWAPS_AT) stage.perform(TutorialAction.MoveActiveItem(1, 0))
+            pace.beat(LIFT_STEP_MILLIS)
+        }
+
         pace.beat(250)
-
-        point(TutorialAnchor.ActiveItemRow(0), 300)
-        pace.beat(300)
         overlay.release()
         pace.beat(250)
 
@@ -335,6 +348,11 @@ class TutorialDirector(
         const val EDIT_REACH = 0.26f
         const val PULL_STEPS = 14
         const val PULL_STEP_MILLIS = 24L
+        const val LIFT_STEPS = 12
+        const val LIFT_STEP_MILLIS = 30L
+
+        /** Just past halfway, so the row changes places under a hand already moving. */
+        const val LIFT_SWAPS_AT = 7
         const val DEMO_LIST_NAME = "🛒 Groceries"
         const val DEMO_ITEM_FIRST = "🍎 Apples"
         const val DEMO_ITEM_SECOND = "🥖 Bread"
