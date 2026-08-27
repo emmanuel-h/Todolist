@@ -7,4 +7,13 @@
         launcher icon is a corner of. See docs/paper-design-system.md.
     -->
     <color name="paper">#FAF5EA</color>
+
+    <!--
+        The launcher's sheet, and the one paper that never turns the lamp down.
+        A launcher rasterises an adaptive icon once and keeps it, so an icon painted
+        from a colour with a values-night twin keeps whichever mode it was cached in
+        and shows up dark on a light home screen. This must never gain a night
+        counterpart, which is why it is not @color/paper. See docs/app-icons.md.
+    -->
+    <color name="launcher_paper">#FAF5EA</color>
 </resources>
