@@ -1,26 +1,31 @@
-Une liste de tâches qui se fait oublier.
+Une liste de tâches écrite sur du papier.
 
-To Do List repose sur une idée simple : une application assez épurée n'a pas besoin de s'expliquer. Aucun menu à apprendre, aucun libellé qui encombre l'écran, aucun tutoriel à subir. Chaque action tient dans une icône évidente. Vous ouvrez, vous touchez, c'est fait.
+Liste de tâches, c'est une feuille de papier réglé. Vous y écrivez vos listes, vous en ouvrez une, vous cochez. Pas de barre d'outils, pas de menu, pas d'écran de réglages : la page est l'application, et presque tout ce qu'elle fait est un geste que vous connaissez déjà.
 
 CE QUE VOUS POUVEZ FAIRE
 
-• Gardez autant de listes distinctes que nécessaire — Courses, Week-end, Lectures, ce qui rythme votre semaine
-• Ajoutez un élément en un seul geste, directement depuis la liste, sans changer d'écran
-• Cochez vos tâches et regardez-les rejoindre une section « terminé » qui tient le compte
-• Renommez ou supprimez n'importe quelle liste ou tâche, avec une confirmation avant toute perte
-• Réorganisez listes et tâches par glisser-déposer, dans l'ordre qui vous convient
-• Les listes achevées s'écartent d'elles-mêmes : il ne reste sous vos yeux que ce qui compte encore
+• Gardez autant de listes que nécessaire — Courses, Week-end, Lectures, ce qui rythme votre semaine
+• Commencez une liste en détachant une feuille du bloc, dans le coin : la ligne s'ouvre et vous écrivez dessus
+• Ajoutez vos tâches ligne après ligne, sans quitter la page ni ouvrir de fenêtre
+• Touchez l'anneau pour cocher : le stylo raye la ligne, qui passe sous le trait, dans la partie terminée, laquelle tient le compte
+• Touchez un nom pour le corriger, sur place, sur sa ligne
+• Tirez une ligne d'un côté pour la modifier, de l'autre pour la déchirer ; une ligne déchirée laisse un billet d'annulation qui tient neuf secondes
+• Maintenez une ligne et faites-la glisser pour ranger listes et tâches dans l'ordre qui vous convient
+• Les listes achevées passent sous le trait d'elles-mêmes : il ne reste sous vos yeux que ce qui compte encore
 
-DATES ET RAPPELS
+JOURS ET RAPPELS
 
-Donnez à une liste une date prévue, quand vous comptez vous y mettre, ou une date d'échéance, quand elle doit vraiment être terminée. Chacune s'affiche directement sur la liste : vous voyez ce qui arrive sans rien ouvrir.
+Une liste porte un jour, et un seul : un jour prévu, c'est-à-dire à faire ce jour-là, ou une échéance, c'est-à-dire à terminer avant. Entourez le jour sur le calendrier de papier et il s'inscrit dans la marge de la ligne : vous voyez ce qui arrive sans rien ouvrir. Une échéance arrivée s'écrit en ambre, une échéance passée en rouge.
 
-Chaque matin, l'application passe vos listes en revue et vous rappelle discrètement celles qui arrivent à échéance dans la journée et celles que vous aviez prévues pour le lendemain. Une notification, une fois par jour, uniquement s'il y a quelque chose à dire. Si vous préférez ne pas être dérangé, refusez la permission de notification : tout le reste continue de fonctionner à l'identique.
+Chaque matin, l'application passe vos listes en revue et signale discrètement celles qui arrivent à échéance dans la journée et celles que vous aviez prévues pour le lendemain. Une notification, une fois par jour, uniquement s'il y a quelque chose à dire. Refusez la permission de notification : tout le reste fonctionne à l'identique.
 
-CONÇUE POUR SE FAIRE DISCRÈTE
+CONÇUE POUR SE FAIRE OUBLIER
 
-• Thèmes clair et sombre, alignés sur le réglage de votre système
-• Material Design 3 de bout en bout, pour une application qui a sa place sur votre téléphone
+• Encre sur crème le jour, craie sur charbon à la lampe : la page suit le réglage de votre système
+• Une courte visite à la première ouverture, que vous pouvez rejouer quand vous voulez depuis le coin de la page
+• Écrite pour TalkBack : chaque geste est aussi une action nommée, et chaque marque de la page porte un nom
+• Français et anglais, au choix depuis le sélecteur de langue par application d'Android
+• Téléphones et tablettes — un écran plus large est une feuille plus large, pas une colonne de texte plus large
 • Aucun compte, aucune inscription, aucune adresse e-mail
 • Aucune publicité, aucun traceur, aucune analyse d'usage
 • Aucune permission Internet : l'application ne peut envoyer vos données nulle part, faute d'accès au réseau

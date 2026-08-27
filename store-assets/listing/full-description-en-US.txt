@@ -1,26 +1,31 @@
-A to-do list that gets out of your way.
+A to-do list written on paper.
 
-To Do List is built around one idea: if an app is simple enough, it does not need to explain itself. There are no menus to learn, no labels cluttering the screen, no onboarding to sit through. Every action is a single, obvious icon. You open it, you tap, it works.
+To Do List is one sheet of ruled paper. You write lists on it, open one, and tick things off. There is no toolbar, no menu and no settings screen — the page is the app, and nearly everything it does is a gesture you already know.
 
 WHAT YOU CAN DO
 
-• Keep as many separate lists as you need — Groceries, Weekend trip, Reading list, whatever fits your week
-• Add items in a single tap, straight from the list, without opening a new screen
-• Check things off and watch them drop into a completed section that keeps count
-• Rename or delete any list or item, with a confirmation before anything is lost
-• Drag lists and tasks by their handle to put them in the order that makes sense to you
-• Lists you have finished move aside on their own, so what is left is what still needs doing
+• Keep as many lists as you need — Groceries, Weekend trip, Reading list, whatever your week looks like
+• Start a list by peeling a sheet off the pad in the corner; the line opens and you write on it
+• Add items line by line, without leaving the page or opening a dialog
+• Tap the ring to tick something off — the pen strikes it through and the row crosses the divider into the done section, which keeps count
+• Tap any name to correct it, in place, on the row
+• Pull a row one way to edit it, the other way to tear it off; a torn row leaves an undo slip that stands for nine seconds
+• Hold a row and drag it to put your lists and tasks in the order that makes sense to you
+• Lists you have finished move below the line on their own, so what is left is what still needs doing
 
-DATES AND REMINDERS
+DAYS AND REMINDERS
 
-Give a list a target date when you plan to get to it, or a due date when it genuinely has to be done. Each shows at a glance on the list, so you can see what is coming without opening anything.
+A list can carry one day, and only one: a target day, meaning do this on that day, or a deadline, meaning finish before it. Circle the day on the paper calendar and it is written in the margin of the row, so you can see what is coming without opening anything. A deadline that has arrived is written in amber, one that has passed in red.
 
-Every morning the app checks your lists and quietly reminds you about the ones due that day and the ones you planned for tomorrow. One notification, once a day, only when there is something to say. If you would rather not be reminded at all, decline the notification permission — everything else keeps working exactly the same.
+Every morning the app looks over your lists and quietly mentions the ones due that day and the ones you planned for tomorrow. One notification, once a day, only when there is something to say. Decline the notification permission and everything else works exactly the same.
 
-BUILT TO STAY OUT OF THE WAY
+BUILT TO BE QUIET
 
-• Light and dark themes that follow your system setting
-• Material Design 3 throughout, so it looks like it belongs on your phone
+• Ink on cream by day, chalk on charcoal by lamplight — the page follows your system setting
+• A short tour the first time you open it, replayable whenever you like from the corner of the page
+• Written out to TalkBack: every gesture is also a named action, and every mark on the page has a name
+• English and French, switchable from Android's per-app language picker
+• Phones and tablets — a wider screen is a wider sheet, not a wider column of text
 • No account, no sign-up, no email address
 • No ads, no trackers, no analytics
 • No internet permission at all — the app cannot send your data anywhere, because it cannot reach the network
