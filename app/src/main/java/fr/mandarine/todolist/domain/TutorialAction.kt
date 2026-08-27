@@ -7,6 +7,7 @@ sealed class TutorialAction {
     data class TypeListName(val text: String) : TutorialAction()
     data object OpenDueDatePicker : TutorialAction()
     data class PickDueDate(val date: LocalDate) : TutorialAction()
+    data object CloseDatePicker : TutorialAction()
     data object SubmitList : TutorialAction()
     data object OpenFirstList : TutorialAction()
     data class PullFirstList(val pixels: Float) : TutorialAction()

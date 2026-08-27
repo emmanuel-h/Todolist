@@ -7,6 +7,7 @@ import fr.mandarine.todolist.domain.TutorialStep
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
 import fr.mandarine.todolist.presentation.TutorialCaption
+import fr.mandarine.todolist.presentation.TutorialLine
 import fr.mandarine.todolist.presentation.TutorialUiState
 import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
@@ -334,4 +335,34 @@ class TutorialOverlayStateTest {
             const val FRAME_NANOS = 16_000_000L
         }
     }
+
+    /**
+     * The banner replaces the line rather than dimming it. Dimmed by how far the
+     * banner had slid in, the sentence faded back up as the banner left, sat for
+     * half a second and was replaced by the next scene's — three things arriving at
+     * the top of the page in two seconds.
+     */
+    @Test
+    fun `should take the narration away when the reminder banner is raised`() = onFrames {
+        val state = TutorialOverlayState()
+        state.narrate(TutorialLine.A_DAY_AND_A_NOTE)
+        assertEquals(TutorialLine.A_DAY_AND_A_NOTE, state.narration)
+
+        state.showBanner(TutorialBannerContent("🛒 Groceries", LocalDate.of(2026, 8, 28)))
+
+        assertNull(state.narration)
+    }
+
+    @Test
+    fun `should say a scene's line once rather than blinking it when the beat is handed in twice`() =
+        onFrames {
+            val state = TutorialOverlayState()
+            state.narrate(TutorialLine.OPEN_IT)
+            state.narrationAlpha.snapTo(0.5f)
+
+            state.narrate(TutorialLine.OPEN_IT)
+
+            assertEquals(0.5f, state.narrationAlpha.value, 0.0001f)
+            assertEquals(TutorialLine.OPEN_IT, state.narration)
+        }
 }

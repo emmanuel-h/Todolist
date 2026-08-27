@@ -27,6 +27,12 @@ interface TutorialOverlay {
 
     suspend fun glideTo(bounds: TutorialBounds, durationMillis: Long)
 
+    /**
+     * Moves the hand without waiting for it to arrive, for the one case where it is
+     * not travelling to something but holding something that is travelling with it.
+     */
+    suspend fun dragTo(bounds: TutorialBounds)
+
     suspend fun tap()
 
     suspend fun grip()

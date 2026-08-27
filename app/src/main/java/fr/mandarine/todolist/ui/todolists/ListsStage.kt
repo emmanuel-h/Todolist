@@ -45,6 +45,7 @@ class ListsStage(
         is TutorialAction.TypeListName -> typeListName(action.text)
         TutorialAction.OpenDueDatePicker -> openDueDatePicker()
         is TutorialAction.PickDueDate -> pickDueDate(action.date)
+        TutorialAction.CloseDatePicker -> closeDatePicker()
         TutorialAction.SubmitList -> submitList()
         TutorialAction.OpenFirstList -> openFirstList()
         is TutorialAction.PullFirstList -> pullFirstList(action.pixels)
@@ -108,8 +109,20 @@ class ListsStage(
         return true
     }
 
+    /**
+     * Circles the day and leaves the calendar standing. It used to clear the
+     * request in the same breath, so the sheet was gone in the frame the day was
+     * chosen — the reader saw a calendar flash and never saw a day picked on it.
+     * Closing it is [closeDatePicker] now, a beat later.
+     */
     private fun pickDueDate(date: LocalDate): Boolean {
         screenState.addRowSelection = DateSelection(DateKind.DUE, date)
+        screenState.datePickerRequest = screenState.datePickerRequest?.copy(initial = date)
+        return true
+    }
+
+    private fun closeDatePicker(): Boolean {
+        if (screenState.datePickerRequest == null) return false
         screenState.datePickerRequest = null
         return true
     }

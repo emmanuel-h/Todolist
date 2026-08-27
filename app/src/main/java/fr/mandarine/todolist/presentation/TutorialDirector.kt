@@ -34,9 +34,7 @@ class TutorialDirector(
         pace.beat(300)
 
         point(TutorialAnchor.TargetDateButton, 250)
-        stage.boundsOf(TutorialAnchor.ListCreateRow)?.let {
-            overlay.showCaption(TutorialCaption.TARGET_DATE, it)
-        }
+        captionUnderTheGlyphs(TutorialCaption.TARGET_DATE)
         pace.beat(900)
 
         point(TutorialAnchor.DueDateButton, 250)
@@ -44,11 +42,13 @@ class TutorialDirector(
         pace.beat(750)
         overlay.tap()
         stage.perform(TutorialAction.OpenDueDatePicker)
-        pace.beat(700)
+        overlay.hideCaption()
+        pace.beat(1200)
 
         stage.perform(TutorialAction.PickDueDate(today().plusDays(1)))
-        overlay.hideCaption()
-        pace.beat(300)
+        pace.beat(900)
+        stage.perform(TutorialAction.CloseDatePicker)
+        pace.beat(350)
 
         point(TutorialAnchor.SubmitListButton, 200)
         pace.beat(200)
@@ -77,6 +77,20 @@ class TutorialDirector(
                 }
             }
         }
+    }
+
+    /**
+     * The slip goes under the rule the two glyphs are on, not under the line the
+     * name is written on. Hung under the name it landed exactly on the date rule and
+     * covered the very icon it was explaining — the reader was told what the alarm
+     * meant while the alarm was behind the telling.
+     */
+    private suspend fun captionUnderTheGlyphs(caption: TutorialCaption) {
+        val glyphs = stage.boundsOf(TutorialAnchor.DueDateButton)
+            ?: stage.boundsOf(TutorialAnchor.TargetDateButton)
+            ?: stage.boundsOf(TutorialAnchor.ListCreateRow)
+            ?: return
+        overlay.showCaption(caption, glyphs)
     }
 
     /**
@@ -208,7 +222,7 @@ class TutorialDirector(
         overlay.glideTo(row.alongRow(EDIT_FROM), 250)
         pace.beat(250)
         overlay.grip()
-        pace.beat(300)
+        pace.beat(200)
         pullAcross(row, EDIT_FROM, EDIT_TO, row.width * EDIT_REACH)
         pace.beat(150)
         overlay.release()
@@ -224,7 +238,7 @@ class TutorialDirector(
         overlay.glideTo(row.alongRow(TEAR_FROM), 250)
         pace.beat(250)
         overlay.grip()
-        pace.beat(300)
+        pace.beat(200)
         pullAcross(row, TEAR_FROM, TEAR_TO, -row.width * TEAR_REACH)
         if (!stage.perform(TutorialAction.RequestDeleteFirstList)) {
             stage.perform(TutorialAction.LetFirstListGo)
@@ -260,6 +274,13 @@ class TutorialDirector(
      * The hand and the paper move together. Gliding the hand and then jumping the
      * row to where it ended up read as two things happening near each other rather
      * than as one hand dragging one page.
+     *
+     * Each step moves the hand outright instead of gliding it. Gliding awaited
+     * `PaperMotion.handGlide` — the slowest spring there is, the one for crossing
+     * the whole page — and awaited it six times over for six small hops, so a pull
+     * that should take a third of a second took two or three, and a swipe a reader
+     * flicks off in an instant was demonstrated as a slow haul. The hand is holding
+     * the paper here; it does not need to travel to it.
      */
     private suspend fun pullAcross(
         row: TutorialBounds,
@@ -269,8 +290,9 @@ class TutorialDirector(
     ) {
         for (step in 1..PULL_STEPS) {
             val at = pullStepAt(from, to, reach, step, PULL_STEPS)
-            overlay.glideTo(row.alongRow(at.handAt), PULL_STEP_MILLIS)
+            overlay.dragTo(row.alongRow(at.handAt))
             stage.perform(TutorialAction.PullFirstList(at.pixels))
+            pace.beat(PULL_STEP_MILLIS)
         }
     }
 
@@ -311,8 +333,8 @@ class TutorialDirector(
         const val EDIT_FROM = 0.14f
         const val EDIT_TO = 0.62f
         const val EDIT_REACH = 0.26f
-        const val PULL_STEPS = 6
-        const val PULL_STEP_MILLIS = 70L
+        const val PULL_STEPS = 14
+        const val PULL_STEP_MILLIS = 24L
         const val DEMO_LIST_NAME = "🛒 Groceries"
         const val DEMO_ITEM_FIRST = "🍎 Apples"
         const val DEMO_ITEM_SECOND = "🥖 Bread"

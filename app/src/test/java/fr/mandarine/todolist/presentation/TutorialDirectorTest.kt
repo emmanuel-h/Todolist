@@ -23,7 +23,14 @@ import org.junit.Test
  * The banner's own 2.2s hold and every tap's 130ms are not in here: they are taken
  * inside the overlay, and the fake this is measured against does not take them.
  */
-private const val SCRIPTED_TOUR_MILLIS = 18_200L
+private const val SCRIPTED_TOUR_MILLIS = 20_122L
+
+/** How many times the paper is moved during one demonstrated swipe. */
+private const val PULLS_PER_SWIPE = 14
+private const val PULL_TOLERANCE = 0.0001f
+
+private fun evenlyTo(reach: Float, steps: Int): List<Float> =
+    (1..steps).map { reach * it / steps }
 
 class TutorialDirectorTest {
 
@@ -59,6 +66,7 @@ class TutorialDirectorTest {
                 TutorialAction.TypeListName("🛒 Groceries"),
                 TutorialAction.OpenDueDatePicker,
                 TutorialAction.PickDueDate(tomorrow),
+                TutorialAction.CloseDatePicker,
                 TutorialAction.SubmitList
             ),
             stage.actions
@@ -87,7 +95,7 @@ class TutorialDirectorTest {
     fun `should hold the scripted pacing of the opening scene`() = runTest {
         directorFor(RecordingStage(TutorialScreen.LISTS)).playOpening()
 
-        assertEquals(4350L, testScheduler.currentTime)
+        assertEquals(5800L, testScheduler.currentTime)
     }
 
     @Test
@@ -123,10 +131,31 @@ class TutorialDirectorTest {
         verify { viewModel.skip() }
     }
 
+    /**
+     * The slip hangs under the rule the two date glyphs are on. Hung under the line
+     * the name is written on — which is what it used to do — it landed squarely on
+     * that rule and covered the glyph it was explaining.
+     */
     @Test
-    fun `should skip the caption when the create row has no bounds`() = runTest {
+    fun `should hang the caption under the glyphs rather than under the name`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
-        stage.anchorAvailable = { it != TutorialAnchor.ListCreateRow }
+
+        directorFor(stage).playOpening()
+
+        assertEquals(
+            stage.labelFor(checkNotNull(stage.boundsOf(TutorialAnchor.DueDateButton))),
+            overlay.captionHungUnder
+        )
+    }
+
+    @Test
+    fun `should skip the caption when there is nothing on the page to hang it under`() = runTest {
+        val stage = RecordingStage(TutorialScreen.LISTS)
+        stage.anchorAvailable = {
+            it != TutorialAnchor.ListCreateRow &&
+                it != TutorialAnchor.DueDateButton &&
+                it != TutorialAnchor.TargetDateButton
+        }
 
         directorFor(stage).playOpening()
 
@@ -424,10 +453,17 @@ class TutorialDirectorTest {
             /**
              * The stage hands out rows ten wide, so the reaches are exact: a
              * quarter of the row towards the editor and a little under a third of
-             * it towards the tear, arrived at a sixth at a time.
+             * it towards the tear, arrived at a fourteenth at a time. It used to be
+             * six steps, each of which waited out a page-crossing spring; they are
+             * shorter and there are more of them now, and the pull is the length of
+             * a pull rather than of a haul.
              */
-            assertSteps(listOf(0.4333f, 0.8667f, 1.3f, 1.7333f, 2.1667f, 2.6f), towardsTheEditor)
-            assertSteps(listOf(-0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f), towardsTheTear)
+            assertEquals(PULLS_PER_SWIPE, towardsTheEditor.size)
+            assertEquals(PULLS_PER_SWIPE, towardsTheTear.size)
+            assertEquals(2.6f, towardsTheEditor.last(), PULL_TOLERANCE)
+            assertEquals(-3.0f, towardsTheTear.last(), PULL_TOLERANCE)
+            assertSteps(evenlyTo(2.6f, PULLS_PER_SWIPE), towardsTheEditor)
+            assertSteps(evenlyTo(-3.0f, PULLS_PER_SWIPE), towardsTheTear)
         }
 
     /**
@@ -646,6 +682,11 @@ class TutorialDirectorTest {
             yield()
         }
 
+        override suspend fun dragTo(bounds: TutorialBounds) {
+            events.add("drag:${stage.labelFor(bounds)}")
+            yield()
+        }
+
         override suspend fun tap() {
             events.add("tap")
             yield()
@@ -661,8 +702,12 @@ class TutorialDirectorTest {
             yield()
         }
 
+        var captionHungUnder: String? = null
+            private set
+
         override suspend fun showCaption(caption: TutorialCaption, below: TutorialBounds) {
             events.add("caption:$caption")
+            captionHungUnder = stage.labelFor(below)
             yield()
         }
 

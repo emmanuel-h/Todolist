@@ -150,6 +150,10 @@ class TutorialOverlayState(private val pace: TutorialPace = TutorialPace()) : Tu
         if (pace.hurrying) hand.snapTo(target) else hand.animateTo(target, PaperMotion.handGlide)
     }
 
+    override suspend fun dragTo(bounds: TutorialBounds) {
+        hand.snapTo(handTargetFor(bounds, originX, originY, handSizePx))
+    }
+
     override suspend fun tap() {
         press(HAND_TAP_SCALE)
         pace.beat(TAP_HOLD_MILLIS)
@@ -183,7 +187,18 @@ class TutorialOverlayState(private val pace: TutorialPace = TutorialPace()) : Tu
         caption = null
     }
 
+    /**
+     * The banner takes the slip rather than dimming it. It used to be shown over a
+     * narration that was only faded out by how far the banner had slid in — so when
+     * the banner slid away the sentence faded back up, sat there for half a second,
+     * and was immediately replaced by the next scene's. Three things arriving at the
+     * top of the page in two seconds, and the one worth reading was the middle one.
+     */
     override suspend fun showBanner(content: TutorialBannerContent) {
+        if (narration != null) {
+            fade(narrationAlpha, PARKED, PaperMotion.rowExit)
+            narration = null
+        }
         banner = content
         bannerProgress.snapTo(PARKED)
         fade(bannerProgress, SHOWN, PaperMotion.sheetSettle)

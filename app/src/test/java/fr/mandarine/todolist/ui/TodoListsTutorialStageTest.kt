@@ -123,11 +123,49 @@ class TodoListsTutorialStageTest {
         }
     }
 
+    /**
+     * Choosing a day and putting the calendar away are two beats, not one. They
+     * used to be the same one, so the sheet vanished in the frame the day was
+     * chosen and the reader saw a calendar flash rather than a day being picked.
+     */
     @Test
-    fun `should close the picker once a due date is chosen`() {
+    fun `should circle the day on the calendar and leave it standing`() {
         onActivity { activity ->
             perform(activity, TutorialAction.OpenListCreateRow)
             perform(activity, TutorialAction.OpenDueDatePicker)
+
+            assertTrue(perform(activity, TutorialAction.PickDueDate(DATE)))
+            assertEquals(DATE, activity.screenState.addRowSelection.dueDate)
+            assertEquals(DATE, activity.screenState.datePickerRequest?.initial)
+        }
+    }
+
+    @Test
+    fun `should put the calendar away when it is asked to and not before`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
+            perform(activity, TutorialAction.OpenDueDatePicker)
+            perform(activity, TutorialAction.PickDueDate(DATE))
+
+            assertTrue(perform(activity, TutorialAction.CloseDatePicker))
+            assertNull(activity.screenState.datePickerRequest)
+            assertEquals(DATE, activity.screenState.addRowSelection.dueDate)
+        }
+    }
+
+    @Test
+    fun `should refuse to close a calendar that is not open`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
+
+            assertFalse(perform(activity, TutorialAction.CloseDatePicker))
+        }
+    }
+
+    @Test
+    fun `should still write the day when it is chosen with no calendar open`() {
+        onActivity { activity ->
+            perform(activity, TutorialAction.OpenListCreateRow)
 
             assertTrue(perform(activity, TutorialAction.PickDueDate(DATE)))
             assertEquals(DATE, activity.screenState.addRowSelection.dueDate)

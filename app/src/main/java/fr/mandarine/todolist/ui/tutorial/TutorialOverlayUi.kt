@@ -218,9 +218,9 @@ private fun PhantomHand(state: TutorialOverlayState, anchors: TutorialAnchorHost
  * followed the thing it described would have the reader's eye chasing it around
  * the page instead of watching the hand.
  *
- * It steps aside for the mock reminder rather than stacking with it — the two want
+ * The mock reminder takes the slip away rather than stacking with it — the two want
  * the same strip of paper, and the banner is itself the point of the scene whose
- * line it covers.
+ * line it replaces.
  */
 @Composable
 private fun BoxScope.NarrationSlip(line: TutorialLine, state: TutorialOverlayState) {
@@ -229,7 +229,7 @@ private fun BoxScope.NarrationSlip(line: TutorialLine, state: TutorialOverlaySta
             .align(Alignment.TopCenter)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(BANNER_MARGIN)
-            .graphicsLayer { alpha = state.narrationAlpha.value * (1f - state.bannerProgress.value) }
+            .graphicsLayer { alpha = state.narrationAlpha.value }
             .paperSlip()
     ) {
         Text(

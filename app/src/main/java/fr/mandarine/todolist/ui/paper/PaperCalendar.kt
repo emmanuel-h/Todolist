@@ -117,7 +117,13 @@ fun PaperCalendar(
     val initials = remember(locale, firstDayOfWeek) { weekdayInitials(firstDayOfWeek, locale) }
     val spokenDay = rememberDatePattern(SPOKEN_DAY_SKELETON, locale)
 
-    var inked by remember { mutableStateOf(selected) }
+    /**
+     * Keyed on the day handed in, not remembered once. A reader only ever changes
+     * this by pressing a day here, and the sheet closes on that — so for them the
+     * key never fires. The demonstration circles a day from outside, and without
+     * the key its calendar showed nothing chosen at all.
+     */
+    var inked by remember(selected) { mutableStateOf(selected) }
     var picks by remember { mutableIntStateOf(NO_PICK) }
     var yearsOpen by remember { mutableStateOf(false) }
     val pick = rememberUpdatedState(onPick)
