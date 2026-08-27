@@ -16,7 +16,7 @@ navigation3 = "1.1.6"
 ksp = "2.3.6"
 # Must track the Kotlin version AGP 9 compiles with (currently 2.2.10).
 composeCompiler = "2.2.10"
-composeBom = "2026.06.01"
+composeBom = "2026.08.00"
 activityCompose = "1.13.0"
 coreSplashscreen = "1.2.0"
 # 1.5.x is the first line that builds against AGP 9 without the newDsl=false flag.
