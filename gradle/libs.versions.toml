@@ -13,7 +13,7 @@ room = "2.8.4"
 work = "2.11.2"
 lifecycle = "2.10.0"
 navigation3 = "1.1.6"
-ksp = "2.3.6"
+ksp = "2.3.11"
 # Must track the Kotlin version AGP 9 compiles with (currently 2.2.10).
 composeCompiler = "2.2.10"
 composeBom = "2026.08.00"
