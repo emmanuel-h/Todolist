@@ -289,6 +289,7 @@ fun TodoListScreen(
                 item(key = INLINE_ADD_KEY, contentType = INLINE_ADD_TYPE) {
                     InkAddLine(
                         spoken = stringResource(R.string.add_item),
+                        commitSpoken = stringResource(R.string.commit_item),
                         text = screenState.addRowText,
                         onTextChange = { screenState.addRowText = it },
                         onCommit = { title ->
@@ -299,7 +300,8 @@ fun TodoListScreen(
                         onPenUp = { screenState.addRowExpanded = true },
                         onPenDown = { screenState.addRowExpanded = false },
                         modifier = animatedRow(screenState)
-                            .tutorialAnchor(screenState, TutorialAnchor.ItemGhostRow)
+                            .tutorialAnchor(screenState, TutorialAnchor.ItemGhostRow),
+                        commitModifier = Modifier
                             .tutorialAnchor(screenState, TutorialAnchor.SubmitItemButton),
                         style = MaterialTheme.typography.bodyLarge,
                         breathing = activeItems.isEmpty() && completedItems.isEmpty(),

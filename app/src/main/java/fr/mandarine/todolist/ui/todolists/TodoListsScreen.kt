@@ -273,6 +273,7 @@ fun TodoListsScreen(
                         Column {
                             InkAddLine(
                                 spoken = stringResource(R.string.add_list),
+                                commitSpoken = stringResource(R.string.commit_list),
                                 text = screenState.addRowText,
                                 onTextChange = { screenState.addRowText = it },
                                 onCommit = { _ ->
@@ -282,10 +283,11 @@ fun TodoListsScreen(
                                 onPenUp = { screenState.openAddRow() },
                                 onPenDown = { screenState.closeAddRow() },
                                 modifier = Modifier
-                                    .tutorialAnchor(screenState, TutorialAnchor.ListCreateRow)
-                                    .tutorialAnchor(screenState, TutorialAnchor.SubmitListButton),
+                                    .tutorialAnchor(screenState, TutorialAnchor.ListCreateRow),
                                 fieldModifier = Modifier
                                     .tutorialAnchor(screenState, TutorialAnchor.ListNameField),
+                                commitModifier = Modifier
+                                    .tutorialAnchor(screenState, TutorialAnchor.SubmitListButton),
                                 style = MaterialTheme.typography.titleMedium,
                                 animated = screenState.animationsEnabled
                             )

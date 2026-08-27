@@ -37,6 +37,7 @@ enum class IconSeat { Centred, OnRule }
 object GlyphFoot {
     const val arrow = 20f / 24f
     const val chevron = 19f / 24f
+    const val check = 18f / 24f
     const val trash = 23f / 24f
     const val pencil = 23f / 24f
 }
