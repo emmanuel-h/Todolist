@@ -176,6 +176,7 @@ class PaperPrimitivesTest {
                     onPenUp = { penUp = true },
                     onPenDown = {},
                     spoken = "Add an item",
+                    commitSpoken = "Add this item",
                     modifier = Modifier.testTag("add-line")
                 )
             }
@@ -185,6 +186,72 @@ class PaperPrimitivesTest {
         composeRule.onNodeWithTag("add-line").performClick()
 
         assertTrue(penUp)
+    }
+
+    @Test
+    fun `should keep the tick off the add line while there is nothing to commit`() {
+        composeRule.setContent {
+            PaperTheme {
+                InkAddLine(
+                    text = "",
+                    onTextChange = {},
+                    onCommit = {},
+                    armed = false,
+                    onPenUp = {},
+                    onPenDown = {},
+                    spoken = "Add an item",
+                    commitSpoken = "Add this item",
+                    animated = false
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Add this item").assertDoesNotExist()
+    }
+
+    @Test
+    fun `should keep the tick off the add line while only blank space is written`() {
+        composeRule.setContent {
+            PaperTheme {
+                InkAddLine(
+                    text = "   ",
+                    onTextChange = {},
+                    onCommit = {},
+                    armed = false,
+                    onPenUp = {},
+                    onPenDown = {},
+                    spoken = "Add an item",
+                    commitSpoken = "Add this item",
+                    animated = false
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Add this item").assertDoesNotExist()
+    }
+
+    @Test
+    fun `should commit what is written when the tick on the add line is tapped`() {
+        var committed: String? = null
+        composeRule.setContent {
+            PaperTheme {
+                InkAddLine(
+                    text = "🍎 Apples",
+                    onTextChange = {},
+                    onCommit = { committed = it },
+                    armed = false,
+                    onPenUp = {},
+                    onPenDown = {},
+                    spoken = "Add an item",
+                    commitSpoken = "Add this item",
+                    animated = false
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Add this item").performClick()
+
+        assertEquals("🍎 Apples", committed)
     }
 
     @Test

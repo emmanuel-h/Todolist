@@ -177,7 +177,8 @@ internal fun InkAddLinePreview() {
                     armed = false,
                     onPenUp = {},
                     onPenDown = {},
-                    spoken = ""
+                    spoken = "",
+                    commitSpoken = ""
                 )
                 InkAddLine(
                     text = PREVIEW_GROCERIES,
@@ -186,7 +187,8 @@ internal fun InkAddLinePreview() {
                     armed = false,
                     onPenUp = {},
                     onPenDown = {},
-                    spoken = ""
+                    spoken = "",
+                    commitSpoken = ""
                 )
             }
         }

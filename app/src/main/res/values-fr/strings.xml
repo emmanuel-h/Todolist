@@ -27,8 +27,10 @@
     </plurals>
     <string name="add_list_fab_description">Créer une nouvelle liste</string>
     <string name="add_list">Ajouter une liste</string>
+    <string name="commit_list">Ajouter cette liste</string>
     <string name="discard_list">Abandonner la liste commencée</string>
     <string name="add_item">Ajouter une tâche</string>
+    <string name="commit_item">Ajouter cette tâche</string>
     <string name="item_edit">Modifier la tâche</string>
     <string name="item_delete">Supprimer la tâche</string>
     <string name="move_up">Déplacer vers le haut</string>
@@ -47,6 +49,12 @@
     <string name="notification_channel_name">Rappels</string>
     <string name="replay_tutorial">Revoir le tutoriel</string>
     <string name="tutorial_next">Étape suivante</string>
+    <string name="tutorial_write_a_list">Prenez une feuille et écrivez-y une liste</string>
+    <string name="tutorial_a_day_and_a_note">Entourez un jour et vous serez rappelé ce matin-là</string>
+    <string name="tutorial_open_it">Touchez une liste pour l’ouvrir</string>
+    <string name="tutorial_write_items">Écrivez ce qu’elle contient, ligne par ligne</string>
+    <string name="tutorial_tick_and_move">Touchez pour cocher. Maintenez une ligne pour la déplacer.</string>
+    <string name="tutorial_edit_and_tear">Tirez une ligne à droite pour la modifier, à gauche pour l’arracher</string>
     <string name="date_kind_target_caption">À faire ce jour-là</string>
     <string name="date_kind_due_caption">À terminer avant ce jour</string>
 </resources>

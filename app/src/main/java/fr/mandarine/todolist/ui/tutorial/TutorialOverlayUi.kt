@@ -44,12 +44,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialCaption
+import fr.mandarine.todolist.presentation.TutorialLine
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
@@ -140,6 +142,7 @@ fun TutorialOverlay(
             .graphicsLayer { alpha = state.overlayAlpha.value * arrival.value }
             .pointerInput(Unit) { swallowTouches() }
     ) {
+        state.narration?.let { NarrationSlip(it, state) }
         state.banner?.let { BannerSlip(it, state, statusBarPx) }
         PhantomHand(state, anchors)
         state.caption?.let { CaptionSlip(it, state) }
@@ -208,6 +211,44 @@ private fun PhantomHand(state: TutorialOverlayState, anchors: TutorialAnchorHost
             }
             .clearAndSetSemantics {}
     )
+}
+
+/**
+ * What the tour is doing, in a sentence, pinned where it cannot move: a line that
+ * followed the thing it described would have the reader's eye chasing it around
+ * the page instead of watching the hand.
+ *
+ * It steps aside for the mock reminder rather than stacking with it — the two want
+ * the same strip of paper, and the banner is itself the point of the scene whose
+ * line it covers.
+ */
+@Composable
+private fun BoxScope.NarrationSlip(line: TutorialLine, state: TutorialOverlayState) {
+    Box(
+        Modifier
+            .align(Alignment.TopCenter)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(BANNER_MARGIN)
+            .graphicsLayer { alpha = state.narrationAlpha.value * (1f - state.bannerProgress.value) }
+            .paperSlip()
+    ) {
+        Text(
+            text = stringResource(narrationStringRes(line)),
+            modifier = Modifier.padding(horizontal = SLIP_PADDING, vertical = CAPTION_PADDING),
+            color = LocalPaperPalette.current.inked(InkTone.Words),
+            style = PaperType.prose,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+internal fun narrationStringRes(line: TutorialLine): Int = when (line) {
+    TutorialLine.WRITE_A_LIST -> R.string.tutorial_write_a_list
+    TutorialLine.A_DAY_AND_A_NOTE -> R.string.tutorial_a_day_and_a_note
+    TutorialLine.OPEN_IT -> R.string.tutorial_open_it
+    TutorialLine.WRITE_ITEMS -> R.string.tutorial_write_items
+    TutorialLine.TICK_AND_MOVE -> R.string.tutorial_tick_and_move
+    TutorialLine.EDIT_AND_TEAR -> R.string.tutorial_edit_and_tear
 }
 
 @Composable

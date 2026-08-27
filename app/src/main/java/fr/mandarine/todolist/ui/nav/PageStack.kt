@@ -36,6 +36,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import fr.mandarine.todolist.domain.AnimationEvent
 import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
@@ -263,6 +264,17 @@ private fun ItemsPage(
 
     LaunchedEffect(state) {
         if (state is TodoListState.NotFound) stage.leave()
+    }
+
+    /**
+     * The page is told which tick emptied the list and nothing else. It works out
+     * where on the paper to celebrate from itself, because the view model has no
+     * business knowing where a finger was.
+     */
+    LaunchedEffect(viewModel) {
+        viewModel.animationEvents.collect { event ->
+            if (event is AnimationEvent.ListCompleted) screenState.finishedOn = event.lastItemId
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().peelingEdge()) {

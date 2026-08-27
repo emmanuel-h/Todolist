@@ -36,6 +36,12 @@ private const val NO_REFERENCE = 0
  * the page, and this is where that is held to: the icon is drawn with the pad's own
  * tones, the themed form keeps the one mark that is legible after the tint, and the
  * launch window is handed the very colour resource the page is painted with.
+ *
+ * The one place the two part company is the lamp. The window turns down with the
+ * room because it is repainted every time it is shown; the launcher tile cannot,
+ * because a launcher rasterises it once and keeps what it got, so a tile that reads
+ * the room ends up showing whichever room it was first drawn in. That is what these
+ * tests used to require of it, and it is what #44 was.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -46,20 +52,37 @@ class LaunchMarkTest {
     private val palette = PaperPalette.light
 
     @Test
-    fun `should stand the launcher icon on the same paper the window is dressed with`() {
+    fun `should stand the launcher icon on the same paper the page is written on`() {
         val ground = icon().background.pixelAt(54f, 54f)
 
-        assertEquals(context.getColor(R.color.paper), ground)
+        assertEquals(context.getColor(R.color.launcher_paper), ground)
         assertEquals(palette.paper.toArgb(), ground)
     }
 
     @Test
     @Config(qualifiers = "night")
-    fun `should turn the launcher paper down with the room`() {
+    fun `should leave the launcher paper alone when the room turns down`() {
         val ground = icon().background.pixelAt(54f, 54f)
 
-        assertEquals(context.getColor(R.color.paper), ground)
-        assertEquals(PaperPalette.night.paper.toArgb(), ground)
+        assertEquals(palette.paper.toArgb(), ground)
+        assertTrue("$ground", ground != PaperPalette.night.paper.toArgb())
+    }
+
+    @Test
+    @Config(qualifiers = "night")
+    fun `should give the launcher paper the same colour by night as by day`() {
+        assertEquals(palette.paper.toArgb(), context.getColor(R.color.launcher_paper))
+    }
+
+    /**
+     * The window is the half of the pair that *does* read the room, and the reason
+     * the launcher's sheet needed a colour of its own rather than a night override
+     * being deleted.
+     */
+    @Test
+    @Config(qualifiers = "night")
+    fun `should turn the window's paper down with the room`() {
+        assertEquals(PaperPalette.night.paper.toArgb(), context.getColor(R.color.paper))
     }
 
     @Test

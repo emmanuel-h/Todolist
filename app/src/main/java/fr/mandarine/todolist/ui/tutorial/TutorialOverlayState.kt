@@ -12,6 +12,7 @@ import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TutorialBannerContent
 import fr.mandarine.todolist.presentation.TutorialBounds
 import fr.mandarine.todolist.presentation.TutorialCaption
+import fr.mandarine.todolist.presentation.TutorialLine
 import fr.mandarine.todolist.presentation.TutorialOverlay
 import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.presentation.TutorialUiState
@@ -20,10 +21,10 @@ import fr.mandarine.todolist.ui.paper.PaperMotion
 internal const val HAND_PARKED_Y = 4000f
 internal const val HAND_TAP_SCALE = 0.72f
 internal const val HAND_GRIP_SCALE = HAND_TAP_SCALE
-internal const val PROGRESS_DOT_COUNT = 5
+internal const val PROGRESS_DOT_COUNT = 6
 
 private const val TAP_HOLD_MILLIS = 130L
-private const val BANNER_HOLD_MILLIS = 1700L
+private const val BANNER_HOLD_MILLIS = 2200L
 private const val PARKED = 0f
 private const val SHOWN = 1f
 private const val RESTING = 1f
@@ -52,6 +53,9 @@ class TutorialOverlayState(private val pace: TutorialPace = TutorialPace()) : Tu
     var banner by mutableStateOf<TutorialBannerContent?>(null)
         private set
 
+    var narration by mutableStateOf<TutorialLine?>(null)
+        private set
+
     /**
      * A beat whose control no longer exists resolves to no bounds at all, and a
      * control can also leave under the finger that just used it. Either way the
@@ -66,6 +70,7 @@ class TutorialOverlayState(private val pace: TutorialPace = TutorialPace()) : Tu
     val captionAlpha = Animatable(0f)
     val captionTextAlpha = Animatable(1f)
     val bannerProgress = Animatable(0f)
+    val narrationAlpha = Animatable(0f)
     val overlayAlpha = Animatable(1f)
 
     /**
@@ -105,9 +110,11 @@ class TutorialOverlayState(private val pace: TutorialPace = TutorialPace()) : Tu
         captionAlpha.snapTo(PARKED)
         captionTextAlpha.snapTo(SHOWN)
         bannerProgress.snapTo(PARKED)
+        narrationAlpha.snapTo(PARKED)
         overlayAlpha.snapTo(PARKED)
         caption = null
         banner = null
+        narration = null
         aimedAnchor = null
         visible = true
         overlayAlpha.animateTo(SHOWN, PaperMotion.rowEnter)
@@ -127,6 +134,17 @@ class TutorialOverlayState(private val pace: TutorialPace = TutorialPace()) : Tu
      * A reader who has said they have seen enough is not shown the travel at all:
      * the hand is already wherever the rest of the scene needs it.
      */
+    /**
+     * The same line twice is one line, not a blink: a scene replayed on a page that
+     * caught up a frame late must not make the slip flicker out and back.
+     */
+    override suspend fun narrate(line: TutorialLine) {
+        if (narration == line) return
+        if (narration != null) fade(narrationAlpha, PARKED, PaperMotion.rowExit)
+        narration = line
+        fade(narrationAlpha, SHOWN, PaperMotion.rowEnter)
+    }
+
     override suspend fun glideTo(bounds: TutorialBounds, durationMillis: Long) {
         val target = handTargetFor(bounds, originX, originY, handSizePx)
         if (pace.hurrying) hand.snapTo(target) else hand.animateTo(target, PaperMotion.handGlide)
@@ -200,11 +218,19 @@ internal fun handTargetFor(
 internal fun captionTopFor(below: TutorialBounds, originY: Int, gapPx: Float): Float =
     below.top - originY + below.height + gapPx
 
+/**
+ * The opening scene — the pad taken, the name written, a day circled and the line
+ * committed — is a scene, and it now has a dot of its own. It used to share the
+ * first dot with the beat that follows it, so the tour's longest and busiest scene
+ * showed no progress at all and the pill did not move until a third of it was over.
+ */
 internal fun filledDotsFor(state: TutorialUiState): Int = when (state) {
-    TutorialUiState.ReadyToStart -> 1
-    is TutorialUiState.Active -> state.step.ordinal + 1
+    TutorialUiState.ReadyToStart -> OPENING_DOT
+    is TutorialUiState.Active -> state.step.ordinal + OPENING_DOT + 1
     else -> 0
 }
+
+private const val OPENING_DOT = 1
 
 /**
  * The banner slides in from above its own top edge, so the travel is only known

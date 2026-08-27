@@ -12,7 +12,12 @@ import androidx.compose.ui.test.onRoot
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
+import androidx.test.core.app.ApplicationProvider
+import fr.mandarine.todolist.domain.TutorialStep
+import fr.mandarine.todolist.presentation.TutorialLine
 import fr.mandarine.todolist.presentation.TodoListState
+import fr.mandarine.todolist.ui.tutorial.narrationStringRes
+import org.junit.Assert.assertNotEquals
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.SectionSkip
@@ -173,6 +178,61 @@ private fun EmptyItemsScreen() {
         onSubmitInline = {},
         onReorder = {}
     )
+}
+
+/**
+ * The tour is the one part of the app that speaks in sentences, and these are the
+ * sentences. It is pinned here for the same reason every other word is: so that
+ * adding one, or quietly rewording one, is something someone decided to do.
+ *
+ * Six lines, one per scene. If a scene is added or dropped, this list changes with
+ * it — do not replace it with a check that every line merely resolves to something.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class TutorialWordsTest {
+
+    private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+
+    @Test
+    fun `should say exactly these six things and nothing else during the tour`() {
+        val said = TutorialLine.entries.map { context.getString(narrationStringRes(it)) }
+
+        assertEquals(
+            listOf(
+                "Take a sheet and write a list on it",
+                "Circle a day and you get a reminder that morning",
+                "Tap a list to open it",
+                "Write what is on it, line by line",
+                "Tap to tick something off. Hold a row to move it.",
+                "Pull a row right to edit it, left to tear it off"
+            ),
+            said
+        )
+    }
+
+    @Test
+    fun `should give every scene of the tour a line of its own`() {
+        val lines = TutorialLine.entries.map { narrationStringRes(it) }
+
+        assertEquals(lines.size, lines.toSet().size)
+        assertEquals(TutorialStep.entries.size + 1, lines.size)
+    }
+
+    @Test
+    fun `should translate every line of the tour into French`() {
+        val french = context.createConfigurationContext(
+            android.content.res.Configuration(context.resources.configuration).apply {
+                setLocale(java.util.Locale.FRENCH)
+            }
+        )
+
+        for (line in TutorialLine.entries) {
+            val english = context.getString(narrationStringRes(line))
+            val translated = french.getString(narrationStringRes(line))
+            assertNotEquals("$line was left in English", english, translated)
+        }
+    }
 }
 
 @Composable

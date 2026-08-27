@@ -8,7 +8,7 @@ class TutorialScriptTest {
 
     @Test
     fun `should create script when steps list is not empty`() {
-        val script = TutorialScript(listOf(TutorialStep.CREATE_LIST))
+        val script = TutorialScript(listOf(TutorialStep.A_DAY_AND_A_NOTE))
         assertEquals(1, script.steps.size)
     }
 
@@ -21,7 +21,7 @@ class TutorialScriptTest {
 
     @Test
     fun `should expose all provided steps`() {
-        val steps = listOf(TutorialStep.CREATE_LIST, TutorialStep.SET_DUE_DATE)
+        val steps = listOf(TutorialStep.A_DAY_AND_A_NOTE, TutorialStep.OPEN_IT)
         val script = TutorialScript(steps)
         assertEquals(steps, script.steps)
     }
@@ -33,26 +33,26 @@ class TutorialScriptTest {
 
     @Test
     fun `should have CREATE_LIST as first step in default script`() {
-        assertEquals(TutorialStep.CREATE_LIST, TutorialScript.defaultScript().steps[0])
+        assertEquals(TutorialStep.A_DAY_AND_A_NOTE, TutorialScript.defaultScript().steps[0])
     }
 
     @Test
     fun `should have SET_DUE_DATE as second step in default script`() {
-        assertEquals(TutorialStep.SET_DUE_DATE, TutorialScript.defaultScript().steps[1])
+        assertEquals(TutorialStep.OPEN_IT, TutorialScript.defaultScript().steps[1])
     }
 
     @Test
     fun `should have OPEN_LIST as third step in default script`() {
-        assertEquals(TutorialStep.OPEN_LIST, TutorialScript.defaultScript().steps[2])
+        assertEquals(TutorialStep.WRITE_ITEMS, TutorialScript.defaultScript().steps[2])
     }
 
     @Test
     fun `should have COMPLETE_AND_REORDER as fourth step in default script`() {
-        assertEquals(TutorialStep.COMPLETE_AND_REORDER, TutorialScript.defaultScript().steps[3])
+        assertEquals(TutorialStep.TICK_AND_MOVE, TutorialScript.defaultScript().steps[3])
     }
 
     @Test
     fun `should have DELETE_LIST as last step in default script`() {
-        assertEquals(TutorialStep.DELETE_LIST, TutorialScript.defaultScript().steps[4])
+        assertEquals(TutorialStep.EDIT_AND_TEAR, TutorialScript.defaultScript().steps[4])
     }
 }

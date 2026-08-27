@@ -80,8 +80,8 @@ class TutorialOverlayController(
     }
 
     private fun entersScreen(step: TutorialStep, screen: TutorialScreen): Boolean =
-        (step == TutorialStep.OPEN_LIST && screen == TutorialScreen.ITEMS) ||
-            (step == TutorialStep.DELETE_LIST && screen == TutorialScreen.LISTS)
+        (step == TutorialStep.WRITE_ITEMS && screen == TutorialScreen.ITEMS) ||
+            (step == TutorialStep.EDIT_AND_TEAR && screen == TutorialScreen.LISTS)
 
     private fun launchScene(block: suspend () -> Unit) {
         sceneJob?.cancel()

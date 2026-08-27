@@ -63,9 +63,26 @@ class TutorialOverlayStateTest {
 
     @Test
     fun `should fill one dot per step reached`() {
-        assertEquals(1, filledDotsFor(TutorialUiState.Active(TutorialStep.CREATE_LIST)))
-        assertEquals(3, filledDotsFor(TutorialUiState.Active(TutorialStep.OPEN_LIST)))
-        assertEquals(5, filledDotsFor(TutorialUiState.Active(TutorialStep.DELETE_LIST)))
+        assertEquals(2, filledDotsFor(TutorialUiState.Active(TutorialStep.A_DAY_AND_A_NOTE)))
+        assertEquals(4, filledDotsFor(TutorialUiState.Active(TutorialStep.WRITE_ITEMS)))
+        assertEquals(6, filledDotsFor(TutorialUiState.Active(TutorialStep.EDIT_AND_TEAR)))
+    }
+
+    /**
+     * The opening scene is a scene. It used to share the first dot with the beat
+     * after it, so the longest and busiest part of the tour showed no progress at
+     * all until it was over.
+     */
+    @Test
+    fun `should give the opening scene a dot of its own`() {
+        assertEquals(1, filledDotsFor(TutorialUiState.ReadyToStart))
+        assertEquals(2, filledDotsFor(TutorialUiState.Active(TutorialStep.A_DAY_AND_A_NOTE)))
+    }
+
+    @Test
+    fun `should have one dot on the pill for every scene of the tour`() {
+        assertEquals(PROGRESS_DOT_COUNT, filledDotsFor(TutorialUiState.Active(TutorialStep.EDIT_AND_TEAR)))
+        assertEquals(PROGRESS_DOT_COUNT, TutorialStep.entries.size + 1)
     }
 
     @Test

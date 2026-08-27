@@ -158,7 +158,7 @@ class TutorialViewModelTest {
     fun `should transition to active state with CREATE_LIST step when onDemoListCreated is called`() {
         viewModel.onDemoListCreated("list-1")
 
-        assertEquals(TutorialUiState.Active(TutorialStep.CREATE_LIST), viewModel.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.A_DAY_AND_A_NOTE), viewModel.uiState.value)
     }
 
     @Test
@@ -180,7 +180,7 @@ class TutorialViewModelTest {
         viewModel.onDemoListCreated("list-1")
         viewModel.advanceStep()
 
-        assertEquals(TutorialUiState.Active(TutorialStep.SET_DUE_DATE), viewModel.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.OPEN_IT), viewModel.uiState.value)
     }
 
     @Test
@@ -189,7 +189,7 @@ class TutorialViewModelTest {
         viewModel.advanceStep()
         viewModel.advanceStep()
 
-        assertEquals(TutorialUiState.Active(TutorialStep.OPEN_LIST), viewModel.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.WRITE_ITEMS), viewModel.uiState.value)
     }
 
     @Test
@@ -199,7 +199,7 @@ class TutorialViewModelTest {
         viewModel.advanceStep()
         viewModel.advanceStep()
 
-        assertEquals(TutorialUiState.Active(TutorialStep.COMPLETE_AND_REORDER), viewModel.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.TICK_AND_MOVE), viewModel.uiState.value)
     }
 
     @Test
@@ -210,7 +210,7 @@ class TutorialViewModelTest {
         viewModel.advanceStep()
         viewModel.advanceStep()
 
-        assertEquals(TutorialUiState.Active(TutorialStep.DELETE_LIST), viewModel.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.EDIT_AND_TEAR), viewModel.uiState.value)
     }
 
     @Test
@@ -292,7 +292,7 @@ class TutorialViewModelTest {
 
     @Test
     fun `should use custom script steps when provided`() {
-        val customScript = TutorialScript(listOf(TutorialStep.OPEN_LIST, TutorialStep.DELETE_LIST))
+        val customScript = TutorialScript(listOf(TutorialStep.WRITE_ITEMS, TutorialStep.EDIT_AND_TEAR))
         val vm = TutorialViewModel(
             shouldRunTutorialUseCase,
             startTutorialUseCase,
@@ -305,12 +305,12 @@ class TutorialViewModelTest {
 
         vm.onDemoListCreated("list-1")
 
-        assertEquals(TutorialUiState.Active(TutorialStep.OPEN_LIST), vm.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.WRITE_ITEMS), vm.uiState.value)
     }
 
     @Test
     fun `should advance to second step of custom script correctly`() {
-        val customScript = TutorialScript(listOf(TutorialStep.OPEN_LIST, TutorialStep.DELETE_LIST))
+        val customScript = TutorialScript(listOf(TutorialStep.WRITE_ITEMS, TutorialStep.EDIT_AND_TEAR))
         val vm = TutorialViewModel(
             shouldRunTutorialUseCase,
             startTutorialUseCase,
@@ -324,12 +324,12 @@ class TutorialViewModelTest {
 
         vm.advanceStep()
 
-        assertEquals(TutorialUiState.Active(TutorialStep.DELETE_LIST), vm.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.EDIT_AND_TEAR), vm.uiState.value)
     }
 
     @Test
     fun `should dismiss after single step custom script is advanced`() {
-        val customScript = TutorialScript(listOf(TutorialStep.CREATE_LIST))
+        val customScript = TutorialScript(listOf(TutorialStep.A_DAY_AND_A_NOTE))
         val vm = TutorialViewModel(
             shouldRunTutorialUseCase,
             startTutorialUseCase,
@@ -379,7 +379,7 @@ class TutorialViewModelTest {
 
         viewModel.replay()
 
-        assertEquals(TutorialUiState.Active(TutorialStep.CREATE_LIST), viewModel.uiState.value)
+        assertEquals(TutorialUiState.Active(TutorialStep.A_DAY_AND_A_NOTE), viewModel.uiState.value)
     }
 
     @Test

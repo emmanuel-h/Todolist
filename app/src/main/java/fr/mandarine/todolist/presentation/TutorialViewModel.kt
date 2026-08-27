@@ -84,7 +84,7 @@ class TutorialViewModel(
         get() {
             val s = _uiState.value
             return s is TutorialUiState.Active &&
-                (s.step == TutorialStep.OPEN_LIST || s.step == TutorialStep.COMPLETE_AND_REORDER)
+                (s.step == TutorialStep.WRITE_ITEMS || s.step == TutorialStep.TICK_AND_MOVE)
         }
 
     fun replay() {

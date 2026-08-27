@@ -112,6 +112,81 @@ class TodoListViewModelAnimationTest {
     }
 
     @Test
+    fun `should emit ListCompleted after ItemCompleted when the tick empties the list`() {
+        val apples = TodoItem("apples", "Apples", "list-1")
+        val bread = TodoItem("bread", "Bread", "list-1", isCompleted = true, completedAt = 1000L)
+        every { getTodosUseCase("list-1") } returns listOf(apples, bread)
+        viewModel.refresh()
+        every { getTodosUseCase("list-1") } returns listOf(apples.ticked(2000L), bread)
+
+        val events = collectEvents { viewModel.toggleTodo("apples") }
+
+        assertEquals(
+            listOf(
+                AnimationEvent.ItemCompleted("apples"),
+                AnimationEvent.ListCompleted("apples")
+            ),
+            events
+        )
+    }
+
+    @Test
+    fun `should name the item the finishing tick was written on in ListCompleted`() {
+        val bread = TodoItem("bread", "Bread", "list-1")
+        every { getTodosUseCase("list-1") } returns listOf(bread)
+        viewModel.refresh()
+        every { getTodosUseCase("list-1") } returns listOf(bread.ticked(2000L))
+
+        val events = collectEvents { viewModel.toggleTodo("bread") }
+
+        assertEquals("bread", (events.last() as AnimationEvent.ListCompleted).lastItemId)
+    }
+
+    @Test
+    fun `should not emit ListCompleted when the tick leaves another item active`() {
+        val apples = TodoItem("apples", "Apples", "list-1")
+        val bread = TodoItem("bread", "Bread", "list-1")
+        every { getTodosUseCase("list-1") } returns listOf(apples, bread)
+        viewModel.refresh()
+        every { getTodosUseCase("list-1") } returns listOf(apples.ticked(2000L), bread)
+
+        val events = collectEvents { viewModel.toggleTodo("apples") }
+
+        assertEquals(listOf(AnimationEvent.ItemCompleted("apples")), events)
+    }
+
+    @Test
+    fun `should not emit ListCompleted when a completed item is restored on an otherwise finished list`() {
+        val apples = TodoItem("apples", "Apples", "list-1", isCompleted = true, completedAt = 1000L)
+        every { getTodosUseCase("list-1") } returns listOf(apples)
+        viewModel.refresh()
+
+        val events = collectEvents { viewModel.toggleTodo("apples") }
+
+        assertEquals(listOf(AnimationEvent.ItemRestored("apples")), events)
+    }
+
+    @Test
+    fun `should not emit ListCompleted when the list has no items at all`() {
+        every { getTodosUseCase("list-1") } returns emptyList()
+        viewModel.refresh()
+
+        val events = collectEvents { viewModel.toggleTodo("ghost") }
+
+        assertEquals(listOf(AnimationEvent.ItemCompleted("ghost")), events)
+    }
+
+    @Test
+    fun `should say nothing at all when a finished list is merely opened`() {
+        val apples = TodoItem("apples", "Apples", "list-1", isCompleted = true, completedAt = 1000L)
+        every { getTodosUseCase("list-1") } returns listOf(apples)
+
+        val events = collectEvents { viewModel.refresh() }
+
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
     fun `should emit ItemRestored with item id when toggleTodo is called on a completed item`() {
         val completedItem = TodoItem("item-2", "Done", "list-1", isCompleted = true, completedAt = 1000L)
         every { getTodosUseCase("list-1") } returns listOf(completedItem)
@@ -210,4 +285,6 @@ class TodoListViewModelAnimationTest {
 
         assertEquals(listOf(AnimationEvent.ItemCompleted("item-active")), events)
     }
+
+    private fun TodoItem.ticked(at: Long): TodoItem = copy(isCompleted = true, completedAt = at)
 }

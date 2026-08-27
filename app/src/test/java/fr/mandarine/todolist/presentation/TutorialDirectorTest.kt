@@ -16,6 +16,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/**
+ * What the tour's own rests add up to, end to end — 2.5 seconds more than before
+ * the rework, which is what six readable sentences cost. Quoted in `docs/SPEC.md`.
+ *
+ * The banner's own 2.2s hold and every tap's 130ms are not in here: they are taken
+ * inside the overlay, and the fake this is measured against does not take them.
+ */
+private const val SCRIPTED_TOUR_MILLIS = 18_200L
+
 class TutorialDirectorTest {
 
     private val today = LocalDate.of(2026, 8, 21)
@@ -56,6 +65,7 @@ class TutorialDirectorTest {
         )
         assertEquals(
             listOf(
+                "narrate:WRITE_A_LIST",
                 "glide:CreateListButton",
                 "tap",
                 "glide:ListNameField",
@@ -140,9 +150,9 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.banner = TutorialBannerContent("🛒 Groceries", tomorrow)
 
-        directorFor(stage).play(TutorialStep.CREATE_LIST)
+        directorFor(stage).play(TutorialStep.A_DAY_AND_A_NOTE)
 
-        assertEquals(listOf("banner:🛒 Groceries"), overlay.events)
+        assertEquals(listOf("narrate:A_DAY_AND_A_NOTE", "banner:🛒 Groceries"), overlay.events)
         verify { viewModel.advanceStep() }
     }
 
@@ -151,9 +161,9 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.banner = null
 
-        directorFor(stage).play(TutorialStep.CREATE_LIST)
+        directorFor(stage).play(TutorialStep.A_DAY_AND_A_NOTE)
 
-        assertTrue(overlay.events.isEmpty())
+        assertEquals(listOf("narrate:A_DAY_AND_A_NOTE"), overlay.events)
         verify { viewModel.advanceStep() }
     }
 
@@ -161,7 +171,7 @@ class TutorialDirectorTest {
     fun `should ignore the create list step on the items screen`() = runTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
 
-        directorFor(stage).play(TutorialStep.CREATE_LIST)
+        directorFor(stage).play(TutorialStep.A_DAY_AND_A_NOTE)
 
         verify(exactly = 0) { viewModel.advanceStep() }
     }
@@ -172,10 +182,10 @@ class TutorialDirectorTest {
     fun `should open the demo list then advance on the due date step`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
 
-        directorFor(stage).play(TutorialStep.SET_DUE_DATE)
+        directorFor(stage).play(TutorialStep.OPEN_IT)
 
         assertEquals(listOf(TutorialAction.OpenFirstList), stage.actions)
-        assertEquals(listOf("glide:FirstListRow", "tap"), overlay.events)
+        assertEquals(listOf("narrate:OPEN_IT", "glide:FirstListRow", "tap"), overlay.events)
         verify { viewModel.advanceStep() }
     }
 
@@ -184,7 +194,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.canPerform = { it != TutorialAction.OpenFirstList }
 
-        directorFor(stage).play(TutorialStep.SET_DUE_DATE)
+        directorFor(stage).play(TutorialStep.OPEN_IT)
 
         verify(exactly = 0) { viewModel.advanceStep() }
         verify { viewModel.skip() }
@@ -195,16 +205,16 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.anchorAvailable = { it != TutorialAnchor.FirstListRow }
 
-        directorFor(stage).play(TutorialStep.SET_DUE_DATE)
+        directorFor(stage).play(TutorialStep.OPEN_IT)
 
-        assertEquals(listOf("tap"), overlay.events)
+        assertEquals(listOf("narrate:OPEN_IT", "tap"), overlay.events)
     }
 
     @Test
     fun `should ignore the due date step on the items screen`() = runTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
 
-        directorFor(stage).play(TutorialStep.SET_DUE_DATE)
+        directorFor(stage).play(TutorialStep.OPEN_IT)
 
         assertTrue(stage.actions.isEmpty())
     }
@@ -215,7 +225,7 @@ class TutorialDirectorTest {
     fun `should add both demo items then advance on the open list step`() = runTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
 
-        directorFor(stage).play(TutorialStep.OPEN_LIST)
+        directorFor(stage).play(TutorialStep.WRITE_ITEMS)
 
         assertEquals(
             listOf(
@@ -236,7 +246,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
         stage.canPerform = { it != TutorialAction.OpenItemAddRow }
 
-        directorFor(stage).play(TutorialStep.OPEN_LIST)
+        directorFor(stage).play(TutorialStep.WRITE_ITEMS)
 
         assertTrue(stage.actions.contains(TutorialAction.TypeItemTitle("🍎 Apples")))
         assertTrue(stage.actions.contains(TutorialAction.TypeItemTitle("🥖 Bread")))
@@ -248,7 +258,7 @@ class TutorialDirectorTest {
     fun `should ignore the open list step on the lists screen`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
 
-        directorFor(stage).play(TutorialStep.OPEN_LIST)
+        directorFor(stage).play(TutorialStep.WRITE_ITEMS)
 
         assertTrue(stage.actions.isEmpty())
     }
@@ -259,7 +269,7 @@ class TutorialDirectorTest {
     fun `should complete restore reorder and complete again then advance`() = runTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
 
-        directorFor(stage).play(TutorialStep.COMPLETE_AND_REORDER)
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
 
         assertEquals(
             listOf(
@@ -276,11 +286,57 @@ class TutorialDirectorTest {
         verify { viewModel.advanceStep() }
     }
 
+    /**
+     * Nine hundred milliseconds longer than it was, and almost all of it inside the
+     * drag: the grip is held for 400 rather than 100 before the row moves, and the
+     * row is held at its new place for 250 rather than 50. A long-press-to-drag that
+     * is over in a tenth of a second reads as a row that jumped by itself.
+     */
     @Test
-    fun `should hold the scripted pacing of the complete and reorder step`() = runTest {
-        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.COMPLETE_AND_REORDER)
+    fun `should hold the scripted pacing of the tick and move step`() = runTest {
+        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.TICK_AND_MOVE)
 
-        assertEquals(3900L, testScheduler.currentTime)
+        assertEquals(4800L, testScheduler.currentTime)
+    }
+
+    /**
+     * What the tour costs a reader, end to end, counted in the rests the script
+     * actually takes. `SPEC.md` quotes this number; when it changes, change it there
+     * too rather than letting the two drift apart.
+     *
+     * It is the director's own rests only — the fake overlay does not hold a tap or
+     * animate a glide — so the real thing is longer, and longer again on a slow
+     * device where a spring takes what it takes.
+     */
+    @Test
+    fun `should hold the scripted pacing of the whole tour`() = runTest {
+        directorFor(RecordingStage(TutorialScreen.LISTS)).playOpening()
+        for (step in TutorialStep.entries) {
+            val screen = if (step == TutorialStep.WRITE_ITEMS || step == TutorialStep.TICK_AND_MOVE) {
+                TutorialScreen.ITEMS
+            } else {
+                TutorialScreen.LISTS
+            }
+            directorFor(RecordingStage(screen)).play(step)
+        }
+
+        assertEquals(SCRIPTED_TOUR_MILLIS, testScheduler.currentTime)
+    }
+
+    /**
+     * The principle behind the rebalance, not just its arithmetic: the scene that
+     * teaches a gesture nobody discovers on their own is given more of the tour than
+     * the scene that teaches typing into a line.
+     */
+    @Test
+    fun `should give the gesture scenes more of the tour than the writing scene`() = runTest {
+        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.WRITE_ITEMS)
+        val writing = testScheduler.currentTime
+
+        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.TICK_AND_MOVE)
+        val gesturing = testScheduler.currentTime - writing
+
+        assertTrue("$writing then $gesturing", gesturing > writing)
     }
 
     @Test
@@ -288,7 +344,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
         stage.anchorAvailable = { it != TutorialAnchor.ActiveItemDragHandle(1) }
 
-        directorFor(stage).play(TutorialStep.COMPLETE_AND_REORDER)
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
 
         assertTrue(stage.actions.none { it is TutorialAction.MoveActiveItem })
         assertTrue(stage.actions.none { it is TutorialAction.CommitReorder })
@@ -300,7 +356,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
         stage.anchorAvailable = { it != TutorialAnchor.CompletedItemToggle(0) }
 
-        directorFor(stage).play(TutorialStep.COMPLETE_AND_REORDER)
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
 
         assertTrue(stage.actions.none { it is TutorialAction.ToggleCompletedItem })
     }
@@ -309,7 +365,7 @@ class TutorialDirectorTest {
     fun `should ignore the complete and reorder step on the lists screen`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
 
-        directorFor(stage).play(TutorialStep.COMPLETE_AND_REORDER)
+        directorFor(stage).play(TutorialStep.TICK_AND_MOVE)
 
         assertTrue(stage.actions.isEmpty())
     }
@@ -320,7 +376,7 @@ class TutorialDirectorTest {
     fun `should navigate back without advancing when deleting from the items screen`() = runTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         assertEquals(listOf(TutorialAction.NavigateBack), stage.actions)
         verify(exactly = 0) { viewModel.advanceStep() }
@@ -335,7 +391,7 @@ class TutorialDirectorTest {
     fun `should show both ways a row comes away then tear one off and advance`() = runTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         assertEquals(
             listOf(
@@ -357,7 +413,7 @@ class TutorialDirectorTest {
         runTest {
             val stage = RecordingStage(TutorialScreen.LISTS)
 
-            directorFor(stage).play(TutorialStep.DELETE_LIST)
+            directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
             val pulls = stage.actions
                 .filterIsInstance<TutorialAction.PullFirstList>()
@@ -384,7 +440,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.canPerform = { it != TutorialAction.OpenFirstListEditor }
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         assertEquals(
             listOf("PullFirstList", "OpenFirstListEditor", "LetFirstListGo"),
@@ -400,7 +456,7 @@ class TutorialDirectorTest {
             val stage = RecordingStage(TutorialScreen.LISTS)
             stage.canPerform = { it != TutorialAction.RequestDeleteFirstList }
 
-            directorFor(stage).play(TutorialStep.DELETE_LIST)
+            directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
             assertEquals(TutorialAction.LetFirstListGo, stage.actions.last())
         }
@@ -414,10 +470,10 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.anchorAvailable = { it != TutorialAnchor.DeleteListButton }
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         assertEquals(emptyList<TutorialAction>(), stage.actions)
-        assertEquals(emptyList<String>(), overlay.events)
+        assertEquals(listOf("narrate:EDIT_AND_TEAR"), overlay.events)
         verify(exactly = 0) { viewModel.advanceStep() }
         verify { viewModel.skip() }
     }
@@ -427,7 +483,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.canPerform = { it != TutorialAction.RequestDeleteFirstList }
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         assertEquals("RequestDeleteFirstList", stage.actions.beats().last { it != "LetFirstListGo" })
         assertEquals("release", overlay.events.last())
@@ -445,7 +501,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.LISTS)
         stage.canPerform = { it != TutorialAction.ConfirmDeleteFirstList }
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         assertEquals("ConfirmDeleteFirstList", stage.actions.beats().last())
         verify(exactly = 0) { viewModel.advanceStep() }
@@ -457,7 +513,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
         stage.canPerform = { it != TutorialAction.NavigateBack }
 
-        directorFor(stage).play(TutorialStep.DELETE_LIST)
+        directorFor(stage).play(TutorialStep.EDIT_AND_TEAR)
 
         verify { viewModel.skip() }
     }
@@ -474,7 +530,7 @@ class TutorialDirectorTest {
         val stage = RecordingStage(TutorialScreen.ITEMS)
         pace.hurry()
 
-        directorFor(stage).play(TutorialStep.OPEN_LIST)
+        directorFor(stage).play(TutorialStep.WRITE_ITEMS)
 
         assertEquals(
             listOf(
@@ -493,7 +549,7 @@ class TutorialDirectorTest {
     fun `should take no time at all over a scene the reader has seen enough of`() = runTest {
         pace.hurry()
 
-        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.OPEN_LIST)
+        directorFor(RecordingStage(TutorialScreen.ITEMS)).play(TutorialStep.WRITE_ITEMS)
 
         assertEquals(0L, testScheduler.currentTime)
     }
@@ -501,7 +557,7 @@ class TutorialDirectorTest {
     @Test
     fun `should end the rest that is already being taken when the reader says so`() = runTest {
         val director = directorFor(RecordingStage(TutorialScreen.ITEMS))
-        val scene = launch { director.play(TutorialStep.OPEN_LIST) }
+        val scene = launch { director.play(TutorialStep.WRITE_ITEMS) }
 
         advanceTimeBy(100)
         pace.hurry()
@@ -579,6 +635,11 @@ class TutorialDirectorTest {
     private class RecordingOverlay(private val stage: RecordingStage) : TutorialOverlay {
 
         val events = mutableListOf<String>()
+
+        override suspend fun narrate(line: TutorialLine) {
+            events.add("narrate:$line")
+            yield()
+        }
 
         override suspend fun glideTo(bounds: TutorialBounds, durationMillis: Long) {
             events.add("glide:${stage.labelFor(bounds)}")

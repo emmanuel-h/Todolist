@@ -3,9 +3,12 @@ package fr.mandarine.todolist.ui.paper
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -29,6 +32,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -53,11 +57,15 @@ private const val BREATH_ALPHA_LABEL = "hintAlpha"
 private const val PEN_SETTLE_MILLIS = 250L
 
 /**
- * The one line every new row is written on: a bare rule carrying nothing but the
- * hint and, once the pen is on it, a blue caret. There is no submit glyph and no
- * way to cancel — the keyboard's own Done commits the line and leaves a fresh
- * caret waiting, and back, a tap on the paper or dismissing the keyboard puts the
- * pen down.
+ * The one line every new row is written on: a bare rule carrying the hint, a blue
+ * caret once the pen is on it, and — from the moment there is something to commit
+ * — a tick at the end of the rule.
+ *
+ * The tick and the keyboard's own Done are the same act, and both leave a fresh
+ * caret waiting. The line used to have only Done, which is a key a reader has to
+ * know is load-bearing before they will press it; nothing on the page said the
+ * line could be finished at all, only that it could be abandoned. Back, a tap on
+ * the paper or dismissing the keyboard still put the pen down.
  */
 @Composable
 fun InkAddLine(
@@ -68,8 +76,10 @@ fun InkAddLine(
     onPenUp: () -> Unit,
     onPenDown: () -> Unit,
     spoken: String,
+    commitSpoken: String,
     modifier: Modifier = Modifier,
     fieldModifier: Modifier = Modifier,
+    commitModifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     breathing: Boolean = false,
     animated: Boolean = true
@@ -86,6 +96,14 @@ fun InkAddLine(
     BackHandler(enabled = penOnPaper) { focusManager.clearFocus() }
 
     val hintAlpha = breathingAlpha(breathing && !penOnPaper && animated)
+
+    val commit: () -> Unit = {
+        if (text.isNotBlank()) {
+            onCommit(text)
+            haptics.submit()
+        }
+        focusRequester.requestFocus()
+    }
 
     RuledRow(modifier = modifier, onClick = { focusRequester.requestFocus() }) {
         OnRuleSlot(modifier = Modifier.weight(1f), alignment = Alignment.TopStart) {
@@ -114,17 +132,56 @@ fun InkAddLine(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (text.isNotBlank()) {
-                            onCommit(text)
-                            haptics.submit()
-                        }
-                        focusRequester.requestFocus()
-                    }
-                )
+                keyboardActions = KeyboardActions(onDone = { commit() })
             )
         }
+        CommitMark(
+            shown = text.isNotBlank(),
+            spoken = commitSpoken,
+            onCommit = commit,
+            animated = animated,
+            modifier = commitModifier
+        )
+    }
+}
+
+/**
+ * The tick that finishes the line. It is not on the rule until there is something
+ * to finish — an always-present tick over an empty line is a control that does
+ * nothing, and the reader learns to stop looking at it. It arrives by widening the
+ * rule rather than by fading in over it, so the writing slot gives up the room
+ * instead of having the glyph land on top of what is being written.
+ */
+@Composable
+private fun RowScope.CommitMark(
+    shown: Boolean,
+    spoken: String,
+    onCommit: () -> Unit,
+    animated: Boolean,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = shown,
+        enter = if (animated) {
+            fadeIn(PaperMotion.rowEnter) + expandHorizontally(PaperMotion.rowUnfold)
+        } else {
+            fadeIn(PaperMotion.rowEnter)
+        },
+        exit = if (animated) {
+            fadeOut(PaperMotion.rowExit) + shrinkHorizontally(PaperMotion.rowFold)
+        } else {
+            fadeOut(PaperMotion.rowExit)
+        }
+    ) {
+        InkIconButton(
+            painter = painterResource(R.drawable.ic_check),
+            contentDescription = spoken,
+            onClick = onCommit,
+            modifier = modifier,
+            tint = LocalPaperPalette.current.inked(InkTone.Acted),
+            seat = IconSeat.OnRule,
+            foot = GlyphFoot.check
+        )
     }
 }
 

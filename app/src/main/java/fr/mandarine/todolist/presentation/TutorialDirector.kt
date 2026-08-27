@@ -17,6 +17,7 @@ class TutorialDirector(
     suspend fun playOpening() {
         if (stage.screen != TutorialScreen.LISTS) return
 
+        overlay.narrate(TutorialLine.WRITE_A_LIST)
         pace.beat(500)
         point(TutorialAnchor.CreateListButton, 300)
         pace.beat(200)
@@ -64,11 +65,11 @@ class TutorialDirector(
 
     suspend fun play(step: TutorialStep) {
         when (step) {
-            TutorialStep.CREATE_LIST -> onLists { showBannerThenAdvance() }
-            TutorialStep.SET_DUE_DATE -> onLists { openDemoList() }
-            TutorialStep.OPEN_LIST -> onItems { addDemoItems() }
-            TutorialStep.COMPLETE_AND_REORDER -> onItems { completeAndReorder() }
-            TutorialStep.DELETE_LIST -> {
+            TutorialStep.A_DAY_AND_A_NOTE -> onLists { showBannerThenAdvance() }
+            TutorialStep.OPEN_IT -> onLists { openDemoList() }
+            TutorialStep.WRITE_ITEMS -> onItems { addDemoItems() }
+            TutorialStep.TICK_AND_MOVE -> onItems { completeAndReorder() }
+            TutorialStep.EDIT_AND_TEAR -> {
                 if (stage.screen == TutorialScreen.ITEMS) {
                     returnToLists()
                 } else {
@@ -78,16 +79,27 @@ class TutorialDirector(
         }
     }
 
+    /**
+     * A scene says its line before it does anything, and the line is up for the
+     * whole of the scene. Announcing it halfway through means the reader reads a
+     * sentence about something they have already watched happen.
+     */
+    private suspend fun openWith(line: TutorialLine, restMillis: Long) {
+        overlay.narrate(line)
+        pace.beat(restMillis)
+    }
+
     private suspend fun showBannerThenAdvance() {
-        pace.beat(250)
+        openWith(TutorialLine.A_DAY_AND_A_NOTE, 550)
         stage.bannerContent()?.let { overlay.showBanner(it) }
+        pace.beat(250)
         tutorialViewModel.advanceStep()
     }
 
     private suspend fun openDemoList() {
-        pace.beat(400)
+        openWith(TutorialLine.OPEN_IT, 700)
         point(TutorialAnchor.FirstListRow, 250)
-        pace.beat(200)
+        pace.beat(450)
         overlay.tap()
         if (!stage.perform(TutorialAction.OpenFirstList)) {
             abandon()
@@ -97,7 +109,7 @@ class TutorialDirector(
     }
 
     private suspend fun addDemoItems() {
-        pace.beat(700)
+        openWith(TutorialLine.WRITE_ITEMS, 700)
         point(TutorialAnchor.ItemGhostRow, 250)
         pace.beat(200)
         overlay.tap()
@@ -129,7 +141,7 @@ class TutorialDirector(
      * "the first row" and found the reader's, not the demo's.
      */
     private suspend fun completeAndReorder() {
-        pace.beat(400)
+        openWith(TutorialLine.TICK_AND_MOVE, 500)
         tapToggle(TutorialAnchor.ActiveItemToggle(0), TutorialAction.ToggleActiveItem(0), 250, 200, 450)
 
         pace.beat(150)
@@ -155,23 +167,24 @@ class TutorialDirector(
         if (stage.boundsOf(TutorialAnchor.ActiveItemDragHandle(1)) == null) return
 
         point(TutorialAnchor.ActiveItemDragHandle(1), 250)
-        pace.beat(200)
+        pace.beat(250)
         overlay.grip()
-        pace.beat(100)
+        pace.beat(400)
 
         stage.perform(TutorialAction.MoveActiveItem(1, 0))
-        pace.beat(50)
+        pace.beat(250)
 
         point(TutorialAnchor.ActiveItemRow(0), 300)
-        pace.beat(200)
+        pace.beat(300)
         overlay.release()
-        pace.beat(100)
+        pace.beat(250)
 
         stage.perform(TutorialAction.CommitReorder(1, 0))
         pace.beat(400)
     }
 
     private suspend fun returnToLists() {
+        overlay.narrate(TutorialLine.EDIT_AND_TEAR)
         pace.beat(300)
         if (!stage.perform(TutorialAction.NavigateBack)) abandon()
     }
@@ -185,7 +198,7 @@ class TutorialDirector(
      * over a row that never moves.
      */
     private suspend fun deleteDemoList() {
-        pace.beat(600)
+        openWith(TutorialLine.EDIT_AND_TEAR, 600)
         val row = stage.boundsOf(TutorialAnchor.DeleteListButton)
         if (row == null) {
             abandon()
@@ -193,9 +206,9 @@ class TutorialDirector(
         }
 
         overlay.glideTo(row.alongRow(EDIT_FROM), 250)
-        pace.beat(200)
+        pace.beat(250)
         overlay.grip()
-        pace.beat(100)
+        pace.beat(300)
         pullAcross(row, EDIT_FROM, EDIT_TO, row.width * EDIT_REACH)
         pace.beat(150)
         overlay.release()
@@ -209,9 +222,9 @@ class TutorialDirector(
         pace.beat(350)
 
         overlay.glideTo(row.alongRow(TEAR_FROM), 250)
-        pace.beat(200)
+        pace.beat(250)
         overlay.grip()
-        pace.beat(100)
+        pace.beat(300)
         pullAcross(row, TEAR_FROM, TEAR_TO, -row.width * TEAR_REACH)
         if (!stage.perform(TutorialAction.RequestDeleteFirstList)) {
             stage.perform(TutorialAction.LetFirstListGo)
