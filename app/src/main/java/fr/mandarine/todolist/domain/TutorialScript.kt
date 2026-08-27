@@ -8,11 +8,11 @@ data class TutorialScript(val steps: List<TutorialStep>) {
     companion object {
         fun defaultScript(): TutorialScript = TutorialScript(
             listOf(
-                TutorialStep.CREATE_LIST,
-                TutorialStep.SET_DUE_DATE,
-                TutorialStep.OPEN_LIST,
-                TutorialStep.COMPLETE_AND_REORDER,
-                TutorialStep.DELETE_LIST
+                TutorialStep.A_DAY_AND_A_NOTE,
+                TutorialStep.OPEN_IT,
+                TutorialStep.WRITE_ITEMS,
+                TutorialStep.TICK_AND_MOVE,
+                TutorialStep.EDIT_AND_TEAR
             )
         )
     }

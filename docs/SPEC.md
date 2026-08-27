@@ -416,19 +416,20 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 
 ## First-launch tutorial — _implemented · [#29](https://github.com/emmanuel-h/Todolist/issues/29)_
 
-On the very first launch of `TodoListsActivity` a full-screen phantom-hand overlay plays a five-scene scripted tour using the real screens and real data operations:
+On the very first launch of `TodoListsActivity` a full-screen phantom-hand overlay plays a **six-scene** scripted tour using the real screens and real data operations. Each scene says what it is doing in one line, on a paper slip pinned top-centre under the status bar, and the line is up for the whole of the scene:
 
-1. Taps the FAB and types "🛒 Groceries" into the inline create row.
-2. Hovers the target-date icon while a caption pill anchored just below the inline create row shows "📅 To do on this day" (without opening the picker), then moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow on the real paper calendar, submits (the caption fades out once the date is picked), then shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification.
-3. Opens the list and adds "🍎 Apples" and "🥖 Bread".
-4. Completes an item, restores it, then drags a row to the top by the handle and completes it. It stops there: a second completion taught nothing the first had not, and it left the demo list finished, so the last scene went looking for "the first row on the page" and found the reader's rather than the demo's.
-5. Returns to the lists screen and tears the demo list off the page with the same end→start
-   drag a reader would use — not a tap, which on that same rectangle is the gesture that
-   opens a list — then fades out leaving the app empty.
+1. **`ReadyToStart` — "Take a sheet and write a list on it".** Taps the pad, types "🛒 Groceries" into the inline create row, hovers the target-date icon while a caption pill anchored just below the create row shows "📅 To do on this day" (without opening the picker), moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow on the real paper calendar, and commits the line by pressing the tick at the end of it (the caption fades out once the date is picked).
+2. **`A_DAY_AND_A_NOTE` — "Circle a day and you get a reminder that morning".** Shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification. The narration slip steps aside while the banner is up: the two want the same strip of paper and the banner is the point of the scene.
+3. **`OPEN_IT` — "Tap a list to open it".** Opens the demo list.
+4. **`WRITE_ITEMS` — "Write what is on it, line by line".** Adds "🍎 Apples" and "🥖 Bread".
+5. **`TICK_AND_MOVE` — "Tap to tick something off. Hold a row to move it."** Completes an item, restores it, then drags a row to the top by the handle and completes it. It stops there: a second completion taught nothing the first had not, and it left the demo list finished, so the last scene went looking for "the first row on the page" and found the reader's rather than the demo's. **It must keep stopping there** — a demo list driven to empty would now also set off the finishing flourish, over a page nothing but the tour is driving.
+6. **`EDIT_AND_TEAR` — "Pull a row right to edit it, left to tear it off".** Returns to the lists screen, opens the edit sheet with a start→end drag, closes it, then tears the demo list off with the same end→start drag a reader would use — not a tap, which on that same rectangle is the gesture that opens a list — then fades out leaving the app empty.
 
-**Pace**: roughly 25 seconds end to end. Every rest between beats is taken through `TutorialPace`, never a bare `delay`.
+**Step names describe the scene they play**, not the one before it. They used to be off by one — the step called `SET_DUE_DATE` opened a list, `OPEN_LIST` wrote items into it — which made every reference a small lie.
 
-**Controls**: a bottom-center floating elevated pill containing 5 progress dots (filled up to the current scene), a ▸ next button and a ✕ skip button; on the items screen it floats above the pinned inline add bar. The back gesture cancels as ✕ does.
+**Pace**: the script's own rests total **18.2 s** (`SCRIPTED_TOUR_MILLIS`, pinned by `TutorialDirectorTest`); with the banner's hold, the tap holds and the springs it comes to roughly 28 seconds end to end, and longer on a slow device. That is ~3 s more than before the rework, which is what six readable sentences cost. The time was not spread evenly: the beats a reader cannot guess were given it. The long-press drag held its grip for 100 ms before the row moved — a drag over in a tenth of a second reads as a row jumping by itself — and now holds it for 400; both swipes in the last scene hold their grip for 300 rather than 100. Every rest is taken through `TutorialPace`, never a bare `delay`.
+
+**Controls**: a bottom-center floating elevated pill containing **6** progress dots (filled up to the current scene), a ▸ next button and a ✕ skip button; on the items screen it floats above the pinned inline add bar. The back gesture cancels as ✕ does. The opening scene has a dot of its own — it used to share the first dot with the scene after it, so the tour's longest and busiest part showed no progress at all until it was over.
 
 ▸ says *I have understood this one*: `TutorialPace.hurry()` ends the rest being taken and drops every rest left in the scene, while the scene still drives every one of its remaining actions in order — so the page arrives at the next scene exactly where the unhurried scene would have left it, and the hand snaps rather than glides for the rest of it. The next scene settles the pace and plays at the ordinary speed. On the last scene ▸ simply finishes the tour, demo list torn off and all.
 
@@ -440,7 +441,7 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 
 `TutorialViewModel.initialize()` is called from every `onCreate` and is **idempotent**: it returns early only while a tour is on the paper (`ReadyToStart` or `Active`). A tour that is over does not skip the sweep — the window is rebuilt far more often than the process is, and a demo list that outlived its tour would otherwise never be found while the app stayed alive. Cleanup's first act is to tear off whatever demo list is recorded, which mid-tour is the list the tour is being written on — so without the guard a rotation deleted the demo out from under itself and then declared the tour over, the seen flag having been written at the opening beat.
 
-**Demo strings** ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals — no string resources are introduced, preserving the icon-only-UI rule. The caption pill is the one sanctioned exception ([#30](https://github.com/emmanuel-h/Todolist/issues/30)): it displays the two `date_kind_*_caption` string resources shared with the edit-list dialog, with the 📅/⏰ emoji prefixes added as Kotlin literals.
+**Demo strings** ("🛒 Groceries", "🍎 Apples", "🥖 Bread") are Kotlin literals. **The narration is not**: six translated resources, `tutorial_write_a_list` … `tutorial_edit_and_tear`, in `values/` and `values-fr/`, mapped from `TutorialLine` by `narrationStringRes`. They are pinned word for word by `TutorialWordsTest`, which also requires each to be genuinely translated. The caption pill keeps displaying the two `date_kind_*_caption` resources shared with the edit-list dialog, with the 📅/⏰ emoji prefixes added as Kotlin literals; those point at a particular glyph rather than at a scene, which is why they stay separate from the narration.
 
 ### Must NOT happen
 - Tutorial reappearing after the first launch has started it (seen flag is written before the overlay appears).
@@ -448,7 +449,10 @@ On the very first launch of `TodoListsActivity` a full-screen phantom-hand overl
 - Anything the demo opened on the reader's page outliving the tour — most of all a create row still holding the demo's name.
 - A scene that cannot play a beat leaving the tour running with the hand up.
 - A rotation mid-tour deleting the demo list or ending the tour.
-- Static text introduced anywhere in resources by the tutorial (demo strings are Kotlin-only; the two `date_kind_*_caption` resources are the sole sanctioned exception · [#30](https://github.com/emmanuel-h/Todolist/issues/30)).
+- A scene playing without its line, or a line naming a scene that no longer exists — `TutorialWordsTest` requires one line per scene and no duplicates.
+- A line left untranslated in `values-fr/`.
+- The narration slip and the reminder banner on screen together.
+- A scene that drives the demo list to empty, which would set off the finishing flourish over a page the reader is not driving.
 - `replay()` resetting the seen flag or allowing the automatic first-launch tutorial to fire a second time.
 - The demo miming a gesture that does something else on the same rectangle.
 - The demo aiming at an anchor nothing registers — the hand fades off the page and the beat plays on an invisible disc.

@@ -80,7 +80,7 @@ class TutorialOverlayControllerTest {
     @Test
     fun `should show the overlay when a step brings the tutorial onto this screen`() {
         controller.handleState(
-            TutorialUiState.Active(TutorialStep.OPEN_LIST),
+            TutorialUiState.Active(TutorialStep.WRITE_ITEMS),
             FakeStage(TutorialScreen.ITEMS)
         )
 
@@ -90,7 +90,7 @@ class TutorialOverlayControllerTest {
     @Test
     fun `should leave the overlay hidden for a step belonging to the other screen`() {
         controller.handleState(
-            TutorialUiState.Active(TutorialStep.CREATE_LIST),
+            TutorialUiState.Active(TutorialStep.A_DAY_AND_A_NOTE),
             FakeStage(TutorialScreen.ITEMS)
         )
         drain()
@@ -102,15 +102,15 @@ class TutorialOverlayControllerTest {
     fun `should fill one progress dot per step reached`() {
         val stage = FakeStage(TutorialScreen.LISTS)
 
-        controller.handleState(TutorialUiState.Active(TutorialStep.COMPLETE_AND_REORDER), stage)
+        controller.handleState(TutorialUiState.Active(TutorialStep.TICK_AND_MOVE), stage)
 
-        assertEquals(4, controller.overlayState.filledDots)
+        assertEquals(5, controller.overlayState.filledDots)
     }
 
     @Test
     fun `should empty the progress dots once the tutorial is hidden`() {
         val stage = FakeStage(TutorialScreen.LISTS)
-        controller.handleState(TutorialUiState.Active(TutorialStep.OPEN_LIST), stage)
+        controller.handleState(TutorialUiState.Active(TutorialStep.WRITE_ITEMS), stage)
 
         controller.handleState(TutorialUiState.Hidden, stage)
 

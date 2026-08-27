@@ -45,6 +45,12 @@
     <string name="notification_channel_name">Reminders</string>
     <string name="replay_tutorial">Replay tutorial</string>
     <string name="tutorial_next">Next step</string>
+    <string name="tutorial_write_a_list">Take a sheet and write a list on it</string>
+    <string name="tutorial_a_day_and_a_note">Circle a day and you get a reminder that morning</string>
+    <string name="tutorial_open_it">Tap a list to open it</string>
+    <string name="tutorial_write_items">Write what is on it, line by line</string>
+    <string name="tutorial_tick_and_move">Tap to tick something off. Hold a row to move it.</string>
+    <string name="tutorial_edit_and_tear">Pull a row right to edit it, left to tear it off</string>
     <string name="date_kind_target_caption">To do on this day</string>
     <string name="date_kind_due_caption">Finish before this day</string>
 </resources>

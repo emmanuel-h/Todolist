@@ -5,7 +5,26 @@ enum class TutorialCaption {
     DUE_DATE
 }
 
+/**
+ * What the tour says while it does a thing, one line per scene.
+ *
+ * The demonstration used to be silent apart from the two date captions, and a
+ * reader watching a hand pull a row sideways could see *that* it happened without
+ * being told it was theirs to do. These are the sentences; the two captions stay
+ * what they are — they point at a particular glyph rather than at a scene.
+ */
+enum class TutorialLine {
+    WRITE_A_LIST,
+    A_DAY_AND_A_NOTE,
+    OPEN_IT,
+    WRITE_ITEMS,
+    TICK_AND_MOVE,
+    EDIT_AND_TEAR
+}
+
 interface TutorialOverlay {
+    suspend fun narrate(line: TutorialLine)
+
     suspend fun glideTo(bounds: TutorialBounds, durationMillis: Long)
 
     suspend fun tap()
