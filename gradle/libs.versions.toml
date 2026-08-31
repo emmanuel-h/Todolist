@@ -20,7 +20,7 @@ composeBom = "2026.08.00"
 activityCompose = "1.13.0"
 coreSplashscreen = "1.2.0"
 # 1.5.x is the first line that builds against AGP 9 without the newDsl=false flag.
-benchmark = "1.5.0-rc01"
+benchmark = "1.5.0-rc02"
 profileinstaller = "1.4.1"
 desugarJdkLibs = "2.1.5"
 
