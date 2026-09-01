@@ -13,13 +13,7 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
-import androidx.test.core.app.ApplicationProvider
-import fr.mandarine.todolist.domain.TutorialStep
-import fr.mandarine.todolist.presentation.TutorialLine
 import fr.mandarine.todolist.presentation.TodoListState
-import fr.mandarine.todolist.ui.tutorial.narrationStringRes
-import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertTrue
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.SectionSkip
@@ -124,15 +118,15 @@ class IconOnlyUiTest {
     /**
      * A decorative image draws no semantics node at all, so the View-era check for
      * an undecorated `ImageView` has no Compose equivalent. Pinning the empty
-     * screen to exactly the two affordances it is allowed to have is what replaces
-     * it: anything added to the empty state has to justify itself here first.
+     * screen to exactly the affordances it is allowed to have is what replaces it:
+     * anything added to the empty state has to justify itself here first.
      */
     @Test
-    fun `should expose only the create and replay affordances in the empty state of lists screen`() {
+    fun `should expose only the create affordance in the empty state of lists screen`() {
         composeRule.setContent { PaperTheme { EmptyListsScreen() } }
 
         assertEquals(
-            setOf(REPLAY_DESCRIPTION, CREATE_LIST_DESCRIPTION),
+            setOf(CREATE_LIST_DESCRIPTION),
             composeRule.onRoot().fetchSemanticsNode().contentDescriptions().toSet()
         )
     }
@@ -158,7 +152,6 @@ class IconOnlyUiTest {
         const val ITEM_TITLE = "Apples"
         const val ADD_ITEM_DESCRIPTION = "Add an item"
         const val BACK_DESCRIPTION = "Navigate up"
-        const val REPLAY_DESCRIPTION = "Replay tutorial"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
         const val APP_NAME = "To do list"
     }
@@ -180,97 +173,6 @@ private fun EmptyItemsScreen() {
         onSubmitInline = {},
         onReorder = {}
     )
-}
-
-/**
- * The tour is the one part of the app that speaks in sentences, and these are the
- * sentences. It is pinned here for the same reason every other word is: so that
- * adding one, or quietly rewording one, is something someone decided to do.
- *
- * Six lines, one per scene. If a scene is added or dropped, this list changes with
- * it — do not replace it with a check that every line merely resolves to something.
- */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
-class TutorialWordsTest {
-
-    private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-
-    @Test
-    fun `should say exactly these six things and nothing else during the tour`() {
-        val said = TutorialLine.entries.map { context.getString(narrationStringRes(it)) }
-
-        assertEquals(
-            listOf(
-                "Take a sheet and write a list on it",
-                "Circle a day and you get a reminder that morning",
-                "Tap a list to open it",
-                "Write what is on it, line by line",
-                "Tap to tick something off. Hold a row to move it.",
-                "Pull a row right to edit it, left to tear it off"
-            ),
-            said
-        )
-    }
-
-    @Test
-    fun `should give every scene of the tour a line of its own`() {
-        val lines = TutorialLine.entries.map { narrationStringRes(it) }
-
-        assertEquals(lines.size, lines.toSet().size)
-        assertEquals(TutorialStep.entries.size + 1, lines.size)
-    }
-
-    /**
-     * The demonstration's own shopping list. It was three Kotlin literals in the
-     * director for as long as the tour existed, so a French reader watched a hand
-     * write "🛒 Groceries" onto a page whose every other word had been translated.
-     */
-    @Test
-    fun `should write the demo list and its items in the reader's own language`() {
-        val english = demoWordsIn(java.util.Locale.ENGLISH)
-        val french = demoWordsIn(java.util.Locale.FRENCH)
-
-        assertEquals(listOf("🛒 Groceries", "🍎 Apples", "🥖 Bread"), english)
-        assertEquals(listOf("🛒 Courses", "🍎 Pommes", "🥖 Pain"), french)
-    }
-
-    @Test
-    fun `should keep an emoji in front of every demo word in every language`() {
-        for (locale in listOf(java.util.Locale.ENGLISH, java.util.Locale.FRENCH)) {
-            for (word in demoWordsIn(locale)) {
-                assertTrue("$locale: $word", Character.isSurrogate(word.first()))
-            }
-        }
-    }
-
-    private fun demoWordsIn(locale: java.util.Locale): List<String> {
-        val scoped = context.createConfigurationContext(
-            android.content.res.Configuration(context.resources.configuration).apply {
-                setLocale(locale)
-            }
-        )
-        return listOf(
-            R.string.tutorial_demo_list,
-            R.string.tutorial_demo_item_first,
-            R.string.tutorial_demo_item_second
-        ).map { scoped.getString(it) }
-    }
-
-    @Test
-    fun `should translate every line of the tour into French`() {
-        val french = context.createConfigurationContext(
-            android.content.res.Configuration(context.resources.configuration).apply {
-                setLocale(java.util.Locale.FRENCH)
-            }
-        )
-
-        for (line in TutorialLine.entries) {
-            val english = context.getString(narrationStringRes(line))
-            val translated = french.getString(narrationStringRes(line))
-            assertNotEquals("$line was left in English", english, translated)
-        }
-    }
 }
 
 @Composable
@@ -299,8 +201,7 @@ private fun EmptyListsScreen() {
         onCreateList = { _, _, _ -> },
         onRenameList = { _, _, _, _ -> },
         onDeleteList = {},
-        onReorder = {},
-        onReplayTutorial = {}
+        onReorder = {}
     )
 }
 

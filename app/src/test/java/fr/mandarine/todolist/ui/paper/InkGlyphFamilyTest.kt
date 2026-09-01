@@ -25,7 +25,6 @@ class InkGlyphFamilyTest {
 
     private val family = mapOf(
         "check" to R.drawable.ic_check,
-        "x" to R.drawable.ic_close,
         "plus" to R.drawable.ic_add,
         "minus" to R.drawable.ic_remove,
         "arrow-left" to R.drawable.ic_arrow_back,
@@ -35,7 +34,6 @@ class InkGlyphFamilyTest {
         "undo" to R.drawable.ic_undo,
         "calendar" to R.drawable.ic_event,
         "alarm-clock" to R.drawable.ic_alarm,
-        "circle-help" to R.drawable.ic_help,
         "pencil" to R.drawable.ic_edit,
         "list-checks" to R.drawable.ic_checklist
     )

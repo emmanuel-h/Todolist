@@ -78,8 +78,6 @@ fun InkAddLine(
     spoken: String,
     commitSpoken: String,
     modifier: Modifier = Modifier,
-    fieldModifier: Modifier = Modifier,
-    commitModifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     breathing: Boolean = false,
     animated: Boolean = true
@@ -111,7 +109,7 @@ fun InkAddLine(
             BasicTextField(
                 value = text,
                 onValueChange = onTextChange,
-                modifier = fieldModifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .seatOnRule()
                     .semantics { contentDescription = spoken }
@@ -139,8 +137,7 @@ fun InkAddLine(
             shown = text.isNotBlank(),
             spoken = commitSpoken,
             onCommit = commit,
-            animated = animated,
-            modifier = commitModifier
+            animated = animated
         )
     }
 }

@@ -64,9 +64,7 @@ class RenameListDialogTest {
 
     /**
      * The calendar and the alarm are the one pair a glyph cannot tell apart, so
-     * choosing one says in words which was chosen. It is the same sentence the
-     * tutorial teaches with, so the reader who skipped the tour is told the same
-     * thing in the same voice.
+     * choosing one says in words which was chosen.
      */
     @Test
     fun `should say which kind was chosen when a kind is pressed`() {

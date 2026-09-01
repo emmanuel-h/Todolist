@@ -2,13 +2,10 @@ package fr.mandarine.todolist.ui.todolists
 
 import android.os.Bundle
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.DeletionState
-import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
-import fr.mandarine.todolist.ui.tutorial.TutorialAnchors
 import java.time.LocalDate
 
 /**
@@ -46,7 +43,7 @@ data class RenameState(
     }
 }
 
-class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
+class TodoListsScreenState {
 
     val deletion = DeletionState()
 
@@ -79,21 +76,6 @@ class TodoListsScreenState : TutorialAnchorHost by TutorialAnchors() {
     }
 
     var animationsEnabled by mutableStateOf(true)
-
-    /**
-     * How far the tour is holding the first row aside, in pixels. Nothing but the
-     * demonstration writes to it: a finger has its own pull inside the row.
-     */
-    var demoPull by mutableFloatStateOf(NOT_PULLED)
-        private set
-
-    fun pullFirstRow(pixels: Float) {
-        demoPull = pixels
-    }
-
-    fun letFirstRowGo() {
-        demoPull = NOT_PULLED
-    }
 
     private var knownListIds: Set<String> = emptySet()
     private var pendingDropIn = false
@@ -194,4 +176,3 @@ private const val RENAME_NAME = "lists-rename-name"
 private const val RENAME_KIND = "lists-rename-kind"
 private const val RENAME_DAY = "lists-rename-day"
 
-private const val NOT_PULLED = 0f

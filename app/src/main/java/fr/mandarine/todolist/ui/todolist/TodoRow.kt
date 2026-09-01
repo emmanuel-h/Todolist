@@ -76,7 +76,6 @@ fun TodoRow(
     onEditDismissed: () -> Unit,
     onDeleteRequested: () -> Unit,
     modifier: Modifier = Modifier,
-    toggleModifier: Modifier = Modifier,
     animated: Boolean = true,
     tearing: Boolean = false,
     onTorn: () -> Unit = {},
@@ -114,7 +113,6 @@ fun TodoRow(
                 stateDescription = stringResource(
                     if (checked) R.string.item_state_completed else R.string.item_state_active
                 ),
-                modifier = toggleModifier,
                 animated = animated
             )
             RowBody(

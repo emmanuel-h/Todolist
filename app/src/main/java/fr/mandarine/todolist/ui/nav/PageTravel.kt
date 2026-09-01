@@ -34,8 +34,8 @@ private val PEEL_SHADOW_DRIFT = 4.dp
 /**
  * The two scopes a mark needs to travel between pages: the layout both pages live
  * in, and the arrival the mark is riding. A screen composed without them — a
- * preview, a test, the tutorial's own still page — reads no travel at all and every
- * travelling modifier stands down.
+ * preview or a test — reads no travel at all and every travelling modifier stands
+ * down.
  */
 @Immutable
 class PageTravel(

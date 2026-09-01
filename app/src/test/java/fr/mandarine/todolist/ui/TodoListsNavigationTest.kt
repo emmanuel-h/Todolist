@@ -8,8 +8,6 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.MainThreadDatabaseRule
 import fr.mandarine.todolist.TodoListApplication
-import fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository
-import fr.mandarine.todolist.domain.TutorialAction
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.nav.ItemsRoute
 import fr.mandarine.todolist.ui.nav.ListsRoute
@@ -26,11 +24,10 @@ import org.robolectric.annotation.Config
 
 /**
  * The page of items is a sheet laid over the page of lists rather than a window
- * of its own, and the tutorial watches the same back stack in order to tear its
- * own page off. These pin the boundary between the two: a reader turning a page
- * must never be mistaken for a demo ending.
+ * of its own. These pin the boundary between the two: opening a list adds to the
+ * back stack and leaving peels the top sheet off.
  *
- * Every assertion is made after the main looper has drained, because the beat is
+ * Every assertion is made after the main looper has drained, because state is
  * delivered by a collector and not by the tap that caused it.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -47,12 +44,6 @@ class TodoListsNavigationTest {
             Settings.Global.ANIMATOR_DURATION_SCALE,
             0f
         )
-    }
-
-    @Before
-    fun markTutorialSeen() {
-        val app = ApplicationProvider.getApplicationContext<TodoListApplication>()
-        SharedPreferencesTutorialStateRepository(app).markTutorialSeen()
     }
 
     @Test
@@ -138,8 +129,13 @@ class TodoListsNavigationTest {
         shadowOf(Looper.getMainLooper()).idle()
     }
 
-    private fun open(activity: TodoListsActivity): Boolean =
-        runBlocking { activity.stage.perform(TutorialAction.OpenFirstList) }
+    private fun open(activity: TodoListsActivity): Boolean {
+        val list = (activity.viewModel.state.value as? TodoListsState.Content)
+            ?.activeSummaries?.firstOrNull()?.list
+            ?: return false
+        activity.stage.open(list)
+        return true
+    }
 
     private fun TodoListsActivity.firstListId(): String? =
         (viewModel.state.value as? TodoListsState.Content)?.activeSummaries?.firstOrNull()?.list?.id

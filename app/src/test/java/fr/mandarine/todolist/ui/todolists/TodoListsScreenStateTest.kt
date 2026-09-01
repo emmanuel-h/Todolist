@@ -2,10 +2,8 @@ package fr.mandarine.todolist.ui.todolists
 
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
-import fr.mandarine.todolist.domain.TutorialAnchor
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.presentation.TodoListsState
-import fr.mandarine.todolist.presentation.TutorialBounds
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,24 +14,7 @@ import org.junit.Test
 class TodoListsScreenStateTest {
 
     private val state = TodoListsScreenState()
-    private val bounds = TutorialBounds(left = 10, top = 20, width = 30, height = 40)
     private val date = LocalDate.of(2026, 3, 14)
-
-    @Test
-    fun `should hand back the bounds recorded for an anchor`() {
-        state.putBounds(TutorialAnchor.CreateListButton, bounds)
-
-        assertEquals(bounds, state.boundsOf(TutorialAnchor.CreateListButton))
-    }
-
-    @Test
-    fun `should hand back nothing once an anchor leaves the composition`() {
-        state.putBounds(TutorialAnchor.CreateListButton, bounds)
-
-        state.removeBounds(TutorialAnchor.CreateListButton)
-
-        assertNull(state.boundsOf(TutorialAnchor.CreateListButton))
-    }
 
     @Test
     fun `should hold the staged order while the page is still handed the old one`() {

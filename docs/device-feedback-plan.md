@@ -1,6 +1,6 @@
 # Device feedback — the tickets, and the order to fix them
 
-**Status: Phase 1 done, Phase 2.0 next.** Written 2026-09-01. This is a working plan, not
+**Status: Phases 1 and 2.0 done, Phase 2.1 next.** Written 2026-09-01. This is a working plan, not
 a feature doc — it is meant to be read after a context clear, so it says where
 the work stands as well as what the work is.
 
@@ -65,7 +65,7 @@ probably wants a home in it. That decision should be made once.
 ## Progress
 
 - [x] **Phase 1 — Design pass** — agreed 2026-09-01, drawn below
-- [ ] **Phase 2.0 — #75** delete the first-launch tutorial
+- [x] **Phase 2.0 — #75** delete the first-launch tutorial — landed 2026-09-01, [doc](tutorial-removal.md)
 - [ ] **Phase 2.1 — #68** page pitch 56dp → 48dp
 - [ ] **Phase 2.2 — #72** row controls replace the swipe
 - [ ] **Phase 2.4 — #66** confirm a delete

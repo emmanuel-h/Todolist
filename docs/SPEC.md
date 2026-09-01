@@ -10,17 +10,17 @@ items that can be checked off. All data persists across restarts via Room/SQLite
 **The page is wordless wherever an icon does the job, and carries words where one does not.**
 
 This is a default, not a prohibition. It was a prohibition until 2026-08-26. The app had already
-broken it in the one place a reader most needed help — the tutorial's date-kind captions
+broken it in the one place a reader most needed help — the date-kind captions
 ([#30](https://github.com/emmanuel-h/Todolist/issues/30)) — and that is the evidence for the rule
 as it now stands rather than an exception to it: three wordless iterations failed to teach the
-📅 target vs ⏰ due distinction before two translated strings taught it at once.
+📅 target vs ⏰ due distinction before two translated strings taught it at once. Those captions
+were written for the first-launch tour and outlived it; the calendar sheet raises them on its own.
 
-- **Reach for the icon first.** Most of what this app does is a gesture on paper, taught by the
-  tutorial rather than by a label. A word that only restates a glyph is clutter.
+- **Reach for the icon first.** A word that only restates a glyph is clutter.
 - **Where an icon has been tried and does not teach the thing, write the words.** Clarity wins.
   Do not spend another three iterations proving a glyph cannot say something a sentence can.
-- **Words are locale-translated string resources**, in `values/` and `values-fr/`. Kotlin string
-  literals are for demo content inside the tutorial, never for anything the app says in earnest.
+- **Words are locale-translated string resources**, in `values/` and `values-fr/`. Nothing the app
+  says in earnest is a Kotlin string literal.
 - **Dynamic content** — list names, item titles, dates the reader wrote — was never covered by
   this rule.
 - **`IconOnlyUiTest` is the guard, not the law.** It pins exactly which words each screen draws,
@@ -40,11 +40,11 @@ This principle overrides any contradictory suggestion from a UI agent or the wir
 
 ### Paper page — _implemented_
 
-Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the content area is a flat tonal plane, and nothing floats above the page except the ＋ chip and the tutorial overlay.
+Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the content area is a flat tonal plane, and nothing floats above the page except the ＋ chip.
 
 - The page is drawn by `PaperSurface`: solid paper tone + a generated fibre grain, nothing else. `android:windowBackground` is the flat `@color/paper` for the frames before the first composition.
 - The gutter is `LocalPaperGutter` — where row content and the ruling both start. **The gutter is bare paper**: no punched-hole column, no margin rule. It is `PaperDimens.gutter` (40dp) on a compact window and `PaperDimens.wideGutter` (100dp, a Seyes margin) from the medium width breakpoint up, because a wider window is a wider sheet rather than a wider text measure.
-- The page is never wider than `PaperDimens.pageWidth` (640dp) and is centred in its window. From the expanded width breakpoint (840dp — which a phone in landscape reaches) the composition becomes literal: the window is painted with `palette.desk`, the page column carries its own sheet and drops a shadow onto the desk, and the sticky pad and the replay glyph rest on the desk beside it. `PageFit` is read from `WindowSizeClass` in `PaperTheme` and provided as `LocalPageFit`.
+- The page is never wider than `PaperDimens.pageWidth` (640dp) and is centred in its window. From the expanded width breakpoint (840dp — which a phone in landscape reaches) the composition becomes literal: the window is painted with `palette.desk`, the page column carries its own sheet and drops a shadow onto the desk, and the sticky pad rests on the desk beside it. `PageFit` is read from `WindowSizeClass` in `PaperTheme` and provided as `LocalPageFit`.
 - Pulling either page past its last line bends it instead of stretching it: the whole sheet — ruling, ink, back glyph and all — gives ground at half the speed of the finger up to 32dp, the pulled edge takes a shade in daylight and a lit hairline by lamplight, and letting go lays it flat on `PaperMotion.pageMove`. A downward pull with the keyboard up is left alone so it can reach the keyboard, and a reader who has asked for stillness gets no overscroll at all.
 - Ruling is drawn both per page and per row: `RuledPage` rules the sheet, and `Modifier.paperRuling` rules a row that has grown past one pitch, so a hairline always meets the text baseline no matter how tall the row gets. Neither mirrors automatically — a `DrawScope` has no layout direction — so both read `layoutDirection` and place the bare gutter on the row's start edge.
 - **Both screens use the same row grammar.** List rows are not cards: they are ruled rows carrying `ring · name · dates · counts`, matching the item rows.
@@ -107,10 +107,8 @@ one window — TodoListsActivity
   Android 13 up rather than only on 15.
 - Every back owner is a `BackHandler` inside the composition, so they are registered in
   composition order and dispatched newest-first: `NavDisplay`'s own, then the add line's
-  (enabled only while the pen is on the paper), then the tutorial's (enabled only while a
-  demo is on the paper), which is composed after the page stack and therefore outranks it.
-  Nothing is registered on the window during `onCreate` — anything there would be registered
-  *before* the composition and could never win.
+  (enabled only while the pen is on the paper). Nothing is registered on the window during
+  `onCreate` — anything there would be registered *before* the composition and could never win.
 
 ---
 
@@ -118,11 +116,12 @@ one window — TodoListsActivity
 
 ### Masthead — _implemented · [#43](https://github.com/emmanuel-h/Todolist/issues/43)_
 
-The app's name is written in the strip above the head rule, at the top-left, level
-with the `?` that replays the tour — in the page's own hand, at margin ink, not as a
-Material app bar. It takes no rule away from the lists, and it leaves with the `?`
-when the pen comes out, because while a line is being written the page belongs to
-what is being written on it.
+The app's name is written in the strip above the head rule — in the page's own hand,
+at margin ink, not as a Material app bar. It takes no rule away from the lists, and it
+leaves when the pen comes out, because while a line is being written the page belongs to
+what is being written on it. It is now the only thing in that strip: the `?` that replayed
+the first-launch tour came off it with the tour
+([#75](https://github.com/emmanuel-h/Todolist/issues/75)).
 
 This is a deliberate use of the **wordless by default** principle rather than an
 exception to it: a pad with nothing written at the top of it reads as unfinished
@@ -149,7 +148,7 @@ the corner is the only affordance.
 
 ```
 ┌─────────────────────────────────┐
-│                            ↺    │   ← replay glyph, top right
+│  To do list                     │   ← masthead, and nothing opposite it
 │  ○  Groceries          3  ──── │
 │  ○  Work tasks   ⏰ 4 Mar  1 ── │
 │  ○  Weekend      📅 6 May  ──── │
@@ -179,7 +178,7 @@ the corner is the only affordance.
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
 - **A ring means a day** ([#36](https://github.com/emmanuel-h/Todolist/issues/36), [#37](https://github.com/emmanuel-h/Todolist/issues/37)). A kind is something a date has, not something chosen before there is one, so with nothing written neither mark is ringed and nothing trails them. `DateSelection.kind` is still non-nullable; it is simply not read while `date` is null.
 - Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**. There is no separate clear mark — the ringed mark is the clear, which is also the only way back to the neutral state
-- The calendar sheet carries the caption for the kind it is asking for, and moving a day across raises the same caption on a slip under the marks for a beat. Same words and same slip the tutorial teaches with (`PaperSlipCaption`), so a reader who skipped the tour is told the same thing in the same voice
+- The calendar sheet carries the caption for the kind it is asking for, and moving a day across raises the same caption on a slip under the marks for a beat. One pair of words on one slip (`PaperSlipCaption`), wherever the reader meets the distinction
 - The day attaches to the list the line commits; circling a target date clears any due date
 - The date is displayed on a second line of the list row, below the list name, with a calendar icon
 - A target date whose day has passed is **struck through** and drawn in `InkTone.Crossed`; one still ahead is plain `InkTone.Margin` pencil. The strike carries the distinction — the two tones alone sit a twentieth of a step apart, which is a difference only the code can see
@@ -194,7 +193,7 @@ the corner is the only affordance.
 - The ⏰ mark answers to the same three presses as the 📅 one — see **Set a target date** above. The two marks share one rule and one day between them, and the kind set is always the ringed one; circling a due date clears any target date
 - The add line and the edit sheet behave identically. They used to differ — the line opened the calendar on a mark tap while the sheet only moved the ring — and that difference is gone
 - **The calendar sheet carries the marks too** ([#41](https://github.com/emmanuel-h/Todolist/issues/41)), so a day is removable from wherever the reader pressed to see it: the date jot on a list row and the jot on that list's own head rule. Pressing the ringed mark on the sheet rubs the day out and puts the sheet down; pressing the other moves the day across and leaves the sheet open. With no day on it yet the sheet rings nothing and a press changes which kind of day it is asking for — the caption is what says which. Clearing a date drops the reminder it scheduled for free: the daily check reads the dates from the repository rather than holding alarms of its own
-- The 📅/⏰ distinction is taught outside the tutorial as well as inside it: the calendar sheet carries the caption for the kind it is asking for, and moving a day from one mark to the other raises the same caption under the marks for a beat. It is never left to two glyphs differing by an ink circle
+- The 📅/⏰ distinction is taught in words wherever it is met: the calendar sheet carries the caption for the kind it is asking for, and moving a day from one mark to the other raises the same caption under the marks for a beat. It is never left to two glyphs differing by an ink circle. This was the tour's job as well until the tour was deleted; the captions are the part that had to survive it
 - The due date is displayed on a second line of the list row (alarm icon + formatted date), below any target date line
 - Three-tier tinting based on the current date via the `Clock` abstraction: FUTURE → `InkTone.Margin`, TODAY → `InkTone.Today` (amber), OVERDUE → `InkTone.Lost` (red)
 - The year is shown only when the due date falls in a different year from the current year
@@ -345,7 +344,7 @@ ticking a list faster than the stroke lands every tick rather than only the last
 
 - All data lives in SQLite via Room, schema version 7, `exportSchema = true`, with every migration 1→7 present and no destructive fallback
 - The database is opened `JournalMode.TRUNCATE`. Auto Backup copies the file and its sidecars independently, and under WAL a snapshot can catch a commit that lives only in the `-wal` half
-- Auto Backup is a whitelist naming the database alone (`backup_rules.xml`, `data_extraction_rules.xml`). That is what keeps `shared_prefs/` behind — a permission the old device already spent must not travel, or the restored one is silently reminder-less, and neither must the demo bookkeeping, so a restored install still gets its tour
+- Auto Backup is a whitelist naming the database alone (`backup_rules.xml`, `data_extraction_rules.xml`). That is what keeps `shared_prefs/` behind: a permission the old device already spent must not travel, or the restored one is silently reminder-less
 - Deleting a list cascades via a real `ForeignKey.CASCADE`, with `PRAGMA foreign_keys = ON` at every open
 - `TodoItem.id` and `TodoList.id` are UUIDs generated at creation; never editable, never
   supplied by the UI
@@ -360,10 +359,11 @@ ticking a list faster than the stroke lands every tick rather than only the last
 ### Reminder slip — _implemented · [#39](https://github.com/emmanuel-h/Todolist/issues/39)_
 
 Writing a day on a list drops a paper slip from the top of the page saying what was
-just written — `🔔 <list name> ⏰ <day>` — which slides in and away on its own. It is
-the same slip, the same wording and the same paper the tutorial ends on, lifted out
-of the overlay (`ui/paper/ReminderSlip.kt`) so both can raise it: the promise the
-tour makes is then kept in the reader's own handwriting.
+just written — `🔔 <list name> ⏰ <day>` — which slides in and away on its own. It was
+first drawn inside the first-launch tour, to promise what circling a day would do, and
+was lifted out into `ui/paper/ReminderSlip.kt` so the app could raise it in earnest. The
+tour is gone; the slip is what it left behind, now shown only in the reader's own
+handwriting.
 
 - It rises on exactly the signal that asks for notification permission —
   `reminderDateWritten`. So: setting a day raises it, moving a day to the other
@@ -414,49 +414,41 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 
 ---
 
-## First-launch tutorial — _implemented · [#29](https://github.com/emmanuel-h/Todolist/issues/29)_
+## First-launch tutorial — _removed · [#75](https://github.com/emmanuel-h/Todolist/issues/75)_
 
-On the very first launch of `TodoListsActivity` a full-screen phantom-hand overlay plays a **six-scene** scripted tour using the real screens and real data operations. Each scene says what it is doing in one line, on a paper slip pinned top-centre under the status bar, and the line is up for the whole of the scene:
+There is none, and there is not going to be one. A six-scene phantom-hand tour played on
+the very first launch from [#29](https://github.com/emmanuel-h/Todolist/issues/29) until
+2026-09-01, driving the real screens with real data to demonstrate the gestures every act
+on a row was made of.
 
-1. **`ReadyToStart` — "Take a sheet and write a list on it".** Taps the pad, types the demo list's name into the inline create row, hovers the target-date icon while a caption pill anchored just below the create row shows "📅 To do on this day" (without opening the picker), moves to the due-date icon — the caption switches to "⏰ Finish before this day" — taps it, picks tomorrow on the real paper calendar, and commits the line by pressing the tick at the end of it (the caption fades out once the date is picked).
-2. **`A_DAY_AND_A_NOTE` — "Circle a day and you get a reminder that morning".** Shows a mock in-overlay notification banner (🔔 + list name + ⏰ + dM-formatted date, resting below the status-bar inset) previewing the daily 08:00 notification. The narration slip steps aside while the banner is up: the two want the same strip of paper and the banner is the point of the scene.
-3. **`OPEN_IT` — "Tap a list to open it".** Opens the demo list.
-4. **`WRITE_ITEMS` — "Write what is on it, line by line".** Adds the two demo items.
-5. **`TICK_AND_MOVE` — "Tap to tick something off. Hold a row to move it."** Completes an item, restores it, then drags a row to the top by the handle and completes it. It stops there: a second completion taught nothing the first had not, and it left the demo list finished, so the last scene went looking for "the first row on the page" and found the reader's rather than the demo's. **It must keep stopping there** — a demo list driven to empty would now also set off the finishing flourish, over a page nothing but the tour is driving.
-6. **`EDIT_AND_TEAR` — "Pull a row right to edit it, left to tear it off".** Returns to the lists screen, opens the edit sheet with a start→end drag, closes it, then tears the demo list off with the same end→start drag a reader would use — not a tap, which on that same rectangle is the gesture that opens a list — then fades out leaving the app empty.
+It was deleted because the premise under it was being removed. The tour existed to show a
+reader gestures they could not have guessed; [#72](https://github.com/emmanuel-h/Todolist/issues/72)
+replaces those gestures with controls drawn on the row itself,
+[#67](https://github.com/emmanuel-h/Todolist/issues/67) puts a visible route to a date on a
+list, and [#69](https://github.com/emmanuel-h/Todolist/issues/69) pins the add line where it
+can be found. A demonstration of an affordance that is now simply visible is 28 seconds of
+somebody else driving, bought with nothing.
 
-**Step names describe the scene they play**, not the one before it. They used to be off by one — the step called `SET_DUE_DATE` opened a list, `OPEN_LIST` wrote items into it — which made every reference a small lie.
+What it took with it: `TutorialAnchor` and every `Modifier.tutorialAnchor` call site, the
+anchor hosts on both screen states, `ListsStage` and `ItemsStage`, `NavStage`'s whole stage
+half, the demo's own `SharedPreferences` bookkeeping, `PaperMotion.handGlide`, the `?` replay
+glyph on the Screen 1 masthead, and the eleven `tutorial_*` strings in both languages.
 
-**Pace**: the script's own rests total **18.2 s** (`SCRIPTED_TOUR_MILLIS`, pinned by `TutorialDirectorTest`); with the banner's hold, the tap holds and the springs it comes to roughly 28 seconds end to end, and longer on a slow device. That is ~3 s more than before the rework, which is what six readable sentences cost. The time was not spread evenly: the beats a reader cannot guess were given it. The long-press drag held its grip for 100 ms before the row moved — a drag over in a tenth of a second reads as a row jumping by itself — and now holds it for 400; both swipes in the last scene hold their grip for 300 rather than 100. Every rest is taken through `TutorialPace`, never a bare `delay`.
+What had to survive it, because the tour was only one of the things using them:
 
-**Controls**: a bottom-center floating elevated pill containing **6** progress dots (filled up to the current scene), a ▸ next button and a ✕ skip button; on the items screen it floats above the pinned inline add bar. The back gesture cancels as ✕ does. The opening scene has a dot of its own — it used to share the first dot with the scene after it, so the tour's longest and busiest part showed no progress at all until it was over.
+- **`DateKindCaption` and the `date_kind_*_caption` strings.** The calendar sheet raises the
+  same pill on its own, and the 📅/⏰ distinction has to be taught in words either way —
+  see **Set a due date on a list**.
+- **`ReminderSlip`.** First drawn inside the tour as a promise; now raised in earnest — see
+  **Reminder slip**.
+- **A genuinely empty first page.** With nothing written and nobody driving, what greets a
+  first-time reader is the add line's breathing hint and the sticky pad, and nothing else.
 
-▸ says *I have understood this one*: `TutorialPace.hurry()` ends the rest being taken and drops every rest left in the scene, while the scene still drives every one of its remaining actions in order — so the page arrives at the next scene exactly where the unhurried scene would have left it, and the hand snaps rather than glides for the rest of it. The next scene settles the pace and plays at the ordinary speed. On the last scene ▸ simply finishes the tour, demo list torn off and all.
+[#70](https://github.com/emmanuel-h/Todolist/issues/70) — announce the tour before it starts —
+was closed as superseded by this: a tour that does not exist needs no warning.
 
-**Leaving nothing behind**: every way out of the tour — ✕, back, and any beat the script cannot play — deletes the demo list *and* puts the reader's page back through `TutorialStage.abandon()`: create row closed and emptied, calendar closed, edit sheet closed, held-aside row let go, on both pages of the stack rather than only the one on top. A scene that cannot play a beat ends the tour rather than returning quietly; returning quietly left the hand up over a page nothing was driving, with the demo's half-written row still in the reader's composer, where their next tap on the page submitted it as a list of their own.
-
-**Replay**: a dimmed circular-arrow glyph pinned top-right of the lists screen. Tap calls `TutorialViewModel.replay()`, which transitions `Hidden`/`Dismissed` → `ReadyToStart`; no-op while already `ReadyToStart` or `Active`. Does NOT touch the seen flag — the automatic tutorial still shows exactly once ever. The glyph is taken off the page while the add line is open and returns when the line folds away.
-
-**Crash safety**: the seen flag is persisted the moment the demo starts. The demo list id is persisted until cleanup, so a killed-mid-demo leftover is deleted on next launch by `CleanupAbandonedTutorialUseCase`.
-
-`TutorialViewModel.initialize()` is called from every `onCreate` and is **idempotent**: it returns early only while a tour is on the paper (`ReadyToStart` or `Active`). A tour that is over does not skip the sweep — the window is rebuilt far more often than the process is, and a demo list that outlived its tour would otherwise never be found while the app stayed alive. Cleanup's first act is to tear off whatever demo list is recorded, which mid-tour is the list the tour is being written on — so without the guard a rotation deleted the demo out from under itself and then declared the tour over, the seen flag having been written at the opening beat.
-
-**Demo strings** are `tutorial_demo_list`, `tutorial_demo_item_first` and `tutorial_demo_item_second`, translated like everything else — "🛒 Groceries / 🍎 Apples / 🥖 Bread" in English, "🛒 Courses / 🍎 Pommes / 🥖 Pain" in French. They were Kotlin literals in `TutorialDirector` for as long as the tour existed, which had a French reader watch a hand write "🛒 Groceries" onto a page whose every other word had been translated. `presentation/` cannot read a resource, so the three words are handed down from the composition root as a `TutorialDemoWords`. They are not a literal translation: a translator should pick a list and two items that read naturally, and an emoji that fits them. **The narration is likewise translated**: six translated resources, `tutorial_write_a_list` … `tutorial_edit_and_tear`, in `values/` and `values-fr/`, mapped from `TutorialLine` by `narrationStringRes`. They are pinned word for word by `TutorialWordsTest`, which also requires each to be genuinely translated. The caption pill keeps displaying the two `date_kind_*_caption` resources shared with the edit-list dialog, with the 📅/⏰ emoji prefixes added as Kotlin literals; those point at a particular glyph rather than at a scene, which is why they stay separate from the narration.
-
-### Must NOT happen
-- Tutorial reappearing after the first launch has started it (seen flag is written before the overlay appears).
-- The demo list surviving a skip or a mid-demo kill (cleanup runs on next launch).
-- Anything the demo opened on the reader's page outliving the tour — most of all a create row still holding the demo's name.
-- A scene that cannot play a beat leaving the tour running with the hand up.
-- A rotation mid-tour deleting the demo list or ending the tour.
-- A scene playing without its line, or a line naming a scene that no longer exists — `TutorialWordsTest` requires one line per scene and no duplicates.
-- A line, or a demo word, left untranslated in `values-fr/`.
-- A demo word without an emoji in front of it in some language.
-- The narration slip and the reminder banner on screen together.
-- A scene that drives the demo list to empty, which would set off the finishing flourish over a page the reader is not driving.
-- `replay()` resetting the seen flag or allowing the automatic first-launch tutorial to fire a second time.
-- The demo miming a gesture that does something else on the same rectangle.
-- The demo aiming at an anchor nothing registers — the hand fades off the page and the beat plays on an invisible disc.
+**Between this and #72/#67/#69 the app has neither a tour nor the controls that replace it.**
+Do not cut a Play Store release in that window.
 
 ---
 

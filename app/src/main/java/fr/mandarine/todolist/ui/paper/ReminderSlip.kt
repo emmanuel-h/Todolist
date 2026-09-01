@@ -36,8 +36,7 @@ private const val DAY_SKELETON = "dM"
 
 /**
  * A reminder as the reader will meet it: the list's name with a bell in front of it
- * and the day it will ring on after it. It is written the same way whether the
- * tutorial is showing what one looks like or the app has just made one.
+ * and the day it will ring on after it.
  */
 @Immutable
 class ReminderNote(val listName: String, val day: LocalDate?)
@@ -50,9 +49,8 @@ fun reminderSlipText(note: ReminderNote, locale: Locale): String {
 
 /**
  * What a reminder written just now looks like, dropped from the top of the page for
- * a beat and taken away again. The tutorial ends by showing one of these so the
- * reader knows what to expect; writing a real date shows the same slip, so the
- * promise the tour made is kept in the reader's own handwriting.
+ * a beat and taken away again. Writing a date shows this slip, so the reader knows
+ * what to expect without having to wait for the morning it rings.
  */
 @Stable
 class ReminderNotes {

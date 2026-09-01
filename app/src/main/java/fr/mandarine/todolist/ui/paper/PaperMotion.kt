@@ -10,7 +10,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -25,8 +24,7 @@ import androidx.compose.ui.unit.IntSize
  *
  * The numbers are the Material 3 Expressive spatial and effects tokens. They live
  * here rather than being read from `MaterialTheme.motionScheme` because the
- * tutorial's scenes animate outside any composition and the tests read them
- * directly.
+ * tests read them directly.
  */
 @Immutable
 object PaperMotion {
@@ -71,12 +69,6 @@ object PaperMotion {
     val pageMove: SpringSpec<Float> = spring(
         dampingRatio = SPATIAL_DAMPING,
         stiffness = SPATIAL_SLOW_STIFFNESS
-    )
-
-    val handGlide: SpringSpec<Offset> = spring(
-        dampingRatio = SPATIAL_DAMPING,
-        stiffness = SPATIAL_SLOW_STIFFNESS,
-        visibilityThreshold = Offset.VisibilityThreshold
     )
 
     val rowEnter: SpringSpec<Float> = spring(

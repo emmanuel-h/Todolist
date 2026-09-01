@@ -5,7 +5,6 @@ import android.os.Build
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.MainThreadDatabaseRule
-import fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -26,10 +25,6 @@ class NotificationPermissionTest {
 
     private fun app() = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    private fun markTutorialSeen() {
-        SharedPreferencesTutorialStateRepository(app()).markTutorialSeen()
-    }
-
     /**
      * The ask is only put when a notification could not otherwise arrive, so the
      * shadow has to say that it cannot. Robolectric leaves notifications enabled
@@ -47,34 +42,7 @@ class NotificationPermissionTest {
             .orEmpty()
 
     @Test
-    fun `should not ask for notifications while the first-launch tutorial is running`() {
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                assertNull(
-                    "The tutorial must not be interrupted by a permission dialog",
-                    Shadows.shadowOf(activity).lastRequestedPermission
-                )
-            }
-        }
-    }
-
-    @Test
-    fun `should not ask for notifications when the tutorial is dismissed`() {
-        markTutorialSeen()
-
-        ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                assertNull(
-                    "Finishing the tutorial is not a reason to ask for notifications",
-                    Shadows.shadowOf(activity).lastRequestedPermission
-                )
-            }
-        }
-    }
-
-    @Test
     fun `should ask for notifications when the first reminder is set`() {
-        markTutorialSeen()
         silenceNotifications()
 
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->
@@ -95,7 +63,6 @@ class NotificationPermissionTest {
 
     @Test
     fun `should not ask for notifications a second time once the ask has been spent`() {
-        markTutorialSeen()
         silenceNotifications()
         NotificationAsk(app()).markAsked()
 
@@ -124,7 +91,6 @@ class NotificationPermissionTest {
 
     @Test
     fun `should not ask for notifications when they are already granted`() {
-        markTutorialSeen()
         Shadows.shadowOf(app()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
 
         ActivityScenario.launch(TodoListsActivity::class.java).use { scenario ->

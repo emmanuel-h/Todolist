@@ -63,7 +63,6 @@ class TodoListsScreenTest {
     private val deleted = mutableListOf<String>()
     private val reordered = mutableListOf<List<String>>()
     private val opened = mutableListOf<String>()
-    private var replayed = 0
     private var dueDatesSet = 0
 
     // ── The page at rest ──────────────────────────────────────────────────────
@@ -123,8 +122,8 @@ class TodoListsScreenTest {
     }
 
     /**
-     * The masthead leaves with the mark that replays the tour: while the pen is out
-     * the page belongs to what is being written on it.
+     * The masthead leaves while the pen is out: the page belongs to what is being
+     * written on it.
      */
     @Test
     fun `should take the masthead off the page while the add line is being written`() {
@@ -142,8 +141,8 @@ class TodoListsScreenTest {
     }
 
     /**
-     * The name is written in the strip above the head rule, beside the mark that
-     * replays the tour, so it takes no rule away from the lists.
+     * The name is written in the strip above the head rule, so it takes no rule
+     * away from the lists.
      */
     @Test
     fun `should keep the masthead off the rules the lists are written on`() {
@@ -165,15 +164,6 @@ class TodoListsScreenTest {
         composeRule.onNodeWithText("Groceries").performClick()
 
         assertEquals(listOf("Groceries"), opened)
-    }
-
-    @Test
-    fun `should replay the tutorial when the replay affordance is tapped`() {
-        render(TodoListsState.Empty)
-
-        composeRule.onNodeWithContentDescription(REPLAY).performClick()
-
-        assertEquals(1, replayed)
     }
 
     // ── The add line ──────────────────────────────────────────────────────────
@@ -200,7 +190,6 @@ class TodoListsScreenTest {
         render(TodoListsState.Empty)
 
         composeRule.onNodeWithContentDescription(CREATE_LIST).assertDoesNotExist()
-        composeRule.onNodeWithContentDescription(REPLAY).assertDoesNotExist()
         composeRule.onNodeWithContentDescription(DISCARD_LIST).assertIsDisplayed()
     }
 
@@ -1087,7 +1076,6 @@ class TodoListsScreenTest {
             },
             onDeleteList = { deleted += it },
             onReorder = { orderedIds -> reordered += orderedIds },
-            onReplayTutorial = { replayed += 1 },
             onDueDateSet = { dueDatesSet += 1 }
         )
     }
@@ -1155,7 +1143,6 @@ class TodoListsScreenTest {
 
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
-        const val REPLAY = "Replay tutorial"
         const val ADD_LIST = "Add a list"
         const val APP_NAME = "To do list"
         const val CREATE_LIST = "Create new list"

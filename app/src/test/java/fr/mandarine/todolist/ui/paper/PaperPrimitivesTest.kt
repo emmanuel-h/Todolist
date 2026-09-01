@@ -381,16 +381,14 @@ class PaperPrimitivesTest {
     }
 
     /**
-     * A row the tour can hold aside is still a row. Handing the demonstration the
-     * only say over how far it is pulled left the first row on the page unable to
-     * move under a finger at all — the gesture still fired, so nothing failed
-     * except the paper, which simply stopped following the hand.
+     * The paper follows the hand. The gesture firing is not the same thing as the
+     * row moving, and a row that stops following the finger fails nothing else.
      */
     @Test
-    fun `should follow the finger on a row a demonstration is not holding`() {
+    fun `should carry a swiped row along with the finger`() {
         composeRule.setContent {
             PaperTheme {
-                SwipeRow(key = "1", onDelete = {}, tearLabel = "tear", staged = { null }) {
+                SwipeRow(key = "1", onDelete = {}, tearLabel = "tear") {
                     Text("Groceries", modifier = Modifier.testTag(PULLED_ROW))
                 }
             }
@@ -405,25 +403,6 @@ class PaperPrimitivesTest {
 
         val pulled = composeRule.onNodeWithTag(PULLED_ROW).fetchSemanticsNode().positionInRoot.x
         assertTrue("rested at $atRest, pulled to $pulled", pulled < atRest)
-    }
-
-    @Test
-    fun `should let a demonstration hold a row aside with no finger on it`() {
-        val held = mutableStateOf<Float?>(null)
-        composeRule.setContent {
-            PaperTheme {
-                SwipeRow(key = "1", onDelete = {}, tearLabel = "tear", staged = { held.value }) {
-                    Text("Groceries", modifier = Modifier.testTag(PULLED_ROW))
-                }
-            }
-        }
-        val atRest = composeRule.onNodeWithTag(PULLED_ROW).fetchSemanticsNode().positionInRoot.x
-
-        composeRule.runOnIdle { held.value = -PULL_PIXELS }
-        composeRule.waitForIdle()
-
-        val pulled = composeRule.onNodeWithTag(PULLED_ROW).fetchSemanticsNode().positionInRoot.x
-        assertTrue("rested at $atRest, held at $pulled", pulled < atRest)
     }
 
     @Test

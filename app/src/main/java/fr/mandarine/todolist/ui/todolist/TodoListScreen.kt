@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoListSummary
-import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.listmeta.DateJot
@@ -98,7 +97,6 @@ import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.todolists.ListDatePickerDialog
 import fr.mandarine.todolist.ui.todolists.dueTone
 import fr.mandarine.todolist.ui.todolists.targetTone
-import fr.mandarine.todolist.ui.tutorial.tutorialAnchor
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 
@@ -327,10 +325,7 @@ fun TodoListScreen(
                         armed = screenState.addRowExpanded,
                         onPenUp = { screenState.addRowExpanded = true },
                         onPenDown = { screenState.addRowExpanded = false },
-                        modifier = animatedRow(screenState)
-                            .tutorialAnchor(screenState, TutorialAnchor.ItemGhostRow),
-                        commitModifier = Modifier
-                            .tutorialAnchor(screenState, TutorialAnchor.SubmitItemButton),
+                        modifier = animatedRow(screenState),
                         style = MaterialTheme.typography.bodyLarge,
                         breathing = activeItems.isEmpty() && completedItems.isEmpty(),
                         animated = screenState.animationsEnabled
@@ -367,10 +362,6 @@ fun TodoListScreen(
                         onEditDismissed = { screenState.editingItemId = null },
                         onDeleteRequested = { requestDelete(item.id) },
                         modifier = animatedRow(screenState),
-                        toggleModifier = Modifier.tutorialAnchor(
-                            screenState,
-                            TutorialAnchor.CompletedItemToggle(position)
-                        ),
                         animated = screenState.animationsEnabled,
                         tearing = deletion.tearing(item.id),
                         onTorn = { holdTorn(item.id) }
@@ -478,11 +469,7 @@ private fun LazyItemScope.ActiveRow(
                             onReorder(reorder.orderedIds)
                         }
                     }
-                )
-                .tutorialAnchor(screenState, TutorialAnchor.ActiveItemRow(position))
-                .tutorialAnchor(screenState, TutorialAnchor.ActiveItemDragHandle(position)),
-            toggleModifier = Modifier
-                .tutorialAnchor(screenState, TutorialAnchor.ActiveItemToggle(position)),
+                ),
             animated = screenState.animationsEnabled,
             tearing = deletion.tearing(item.id),
             onTorn = { onTorn(item.id) },

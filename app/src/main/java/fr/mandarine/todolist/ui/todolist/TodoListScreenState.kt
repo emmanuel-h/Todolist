@@ -10,8 +10,6 @@ import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.ui.DeletionState
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
-import fr.mandarine.todolist.ui.tutorial.TutorialAnchorHost
-import fr.mandarine.todolist.ui.tutorial.TutorialAnchors
 import java.time.LocalDate
 
 private const val ADD_OPEN = "add-open"
@@ -21,7 +19,7 @@ private const val RENAMING = "renaming-list"
 private const val SHEET_KIND = "sheet-kind"
 private const val SHEET_DAY = "sheet-day"
 
-class TodoListScreenState : TutorialAnchorHost by TutorialAnchors() {
+class TodoListScreenState {
 
     val deletion = DeletionState()
 

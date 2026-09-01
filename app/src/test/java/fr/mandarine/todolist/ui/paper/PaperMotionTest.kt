@@ -70,16 +70,6 @@ class PaperMotionTest {
     }
 
     @Test
-    fun `should walk the tutorial hand at the pace of a whole-page move`() {
-        assertEquals(PaperMotion.pageMove.stiffness, PaperMotion.handGlide.stiffness, tolerance)
-        assertEquals(
-            PaperMotion.pageMove.dampingRatio,
-            PaperMotion.handGlide.dampingRatio,
-            tolerance
-        )
-    }
-
-    @Test
     fun `should reverse the breath instead of restarting it`() {
         assertEquals(RepeatMode.Reverse, PaperMotion.breath.repeatMode)
     }

@@ -11,13 +11,9 @@ import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -38,15 +34,10 @@ import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import fr.mandarine.todolist.domain.ReorderTodosUseCase
-import fr.mandarine.todolist.domain.SaveDemoListIdUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
-import fr.mandarine.todolist.R
 import fr.mandarine.todolist.presentation.TodoListsViewModel
-import fr.mandarine.todolist.presentation.TutorialDemoWords
-import fr.mandarine.todolist.presentation.TutorialUiState
-import fr.mandarine.todolist.presentation.TutorialViewModel
 import fr.mandarine.todolist.ui.nav.ItemsRoute
 import fr.mandarine.todolist.ui.nav.ListsRoute
 import fr.mandarine.todolist.ui.nav.NavStage
@@ -55,18 +46,9 @@ import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.drawEdgeToEdge
 import fr.mandarine.todolist.ui.paper.openOnPaper
 import fr.mandarine.todolist.ui.paper.preparePaperSheet
-import fr.mandarine.todolist.ui.todolists.ListsStage
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
-import fr.mandarine.todolist.ui.tutorial.NonShiftingTodoListRepository
-import fr.mandarine.todolist.ui.tutorial.TutorialOverlay
-import fr.mandarine.todolist.ui.tutorial.TutorialOverlayController
-import fr.mandarine.todolist.ui.tutorial.behindTutorial
-import java.time.LocalDate
-import java.util.UUID
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val BLANK_PAGE_MILLIS = 500L
@@ -91,15 +73,6 @@ class TodoListsActivity : ComponentActivity() {
     private lateinit var notificationPermission: ActivityResultLauncher<String>
     private var pageWritten by mutableStateOf(false)
 
-    private lateinit var tutorialViewModel: TutorialViewModel
-    private lateinit var tutorialController: TutorialOverlayController
-
-    /**
-     * Held on the window rather than inside the collector: the collector is torn
-     * down and rebuilt every time the window stops and starts, and a reader
-     * coming back to an open page must not be read as a demo that has just ended.
-     */
-    private var lastTutorialState: TutorialUiState? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         openOnPaper { pageWritten }
         drawEdgeToEdge()
@@ -126,21 +99,7 @@ class TodoListsActivity : ComponentActivity() {
             }
         )[TodoListsViewModel::class.java]
 
-        tutorialViewModel = container.tutorialViewModel
-        tutorialController = TutorialOverlayController(tutorialViewModel, lifecycleScope, demoWords())
-        stage = NavStage(
-            backStack,
-            ListsStage(
-                viewModel = viewModel,
-                screenState = screenState,
-                aim = tutorialController.overlayState::aimAt,
-                pace = tutorialController.pace,
-                writeDemoList = { name, targetDate, dueDate ->
-                    writeDemoList(name, targetDate, dueDate)
-                },
-                onOpen = { list -> stage.open(list) }
-            )
-        )
+        stage = NavStage(backStack)
         stage.animationsEnabled = animationsAllowed()
         savedInstanceState?.let(screenState::restoreFrom)
         openedListId(savedInstanceState)?.let { backStack.add(ItemsRoute(it)) }
@@ -168,31 +127,17 @@ class TodoListsActivity : ComponentActivity() {
         }
 
         setContent {
-            val overlayState = tutorialController.overlayState
             ReportDrawnWhen { pageWritten }
             PaperTheme {
-                Box(Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxSize().behindTutorial(overlayState.visible)) {
-                        PageStack(
-                            backStack = backStack,
-                            listsViewModel = viewModel,
-                            listsScreenState = screenState,
-                            stage = stage,
-                            today = clock.today(),
-                            itemsViewModelFactory = { listId -> itemsViewModelFactory(listId) },
-                            aim = overlayState::aimAt,
-                            pace = tutorialController.pace,
-                            onDueDateSet = { askForNotifications() },
-                            onReplayTutorial = { tutorialViewModel.replay() }
-                        )
-                    }
-                    TutorialOverlay(
-                        state = overlayState,
-                        anchors = stage.anchors,
-                        onNext = { tutorialController.onNextRequested() },
-                        onSkip = { tutorialController.onSkipRequested(stage) }
-                    )
-                }
+                PageStack(
+                    backStack = backStack,
+                    listsViewModel = viewModel,
+                    listsScreenState = screenState,
+                    stage = stage,
+                    today = clock.today(),
+                    itemsViewModelFactory = { listId -> itemsViewModelFactory(listId) },
+                    onDueDateSet = { askForNotifications() }
+                )
             }
         }
 
@@ -203,35 +148,6 @@ class TodoListsActivity : ComponentActivity() {
                 }
             }
         }
-
-        /**
-         * A scene belongs to a step and to the page that step is played on, and
-         * with one window the page can now change without the step changing — the
-         * demo walking back out of a list is exactly that. So the beat the
-         * controller is asked to play is both together.
-         */
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(tutorialViewModel.uiState, snapshotFlow { stage.screen }) { state, _ ->
-                    state
-                }.collect { state ->
-                    val running = state is TutorialUiState.ReadyToStart ||
-                        state is TutorialUiState.Active
-                    tutorialController.overlayState.running = running
-                    stage.recordingAnchors = running
-                    stage.animationsEnabled = animationsAllowed()
-                    if (demoJustEnded(state)) {
-                        stage.abandon()
-                        closeDemoPage()
-                        viewModel.refresh()
-                    }
-                    lastTutorialState = state
-                    tutorialController.handleState(state, stage)
-                }
-            }
-        }
-
-        tutorialViewModel.initialize()
     }
 
     override fun onResume() {
@@ -256,18 +172,6 @@ class TodoListsActivity : ComponentActivity() {
      * say so. That second time opens the system's own page for it, which is both
      * the explanation and the remedy.
      */
-    /**
-     * The demonstration's own shopping list, read here because this is the layer
-     * that can read a resource. It is fetched once at `onCreate`; the tour does not
-     * outlive a configuration change, so a locale switch mid-demonstration is not a
-     * thing that happens.
-     */
-    private fun demoWords(): TutorialDemoWords = TutorialDemoWords(
-        listName = getString(R.string.tutorial_demo_list),
-        firstItem = getString(R.string.tutorial_demo_item_first),
-        secondItem = getString(R.string.tutorial_demo_item_second)
-    )
-
     internal fun askForNotifications() {
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) return
         val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -303,53 +207,6 @@ class TodoListsActivity : ComponentActivity() {
         return named
     }
 
-    /**
-     * The demo ending is a moment, not a condition.
-     *
-     * The beat is read from two flows at once, and the page is one of them, so
-     * the resting state is offered again every single time the reader turns a
-     * page. Acting on the state alone tore off whatever page they had just
-     * opened — which, once the demo has been seen, is every page there is.
-     *
-     * Only a demo that was actually on the paper can end, so the tear-off is
-     * asked for by the transition out of a running tour and by nothing else.
-     * A page restored from a notification or from a saved window arrives with
-     * the tour long over and is left where it is.
-     */
-    private fun demoJustEnded(state: TutorialUiState): Boolean =
-        state is TutorialUiState.Dismissed &&
-            (
-                lastTutorialState is TutorialUiState.ReadyToStart ||
-                    lastTutorialState is TutorialUiState.Active
-                )
-
-    /**
-     * The demo is torn off with its list, so a page of it left open would outlive
-     * the list it reads and leave the reader holding a sheet with nothing written
-     * on it. Ending the demo closes whatever it opened.
-     */
-    private fun closeDemoPage() {
-        while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-    }
-
-    /**
-     * The demo's list is claimed as the demo's before a single row of it is
-     * written, so an abort at any beat — or a window torn down mid-demonstration —
-     * finds an id to tear off rather than a stray list nobody owns. It is then
-     * written through a page that lays it above the reader's rows without
-     * renumbering them, which is what lets the tear-off restore the page exactly.
-     */
-    private suspend fun writeDemoList(name: String, targetDate: LocalDate?, dueDate: LocalDate?) {
-        withContext(container.databaseDispatcher) {
-            val demoListId = UUID.randomUUID().toString()
-            SaveDemoListIdUseCase(container.tutorialStateRepository)(demoListId)
-            CreateTodoListUseCase(
-                NonShiftingTodoListRepository(container.todoListRepository)
-            ) { demoListId }(name, targetDate, dueDate)
-        }
-        viewModel.refresh()
-    }
-
     private fun itemsViewModelFactory(listId: String): ViewModelProvider.Factory =
         viewModelFactory {
             TodoListViewModel(
@@ -366,8 +223,7 @@ class TodoListsActivity : ComponentActivity() {
             )
         }
 
-    private fun animationsAllowed(): Boolean =
-        !tutorialViewModel.animationsSuppressed && !isReducedMotion()
+    private fun animationsAllowed(): Boolean = !isReducedMotion()
 
     private fun isReducedMotion(): Boolean {
         val scale = Settings.Global.getFloat(

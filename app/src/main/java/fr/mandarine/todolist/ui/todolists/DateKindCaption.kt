@@ -59,9 +59,9 @@ fun rememberDateKindSaid(): DateKindSaid {
 }
 
 /**
- * The words for the kind just chosen, on a slip laid under the marks. It is the
- * same slip the tutorial teaches with, so a reader who skipped the tour and a
- * reader who took it are told the same thing in the same voice.
+ * The words for the kind just chosen, on a slip laid under the marks. The glyphs
+ * alone cannot tell target from due, so choosing one says in words what was chosen,
+ * and then stops saying it.
  */
 @Composable
 fun DateKindCaption(said: DateKindSaid, animated: Boolean, modifier: Modifier = Modifier) {

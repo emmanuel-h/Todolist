@@ -24,15 +24,6 @@ import java.time.LocalDate
  * a ring is the answer everywhere else on the page, and putting the sheet down
  * leaves the date as it was.
  *
- * The tutorial no longer reaches for a positive button by id — it sets the date
- * on the screen state and this dialog simply closes.
- */
-/**
- * A smaller sheet with a month written on it, laid on whatever sheet asked for a
- * date. There is no confirm row: circling a day is the answer, exactly as ticking
- * a ring is the answer everywhere else on the page, and putting the sheet down
- * leaves the date as it was.
- *
  * The sheet carries the same two kind marks the line being written and the edit
  * sheet carry, answering to the same three presses — which is what makes a day
  * removable from wherever the reader pressed to see it. Reaching the marks used to

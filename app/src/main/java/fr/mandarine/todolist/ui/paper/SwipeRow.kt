@@ -154,7 +154,6 @@ fun SwipeRow(
     tearLabel: String,
     enabled: Boolean = true,
     animated: Boolean = true,
-    staged: (() -> Float?)? = null,
     content: @Composable () -> Unit
 ) {
     val palette = LocalPaperPalette.current
@@ -173,14 +172,7 @@ fun SwipeRow(
     val latestDelete = rememberUpdatedState(onDelete)
     val latestReveal = rememberUpdatedState(reveal)
 
-    /**
-     * How far the row is pulled aside, which is usually the finger and is sometimes
-     * the tour: a demonstration has no finger, and a row that does not move while
-     * the hand crosses it teaches nothing about what moving it does. The tour
-     * answers with nothing when it is not demonstrating, so the row a demonstration
-     * happens to use still comes away in the reader's own hand.
-     */
-    val pulled: () -> Float = { staged?.invoke() ?: swipe.offset }
+    val pulled: () -> Float = { swipe.offset }
 
     val locked by remember(swipe) { derivedStateOf { swipe.locked } }
     val travelling by remember(swipe) { derivedStateOf { swipe.travelling } }

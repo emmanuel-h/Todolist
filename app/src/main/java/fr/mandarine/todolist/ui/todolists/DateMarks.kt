@@ -70,9 +70,7 @@ fun RowScope.DateMarks(
     said: DateKindSaid,
     onKindChange: (DateKind) -> Unit,
     onPickDate: (DateKind) -> Unit,
-    onClearDate: () -> Unit,
-    targetModifier: Modifier = Modifier,
-    dueModifier: Modifier = Modifier
+    onClearDate: () -> Unit
 ) {
     val locale = formatLocale
     KindGlyph(
@@ -85,8 +83,7 @@ fun RowScope.DateMarks(
         said = said,
         onKindChange = onKindChange,
         onPickDate = onPickDate,
-        onClearDate = onClearDate,
-        modifier = targetModifier
+        onClearDate = onClearDate
     )
     KindGlyph(
         iconRes = R.drawable.ic_alarm,
@@ -98,8 +95,7 @@ fun RowScope.DateMarks(
         said = said,
         onKindChange = onKindChange,
         onPickDate = onPickDate,
-        onClearDate = onClearDate,
-        modifier = dueModifier
+        onClearDate = onClearDate
     )
     WrittenDate(
         selection = selection,
@@ -120,14 +116,13 @@ private fun RowScope.KindGlyph(
     said: DateKindSaid,
     onKindChange: (DateKind) -> Unit,
     onPickDate: (DateKind) -> Unit,
-    onClearDate: () -> Unit,
-    modifier: Modifier
+    onClearDate: () -> Unit
 ) {
     val palette = LocalPaperPalette.current
     val press = kindPressOn(selection, kind)
     val ringed = press == KindPress.RubItOut
     Box(
-        modifier = modifier
+        modifier = Modifier
             .align(Alignment.Bottom)
             .size(PaperDimens.iconButton)
             .selectable(

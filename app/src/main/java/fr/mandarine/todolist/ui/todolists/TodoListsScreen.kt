@@ -57,11 +57,9 @@ import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
-import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.InkAddLine
-import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalPaperGutter
@@ -94,7 +92,6 @@ import fr.mandarine.todolist.ui.reorder.liftedSlip
 import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
-import fr.mandarine.todolist.ui.tutorial.tutorialAnchor
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 
@@ -106,8 +103,7 @@ private const val ADD_TYPE = "list-add"
 private const val ACTIVE_TYPE = "active"
 private const val SKIP_TYPE = "skip"
 private const val DONE_TYPE = "done"
-private const val NOT_PULLED = 0f
-private const val REPLAY_ALPHA = 0.8f
+private const val MASTHEAD_ALPHA = 0.8f
 private const val ONE_LINE = 1
 private val CORNER_MARGIN = 8.dp
 private val DROP_IN_TRAVEL = 16.dp
@@ -122,7 +118,6 @@ fun TodoListsScreen(
     onRenameList: (String, String, LocalDate?, LocalDate?) -> Unit,
     onDeleteList: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
-    onReplayTutorial: () -> Unit,
     onDueDateSet: (ReminderNote) -> Unit = {}
 ) {
     val content = state as? TodoListsState.Content
@@ -140,7 +135,6 @@ fun TodoListsScreen(
     val publishedIds = publishedSummaries.map { it.list.id }
     LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
     val dropInListId = remember(activeIds) { screenState.dropInFor(activeIds) }
-    val firstRowId = (activeSummaries.firstOrNull() ?: doneSummaries.firstOrNull())?.list?.id
     val allIds = (content?.activeSummaries.orEmpty() + content?.doneSummaries.orEmpty())
         .map { it.list.id }
 
@@ -282,12 +276,6 @@ fun TodoListsScreen(
                                 armed = screenState.addRowExpanded,
                                 onPenUp = { screenState.openAddRow() },
                                 onPenDown = { screenState.closeAddRow() },
-                                modifier = Modifier
-                                    .tutorialAnchor(screenState, TutorialAnchor.ListCreateRow),
-                                fieldModifier = Modifier
-                                    .tutorialAnchor(screenState, TutorialAnchor.ListNameField),
-                                commitModifier = Modifier
-                                    .tutorialAnchor(screenState, TutorialAnchor.SubmitListButton),
                                 style = MaterialTheme.typography.titleMedium,
                                 animated = screenState.animationsEnabled
                             )
@@ -311,7 +299,6 @@ fun TodoListsScreen(
                         position = position,
                         rowIds = activeIds,
                         dropIn = dropInListId == summary.list.id,
-                        firstRow = firstRowId == summary.list.id,
                         listState = listState,
                         session = session,
                         edgeScroll = edgeScroll,
@@ -342,17 +329,12 @@ fun TodoListsScreen(
                     key = { _, it -> it.list.id },
                     contentType = { _, _ -> DONE_TYPE }
                 ) { _, summary ->
-                    val firstRow = firstRowId == summary.list.id
                     TodoListRow(
                         summary = summary,
                         animated = screenState.animationsEnabled,
                         onOpen = { openList(summary.list) },
                         onDeleteRequested = { requestDelete(summary.list.id) },
-                        modifier = animatedRow(screenState)
-                            .then(rowAnchor(screenState, firstRow, TutorialAnchor.FirstListRow))
-                            .then(
-                                rowAnchor(screenState, firstRow, TutorialAnchor.DeleteListButton)
-                            ),
+                        modifier = animatedRow(screenState),
                         tearing = deletion.tearing(summary.list.id),
                         onTorn = { holdTorn(summary.list.id) },
                         onRenameRequested = {
@@ -366,10 +348,8 @@ fun TodoListsScreen(
 
         /**
          * The head strip: the page's own name written at the margin the lists are
-         * written at, and the mark that replays the tour opposite it. They share
-         * one rule's worth of height above the head rule so they are level with
-         * each other and clear of the writing, and they leave together when the pen
-         * comes out.
+         * written at. It occupies one rule's worth of height above the head rule,
+         * clear of the writing, and leaves when the pen comes out.
          */
         AnimatedVisibility(
             visible = !screenState.addRowExpanded,
@@ -388,15 +368,6 @@ fun TodoListsScreen(
         ) {
             Box(modifier = Modifier.fillMaxSize().padding(horizontal = CORNER_MARGIN)) {
                 Masthead(Modifier.align(Alignment.Center))
-                InkIconButton(
-                    painter = painterResource(R.drawable.ic_help),
-                    contentDescription = stringResource(R.string.replay_tutorial),
-                    onClick = onReplayTutorial,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .alpha(REPLAY_ALPHA),
-                    tint = palette.inked(InkTone.Margin)
-                )
             }
         }
         StickyNotePad(
@@ -405,8 +376,7 @@ fun TodoListsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(CORNER_MARGIN)
-                .tutorialAnchor(screenState, TutorialAnchor.CreateListButton),
+                .padding(CORNER_MARGIN),
             taken = screenState.addRowExpanded,
             reducedMotion = !screenState.animationsEnabled,
             beckons = pageEmpty,
@@ -507,14 +477,12 @@ fun TodoListsScreen(
 
 /**
  * The app's name written where a name goes on a real pad: the top of the page, in
- * the same hand as everything on it, level with the mark that replays the tour and
- * leaving with that mark when the pen comes out.
+ * the same hand as everything on it, above the head rule and clear of the writing.
+ * It leaves when the pen comes out.
  *
- * It sits in the strip above the head rule, so it takes no rule away from the
- * lists. It is one of the few places this app says anything in words rather than
- * showing it — the page is wordless by default, not by law, and a pad with nothing
- * written at the top of it is the one page that reads as unfinished rather than
- * calm.
+ * It is one of the few places this app says anything in words rather than showing
+ * it — the page is wordless by default, not by law, and a pad with nothing written
+ * at the top of it is the one page that reads as unfinished rather than calm.
  */
 @Composable
 private fun Masthead(modifier: Modifier = Modifier) {
@@ -527,7 +495,7 @@ private fun Masthead(modifier: Modifier = Modifier) {
      */
     Text(
         text = handwritten(stringResource(R.string.app_name)),
-        modifier = modifier.alpha(REPLAY_ALPHA),
+        modifier = modifier.alpha(MASTHEAD_ALPHA),
         style = PaperType.field,
         color = palette.inked(InkTone.Margin),
         maxLines = ONE_LINE,
@@ -559,11 +527,7 @@ private fun AddLineDateRule(screenState: TodoListsScreenState) {
                     initial = selection.date
                 )
             },
-            onClearDate = { screenState.addRowSelection = selection.cleared() },
-            targetModifier = Modifier
-                .tutorialAnchor(screenState, TutorialAnchor.TargetDateButton),
-            dueModifier = Modifier
-                .tutorialAnchor(screenState, TutorialAnchor.DueDateButton)
+            onClearDate = { screenState.addRowSelection = selection.cleared() }
         )
     }
     DateKindCaption(said = said, animated = screenState.animationsEnabled)
@@ -731,7 +695,6 @@ private fun LazyItemScope.ActiveListRow(
     position: Int,
     rowIds: List<String>,
     dropIn: Boolean,
-    firstRow: Boolean,
     listState: LazyListState,
     session: DragSession,
     edgeScroll: EdgeScroll,
@@ -783,10 +746,7 @@ private fun LazyItemScope.ActiveListRow(
                             onReorder(reorder.orderedIds)
                         }
                     }
-                )
-                .then(rowAnchor(screenState, firstRow, TutorialAnchor.FirstListRow))
-                .then(rowAnchor(screenState, firstRow, TutorialAnchor.DeleteListButton)),
-            staged = if (firstRow) ({ screenState.demoPull.takeIf { it != NOT_PULLED } }) else null,
+                ),
             tearing = deletion.tearing(summary.list.id),
             onTorn = { onTorn(summary.list.id) },
             onRenameRequested = { screenState.rename = RenameState.of(summary.list) },
@@ -800,22 +760,6 @@ private fun LazyItemScope.ActiveListRow(
 private inline fun LazyListState.holdPage(change: () -> Unit) {
     requestScrollToItem(firstVisibleItemIndex, firstVisibleItemScrollOffset)
     change()
-}
-
-/**
- * The tutorial only ever points at the top of the page, so only the first row
- * registers bounds — every other row would overwrite them. By the last scene the
- * demo list is finished, so that row can be below the divider.
- */
-@Composable
-private fun rowAnchor(
-    screenState: TodoListsScreenState,
-    firstRow: Boolean,
-    anchor: TutorialAnchor
-): Modifier = if (firstRow) {
-    Modifier.tutorialAnchor(screenState, anchor)
-} else {
-    Modifier
 }
 
 /**

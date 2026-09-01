@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -37,18 +36,14 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import fr.mandarine.todolist.domain.AnimationEvent
-import fr.mandarine.todolist.domain.TutorialAnchor
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
-import fr.mandarine.todolist.presentation.TutorialBounds
-import fr.mandarine.todolist.presentation.TutorialPace
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.ReminderNote
 import fr.mandarine.todolist.ui.paper.ReminderSlip
 import fr.mandarine.todolist.ui.paper.rememberReminderNotes
-import fr.mandarine.todolist.ui.todolist.ItemsStage
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.todolists.DateSelection
@@ -75,10 +70,7 @@ fun PageStack(
     stage: NavStage,
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
-    aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
-    pace: TutorialPace,
-    onDueDateSet: () -> Unit,
-    onReplayTutorial: () -> Unit
+    onDueDateSet: () -> Unit
 ) {
     val listsState by listsViewModel.state.collectAsStateWithLifecycle()
     /**
@@ -113,8 +105,7 @@ fun PageStack(
                             screenState = listsScreenState,
                             stage = stage,
                             today = today,
-                            onDueDateSet = written,
-                            onReplayTutorial = onReplayTutorial
+                            onDueDateSet = written
                         )
                     }
                 }
@@ -127,8 +118,6 @@ fun PageStack(
                             stage = stage,
                             today = today,
                             itemsViewModelFactory = itemsViewModelFactory,
-                            aim = aim,
-                            pace = pace,
                             onDueDateSet = written
                         )
                     }
@@ -200,11 +189,9 @@ private fun ListsPage(
     screenState: TodoListsScreenState,
     stage: NavStage,
     today: LocalDate,
-    onDueDateSet: (ReminderNote) -> Unit,
-    onReplayTutorial: () -> Unit
+    onDueDateSet: (ReminderNote) -> Unit
 ) {
     screenState.animationsEnabled = stage.animationsEnabled
-    screenState.recordingAnchors = stage.recordingAnchors
 
     LaunchedEffect(viewModel) { viewModel.refresh() }
 
@@ -224,8 +211,7 @@ private fun ListsPage(
         onReorder = { orderedActiveIds ->
             screenState.previewOrder = null
             viewModel.reorderLists(orderedActiveIds)
-        },
-        onReplayTutorial = onReplayTutorial
+        }
     )
 }
 
@@ -237,8 +223,6 @@ private fun ItemsPage(
     stage: NavStage,
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
-    aim: (TutorialAnchor, TutorialBounds?) -> TutorialBounds?,
-    pace: TutorialPace,
     onDueDateSet: (ReminderNote) -> Unit
 ) {
     val viewModel: TodoListViewModel =
@@ -246,16 +230,7 @@ private fun ItemsPage(
     val screenState = rememberSaveable(listId, saver = TodoListScreenState.Saver) {
         TodoListScreenState()
     }
-    val itemsStage = remember(viewModel, screenState) {
-        ItemsStage(viewModel, screenState, aim, pace) { stage.leave() }
-    }
     screenState.animationsEnabled = stage.animationsEnabled
-    screenState.recordingAnchors = stage.recordingAnchors
-
-    DisposableEffect(itemsStage) {
-        stage.attach(itemsStage)
-        onDispose { stage.detach(itemsStage) }
-    }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val summary = remember(listsState, listId) { summaryOf(listsState, listId) }
