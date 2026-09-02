@@ -90,7 +90,7 @@ private fun SheetLine(content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(LocalPagePitch.current)
+            .height(maxOf(LocalPagePitch.current, PaperDimens.touchTarget))
             .drawBehind {
                 val thickness = PaperDimens.rule.toPx()
                 drawRect(

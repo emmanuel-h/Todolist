@@ -3,6 +3,7 @@ package fr.mandarine.todolist.ui.paper
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.text.rememberTextMeasurer
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -15,7 +16,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Above scale 1.05 the platform stops converting `sp` linearly and compresses the
- * larger sizes hardest, so one `56.sp` leading resolves taller under a 14sp hand
+ * larger sizes hardest, so one `28.sp` leading resolves taller under a 14sp hand
  * than under a 20sp one. The page has to stay ruled at the writing hand while
  * every other hand is held to that same line.
  */
@@ -26,6 +27,11 @@ class RuledHandTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @After
+    fun restoreFontScale() {
+        RuntimeEnvironment.setFontScale(1f)
+    }
 
     @Test
     fun `should write the smallest hand on the tallest line when the font scale bends`() {

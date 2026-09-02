@@ -47,7 +47,7 @@ fun ListDatePickerDialog(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(LocalPagePitch.current)
+                .height(maxOf(LocalPagePitch.current, PaperDimens.touchTarget))
                 .drawBehind {
                     drawLine(
                         color = rule,

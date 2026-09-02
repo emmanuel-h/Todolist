@@ -30,6 +30,7 @@ import fr.mandarine.todolist.ui.paper.formatLocale
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.circledInInk
 import fr.mandarine.todolist.ui.paper.inked
+import fr.mandarine.todolist.ui.paper.pressableBelowTheRule
 import fr.mandarine.todolist.ui.paper.seatOnRule
 import java.util.Locale
 
@@ -194,6 +195,7 @@ private fun RowScope.WrittenDate(
         modifier = modifier
             .align(Alignment.Bottom)
             .height(LocalPagePitch.current)
+            .pressableBelowTheRule(onRule = true)
             .clickable(onClickLabel = pressing, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = spoken }
             .padding(start = DATE_GAP)

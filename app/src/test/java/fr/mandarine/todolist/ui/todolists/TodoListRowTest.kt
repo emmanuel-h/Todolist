@@ -36,6 +36,7 @@ import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,6 +50,11 @@ class TodoListRowTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @After
+    fun restoreFontScale() {
+        RuntimeEnvironment.setFontScale(1f)
+    }
 
     private var opened = 0
     private var deleteRequested = 0
@@ -383,7 +389,7 @@ class TodoListRowTest {
             }
         }
 
-        assertEquals(pitch, composeRule.onNodeWithTag(ROW).fetchSemanticsNode().size.height)
+        assertEquals(pitch * 2, composeRule.onNodeWithTag(ROW).fetchSemanticsNode().size.height)
         assertEquals(baselineOf("Groceries"), baselineOf(jotted(DATE)), ONE_PIXEL)
         assertEquals(baselineOf("Groceries"), baselineOf("4"), ONE_PIXEL)
     }

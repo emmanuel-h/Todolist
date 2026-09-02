@@ -52,7 +52,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.collectLatest
 
 private const val PITCH_SAMPLE = "Ag"
-private val TOUCH_FLOOR = 48.dp
 private val HEAD_RULE_GAP = 3.dp
 private const val THINNEST_RULE = 1f
 private const val SMALLEST_PITCH = 1f
@@ -70,7 +69,7 @@ private const val NO_KEYBOARD = 0
 private const val FULL_SHADE = 1f
 private const val SEAM_LABEL = "keyboardSeam"
 
-val LocalPagePitch = staticCompositionLocalOf { 56.dp }
+val LocalPagePitch = staticCompositionLocalOf { 28.dp }
 
 /**
  * The pitch is the line the hand actually writes on, so it is measured rather
@@ -84,7 +83,7 @@ fun pagePitch(style: TextStyle = PaperType.itemLine): Dp {
     val resolved = remember(measurer, style) {
         measurer.measure(PITCH_SAMPLE, style).size.height
     }
-    return with(LocalDensity.current) { maxOf(resolved.toDp(), TOUCH_FLOOR) }
+    return with(LocalDensity.current) { resolved.toDp() }
 }
 
 @Composable
@@ -321,12 +320,12 @@ internal fun nearestRuleShift(
     return first + lines * pitchPx - seat
 }
 
-fun Modifier.pitchHeight(pitch: Dp): Modifier = layout { measurable, constraints ->
+fun Modifier.pitchHeight(pitch: Dp, extraRules: Int = 0): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
     val step = pitch.roundToPx().coerceAtLeast(1)
     val filled = placeable.height - ROUNDING_SLACK
     val lines = ceil(filled / step).toInt().coerceAtLeast(1)
-    val height = (lines * step).coerceIn(constraints.minHeight, constraints.maxHeight)
+    val height = ((lines + extraRules) * step).coerceIn(constraints.minHeight, constraints.maxHeight)
     layout(placeable.width, height) { placeable.place(0, 0) }
 }
 

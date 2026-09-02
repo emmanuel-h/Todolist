@@ -106,6 +106,7 @@ fun PaperCalendar(
 ) {
     val locale = formatLocale
     val pitch = LocalPagePitch.current
+    val cellHeight = maxOf(pitch, PaperDimens.touchTarget)
     val haptics = rememberPaperHaptics()
     val scope = rememberCoroutineScope()
     val opened = remember(selected, today) { YearMonth.from(selected ?: today) }
@@ -161,7 +162,7 @@ fun PaperCalendar(
                     firstMonth = firstMonth,
                     shown = shown,
                     today = today,
-                    height = band + pitch * WEEK_ROWS,
+                    height = band + cellHeight * WEEK_ROWS,
                     onChooseYear = { year ->
                         yearsOpen = false
                         val page = pageOf(firstMonth, shown.withYear(year))
@@ -173,7 +174,7 @@ fun PaperCalendar(
                     WeekdayInitials(initials = initials, band = band)
                     HorizontalPager(
                         state = pager,
-                        modifier = Modifier.height(pitch * WEEK_ROWS)
+                        modifier = Modifier.height(cellHeight * WEEK_ROWS)
                     ) { page ->
                         MonthGrid(
                             month = firstMonth.plusMonths(page.toLong()),
@@ -183,6 +184,7 @@ fun PaperCalendar(
                             spokenDay = spokenDay,
                             ring = ring,
                             glyph = glyph,
+                            cellHeight = cellHeight,
                             animated = animated,
                             onChoose = choose
                         )
@@ -215,7 +217,7 @@ private fun CalendarHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(LocalPagePitch.current)
+            .height(maxOf(LocalPagePitch.current, PaperDimens.touchTarget))
             .ruleUnder(palette.rule),
         verticalAlignment = Alignment.Top
     ) {
@@ -229,7 +231,7 @@ private fun CalendarHeader(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(LocalPagePitch.current)
+                .height(maxOf(LocalPagePitch.current, PaperDimens.touchTarget))
                 .clickable(
                     onClickLabel = stringResource(
                         if (yearsOpen) R.string.choose_month else R.string.choose_year
@@ -327,11 +329,11 @@ private fun MonthGrid(
     spokenDay: DateTimeFormatter,
     ring: Dp,
     glyph: Dp,
+    cellHeight: Dp,
     animated: Boolean,
     onChoose: (LocalDate) -> Unit
 ) {
     val palette = LocalPaperPalette.current
-    val pitch = LocalPagePitch.current
     val lead = leadingBlanks(month, firstDayOfWeek)
     val length = month.lengthOfMonth()
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -339,7 +341,7 @@ private fun MonthGrid(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(pitch)
+                    .height(cellHeight)
                     .ruleUnder(palette.rule),
                 verticalAlignment = Alignment.Top
             ) {
@@ -355,6 +357,7 @@ private fun MonthGrid(
                             spoken = remember(date, spokenDay) { date.format(spokenDay) },
                             ring = ring,
                             glyph = glyph,
+                            cellHeight = cellHeight,
                             animated = animated,
                             onChoose = onChoose
                         )
@@ -376,6 +379,7 @@ private fun RowScope.DayCell(
     spoken: String,
     ring: Dp,
     glyph: Dp,
+    cellHeight: Dp,
     animated: Boolean,
     onChoose: (LocalDate) -> Unit
 ) {
@@ -384,7 +388,7 @@ private fun RowScope.DayCell(
     Box(
         modifier = Modifier
             .weight(1f)
-            .height(LocalPagePitch.current)
+            .height(cellHeight)
             .selectable(
                 selected = selected,
                 role = Role.Button,
@@ -430,7 +434,7 @@ private fun YearGrid(
     onChooseYear: (Int) -> Unit
 ) {
     val palette = LocalPaperPalette.current
-    val pitch = LocalPagePitch.current
+    val cellHeight = maxOf(LocalPagePitch.current, PaperDimens.touchTarget)
     val firstYear = firstMonth.year
     val years = YEAR_REACH * 2 + 1
     val state = rememberLazyGridState(
@@ -448,7 +452,7 @@ private fun YearGrid(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(pitch)
+                    .height(cellHeight)
                     .ruleUnder(palette.rule)
                     .selectable(
                         selected = year == shown.year,

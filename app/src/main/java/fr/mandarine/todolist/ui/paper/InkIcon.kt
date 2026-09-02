@@ -88,6 +88,7 @@ fun InkIconButton(
         modifier = modifier
             .width(PaperDimens.iconButton)
             .height(if (onRule) LocalPagePitch.current else PaperDimens.iconButton)
+            .pressableBelowTheRule(onRule)
             .clickable(
                 interactionSource = interactionSource,
                 indication = PaperFocusMark,

@@ -50,7 +50,7 @@ class RuledPageTest {
 
     @Test
     fun `should rule the page at the line height the hand writes on`() {
-        assertEquals(56.dp, pitchesFor(PaperType.itemLine).single())
+        assertEquals(28.dp, pitchesFor(PaperType.itemLine).single())
     }
 
     @Test
@@ -59,11 +59,6 @@ class RuledPageTest {
 
         assertEquals(80.dp, pitches[1])
         assertTrue("expected wider ruling but was ${pitches[1]}", pitches[1] > pitches[0])
-    }
-
-    @Test
-    fun `should never rule tighter than the touch floor`() {
-        assertEquals(48.dp, pitchesFor(PaperType.base.copy(lineHeight = 20.sp)).single())
     }
 
     @Test
@@ -208,7 +203,29 @@ class RuledPageTest {
             PaperTheme { SectionSkip(completedCount = 3, spoken = "3 done", modifier = Modifier.testTag(SKIP)) }
         }
 
-        composeRule.onNodeWithTag(SKIP).assertHeightIsEqualTo(56.dp)
+        composeRule.onNodeWithTag(SKIP).assertHeightIsEqualTo(28.dp)
+    }
+
+    @Test
+    fun `should use two pitches for one content line plus one blank rule`() {
+        composeRule.setContent {
+            PaperTheme {
+                Box(Modifier.testTag(SNAPPED).pitchHeight(28.dp, extraRules = 1).height(28.dp))
+            }
+        }
+
+        composeRule.onNodeWithTag(SNAPPED).assertHeightIsEqualTo(56.dp)
+    }
+
+    @Test
+    fun `should use three pitches for two content lines plus one blank rule`() {
+        composeRule.setContent {
+            PaperTheme {
+                Box(Modifier.testTag(SNAPPED).pitchHeight(28.dp, extraRules = 1).height(56.dp))
+            }
+        }
+
+        composeRule.onNodeWithTag(SNAPPED).assertHeightIsEqualTo(84.dp)
     }
 
     @Test

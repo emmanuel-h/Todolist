@@ -148,7 +148,7 @@ fun UndoSlip(
             modifier = Modifier
                 .padding(SLIP_MARGIN)
                 .width(SLIP_WIDTH)
-                .height(LocalPagePitch.current)
+                .height(maxOf(LocalPagePitch.current, PaperDimens.touchTarget))
                 .clickable(interactionSource = press, indication = PaperFocusMark, onClick = onUndo)
                 .semantics(mergeDescendants = true) {
                     liveRegion = LiveRegionMode.Polite

@@ -1,6 +1,6 @@
 # Device feedback — the tickets, and the order to fix them
 
-**Status: Phases 1, 2.0 and 2.2 done; 2.1 (#68) still open and reordered after 2.2.** Written 2026-09-01. This is a working plan, not
+**Status: Phases 1, 2.0, 2.2 and 2.1 done. Phase 2.4 (#66) next.** Written 2026-09-01. This is a working plan, not
 a feature doc — it is meant to be read after a context clear, so it says where
 the work stands as well as what the work is.
 
@@ -72,7 +72,7 @@ probably wants a home in it. That decision should be made once.
 
 - [x] **Phase 1 — Design pass** — agreed 2026-09-01, drawn below
 - [x] **Phase 2.0 — #75** delete the first-launch tutorial — landed 2026-09-01, [doc](tutorial-removal.md)
-- [ ] **Phase 2.1 — #68** page pitch 56dp → 48dp
+- [x] **Phase 2.1 — #68** the line and the row become two measures — landed 2026-09-02, [doc](line-and-row.md). Not the 48dp the design pass chose: 48dp was built, driven and reverted because it keeps the ratio that is the actual complaint
 - [x] **Phase 2.2 — #72** row controls replace the swipe — landed 2026-09-02, [doc](row-controls.md)
 - [ ] **Phase 2.4 — #66** confirm a delete
 - [ ] **Phase 2.5 — #67 + #69** the two discoverability tickets
@@ -258,19 +258,19 @@ First, because it shrinks every diff after it. See the issue for what must
 survive the deletion — chiefly `DateKindCaption` and the `date_kind_*_caption`
 strings, which the calendar sheet uses on its own.
 
-### 2.1 — #68 page pitch 56dp → 48dp
+### 2.1 — #68 the line and the row become two measures — **done, but not as designed**
 
-**Decided in Phase 1: 48dp**, the touch floor — one constant in `PaperType.base`,
-every row still exactly one rule tall, no change to row measurement. This is the
-conservative half of the fork; 34dp with a decoupled row min-height was the other
-and is still available if 48dp does not answer the complaint on a device. **Drive
-it on the phone before calling it done.**
+The design pass chose 48dp, "the conservative half of a fork", reachable by one constant.
+**It was built, driven on the phone and reverted.** Shrinking the pitch uniformly leaves the
+ratio untouched, and the ratio is the complaint: an item's own two lines were spaced exactly
+like two separate items.
 
-The constraint that must survive: writing still sits on the rules, and it must
-survive the reader's font-scale setting — the `em`-based leading in `RuledHand`
-exists because `sp` leading does not.
+What landed instead splits the one number in two — line pitch 28dp, row = written lines plus
+one blank rule — so an item's lines sit 28dp apart and the next item 56dp away. See
+[line-and-row.md](line-and-row.md) for the font-scale sweep behind 28 and for the touch-target
+trap that comes with a rule smaller than a finger.
 
-Touches `ui/paper/PaperType.kt`.
+It also landed **after** #72 rather than before; see "Why not in the order they were filed".
 
 ### 2.2 — #72 row controls replace the swipe
 

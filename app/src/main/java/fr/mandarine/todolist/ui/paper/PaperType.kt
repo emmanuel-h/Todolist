@@ -47,7 +47,7 @@ object PaperType {
     val base = TextStyle(
         fontFamily = hand,
         letterSpacing = 0.sp,
-        lineHeight = 56.sp,
+        lineHeight = 28.sp,
         platformStyle = PlatformTextStyle(includeFontPadding = false),
         lineHeightStyle = LineHeightStyle(
             alignment = LineHeightStyle.Alignment.Bottom,
@@ -71,7 +71,7 @@ object PaperType {
 
 /**
  * A line height written in `sp` does not survive the platform's non-linear font
- * scale: above scale 1.0 the same `56.sp` resolves to a different box for every
+ * scale: above scale 1.0 the same `28.sp` resolves to a different box for every
  * font size, and the smallest hand ends up the tallest. Each hand therefore takes
  * its leading in `em` of its own resolved size, so every one of them writes a line
  * exactly one pitch tall whatever the reader's font setting.

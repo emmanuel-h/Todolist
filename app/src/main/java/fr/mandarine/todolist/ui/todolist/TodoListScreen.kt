@@ -531,7 +531,7 @@ private fun HeadLine(
 ) {
     val pitch = LocalPagePitch.current
     if (summary == null) {
-        Spacer(Modifier.height(pitch))
+        Spacer(Modifier.height(pitch * 2))
         return
     }
     val style = MaterialTheme.typography.titleLarge
@@ -543,8 +543,7 @@ private fun HeadLine(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .pitchHeight(pitch)
-            .heightIn(min = pitch)
+            .pitchHeight(pitch, extraRules = 1)
             .padding(
                 start = LocalPaperGutter.current + PaperDimens.iconButton,
                 end = PaperDimens.rowEndPadding

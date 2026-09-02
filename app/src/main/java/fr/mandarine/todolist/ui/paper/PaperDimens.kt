@@ -13,6 +13,7 @@ object PaperDimens {
     val rowEndPadding = 4.dp
     val keyboardSeam = 12.dp
 
+    val touchTarget = 48.dp
     val iconButton = 48.dp
     val iconGlyph = 24.dp
     val jotGlyph = 14.dp

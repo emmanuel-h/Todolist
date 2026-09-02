@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -98,6 +99,7 @@ fun InkRing(
         modifier = modifier
             .width(PaperDimens.iconButton)
             .height(LocalPagePitch.current)
+            .pressableBelowTheRule(onRule = true)
             .toggleable(
                 value = checked,
                 interactionSource = remember { MutableInteractionSource() },
@@ -109,8 +111,18 @@ fun InkRing(
                 this.contentDescription = contentDescription
                 this.stateDescription = stateDescription
             },
-        contentAlignment = Alignment.BottomCenter
+        contentAlignment = Alignment.TopCenter
     ) {
+        /**
+         * The ring is written on the row's own rule, and the box around it reaches
+         * past that rule so a finger has something to land on. Seating the ring in
+         * the box rather than on the rule dropped it onto the blank rule below the
+         * writing it belongs to.
+         */
+        Box(
+            modifier = Modifier.height(LocalPagePitch.current).width(PaperDimens.iconButton),
+            contentAlignment = Alignment.BottomCenter
+        ) {
         Spacer(
             modifier = Modifier
                 .size(ringSize)
@@ -137,6 +149,7 @@ fun InkRing(
                     }
                 }
         )
+        }
     }
 }
 
