@@ -18,14 +18,12 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -34,9 +32,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeLeft
-import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import fr.mandarine.todolist.domain.DueDateStatus
@@ -285,10 +280,10 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should carry nothing on an active row but its ring`() {
+    fun `should carry an edit and delete button alongside the ring on an active row`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        assertEquals(listOf(MARK_COMPLETED, DELETE, ADD_ITEM, BACK), descriptions())
+        assertEquals(listOf(MARK_COMPLETED, EDIT, DELETE, ADD_ITEM, BACK), descriptions())
     }
 
     @Test
@@ -599,10 +594,10 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should complete an item when the row is swiped the other way`() {
+    fun `should complete an item when its ring is tapped`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        composeRule.onNodeWithText("Apples").performTouchInput { swipeRight() }
+        composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
         composeRule.waitForIdle()
         inkSettles()
 
@@ -624,16 +619,16 @@ class TodoListScreenTest {
         render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
 
         assertEquals(
-            listOf(MARK_COMPLETED, EDIT, MOVE_DOWN),
+            listOf(MOVE_DOWN),
             verbsOf("Apples").map { it.label }
         )
     }
 
     @Test
-    fun `should offer a completed row the verb that puts it back`() {
+    fun `should offer a completed row no verbs since its buttons carry its acts`() {
         render(content(completed = listOf(completed("1", "Apples"))))
 
-        assertEquals(listOf(MARK_INCOMPLETE, EDIT), verbsOf("Apples").map { it.label })
+        assertEquals(emptyList<String>(), verbsOf("Apples").map { it.label })
     }
 
     @Test
@@ -645,20 +640,21 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should complete an item asked to complete without a gesture`() {
+    fun `should complete an item when its ring is pressed`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        perform("Apples", MARK_COMPLETED)
+        composeRule.onNodeWithContentDescription(MARK_COMPLETED).performClick()
         inkSettles()
 
         assertEquals(listOf("1"), toggled)
     }
 
     @Test
-    fun `should open the editor on an item asked to be edited without a gesture`() {
+    fun `should open the editor on an item when its edit button is pressed`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        perform("Apples", EDIT)
+        composeRule.onNodeWithContentDescription(EDIT).performClick()
+        composeRule.waitForIdle()
 
         assertEquals("1", screenState.editingItemId)
     }
@@ -715,7 +711,7 @@ class TodoListScreenTest {
     }
 
     private fun tearOffApples() {
-        composeRule.onNodeWithText("Apples").performTouchInput { swipeLeft() }
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
         composeRule.waitForIdle()
     }
 

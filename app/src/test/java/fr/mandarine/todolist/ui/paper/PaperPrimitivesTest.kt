@@ -10,7 +10,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -25,14 +24,11 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.moveTo
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import org.junit.Assert.assertEquals
@@ -46,9 +42,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class PaperPrimitivesTest {
-
-    private val PULLED_ROW = "pulled-row"
-    private val PULL_PIXELS = 120f
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -378,31 +371,6 @@ class PaperPrimitivesTest {
             ToggleableState.On,
             node.config.getOrNull(SemanticsProperties.ToggleableState)
         )
-    }
-
-    /**
-     * The paper follows the hand. The gesture firing is not the same thing as the
-     * row moving, and a row that stops following the finger fails nothing else.
-     */
-    @Test
-    fun `should carry a swiped row along with the finger`() {
-        composeRule.setContent {
-            PaperTheme {
-                SwipeRow(key = "1", onDelete = {}, tearLabel = "tear") {
-                    Text("Groceries", modifier = Modifier.testTag(PULLED_ROW))
-                }
-            }
-        }
-        val atRest = composeRule.onNodeWithTag(PULLED_ROW).fetchSemanticsNode().positionInRoot.x
-
-        composeRule.onNodeWithTag(PULLED_ROW).performTouchInput {
-            down(center)
-            moveTo(center + Offset(-PULL_PIXELS, 0f))
-        }
-        composeRule.waitForIdle()
-
-        val pulled = composeRule.onNodeWithTag(PULLED_ROW).fetchSemanticsNode().positionInRoot.x
-        assertTrue("rested at $atRest, pulled to $pulled", pulled < atRest)
     }
 
     @Test

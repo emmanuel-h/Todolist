@@ -1,6 +1,6 @@
 # Device feedback — the tickets, and the order to fix them
 
-**Status: Phases 1 and 2.0 done, Phase 2.1 next.** Written 2026-09-01. This is a working plan, not
+**Status: Phases 1, 2.0 and 2.2 done; 2.1 (#68) still open and reordered after 2.2.** Written 2026-09-01. This is a working plan, not
 a feature doc — it is meant to be read after a context clear, so it says where
 the work stands as well as what the work is.
 
@@ -43,8 +43,14 @@ are each a version of the same question — *where on the row does this act live
 which cannot be answered until #72 is. Fixing them in filed order redraws the row
 four times.
 
-**#68 comes before #72** because it settles the page pitch, and every later row
-measurement is taken from it.
+**#68 was to come before #72** because it settles the page pitch, and every later
+row measurement is taken from it. **That turned out to be backwards and the two
+were swapped on 2026-09-02.** Two findings from driving 48dp on the phone: the
+complaint is not the size of the gap but that an item's own two lines are spaced
+*exactly* like two separate items, so shrinking the pitch uniformly cannot answer
+it — the leading has to come off the row spacing; and the thing making row heights
+hard to reason about was `SwipeRow` + `CornerMark`, which #72 deletes. The pitch is
+easier to settle on a row that is only `ring · title · [pencil] [bin]`.
 
 **#75 goes first, and it deletes #70.** The tour existed because every act on a
 row was a gesture that had to be demonstrated. Once #72 puts real controls on the
@@ -67,7 +73,7 @@ probably wants a home in it. That decision should be made once.
 - [x] **Phase 1 — Design pass** — agreed 2026-09-01, drawn below
 - [x] **Phase 2.0 — #75** delete the first-launch tutorial — landed 2026-09-01, [doc](tutorial-removal.md)
 - [ ] **Phase 2.1 — #68** page pitch 56dp → 48dp
-- [ ] **Phase 2.2 — #72** row controls replace the swipe
+- [x] **Phase 2.2 — #72** row controls replace the swipe — landed 2026-09-02, [doc](row-controls.md)
 - [ ] **Phase 2.4 — #66** confirm a delete
 - [ ] **Phase 2.5 — #67 + #69** the two discoverability tickets
 - [ ] **Phase 3 — #73** launcher icon *(unblocked from the start)*

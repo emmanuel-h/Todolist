@@ -1,14 +1,13 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
@@ -17,14 +16,14 @@ import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.listmeta.DateJot
 import fr.mandarine.todolist.ui.listmeta.OpenCount
 import fr.mandarine.todolist.ui.nav.travellingName
+import fr.mandarine.todolist.ui.paper.GlyphFoot
+import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkBudget
+import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.RowVerb
 import fr.mandarine.todolist.ui.paper.RuledRow
-import fr.mandarine.todolist.ui.paper.SwipeMark
-import fr.mandarine.todolist.ui.paper.SwipeReveal
-import fr.mandarine.todolist.ui.paper.SwipeRow
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -35,7 +34,6 @@ import fr.mandarine.todolist.ui.paper.spokenVerbs
 import fr.mandarine.todolist.ui.paper.tearOff
 
 private val NAME_END_GAP = 8.dp
-private val CORNER_ROOM = 52.dp
 
 @Composable
 fun TodoListRow(
@@ -51,30 +49,37 @@ fun TodoListRow(
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null
 ) {
-    /**
-     * Delete is not spoken here any more: the row carries a tear tab that says so
-     * out loud and can be pressed. Naming it twice on the one row gave a screen
-     * reader the same verb from two places.
-     */
+    val palette = LocalPaperPalette.current
     val verbs = rowVerbs(
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
-    SwipeRow(
-        key = summary.list.id,
-        onDelete = onDeleteRequested,
-        reveal = onRenameRequested?.let {
-            SwipeReveal(SwipeMark.Pencil, stringResource(R.string.edit_list), it)
-        },
-        tearLabel = stringResource(R.string.delete_list),
-        animated = animated,
-        modifier = modifier.tearOff(tearing, animated, onTorn)
+    RuledRow(
+        modifier = modifier.tearOff(tearing, animated, onTorn).spokenVerbs(verbs),
+        onClick = onOpen
     ) {
-        RuledRow(modifier = Modifier.spokenVerbs(verbs), onClick = onOpen) {
-            RowName(summary = summary, animated = animated)
-            Marginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
-            Spacer(Modifier.width(CORNER_ROOM))
+        RowName(summary = summary, animated = animated)
+        Marginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
+        if (onRenameRequested != null) {
+            InkIconButton(
+                painter = painterResource(R.drawable.ic_edit),
+                contentDescription = stringResource(R.string.edit_list),
+                onClick = onRenameRequested,
+                tint = palette.inked(InkTone.Margin),
+                pressedTint = palette.inked(InkTone.Words),
+                seat = IconSeat.OnRule,
+                foot = GlyphFoot.pencil
+            )
         }
+        InkIconButton(
+            painter = painterResource(R.drawable.ic_delete),
+            contentDescription = stringResource(R.string.delete_list),
+            onClick = onDeleteRequested,
+            tint = palette.inked(InkTone.Margin),
+            pressedTint = palette.inked(InkTone.Words),
+            seat = IconSeat.OnRule,
+            foot = GlyphFoot.trash
+        )
     }
 }
 

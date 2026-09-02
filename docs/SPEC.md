@@ -149,11 +149,11 @@ the corner is the only affordance.
 ```
 ┌─────────────────────────────────┐
 │  To do list                     │   ← masthead, and nothing opposite it
-│  ○  Groceries          3  ──── │
-│  ○  Work tasks   ⏰ 4 Mar  1 ── │
-│  ○  Weekend      📅 6 May  ──── │
+│  ○  Groceries      3 [✎] [🗑]  │
+│  ○  Work tasks ⏰ 4 Mar 1 [✎][🗑]│
+│  ○  Weekend    📅 6 May  [✎][🗑]│
 │  ──── 2 ──────────────────────  │   ← tally rule, done below
-│  ○  ~~Holiday~~           ────  │
+│  ○  ~~Holiday~~      [✎] [🗑]  │
 │                          ▤      │
 └─────────────────────────────────┘
 ```
@@ -171,7 +171,7 @@ the corner is the only affordance.
 - Tap anywhere on a list row → navigates to Screen 2 for that list
 
 **Edit a list name** — _implemented · [#4](https://github.com/emmanuel-h/Todolist/issues/4)_
-- Swipe a row start→end → the edit sheet opens, pre-filled with the current name and the list's date marks
+- Press the row's pencil → the edit sheet opens, pre-filled with the current name and the list's date marks
 - Dismissing the sheet **commits** what is on it; there is no confirm row. A blank name is refused and leaves the original unchanged
 - The name updates immediately; items and position are unaffected
 
@@ -200,8 +200,8 @@ the corner is the only affordance.
 - The due date means "finish BEFORE/BY that day" (a hard deadline); overdue status is signalled by tint only; it does not affect list sort order
 - The due date's jot is marked by the ⏰ glyph; the target date's by 📅. Neither appears on the other's row
 
-**Delete a list** — see the tear tab under **Delete an item**; both pages carry the same mark
-- Swipe a row end→start → the row tears off the page and an undo slip takes its place
+**Delete a list** — see **Delete an item**; both pages carry the same bin
+- Press the row's bin → the row tears off the page and an undo slip takes its place
 - The slip stands for **9 seconds** (`UNDO_SLIP_MILLIS`). Tapping it puts the row back
 - The write happens when the slip expires, when another row is torn off, or when the page
   leaves — whichever comes first. Leaving commits rather than forgetting: the tear was the
@@ -252,27 +252,28 @@ window, and it carries no send glyph.
 ```
 ┌─────────────────────────────────────┐
 │ ←  Groceries                        │
-│  ○  Milk                     ────── │
-│  ○  Bread                    ────── │
-│  ○  Eggs                     ────── │
+│  ○  Milk               [✎] [🗑] ─── │
+│  ○  Bread              [✎] [🗑] ─── │
+│  ○  Eggs               [✎] [🗑] ─── │
 │     …                        ────── │   ← the add line
 │  ──── 2 ──────────────────────────  │   ← tally rule: only when both
-│  ●  ~~Coffee~~               ────── │     sections have rows
-│  ●  ~~Butter~~               ────── │   ← most recent first
+│  ●  ~~Coffee~~         [✎] [🗑] ─── │     sections have rows
+│  ●  ~~Butter~~         [✎] [🗑] ─── │   ← most recent first
 └─────────────────────────────────────┘
 ```
 
 ### Item row
 
-A row carries a completion ring at its **start** and its title. There are no permanent
-buttons; every verb is a gesture, and every gesture is also a TalkBack custom action
-(`ui/paper/RowVerbs.kt`).
+A row carries a completion ring at its **start**, its title, and at its **end** the two
+controls that act on it: a pencil and a bin, drawn on the rule the row is written on
+(`ui/paper/InkIcon.kt`'s `InkIconButton` at `IconSeat.OnRule`). Reordering is still a
+gesture and so is still also a TalkBack custom action (`ui/paper/RowVerbs.kt`).
 
 | Gesture | Active item | Completed item |
 |---------|-------------|----------------|
 | Tap the ring | Marks it done — the tick draws over 440ms, then the row crosses the divider | Restores it to the bottom of the active section |
-| Tap the title | Opens an editor in place on the row | Opens an editor in place on the row |
-| Swipe end→start | Tears the row off behind a 9-second undo slip | Same |
+| Tap the title, or press the pencil | Opens an editor in place on the row | Opens an editor in place on the row |
+| Press the bin | Tears the row off behind a 9-second undo slip | Same |
 | Long-press and drag | Reorders within the active section | Not reorderable |
 
 The ring carries `Role.Checkbox` for a screen reader. The pen strike plus a dimmed tone is
@@ -306,22 +307,15 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Losing focus commits; a blank title is refused
 - Completion state and position are preserved
 
-**Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2) · [#42](https://github.com/emmanuel-h/Todolist/issues/42)_
-- **A resting row wears its two marks and an arrow beside each** ([#42](https://github.com/emmanuel-h/Todolist/issues/42)): at the end the trash, at the start what pulling that way uncovers — the pen on a list, the tick on an item — each with a chevron pointing the way the row is pulled to reach it. Pressing a mark does what pulling it home does
-- **Pulled, the row curls at its leading corner.** A resting row is not a sheet — it is writing on a page, and a page has no corner there to curl, which is why a curl drawn on a resting row reads as a mark nobody can place. Pulled, the row *is* a sheet, sliding over the page with an edge of its own: its corner lifts off the line the row is written on and rolls back into the page, leaving a crescent of the sheet's own back — lit along its free edge, in shade at the crease, throwing a shadow on the writing behind it. It opens the further the row is pulled, and the arrow fades out as it does, because by then the reader is already pulling
+**Delete an item** — _implemented · [#2](https://github.com/emmanuel-h/Todolist/issues/2) · [#72](https://github.com/emmanuel-h/Todolist/issues/72)_
 
-
-**A swipe is answered in the direction it was taken, or not at all.** Two separate rules:
-
-- **Which** action it is comes from the furthest the row was ever pulled during the one gesture, so a finger flicking back a hair as it lifts can never turn a tear into an edit. Reading the row's position at that instant used to let exactly that happen
-- **Whether** it happens at all comes from where the row is when the finger goes: still held far enough over to have its mark drawn whole, or thrown that way from far enough to have meant it. Easing the row back towards home calls the swipe off, from anywhere — the reader should not have to drag it all the way past the middle to be let off
-- **Pressing a corner does what pulling it home does**, so the gesture is an invitation rather than the only way in. The tear-off animation and the undo slip are the ones already there
-- Neither tearing nor editing is spoken about a list row any more. Both are marks on it, named once each, where they can also be pressed. An item's start corner is not named at all: the ring beside it already offers that action and is already named
-- A short-lived tear *tab* in the end margin did this job first; the corners replaced it, and do the same for the edit gesture that the tab never covered
-- Swipe end→start → the row tears off and an undo slip stands in its place for 9 seconds
+- **A row wears its two controls at rest** ([#72](https://github.com/emmanuel-h/Todolist/issues/72)): a pencil and a bin, at the row's end, on the rule it is written on. They are drawn at full ink in `InkTone.Margin`; pressed, they take `InkTone.Words`, raise the `PaperFocusMark` the title already uses, and buzz `PaperHaptics.pickUp()`
+- **The swipe is gone.** Every act on a row was a horizontal drag, hinted at by a mark and a chevron at each end drawn at 0.6 ink. On a list of nine rows that was eighteen faint half-glyphs that read as smudges rather than as controls, and three iterations on the hint never made the gesture findable. `SwipeRow.kt` and `CornerMark.kt` are deleted; there is one way to do each thing and it is visible
+- Press the bin → the row tears off and an undo slip stands in its place for 9 seconds
 - Same rules as a list: tapping the slip restores it, and the write lands when the slip
   expires, when another row is torn off, or when the page leaves — on a scope that outlives
   the page, so walking back out mid-slip still lands it
+- The tear-off animation survives the gesture that used to start it: a confirmed delete still tears the row off the page
 
 **Reorder active items** — _implemented · [#5](https://github.com/emmanuel-h/Todolist/issues/5)_
 - Long-press-and-drag an active row to reorder within the active section
@@ -454,11 +448,12 @@ Do not cut a Play Store release in that window.
 
 ## Shipped since this section was last written
 
-**Gesture-driven rows** — _implemented · [#33](https://github.com/emmanuel-h/Todolist/issues/33)_
+**Gesture-driven rows** — _superseded by [#72](https://github.com/emmanuel-h/Todolist/issues/72): the swipes are buttons now_
 - Rows show only the completion ring and the title (plus dates and counts on list rows).
-- Swipe end→start tears the row off behind an undo slip; long-press drags. On the page of
-  lists, swipe start→end opens the edit sheet; on the page of items the title is tapped
-  instead, which is where that gesture went.
+- Swipe end→start tore the row off behind an undo slip; long-press drags. On the page of
+  lists, swipe start→end opened the edit sheet; on the page of items the title is tapped
+  instead, which is where that gesture went. Only the long-press drag and the title tap
+  survive — see **Item row**.
 - Every gesture is also a TalkBack custom action (`RowVerbs.spokenVerbs`), including
   `Move up` / `Move down`, which are the screen-reader route to a reorder.
 

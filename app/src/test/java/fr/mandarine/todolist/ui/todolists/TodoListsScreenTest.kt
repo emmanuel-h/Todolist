@@ -15,14 +15,12 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasAnySibling
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeLeft
-import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -459,18 +457,17 @@ class TodoListsScreenTest {
     fun `should still open the list when the row carrying a jot is tapped elsewhere`() {
         render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
 
-        composeRule.onNodeWithText("Groceries").performClick()
+        composeRule.onNodeWithText("Groceries", useUnmergedTree = true).performClick()
 
         assertEquals(listOf("Groceries"), opened)
         assertNull(screenState.datePickerRequest)
     }
 
     @Test
-    fun `should still uncover the edit surface of a row carrying a jot`() {
+    fun `should still uncover the edit surface of a row carrying a jot when its edit button is pressed`() {
         render(content(active = listOf(summary("1", "Groceries", dueDate = DATE))))
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
-        composeRule.waitForIdle()
+        editCorner("Groceries")
 
         assertEquals(RenameState.of(TodoList("1", "Groceries", dueDate = DATE)), screenState.rename)
         assertNull(screenState.datePickerRequest)
@@ -479,22 +476,20 @@ class TodoListsScreenTest {
     // ── Rename ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `should open the edit surface when a list row is swiped start to end`() {
+    fun `should open the edit surface when a list row's edit button is pressed`() {
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
-        composeRule.waitForIdle()
+        editCorner("Groceries")
 
         assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].assertIsDisplayed()
     }
 
     @Test
-    fun `should open the edit surface of a finished list swiped start to end`() {
+    fun `should open the edit surface of a finished list when its edit button is pressed`() {
         render(content(done = listOf(summary("1", "Groceries", allDone = true))))
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
-        composeRule.waitForIdle()
+        editCorner("Groceries")
 
         assertEquals(RenameState.of(TodoList("1", "Groceries")), screenState.rename)
     }
@@ -698,20 +693,14 @@ class TodoListsScreenTest {
      */
     private fun tear(text: String) {
         composeRule
-            .onNode(
-                hasContentDescription(DELETE_LIST) and hasAnySibling(hasAnyDescendant(hasText(text))),
-                useUnmergedTree = true
-            )
+            .onNode(hasContentDescription(DELETE_LIST) and hasAnyAncestor(hasText(text)))
             .performClick()
         composeRule.waitForIdle()
     }
 
     private fun editCorner(text: String) {
         composeRule
-            .onNode(
-                hasContentDescription(EDIT_NAME) and hasAnySibling(hasAnyDescendant(hasText(text))),
-                useUnmergedTree = true
-            )
+            .onNode(hasContentDescription(EDIT_NAME) and hasAnyAncestor(hasText(text)))
             .performClick()
         composeRule.waitForIdle()
     }
@@ -1033,8 +1022,7 @@ class TodoListsScreenTest {
     }
 
     private fun tearOffGroceries() {
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeLeft() }
-        composeRule.waitForIdle()
+        tear("Groceries")
     }
 
     private fun slipSettles() {

@@ -9,9 +9,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,32 +23,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import fr.mandarine.todolist.ui.paper.PaperFocusMark
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.ui.paper.GlyphFoot
+import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkBudget
+import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkRing
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.OnRuleSlot
+import fr.mandarine.todolist.ui.paper.PaperFocusMark
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.RowVerb
 import fr.mandarine.todolist.ui.paper.RuledRow
-import fr.mandarine.todolist.ui.paper.SwipeMark
-import fr.mandarine.todolist.ui.paper.SwipeReveal
-import fr.mandarine.todolist.ui.paper.SwipeRow
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -62,8 +60,6 @@ import fr.mandarine.todolist.ui.paper.tearOff
 import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 private const val ROW_BODY_LABEL = "rowBody"
-
-private val CORNER_ROOM = 52.dp
 
 @Composable
 fun TodoRow(
@@ -82,51 +78,52 @@ fun TodoRow(
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null
 ) {
+    val palette = LocalPaperPalette.current
     val verbs = rowVerbs(
-        RowVerb(
-            stringResource(
-                if (checked) R.string.item_mark_incomplete else R.string.item_mark_completed
-            ),
-            onToggle
-        ),
-        RowVerb(stringResource(R.string.item_edit), onEditRequested),
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
-    SwipeRow(
-        key = item.id,
-        onDelete = onDeleteRequested,
-        reveal = SwipeReveal(SwipeMark.Check, null, onToggle),
-        tearLabel = stringResource(R.string.item_delete),
-        enabled = !editing,
-        animated = animated,
-        modifier = modifier.tearOff(tearing, animated, onTorn)
-    ) {
-        RuledRow {
-            InkRing(
-                checked = checked,
-                onToggle = onToggle,
-                seed = item.id.hashCode(),
-                contentDescription = stringResource(
-                    if (checked) R.string.item_mark_incomplete else R.string.item_mark_completed
-                ),
-                stateDescription = stringResource(
-                    if (checked) R.string.item_state_completed else R.string.item_state_active
-                ),
-                animated = animated
-            )
-            RowBody(
-                item = item,
-                checked = checked,
-                editing = editing,
-                animated = animated,
-                verbs = verbs,
-                onEditRequested = onEditRequested,
-                onEditCommitted = onEditCommitted,
-                onEditDismissed = onEditDismissed
-            )
-            Spacer(Modifier.width(CORNER_ROOM))
-        }
+    RuledRow(modifier = modifier.tearOff(tearing, animated, onTorn)) {
+        InkRing(
+            checked = checked,
+            onToggle = onToggle,
+            seed = item.id.hashCode(),
+            contentDescription = stringResource(
+                if (checked) R.string.item_mark_incomplete else R.string.item_mark_completed
+            ),
+            stateDescription = stringResource(
+                if (checked) R.string.item_state_completed else R.string.item_state_active
+            ),
+            animated = animated
+        )
+        RowBody(
+            item = item,
+            checked = checked,
+            editing = editing,
+            animated = animated,
+            verbs = verbs,
+            onEditRequested = onEditRequested,
+            onEditCommitted = onEditCommitted,
+            onEditDismissed = onEditDismissed
+        )
+        InkIconButton(
+            painter = painterResource(R.drawable.ic_edit),
+            contentDescription = stringResource(R.string.item_edit),
+            onClick = onEditRequested,
+            tint = palette.inked(InkTone.Margin),
+            pressedTint = palette.inked(InkTone.Words),
+            seat = IconSeat.OnRule,
+            foot = GlyphFoot.pencil
+        )
+        InkIconButton(
+            painter = painterResource(R.drawable.ic_delete),
+            contentDescription = stringResource(R.string.item_delete),
+            onClick = onDeleteRequested,
+            tint = palette.inked(InkTone.Margin),
+            pressedTint = palette.inked(InkTone.Words),
+            seat = IconSeat.OnRule,
+            foot = GlyphFoot.trash
+        )
     }
 }
 

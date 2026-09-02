@@ -19,9 +19,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeLeft
-import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.semantics.SemanticsActions
@@ -100,17 +97,17 @@ class TodoListRowTest {
     fun `should still open the list when the row is tapped beside its jot`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        composeRule.onNodeWithText("Groceries").performClick()
+        composeRule.onNodeWithText("Groceries", useUnmergedTree = true).performClick()
 
         assertEquals(1, opened)
         assertEquals(emptyList<DateSelection>(), rewritten)
     }
 
     @Test
-    fun `should still uncover the edit surface when a row carrying a jot is swiped`() {
+    fun `should still uncover the edit surface when a row carrying a jot has its edit button pressed`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.onNodeWithContentDescription(EDIT_NAME).performClick()
         composeRule.waitForIdle()
 
         assertEquals(1, renameRequested)
@@ -257,20 +254,20 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should ask to tear the list off when the row is swiped away`() {
+    fun `should ask to tear the list off when its delete button is pressed`() {
         render(summary())
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeLeft() }
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
         composeRule.waitForIdle()
 
         assertEquals(1, deleteRequested)
     }
 
     @Test
-    fun `should ask to edit the list when the row is swiped the other way`() {
+    fun `should ask to edit the list when its edit button is pressed`() {
         render(summary())
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.onNodeWithContentDescription(EDIT_NAME).performClick()
         composeRule.waitForIdle()
 
         assertEquals(1, renameRequested)
@@ -279,25 +276,22 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should bring the row home once the edit surface is asked for`() {
+    fun `should leave the row in place when its edit button is pressed`() {
         render(summary())
         val resting = nameX()
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
+        composeRule.onNodeWithContentDescription(EDIT_NAME).performClick()
         composeRule.waitForIdle()
 
         assertEquals(resting, nameX(), 0.5f)
     }
 
     @Test
-    fun `should leave a list alone when it offers no edit surface and is swiped that way`() {
+    fun `should not show an edit button when the row offers no edit surface`() {
         render(summary(), editable = false)
 
-        composeRule.onNodeWithText("Groceries").performTouchInput { swipeRight() }
-        composeRule.waitForIdle()
-
+        composeRule.onNodeWithContentDescription(EDIT_NAME).assertDoesNotExist()
         assertEquals(0, renameRequested)
-        assertEquals(0, deleteRequested)
     }
 
     @Test

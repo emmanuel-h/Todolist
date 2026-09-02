@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -67,8 +68,10 @@ fun InkIconButton(
     tint: Color = LocalPaperPalette.current.inkSoft,
     enabled: Boolean = true,
     seat: IconSeat = IconSeat.Centred,
-    foot: Float = GlyphFoot.arrow
+    foot: Float = GlyphFoot.arrow,
+    pressedTint: Color? = null
 ) {
+    val haptics = rememberPaperHaptics()
     val onRule = seat == IconSeat.OnRule
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -77,6 +80,10 @@ fun InkIconButton(
         animationSpec = PaperMotion.pickUp,
         label = NIB_LABEL
     )
+    LaunchedEffect(pressed) {
+        if (pressed && pressedTint != null) haptics.pickUp()
+    }
+    val effectiveTint = if (pressed && pressedTint != null) pressedTint else tint
     Box(
         modifier = modifier
             .width(PaperDimens.iconButton)
@@ -86,6 +93,7 @@ fun InkIconButton(
                 indication = PaperFocusMark,
                 enabled = enabled,
                 role = Role.Button,
+                onClickLabel = contentDescription,
                 onClick = onClick
             ),
         contentAlignment = if (onRule) Alignment.TopCenter else Alignment.Center
@@ -98,7 +106,7 @@ fun InkIconButton(
                 scaleX = squash
                 scaleY = squash
             },
-            tint = if (enabled) tint else tint.copy(alpha = DISABLED_TINT_ALPHA)
+            tint = if (enabled) effectiveTint else tint.copy(alpha = DISABLED_TINT_ALPHA)
         )
     }
 }
