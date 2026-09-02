@@ -1,10 +1,12 @@
 package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -20,6 +22,7 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -229,6 +232,42 @@ class RuledPageTest {
     }
 
     @Test
+    fun `should hold the row to two pitches when a rule-seated control fills the touch floor`() {
+        composeRule.setContent {
+            PaperTheme {
+                RuledRow(modifier = Modifier.testTag(ROW)) {
+                    Box(
+                        Modifier
+                            .width(PaperDimens.iconButton)
+                            .height(LocalPagePitch.current)
+                            .pressableBelowTheRule(onRule = true)
+                            .clickable { }
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(ROW).assertHeightIsEqualTo(56.dp)
+    }
+
+    @Test
+    fun `should expand a rule-seated button to at least the touch floor`() {
+        composeRule.setContent {
+            PaperTheme {
+                Box(
+                    Modifier
+                        .width(PaperDimens.iconButton)
+                        .pressableBelowTheRule(onRule = true)
+                        .clickable { }
+                        .testTag(BUTTON)
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(BUTTON).assertHeightIsAtLeast(PaperDimens.touchTarget)
+    }
+
+    @Test
     fun `should press the paper instead of rippling`() {
         val captured = mutableListOf<Any>()
         composeRule.setContent {
@@ -297,6 +336,7 @@ class RuledPageTest {
         const val ROW = "row"
         const val SKIP = "skip"
         const val PAGE = "page"
+        const val BUTTON = "button"
         const val PAGE_WIDTH = 200
         const val PAGE_HEIGHT = 400
         const val GUTTER = 40
