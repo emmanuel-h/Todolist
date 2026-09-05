@@ -54,6 +54,8 @@ fun TodoListRow(
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
+    val hasDate = summary.list.targetDate != null ||
+        (summary.list.dueDate != null && summary.dueDateStatus != null)
     RuledRow(
         modifier = modifier.tearOff(tearing, animated, onTorn).spokenVerbs(verbs),
         onClick = onOpen
@@ -69,6 +71,17 @@ fun TodoListRow(
                 pressedTint = palette.inked(InkTone.Words),
                 seat = IconSeat.OnRule,
                 foot = GlyphFoot.pencil
+            )
+        }
+        if (!hasDate && onRewriteDate != null) {
+            InkIconButton(
+                painter = painterResource(R.drawable.ic_event),
+                contentDescription = stringResource(R.string.give_list_a_day),
+                onClick = { onRewriteDate(DateSelection(DateKind.TARGET, null)) },
+                tint = palette.inked(InkTone.Margin),
+                pressedTint = palette.inked(InkTone.Words),
+                seat = IconSeat.OnRule,
+                foot = GlyphFoot.calendar
             )
         }
         InkIconButton(

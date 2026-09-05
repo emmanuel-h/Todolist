@@ -8,8 +8,11 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -66,6 +69,12 @@ private const val PEN_SETTLE_MILLIS = 250L
  * know is load-bearing before they will press it; nothing on the page said the
  * line could be finished at all, only that it could be abandoned. Back, a tap on
  * the paper or dismissing the keyboard still put the pen down.
+ *
+ * When [marked] is true, a plus mark and the drawn label sit on the rule at rest
+ * so the affordance is visible even on a page full of rows — which is what it was
+ * not: the line was an item inside the list and scrolled off the bottom of a page
+ * that had filled up. The mark stays while writing; the label gives way to what is
+ * being written.
  */
 @Composable
 fun InkAddLine(
@@ -80,7 +89,8 @@ fun InkAddLine(
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     breathing: Boolean = false,
-    animated: Boolean = true
+    animated: Boolean = true,
+    marked: Boolean = false
 ) {
     val palette = LocalPaperPalette.current
     val haptics = rememberPaperHaptics()
@@ -104,8 +114,18 @@ fun InkAddLine(
     }
 
     RuledRow(modifier = modifier, onClick = { focusRequester.requestFocus() }) {
+        if (marked) {
+            AddMark(palette = palette)
+        }
         OnRuleSlot(modifier = Modifier.weight(1f), alignment = Alignment.TopStart) {
-            GhostHint(shown = text.isEmpty(), style = style, ink = hintAlpha)
+            if (marked) {
+                DrawnLabel(shown = !penOnPaper, text = spoken, style = style)
+            }
+            GhostHint(
+                shown = text.isEmpty() && (!marked || penOnPaper),
+                style = style,
+                ink = hintAlpha
+            )
             BasicTextField(
                 value = text,
                 onValueChange = onTextChange,
@@ -138,6 +158,54 @@ fun InkAddLine(
             spoken = commitSpoken,
             onCommit = commit,
             animated = animated
+        )
+    }
+}
+
+/**
+ * The plus mark that anchors the add line on a populated page. It sits in the
+ * same column as the rings in the rows above it, at full ink, so there is always
+ * something at full strength pointing at the affordance. It stays while writing —
+ * only the label beside it gives way.
+ */
+@Composable
+private fun RowScope.AddMark(palette: PaperPalette) {
+    Box(
+        modifier = Modifier
+            .width(PaperDimens.iconButton)
+            .height(LocalPagePitch.current),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        InkIcon(
+            painter = painterResource(R.drawable.ic_add),
+            contentDescription = null,
+            modifier = Modifier.seatGlyphOnRule(GlyphFoot.add),
+            tint = palette.inked(InkTone.Words)
+        )
+    }
+}
+
+/**
+ * The drawn label that names the affordance when the pen is not yet on the paper.
+ * It says in ink what the field says in speech, and both stay: a drawn word is what
+ * `IconOnlyUiTest` guards, and the field keeps its own name because a reader handed
+ * a loose label and an unnamed field beside it cannot tell the one belongs to the
+ * other. The words repeat, which costs a screen reader a moment and saves it the
+ * affordance.
+ */
+@Composable
+private fun DrawnLabel(shown: Boolean, text: String, style: TextStyle) {
+    val palette = LocalPaperPalette.current
+    AnimatedVisibility(
+        visible = shown,
+        enter = fadeIn(PaperMotion.rowEnter),
+        exit = fadeOut(PaperMotion.rowExit)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.seatOnRule(),
+            style = style,
+            color = palette.inked(InkTone.Margin)
         )
     }
 }

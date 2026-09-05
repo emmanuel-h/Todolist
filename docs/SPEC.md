@@ -178,6 +178,7 @@ the corner is the only affordance.
 - The name updates immediately; items and position are unaffected
 
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
+- **A committed row carries a visible route to a day** ([#67](https://github.com/emmanuel-h/Todolist/issues/67)). The date slot on a list row holds *either* the calendar button *or* the date itself: with no date, a `[📅]` button that opens the paper calendar; with a date, the jot, which was already pressable and opens the same calendar. No row ever carries four controls, because a list holds a target date **or** a due date and never both. Before this there was no mark on a committed row saying a list could have a day at all — the only route was the edit sheet, and the reporter could not find it
 - **A ring means a day** ([#36](https://github.com/emmanuel-h/Todolist/issues/36), [#37](https://github.com/emmanuel-h/Todolist/issues/37)). A kind is something a date has, not something chosen before there is one, so with nothing written neither mark is ringed and nothing trails them. `DateSelection.kind` is still non-nullable; it is simply not read while `date` is null.
 - Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**. There is no separate clear mark — the ringed mark is the clear, which is also the only way back to the neutral state
 - The calendar sheet carries the caption for the kind it is asking for, and moving a day across raises the same caption on a slip under the marks for a beat. One pair of words on one slip (`PaperSlipCaption`), wherever the reader meets the distinction
@@ -236,14 +237,23 @@ the corner is the only affordance.
 ┌─────────────────────────────────┐
 │ ←  Groceries                    │   ← head rule, the list's own name
 │  ─────────────────────────────  │
-│     …                           │   ← the add line, hint breathing
-│  ─────────────────────────────  │
 │                                 │
+│  ─────────────────────────────  │
+│  ＋  Add an item                │   ← pinned at the foot of the page
 └─────────────────────────────────┘
 ```
 
-The add line is a row **between the sections**, not a bar pinned to the bottom of the
-window, and it carries no send glyph.
+The add line is **pinned above the bottom inset, always on screen**
+([#69](https://github.com/emmanuel-h/Todolist/issues/69)). It carries a ＋ at full ink and
+the words `Add an item` at margin ink beside it: the mark carries the visibility, the word
+stays faint so it does not read as a row somebody wrote. It was an item *inside* the list
+until 2026-09-05, which meant that on a page long enough to scroll it was not merely faint
+but off-screen — the reporter's own nine-item list only showed the `…` after scrolling.
+
+It is a strip of the page rather than a bar floating over it: it carries the page's own
+ground and rule, so rows scroll underneath and are covered rather than showing through. It
+rides above the keyboard. It still carries no send glyph — the tick appears at the end of
+the rule the moment there is something to commit.
 
 ### Normal state (mix of active + completed)
 
@@ -286,8 +296,8 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Write on the add line and press the keyboard's Done. There is no send glyph
 - No-op if blank; the line clears on success and leaves a fresh caret waiting
 - New item appended at the bottom of the active section
-- On an empty page the line's hint breathes, across the top of its ink range so it stays
-  legible at the bottom of the cycle
+- Once the pen is on the paper the drawn label gives way to what is being written, and the
+  `…` ghost hint takes over as it always did
 
 **Complete an item** — _behavior change needed · [#1](https://github.com/emmanuel-h/Todolist/issues/1) · [#2](https://github.com/emmanuel-h/Todolist/issues/2)_
 - Tap [✓] or double-tap anywhere on the row → item moves immediately to the completed section

@@ -72,6 +72,8 @@ import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
+import fr.mandarine.todolist.ui.paper.paperGround
+import fr.mandarine.todolist.ui.paper.paperRuling
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
 import fr.mandarine.todolist.ui.paper.penStrike
 import fr.mandarine.todolist.ui.paper.rememberPageBend
@@ -104,13 +106,11 @@ internal const val INK_STRIKE_MILLIS = 220L
 
 private val NAME_END_GAP = 8.dp
 
-private const val INLINE_ADD_KEY = "inline-add"
 private const val HEAD_KEY = "head"
 private const val SKIP_KEY = "completed-skip"
 private const val HEAD_TYPE = "head"
 private const val ACTIVE_TYPE = "active"
 private const val SKIP_TYPE = "skip"
-private const val INLINE_ADD_TYPE = "inline-add"
 private const val COMPLETED_TYPE = "completed"
 
 @Composable
@@ -252,7 +252,7 @@ fun TodoListScreen(
                     .consumeWindowInsets(WindowInsets.safeDrawing),
                 contentPadding = PaddingValues(
                     top = insets.calculateTopPadding(),
-                    bottom = insets.calculateBottomPadding() + pitch + tail.height
+                    bottom = insets.calculateBottomPadding() + pitch * 3 + tail.height
                 ),
                 overscrollEffect = bend
             ) {
@@ -286,25 +286,6 @@ fun TodoListScreen(
                         onDeleteRequested = requestDelete,
                         onTorn = holdTorn,
                         onReorder = onReorder
-                    )
-                }
-                item(key = INLINE_ADD_KEY, contentType = INLINE_ADD_TYPE) {
-                    InkAddLine(
-                        spoken = stringResource(R.string.add_item),
-                        commitSpoken = stringResource(R.string.commit_item),
-                        text = screenState.addRowText,
-                        onTextChange = { screenState.addRowText = it },
-                        onCommit = { title ->
-                            onSubmitInline(title)
-                            screenState.addRowText = ""
-                        },
-                        armed = screenState.addRowExpanded,
-                        onPenUp = { screenState.addRowExpanded = true },
-                        onPenDown = { screenState.addRowExpanded = false },
-                        modifier = animatedRow(screenState),
-                        style = MaterialTheme.typography.bodyLarge,
-                        breathing = activeItems.isEmpty() && completedItems.isEmpty(),
-                        animated = screenState.animationsEnabled
                     )
                 }
                 if (showSkip) {
@@ -351,6 +332,42 @@ fun TodoListScreen(
                 pitch = pitch
             )
             PaperFinish(flourish)
+            /**
+             * The add line is a strip of the page rather than a bar floating over
+             * it, so it carries the page's own ground and its own rule: the rows
+             * scroll underneath and must not show through it, which they did while
+             * it was transparent — a row passing behind the line drew its ring
+             * through the plus.
+             */
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
+                        )
+                    )
+                    .paperGround()
+                    .paperRuling(pitch = pitch, color = palette.rule, gutter = gutter)
+            ) {
+                InkAddLine(
+                    spoken = stringResource(R.string.add_item),
+                    commitSpoken = stringResource(R.string.commit_item),
+                    text = screenState.addRowText,
+                    onTextChange = { screenState.addRowText = it },
+                    onCommit = { title ->
+                        onSubmitInline(title)
+                        screenState.addRowText = ""
+                    },
+                    armed = screenState.addRowExpanded,
+                    onPenUp = { screenState.addRowExpanded = true },
+                    onPenDown = { screenState.addRowExpanded = false },
+                    style = MaterialTheme.typography.bodyLarge,
+                    animated = screenState.animationsEnabled,
+                    marked = true
+                )
+            }
         }
     }
 

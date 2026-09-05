@@ -41,6 +41,18 @@ object GlyphFoot {
     const val check = 18f / 24f
     const val trash = 23f / 24f
     const val pencil = 23f / 24f
+    /**
+     * The calendar rectangle's bottom stroke sits at y=22 on the 24-unit grid, with
+     * a half-nib cap adding one unit: the ink lands at 23/24 of the glyph height,
+     * the same seat as the pencil and the bin.
+     */
+    const val calendar = 23f / 24f
+    /**
+     * The plus arm's lowest point is at y=19 on the 24-unit grid; the round cap adds
+     * one unit. Using the centre of the cross (18/24) seats the mark at the same
+     * height as the check, which reads as the same gesture family.
+     */
+    const val add = 18f / 24f
 }
 
 @Composable

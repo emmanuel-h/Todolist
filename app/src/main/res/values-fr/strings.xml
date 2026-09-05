@@ -56,4 +56,5 @@
         <item quantity="other">et les %d tâches qu\'elle contient</item>
         <item quantity="many">et les %d tâches qu\'elle contient</item>
     </plurals>
+    <string name="give_list_a_day">Donner un jour à cette liste</string>
 </resources>

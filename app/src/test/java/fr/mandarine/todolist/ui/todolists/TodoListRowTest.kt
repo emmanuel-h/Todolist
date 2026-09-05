@@ -159,7 +159,7 @@ class TodoListRowTest {
     fun `should leave the tally a mark to be read and not one to be pressed`() {
         render(summary(activeCount = 3))
 
-        assertEquals(listOf(OPENS_THE_LIST, EDIT_NAME, DELETE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, EDIT_NAME, GIVE_A_DAY, DELETE_LIST), presses())
     }
 
     @Test
@@ -207,14 +207,28 @@ class TodoListRowTest {
 
     @Test
     /**
-     * Both corners of a row are turned a little from the start, and each carries
-     * the mark that says what turning it does. They are the only thing on a resting
-     * row besides what is written on it.
+     * A dateless row carries three controls: edit, calendar, and delete. The calendar
+     * button occupies the slot that the date jot takes when there is a date — no row
+     * ever carries four controls.
      */
-    fun `should carry nothing at rest but the name, its marginalia and its two corners`() {
+    fun `should carry nothing at rest but the name, its marginalia and its three controls on a dateless row`() {
         render(summary(activeCount = 2))
 
-        assertEquals(listOf("2 items left", EDIT_NAME, DELETE_LIST), descriptions())
+        assertEquals(listOf("2 items left", EDIT_NAME, GIVE_A_DAY, DELETE_LIST), descriptions())
+    }
+
+    @Test
+    /**
+     * A dated row carries two controls: edit and delete. The date jot in the margin
+     * is pressable and takes the calendar's role, so no calendar button is added.
+     */
+    fun `should carry nothing at rest but the name, its marginalia and its two controls on a dated row`() {
+        render(summary(activeCount = 2, targetDate = DATE))
+
+        assertEquals(
+            listOf("2 items left", "Target date ${spelled(DATE)}", EDIT_NAME, DELETE_LIST),
+            descriptions()
+        )
     }
 
     /**
@@ -307,6 +321,64 @@ class TodoListRowTest {
         composeRule.waitForIdle()
 
         assertEquals(1, torn)
+    }
+
+    // ── Calendar button (#67) ─────────────────────────────────────────────────
+
+    @Test
+    fun `should draw the calendar button when the list has no date`() {
+        render(summary())
+
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should open the calendar when the calendar button is pressed on a dateless row`() {
+        render(summary())
+
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(1, rewritten.size)
+        assertEquals(DateKind.TARGET, rewritten.first().kind)
+        assertEquals(null, rewritten.first().date)
+        assertEquals(0, opened)
+    }
+
+    @Test
+    fun `should not draw the calendar button when the list has a target date`() {
+        render(summary(targetDate = DATE))
+
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should not draw the calendar button when the list has a due date`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should never draw both a calendar button and a date jot on the same row`() {
+        render(summary(targetDate = DATE))
+
+        val jotExists = composeRule.onNodeWithContentDescription("Target date ${spelled(DATE)}")
+            .fetchSemanticsNode().let { true }
+        val buttonExists = try {
+            composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
+            false
+        } catch (_: AssertionError) {
+            true
+        }
+        assert(!buttonExists) { "Calendar button must not appear alongside a date jot" }
+    }
+
+    @Test
+    fun `should not draw the calendar button when the row has no rewrite surface`() {
+        render(summary(), rewritable = false)
+
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
     }
 
     @Test
@@ -513,6 +585,7 @@ class TodoListRowTest {
         val OPENS_THE_LIST: String? = null
         const val DELETE_LIST = "Delete list"
         const val EDIT_NAME = "Edit list name"
+        const val GIVE_A_DAY = "Give this list a day"
         const val ROW = "row"
         const val ONE_LINE = 1
         const val ONE_PIXEL = 1f

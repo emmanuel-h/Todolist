@@ -211,12 +211,12 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should show every active item followed by the ghost row`() {
+    fun `should show every active item and the pinned add line`() {
         render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
 
         composeRule.onNodeWithText("Apples").assertIsDisplayed()
         composeRule.onNodeWithText("Bread").assertIsDisplayed()
-        composeRule.onNodeWithText(GHOST_HINT).assertIsDisplayed()
+        composeRule.onNodeWithText(ADD_ITEM_LABEL).assertIsDisplayed()
     }
 
     @Test
@@ -235,18 +235,18 @@ class TodoListScreenTest {
     fun `should not show the divider when every item is active`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        assertEquals(listOf("Apples", GHOST_HINT), texts())
+        assertEquals(listOf("Apples", ADD_ITEM_LABEL), texts())
     }
 
     @Test
     fun `should not show the divider when every item is completed`() {
         render(content(completed = listOf(completed("2", "Milk"))))
 
-        assertEquals(listOf(GHOST_HINT, "Milk"), texts())
+        assertEquals(listOf("Milk", ADD_ITEM_LABEL), texts())
     }
 
     @Test
-    fun `should place completed items after the ghost row`() {
+    fun `should place completed items below the active ones and above the pinned add line`() {
         render(
             content(
                 active = listOf(item("1", "Apples")),
@@ -254,7 +254,7 @@ class TodoListScreenTest {
             )
         )
 
-        assertEquals(listOf("Apples", GHOST_HINT, "1", "Milk"), texts())
+        assertEquals(listOf("Apples", "1", "Milk", ADD_ITEM_LABEL), texts())
     }
 
     @Test
@@ -282,7 +282,7 @@ class TodoListScreenTest {
     fun `should carry an edit and delete button alongside the ring on an active row`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        assertEquals(listOf(MARK_COMPLETED, EDIT, DELETE, ADD_ITEM, BACK), descriptions())
+        assertEquals(listOf(MARK_COMPLETED, EDIT, DELETE, BACK, ADD_ITEM_LABEL), descriptions())
     }
 
     @Test
@@ -429,10 +429,10 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should take the pen when the add line is tapped`() {
+    fun `should take the pen when the add line label is tapped`() {
         render(TodoListState.Empty)
 
-        composeRule.onNodeWithText(GHOST_HINT).performClick()
+        composeRule.onNodeWithText(ADD_ITEM_LABEL).performClick()
         composeRule.waitForIdle()
 
         assertTrue(screenState.addRowExpanded)
@@ -441,13 +441,16 @@ class TodoListScreenTest {
 
     @Test
     /**
-     * The add line is named but carries no send glyph: the keyboard's own Done
-     * commits it. A name is not an affordance drawn on the paper.
+     * The add line now carries a plus mark, but the commit mark — the tick that
+     * sends the line — only appears once there is something to commit. At rest with
+     * an empty field, there is nothing to press except the back affordance.
+     * The drawn label ("Add an item") is a semantic text node, not a content
+     * description, so it does not appear in the contentDescriptions() list.
      */
-    fun `should carry no submit affordance on the add line`() {
+    fun `should carry no submit affordance on the add line at rest`() {
         render(TodoListState.Empty)
 
-        assertEquals(listOf(ADD_ITEM, BACK), descriptions())
+        assertEquals(listOf(BACK, ADD_ITEM_LABEL), descriptions())
     }
 
     @Test
@@ -497,12 +500,28 @@ class TodoListScreenTest {
         assertEquals(listOf("Bread"), submitted)
     }
 
+    /**
+     * The whole of #69: the add line must be on screen even when the list has
+     * enough items to push it below the fold. A test against a short page proves
+     * nothing — this test constructs a page long enough to fill a real screen
+     * before checking. The add line is now pinned to the bottom of the page,
+     * not inside the LazyColumn, so it is always visible regardless of scroll
+     * position.
+     */
+    @Test
+    fun `should keep the add line on screen even when the page is full of items`() {
+        val manyItems = (1..15).map { item(it.toString(), "Item $it") }
+        render(content(active = manyItems))
+
+        composeRule.onNodeWithText(ADD_ITEM_LABEL).assertIsDisplayed()
+    }
+
     @Test
     fun `should render the preview order instead of the repository order while a drag is staged`() {
         screenState.previewOrder = listOf("2", "1")
         render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
 
-        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+        assertEquals(listOf("Bread", "Apples", ADD_ITEM_LABEL), texts())
     }
 
     /**
@@ -521,7 +540,7 @@ class TodoListScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf("2", "1"), screenState.previewOrder)
-        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+        assertEquals(listOf("Bread", "Apples", ADD_ITEM_LABEL), texts())
         assertEquals(
             listOf("Apples", "Bread"),
             (published.value as TodoListState.Content).activeItems.map { it.title }
@@ -542,7 +561,7 @@ class TodoListScreenTest {
         composeRule.waitForIdle()
 
         assertNull(screenState.previewOrder)
-        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+        assertEquals(listOf("Bread", "Apples", ADD_ITEM_LABEL), texts())
     }
 
     @Test
@@ -551,7 +570,7 @@ class TodoListScreenTest {
 
         perform("Bread", MOVE_UP)
 
-        assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
+        assertEquals(listOf("Bread", "Apples", ADD_ITEM_LABEL), texts())
     }
 
     // ── Confirming a delete ───────────────────────────────────────────────────
@@ -830,7 +849,8 @@ class TodoListScreenTest {
     private fun collectDescriptions(
         node: SemanticsNode
     ): List<String> =
-        node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() +
+        node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+            .filter { it.isNotBlank() } +
             node.children.flatMap { collectDescriptions(it) }
 
     private fun textStyleOf(text: String): TextStyle? {
@@ -860,8 +880,14 @@ class TodoListScreenTest {
     private companion object {
         val TODAY: LocalDate = LocalDate.of(2026, 1, 1)
         const val LIST_ID = "list-1"
-        const val GHOST_HINT = "…"
-        const val ADD_ITEM = "Add an item"
+        /**
+         * The pinned add line draws its label in ink at rest — "Add an item" in
+         * margin tone — so the affordance is visible on a populated page. This
+         * replaces the "…" ghost hint, which only appears once the field is focused
+         * and the text is empty. The label is also what the semantic tree calls the
+         * add affordance, so it appears in texts() rather than in descriptions().
+         */
+        const val ADD_ITEM_LABEL = "Add an item"
         const val BACK = "Navigate up"
         const val MARK_COMPLETED = "Mark item as completed"
         const val MARK_INCOMPLETE = "Mark item as incomplete"

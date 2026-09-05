@@ -53,7 +53,7 @@ internal fun gutterFor(fit: PageFit): Dp =
  * window, and the desk it lies on once there is a desk.
  */
 @Composable
-internal fun Modifier.paperGround(): Modifier {
+fun Modifier.paperGround(): Modifier {
     val palette = LocalPaperPalette.current
     return if (LocalPageFit.current == PageFit.LiesOnADesk) {
         paperSheet(tone = palette.desk, lit = palette.deskLit)

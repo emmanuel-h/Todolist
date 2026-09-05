@@ -51,4 +51,5 @@
         <item quantity="one">and the %d item on it</item>
         <item quantity="other">and the %d items on it</item>
     </plurals>
+    <string name="give_list_a_day">Give this list a day</string>
 </resources>

@@ -74,34 +74,35 @@ class IconOnlyUiTest {
         }
     }
 
+    /**
+     * The add line on the items page is now marked: at rest it draws the plus mark
+     * and the "Add an item" label in margin ink. The "…" ghost hint only appears
+     * once the keyboard is up. The drawn label is the accessibility label for the
+     * field, so the field's own contentDescription is suppressed to avoid repeating
+     * the same words to a screen reader.
+     */
     @Test
-    fun `should not contain any static text in the empty state of todo list`() {
+    fun `should draw the add label on the empty items page at rest`() {
         composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
 
-        assertEquals(listOf(GHOST_HINT), composeRule.onRoot().fetchSemanticsNode().staticText())
+        assertEquals(listOf(ADD_ITEM_LABEL), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
-    /**
-     * The rule forbids words drawn on the paper, not words spoken about it. The
-     * line every row is written on is named for a screen reader — it draws
-     * nothing but a rule and a ghost ellipsis, so without a name it is the one
-     * affordance on an empty page that cannot be found at all.
-     */
     fun `should expose only the back affordance and the add line in the empty state of todo list`() {
         composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
 
         assertEquals(
-            listOf(ADD_ITEM_DESCRIPTION, BACK_DESCRIPTION),
+            listOf(BACK_DESCRIPTION, ADD_ITEM_LABEL),
             composeRule.onRoot().fetchSemanticsNode().contentDescriptions()
         )
     }
 
     @Test
-    fun `should show the ghost row as the only row when the list has no items`() {
+    fun `should show the add label as the only drawn text when the list has no items`() {
         composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
 
-        composeRule.onNodeWithText(GHOST_HINT).assertIsDisplayed()
+        composeRule.onNodeWithText(ADD_ITEM_LABEL).assertIsDisplayed()
     }
 
     /**
@@ -143,7 +144,7 @@ class IconOnlyUiTest {
         composeRule.setContent { PaperTheme { OneItemScreen() } }
 
         assertEquals(
-            listOf(LIST_NAME, ITEM_TITLE, GHOST_HINT),
+            listOf(LIST_NAME, ITEM_TITLE, ADD_ITEM_LABEL),
             composeRule.onRoot().fetchSemanticsNode().staticText()
         )
     }
@@ -224,10 +225,15 @@ class IconOnlyUiTest {
     }
 
     private companion object {
-        const val GHOST_HINT = "…"
         const val LIST_NAME = "Groceries"
         const val ITEM_TITLE = "Apples"
-        const val ADD_ITEM_DESCRIPTION = "Add an item"
+        /**
+         * The add line on the items page now draws its label in ink at rest, so the
+         * page's drawn text includes these words — they are the mark that makes the
+         * affordance visible on a populated page. This replaces the "…" ghost hint
+         * which only appears once the field is focused.
+         */
+        const val ADD_ITEM_LABEL = "Add an item"
         const val BACK_DESCRIPTION = "Navigate up"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
         const val APP_NAME = "To do list"
