@@ -80,12 +80,12 @@ private const val ONE_LINE = 1
 private const val WEEKDAY_BAND = 0.55f
 private const val RING_SPREAD = 1.55f
 private const val RING_FIT = 0.9f
-private const val TODAY_DOT_SEAT = 0.62f
 private const val MONTH_SKELETON = "MMMM y"
 private const val SPOKEN_DAY_SKELETON = "EEEEdMMMMy"
 private const val DAY_RING_SEED = 0x3C7B
 private const val INK_DWELL_MILLIS = 200L
 private val TODAY_DOT = 2.dp
+private val TODAY_DOT_DROP = 2.dp
 private val WEEKDAY_LIFT = 3.dp
 
 /**
@@ -385,6 +385,7 @@ private fun RowScope.DayCell(
 ) {
     val palette = LocalPaperPalette.current
     val pencil = palette.inked(InkTone.Margin)
+    val pitchPx = with(LocalDensity.current) { LocalPagePitch.current.toPx() }
     Box(
         modifier = Modifier
             .weight(1f)
@@ -395,13 +396,13 @@ private fun RowScope.DayCell(
                 onClick = { onChoose(date) }
             )
             .semantics { contentDescription = spoken }
-            .drawBehind { if (isToday) drawTodayDot(pencil) },
+            .drawBehind { if (isToday) drawTodayDot(pencil, pitchPx) },
         contentAlignment = Alignment.TopCenter
     ) {
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (ring - glyph) / 2)
+                .align(Alignment.TopCenter)
+                .offset(y = LocalPagePitch.current - glyph / 2 - ring / 2)
                 .size(ring)
                 .circledInInk(
                     circled = selected,
@@ -498,11 +499,17 @@ private fun Modifier.ruleUnder(color: Color): Modifier = drawBehind {
  * rather than under it, close enough to belong to it and clear of the rule the
  * row above is written on.
  */
-private fun DrawScope.drawTodayDot(color: Color) {
+/**
+ * Under the numeral, not under the cell. The cell is a finger tall and the writing
+ * is a rule tall, and those stopped being the same number when the page's line
+ * pitch came off its row height — a dot seated on the cell fell a rule below the
+ * day it marks.
+ */
+private fun DrawScope.drawTodayDot(color: Color, pitch: Float) {
     drawCircle(
         color = color,
         radius = TODAY_DOT.toPx(),
-        center = Offset(size.width / 2f, size.height * TODAY_DOT_SEAT)
+        center = Offset(size.width / 2f, pitch + TODAY_DOT_DROP.toPx())
     )
 }
 

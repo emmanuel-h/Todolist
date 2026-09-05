@@ -85,7 +85,7 @@ fun DeleteConfirmDialog(
 }
 
 @Composable
-private fun DialogButton(label: String, tint: Color, onClick: () -> Unit) {
+internal fun DialogButton(label: String, tint: Color, onClick: () -> Unit) {
     val source = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier

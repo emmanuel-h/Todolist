@@ -53,6 +53,13 @@ object GlyphFoot {
      * height as the check, which reads as the same gesture family.
      */
     const val add = 18f / 24f
+
+    /**
+     * The gear's lowest tooth tip sits at y≈19.5 on the 24-unit grid (tooth at 60°
+     * and 120°); the round cap adds one unit, placing the bottommost ink at y≈20.5.
+     * Rounding up to 21/24 keeps the mark on the rule with a hair of margin.
+     */
+    const val gear = 21f / 24f
 }
 
 @Composable

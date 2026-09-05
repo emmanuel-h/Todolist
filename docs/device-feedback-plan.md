@@ -1,6 +1,6 @@
 # Device feedback — the tickets, and the order to fix them
 
-**Status: Phases 2 and 3 complete. Phase 4.1 (#74) next.** Written 2026-09-01. This is a working plan, not
+**Status: Phases 2, 3 and 4.1 complete. Phase 4.2 (#71, colour per list) is all that is left.** Written 2026-09-01. This is a working plan, not
 a feature doc — it is meant to be read after a context clear, so it says where
 the work stands as well as what the work is.
 
@@ -77,7 +77,7 @@ probably wants a home in it. That decision should be made once.
 - [x] **Phase 2.4 — #66** confirm a delete — [doc](confirm-before-delete.md)
 - [x] **Phase 2.5 — #67 + #69** the two discoverability tickets — [doc](discoverability.md)
 - [x] **Phase 3 — #73** launcher icon — the sheet comes off the tile, [doc](app-icons.md)
-- [ ] **Phase 4.1 — #74** notification hour + first settings surface
+- [x] **Phase 4.1 — #74** notification hour + first settings surface — [doc](reminder-hour.md)
 - [ ] **Phase 4.2 — #71** colour per list
 
 ---

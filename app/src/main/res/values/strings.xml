@@ -52,4 +52,9 @@
         <item quantity="other">and the %d items on it</item>
     </plurals>
     <string name="give_list_a_day">Give this list a day</string>
+    <string name="settings">Settings</string>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminder_every_day_at">Every day at</string>
+    <string name="reminder_hour_picker_title">When shall I remind you?</string>
+    <string name="done">Done</string>
 </resources>

@@ -35,6 +35,7 @@ import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
 import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.ToggleTodoUseCase
+import fr.mandarine.todolist.presentation.ReminderSettingsViewModel
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.presentation.TodoListsViewModel
@@ -63,6 +64,7 @@ private const val OPEN_PAGE = "open-list-id"
 class TodoListsActivity : ComponentActivity() {
 
     internal lateinit var viewModel: TodoListsViewModel
+    internal lateinit var reminderSettingsViewModel: ReminderSettingsViewModel
     internal lateinit var stage: NavStage
     internal val screenState = TodoListsScreenState()
     internal val backStack = NavBackStack<NavKey>(ListsRoute)
@@ -98,6 +100,18 @@ class TodoListsActivity : ComponentActivity() {
                 )
             }
         )[TodoListsViewModel::class.java]
+
+        reminderSettingsViewModel = ViewModelProvider(
+            this,
+            viewModelFactory {
+                ReminderSettingsViewModel(
+                    container.getReminderTimeUseCase,
+                    container.setReminderTimeUseCase,
+                    container.notificationScheduler,
+                    container.databaseDispatcher
+                )
+            }
+        )[ReminderSettingsViewModel::class.java]
 
         stage = NavStage(backStack)
         stage.animationsEnabled = animationsAllowed()
@@ -136,7 +150,8 @@ class TodoListsActivity : ComponentActivity() {
                     stage = stage,
                     today = clock.today(),
                     itemsViewModelFactory = { listId -> itemsViewModelFactory(listId) },
-                    onDueDateSet = { askForNotifications() }
+                    onDueDateSet = { askForNotifications() },
+                    reminderSettingsViewModel = reminderSettingsViewModel
                 )
             }
         }

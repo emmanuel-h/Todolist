@@ -377,7 +377,9 @@ handwriting.
 
 ## Daily notifications — _implemented · [#12](https://github.com/emmanuel-h/Todolist/issues/12)_
 
-Every day at 08:00 the app posts one Android notification per list that qualifies:
+Every day at **the hour the reader chose** the app posts one Android notification per list
+that qualifies. It is 08:00 until they say otherwise
+([#74](https://github.com/emmanuel-h/Todolist/issues/74)):
 
 | Condition | Notification body |
 |-----------|-------------------|
@@ -393,21 +395,49 @@ The body contains no words in any language — the emoji mirrors the in-app icon
   beneath it on the nav back stack.
 - Notifications are posted on a dedicated channel ("Reminders"), tagged by list id so two lists
   never overwrite each other's notification.
-- The daily 08:00 check runs as a WorkManager unique `PeriodicWorkRequest`
-  (`daily_notification_check`, `ExistingPeriodicWorkPolicy.KEEP`), enqueued on app launch with an
-  initial delay to the next local 08:00. WorkManager persists it across reboots and crashes —
-  no `BOOT_COMPLETED` receiver is needed.
+- The daily check runs as a WorkManager unique `PeriodicWorkRequest`
+  (`daily_notification_check`), enqueued on app launch with an initial delay to the next local
+  occurrence of the chosen hour. WorkManager persists it across reboots and crashes — no
+  `BOOT_COMPLETED` receiver is needed.
+- **The policy is `CANCEL_AND_REENQUEUE`, and it has to be.** `KEEP` left a changed hour never
+  taking effect, which is the bug #74 reports. `UPDATE` looks like the fix and is not: it
+  replaces the request but keeps the period already running, so the new initial delay is
+  dropped and the check still lands at the old hour — which passes a policy assertion and
+  fails on a device. Only cancelling and re-enqueuing moves it. Laying it again on every
+  launch costs nothing, because the delay is always computed to the next occurrence of the
+  same hour.
 - "Today" is evaluated in the device's local timezone via `Clock.today()`.
 - Lists with no due date and no target date, or whose date does not match the above conditions, produce no notification.
 - **The permission ask belongs to the first reminder of either kind**, not to due dates alone — both fire, so gating on the alarm left a reader who only circles calendar days silently un-remindable.
 - The ask is owed when the reminder is *persisted*, not when a day is circled on a line that has not been committed; that line may never become a list.
 - The record of having asked is written when the answer comes back, not when the dialog is raised, so an unanswered dialog does not spend the one ask.
-- Writing another reminder while notifications are off opens the system's own notification page for the app. An icon-only app has no settings screen, and this is the only route back from a refusal.
+- Writing another reminder while notifications are off opens the system's own notification page for the app — still the only route back from a refusal, and now the app does have a settings surface, but the system's switch is not the app's to flip.
 - Opening a list that has since been deleted (e.g. from a stale notification) finishes the screen
   immediately (`TodoListState.NotFound`).
 
+### The reminder hour — _[#74](https://github.com/emmanuel-h/Todolist/issues/74)_
+
+The app's **first settings surface**, and it is one glyph and one slip.
+
+- A gear sits at the end of the masthead strip on Screen 1 — the slot the tour's replay `?`
+  left empty. It leaves with the masthead when the pen comes out. The strip is one 28dp rule
+  tall, well under a finger, so the gear's touch target spans the whole head margin (the
+  status-bar inset plus the rule) and grows **upward**: reaching down would have taken taps
+  from the first list row.
+- Pressing it lays a paper slip carrying `Reminders` and the chosen time as a pressable jot.
+- Pressing the time opens a grid of the twenty-four hours, ruled like the page, with the
+  chosen one circled in ink — the same mark, and the same grid idiom, the paper calendar
+  rings a day with.
+- Whole hours only. The stored value is a **minute of day**, so half-hours can be added later
+  without touching anything below `ui/` or migrating what is stored.
+- The time is written in the reader's own convention: the ICU skeleton is `jm`, so a French
+  reader is shown `20:00` and an en-US one `8:00 PM`. `HH` would have forced twenty-four
+  hours on everybody.
+
 ### Must NOT happen
 - A notification fired for a list whose date does not qualify.
+- A chosen hour that the scheduler never hears about — persisting it without re-laying the
+  check is the same bug as `KEEP`.
 - The daily check lost permanently after device reboot.
 - The one permission ask spent on a question that was never answered, or on a list that was never created.
 - A reader left with a reminder date and no route to enable notifications.

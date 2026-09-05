@@ -36,6 +36,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import fr.mandarine.todolist.domain.AnimationEvent
+import fr.mandarine.todolist.presentation.ReminderSettingsViewModel
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListViewModel
 import fr.mandarine.todolist.presentation.TodoListsState
@@ -70,9 +71,11 @@ fun PageStack(
     stage: NavStage,
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
-    onDueDateSet: () -> Unit
+    onDueDateSet: () -> Unit,
+    reminderSettingsViewModel: ReminderSettingsViewModel
 ) {
     val listsState by listsViewModel.state.collectAsStateWithLifecycle()
+    val reminderTime by reminderSettingsViewModel.reminderTime.collectAsStateWithLifecycle()
     /**
      * A reminder announces itself from above both pages rather than from either
      * one: the day may be written on the page of lists or on a list's own page,
@@ -105,7 +108,9 @@ fun PageStack(
                             screenState = listsScreenState,
                             stage = stage,
                             today = today,
-                            onDueDateSet = written
+                            onDueDateSet = written,
+                            reminderTime = reminderTime,
+                            onSetReminderTime = { reminderSettingsViewModel.setReminderTime(it) }
                         )
                     }
                 }
@@ -189,7 +194,9 @@ private fun ListsPage(
     screenState: TodoListsScreenState,
     stage: NavStage,
     today: LocalDate,
-    onDueDateSet: (ReminderNote) -> Unit
+    onDueDateSet: (ReminderNote) -> Unit,
+    reminderTime: java.time.LocalTime,
+    onSetReminderTime: (Int) -> Unit
 ) {
     screenState.animationsEnabled = stage.animationsEnabled
 
@@ -211,7 +218,9 @@ private fun ListsPage(
         onReorder = { orderedActiveIds ->
             screenState.previewOrder = null
             viewModel.reorderLists(orderedActiveIds)
-        }
+        },
+        reminderTime = reminderTime,
+        onSetReminderTime = onSetReminderTime
     )
 }
 

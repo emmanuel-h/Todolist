@@ -57,4 +57,9 @@
         <item quantity="many">et les %d tâches qu\'elle contient</item>
     </plurals>
     <string name="give_list_a_day">Donner un jour à cette liste</string>
+    <string name="settings">Paramètres</string>
+    <string name="reminders_title">Rappels</string>
+    <string name="reminder_every_day_at">Chaque jour à</string>
+    <string name="reminder_hour_picker_title">À quelle heure me rappeler ?</string>
+    <string name="done">Terminé</string>
 </resources>

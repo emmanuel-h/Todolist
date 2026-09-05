@@ -45,6 +45,8 @@ data class RenameState(
 
 class TodoListsScreenState {
 
+    var settingsOpen by mutableStateOf(false)
+
     var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)
 
     var tearingId by mutableStateOf<String?>(null)

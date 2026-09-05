@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A gear drawn the way the rest of the family is drawn: one stroked path, no
+    fill, round caps. A toothed outline traced as a single closed contour turns
+    to mud at 24 units, so the teeth are eight short radial strokes standing off
+    a hub — the same mark, and it survives being small.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M7.8,12 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0 M17.8,12 L20,12 M16.1,16.1 L17.66,17.66 M12,17.8 L12,20 M7.9,16.1 L6.34,17.66 M6.2,12 L4,12 M7.9,7.9 L6.34,6.34 M12,6.2 L12,4 M16.1,7.9 L17.66,6.34"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

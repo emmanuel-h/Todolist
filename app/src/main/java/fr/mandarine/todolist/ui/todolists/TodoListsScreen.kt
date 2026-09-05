@@ -90,7 +90,13 @@ import fr.mandarine.todolist.ui.reorder.liftedSlip
 import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
 import java.time.LocalDate
+import java.time.LocalTime
+import fr.mandarine.todolist.ui.paper.InkIcon
+import fr.mandarine.todolist.ui.paper.PaperFocusMark
+import fr.mandarine.todolist.ui.paper.ReminderSettingsDialog
 
 private const val HEAD_KEY = "head"
 private const val ADD_KEY = "list-add"
@@ -115,7 +121,9 @@ fun TodoListsScreen(
     onRenameList: (String, String, LocalDate?, LocalDate?) -> Unit,
     onDeleteList: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
-    onDueDateSet: (ReminderNote) -> Unit = {}
+    onDueDateSet: (ReminderNote) -> Unit = {},
+    reminderTime: LocalTime = LocalTime.of(8, 0),
+    onSetReminderTime: (Int) -> Unit = {}
 ) {
     val content = state as? TodoListsState.Content
     val rawActiveSummaries = content?.activeSummaries.orEmpty()
@@ -140,6 +148,7 @@ fun TodoListsScreen(
     val bottomInset = insets.calculateBottomPadding()
     val headMargin = topInset + pitch
     val palette = LocalPaperPalette.current
+    val settingsLabel = stringResource(R.string.settings)
     val gutter = LocalPaperGutter.current
     val headRuleSeat = headRuleSeat(headMargin, gutter)
     val seam = keyboardSeam(screenState.confirmDelete == null)
@@ -346,6 +355,42 @@ fun TodoListsScreen(
                 Masthead(Modifier.align(Alignment.Center))
             }
         }
+        /**
+         * The settings gear sits at the top-end corner of the page. Its touch target
+         * spans the full headMargin (status bar + pitch) so it never steals from the
+         * first list row below; the glyph sits at the bottom of that area and appears
+         * visually inside the masthead strip while fingers reach across the whole height.
+         */
+        AnimatedVisibility(
+            visible = !screenState.addRowExpanded,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                )
+                .widthIn(max = PaperDimens.pageWidth),
+            enter = fadeIn(PaperMotion.rowEnter),
+            exit = fadeOut(PaperMotion.rowExit)
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(end = CORNER_MARGIN)
+                    .height(maxOf(headMargin, PaperDimens.touchTarget))
+                    .widthIn(min = PaperDimens.touchTarget)
+                    .clickable(
+                        role = Role.Button,
+                        onClickLabel = settingsLabel,
+                        onClick = { screenState.settingsOpen = true }
+                    ),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                InkIcon(
+                    painter = painterResource(R.drawable.ic_settings),
+                    contentDescription = settingsLabel,
+                    tint = palette.inked(InkTone.Margin)
+                )
+            }
+        }
         StickyNotePad(
             onTake = { screenState.openAddRow() },
             contentDescription = stringResource(R.string.add_list_fab_description),
@@ -453,6 +498,15 @@ fun TodoListsScreen(
                 }
                 screenState.datePickerRequest = null
             }
+        )
+    }
+
+    if (screenState.settingsOpen) {
+        ReminderSettingsDialog(
+            reminderTime = reminderTime,
+            onSetReminderTime = onSetReminderTime,
+            onDismiss = { screenState.settingsOpen = false },
+            animated = screenState.animationsEnabled
         )
     }
 }

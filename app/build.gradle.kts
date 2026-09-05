@@ -183,7 +183,7 @@ tasks.register<JavaExec>("pitest") {
                 "fr.mandarine.todolist.data.WorkManagerNotificationScheduler,fr.mandarine.todolist.data.WorkManagerNotificationScheduler\$*," +
                 "fr.mandarine.todolist.data.TodoItemDao,fr.mandarine.todolist.data.TodoItemDao\$*," +
                 "fr.mandarine.todolist.data.TodoListDao,fr.mandarine.todolist.data.TodoListDao\$*," +
-                "fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository,fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepository\$*",
+                "fr.mandarine.todolist.data.SharedPreferencesReminderTimeRepository,fr.mandarine.todolist.data.SharedPreferencesReminderTimeRepository\$*",
             "--excludedTestClasses", "fr.mandarine.todolist.ui.*," +
                 "fr.mandarine.todolist.AppContainerTest," +
                 "fr.mandarine.todolist.DailyNotificationWorkTest," +
@@ -195,7 +195,7 @@ tasks.register<JavaExec>("pitest") {
                 "fr.mandarine.todolist.data.TodoItemDaoPositionsTest," +
                 "fr.mandarine.todolist.data.TodoListDaoIncrementTest," +
                 "fr.mandarine.todolist.data.WorkManagerNotificationSchedulerTest," +
-                "fr.mandarine.todolist.data.SharedPreferencesTutorialStateRepositoryTest",
+                "fr.mandarine.todolist.data.SharedPreferencesReminderTimeRepositoryTest",
             "--targetTests", "fr.mandarine.todolist.*",
             "--mutators", "CONDITIONALS_BOUNDARY,INCREMENTS,INVERT_NEGS,MATH,NEGATE_CONDITIONALS," +
                 "VOID_METHOD_CALLS,EMPTY_RETURNS,FALSE_RETURNS,TRUE_RETURNS,PRIMITIVE_RETURNS",

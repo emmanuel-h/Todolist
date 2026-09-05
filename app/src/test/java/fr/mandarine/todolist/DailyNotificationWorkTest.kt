@@ -35,7 +35,7 @@ class DailyNotificationWorkTest {
         application.container = AppContainer(
             application,
             databaseFactory = { database },
-            schedulerFactory = { NotificationScheduler { } }
+            schedulerFactory = { _, _ -> NotificationScheduler { } }
         )
     }
 
