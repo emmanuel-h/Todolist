@@ -7,7 +7,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.domain.TodoItem
-import fr.mandarine.todolist.ui.DeletionState
+import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
 import java.time.LocalDate
@@ -21,7 +21,9 @@ private const val SHEET_DAY = "sheet-day"
 
 class TodoListScreenState {
 
-    val deletion = DeletionState()
+    var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)
+
+    var tearingId by mutableStateOf<String?>(null)
 
     var addRowExpanded by mutableStateOf(false)
 

@@ -35,9 +35,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +56,8 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
-import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
+import fr.mandarine.todolist.ui.ConfirmDeleteRequest
+import fr.mandarine.todolist.ui.paper.DeleteConfirmDialog
 import fr.mandarine.todolist.ui.paper.InkAddLine
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
@@ -73,7 +72,6 @@ import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.paper.StickyNotePad
 import fr.mandarine.todolist.ui.paper.StickyNotePutBack
-import fr.mandarine.todolist.ui.paper.UndoSlip
 import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
@@ -93,7 +91,6 @@ import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
 import java.time.LocalDate
-import kotlinx.coroutines.delay
 
 private const val HEAD_KEY = "head"
 private const val ADD_KEY = "list-add"
@@ -121,22 +118,13 @@ fun TodoListsScreen(
     onDueDateSet: (ReminderNote) -> Unit = {}
 ) {
     val content = state as? TodoListsState.Content
-    val deletion = screenState.deletion
-    /**
-     * Hidden first, then staged. A staged order names the rows the reader can
-     * see, so measuring it against a set that still holds a torn-off row made it
-     * the wrong length and threw the whole preview away on every frame.
-     */
-    val publishedSummaries =
-        content?.activeSummaries.orEmpty().filterNot { deletion.hides(it.list.id) }
-    val activeSummaries = orderedBy(publishedSummaries, screenState.previewOrder) { it.list.id }
-    val doneSummaries = content?.doneSummaries.orEmpty().filterNot { deletion.hides(it.list.id) }
+    val rawActiveSummaries = content?.activeSummaries.orEmpty()
+    val activeSummaries = orderedBy(rawActiveSummaries, screenState.previewOrder) { it.list.id }
+    val doneSummaries = content?.doneSummaries.orEmpty()
     val activeIds = activeSummaries.map { it.list.id }
-    val publishedIds = publishedSummaries.map { it.list.id }
+    val publishedIds = rawActiveSummaries.map { it.list.id }
     LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
     val dropInListId = remember(activeIds) { screenState.dropInFor(activeIds) }
-    val allIds = (content?.activeSummaries.orEmpty() + content?.doneSummaries.orEmpty())
-        .map { it.list.id }
 
     val pageEmpty = activeSummaries.isEmpty() && doneSummaries.isEmpty()
     val pitch = LocalPagePitch.current
@@ -154,7 +142,7 @@ fun TodoListsScreen(
     val palette = LocalPaperPalette.current
     val gutter = LocalPaperGutter.current
     val headRuleSeat = headRuleSeat(headMargin, gutter)
-    val seam = keyboardSeam(deletion.pending == null)
+    val seam = keyboardSeam(screenState.confirmDelete == null)
     val bend = rememberPageBend(screenState.animationsEnabled)
     /**
      * The pad keeps its footprint for as long as it is standing there, which is
@@ -165,8 +153,15 @@ fun TodoListsScreen(
     val padFootprint = padFootMargin(if (screenState.addRowExpanded) 0.dp else bottomInset)
     val restingSpace = (bottomInset - padFootprint).coerceAtLeast(0.dp)
 
-    val requestDelete: (String) -> Unit = { id ->
-        if (!session.dragging) deletion.request(id)?.let(onDeleteList)
+    val requestDelete: (TodoListSummary) -> Unit = { summary ->
+        if (!session.dragging) {
+            val cascade = summary.activeCount + summary.completedCount
+            screenState.confirmDelete = ConfirmDeleteRequest(
+                id = summary.list.id,
+                name = summary.list.name,
+                cascadeCount = cascade
+            )
+        }
     }
     /**
      * A tap on a row while the pen is still on the add line finishes that line
@@ -187,8 +182,9 @@ fun TodoListsScreen(
     val holdTorn: (String) -> Unit = { id ->
         listState.holdPage {
             tail.absorb(id)
-            deletion.markTorn()
         }
+        onDeleteList(id)
+        screenState.tearingId = null
     }
     /**
      * The jot in a row's margin is the same mark as the jot on that list's own head
@@ -203,26 +199,6 @@ fun TodoListsScreen(
                 initial = jotted.date
             )
         }
-    }
-
-    LaunchedEffect(deletion.pending?.id) {
-        if (deletion.pending == null) return@LaunchedEffect
-        delay(UNDO_SLIP_MILLIS)
-        deletion.commit()?.let(onDeleteList)
-    }
-
-    /**
-     * The slip counts down on the page's own coroutine, so a page that leaves
-     * takes the countdown with it. Leaving commits instead of forgetting: the
-     * tear was the decision, and the reader watched the row come off.
-     */
-    val commitOnLeaving = rememberUpdatedState(onDeleteList)
-    DisposableEffect(deletion) {
-        onDispose { deletion.commit()?.let(commitOnLeaving.value) }
-    }
-
-    LaunchedEffect(allIds) {
-        deletion.forget(allIds.toSet())
     }
 
     AutoScrollWhileDragging(listState, session, edgeScroll)
@@ -304,7 +280,7 @@ fun TodoListsScreen(
                         edgeScroll = edgeScroll,
                         screenState = screenState,
                         onOpenList = openList,
-                        onDeleteRequested = requestDelete,
+                        onDeleteRequested = { requestDelete(summary) },
                         onTorn = holdTorn,
                         onReorder = onReorder,
                         onRewriteDate = rewriteDate(summary.list.id)
@@ -333,9 +309,9 @@ fun TodoListsScreen(
                         summary = summary,
                         animated = screenState.animationsEnabled,
                         onOpen = { openList(summary.list) },
-                        onDeleteRequested = { requestDelete(summary.list.id) },
+                        onDeleteRequested = { requestDelete(summary) },
                         modifier = animatedRow(screenState),
-                        tearing = deletion.tearing(summary.list.id),
+                        tearing = screenState.tearingId == summary.list.id,
                         onTorn = { holdTorn(summary.list.id) },
                         onRenameRequested = {
                             screenState.rename = RenameState.of(summary.list)
@@ -390,12 +366,18 @@ fun TodoListsScreen(
                 }
             )
         )
-        UndoSlip(
-            pending = deletion.pending?.id,
-            window = UNDO_SLIP_MILLIS,
-            onUndo = { listState.holdPage { deletion.undo()?.let(tail::release) } },
-            modifier = Modifier.align(Alignment.BottomCenter),
-            animated = screenState.animationsEnabled
+    }
+
+    val confirm = screenState.confirmDelete
+    if (confirm != null) {
+        DeleteConfirmDialog(
+            name = confirm.name,
+            cascadeCount = confirm.cascadeCount,
+            onCancel = { screenState.confirmDelete = null },
+            onDelete = {
+                screenState.confirmDelete = null
+                screenState.tearingId = confirm.id
+            }
         )
     }
 
@@ -700,13 +682,12 @@ private fun LazyItemScope.ActiveListRow(
     edgeScroll: EdgeScroll,
     screenState: TodoListsScreenState,
     onOpenList: (TodoList) -> Unit,
-    onDeleteRequested: (String) -> Unit,
+    onDeleteRequested: () -> Unit,
     onTorn: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
     onRewriteDate: (DateSelection) -> Unit
 ) {
     val lifted = session.dragging && session.index == position
-    val deletion = screenState.deletion
     val resting = animatedRow(screenState, lifted)
         .dropIn(dropIn && screenState.animationsEnabled)
     val move: (Int) -> (() -> Unit)? = { step ->
@@ -729,7 +710,7 @@ private fun LazyItemScope.ActiveListRow(
             summary = summary,
             animated = screenState.animationsEnabled,
             onOpen = { onOpenList(summary.list) },
-            onDeleteRequested = { onDeleteRequested(summary.list.id) },
+            onDeleteRequested = { onDeleteRequested() },
             modifier = resting
                 .liftedSlip(session, lifted, screenState.animationsEnabled)
                 .liftToReorder(
@@ -747,7 +728,7 @@ private fun LazyItemScope.ActiveListRow(
                         }
                     }
                 ),
-            tearing = deletion.tearing(summary.list.id),
+            tearing = screenState.tearingId == summary.list.id,
             onTorn = { onTorn(summary.list.id) },
             onRenameRequested = { screenState.rename = RenameState.of(summary.list) },
             onRewriteDate = onRewriteDate,

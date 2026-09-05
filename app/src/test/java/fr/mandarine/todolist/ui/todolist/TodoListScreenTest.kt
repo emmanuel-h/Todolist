@@ -41,7 +41,6 @@ import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
 import java.time.LocalDate
 import java.util.Locale
-import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
@@ -555,42 +554,83 @@ class TodoListScreenTest {
         assertEquals(listOf("Bread", "Apples", GHOST_HINT), texts())
     }
 
-    // ── Tearing a row off ─────────────────────────────────────────────────────
+    // ── Confirming a delete ───────────────────────────────────────────────────
 
     @Test
-    fun `should take an item off the page without writing the delete through yet`() {
+    fun `should show a confirmation prompt when the bin is pressed`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(item("1", "Apples"))))
 
-        tearOffApples()
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
+        composeRule.waitForIdle()
 
         assertTrue(deleted.isEmpty())
-        composeRule.onNodeWithText("Apples").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+        composeRule.onNodeWithText("Apples").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).assertIsDisplayed()
     }
 
     @Test
-    fun `should write the item delete through once the undo slip has settled away`() {
+    fun `should write nothing when the bin is pressed without confirming`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(deleted.isEmpty())
+    }
+
+    @Test
+    fun `should write nothing when Cancel is pressed`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(CANCEL).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(deleted.isEmpty())
+        composeRule.onNodeWithText("Apples").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should write the delete exactly once when Delete is confirmed`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(item("1", "Apples"))))
 
         tearOffApples()
-        slipSettles()
 
         assertEquals(listOf("1"), deleted)
     }
 
     @Test
-    fun `should put the item back when the undo slip is tapped`() {
+    fun `should name the item in the confirmation prompt`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(item("1", "Apples"))))
 
-        tearOffApples()
-        composeRule.onNodeWithContentDescription(UNDO).performClick()
-        slipSettles()
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
+        composeRule.waitForIdle()
 
-        assertTrue(deleted.isEmpty())
-        composeRule.onNodeWithText("Apples").assertIsDisplayed()
+        composeRule.onNodeWithText("Delete \"Apples\"?").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should draw no cascade line in an item prompt`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(DELETE).performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("and the", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should offer no prompt while nothing has been pressed`() {
+        render(content(active = listOf(item("1", "Apples"))))
+
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).assertDoesNotExist()
     }
 
     @Test
@@ -603,13 +643,6 @@ class TodoListScreenTest {
 
         assertEquals(listOf("1"), toggled)
         assertTrue(deleted.isEmpty())
-    }
-
-    @Test
-    fun `should offer no undo at all while nothing has been torn off`() {
-        render(content(active = listOf(item("1", "Apples"))))
-
-        composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
     }
 
     // ── Reaching the gestures without one ─────────────────────────────────────
@@ -660,14 +693,15 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should tear an item off when it is asked to be deleted without a gesture`() {
+    fun `should raise the prompt when the bin is pressed`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(item("1", "Apples"))))
 
         tear("Apples")
 
-        composeRule.onNodeWithText("Apples").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).assertIsDisplayed()
+        composeRule.onNodeWithText("Apples").assertIsDisplayed()
+        assertTrue(deleted.isEmpty())
     }
 
     @Test
@@ -713,10 +747,7 @@ class TodoListScreenTest {
     private fun tearOffApples() {
         composeRule.onNodeWithContentDescription(DELETE).performClick()
         composeRule.waitForIdle()
-    }
-
-    private fun slipSettles() {
-        composeRule.mainClock.advanceTimeBy(UNDO_SLIP_MILLIS + SETTLE_MILLIS)
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).performClick()
         composeRule.waitForIdle()
     }
 
@@ -836,10 +867,11 @@ class TodoListScreenTest {
         const val MARK_INCOMPLETE = "Mark item as incomplete"
         const val EDIT = "Edit item"
         const val DELETE = "Delete item"
+        const val DELETE_CONFIRM = "Delete"
+        const val CANCEL = "Cancel"
         const val CLEAR_TARGET_DATE = "Clear target date"
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
-        const val UNDO = "Undo delete"
         const val NO_FEEDBACK = -1
         const val SETTLE_MILLIS = 100L
     }

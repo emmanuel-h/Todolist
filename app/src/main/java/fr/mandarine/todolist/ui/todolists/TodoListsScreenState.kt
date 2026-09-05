@@ -5,7 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.domain.TodoList
-import fr.mandarine.todolist.ui.DeletionState
+import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import java.time.LocalDate
 
 /**
@@ -45,7 +45,9 @@ data class RenameState(
 
 class TodoListsScreenState {
 
-    val deletion = DeletionState()
+    var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)
+
+    var tearingId by mutableStateOf<String?>(null)
 
     var addRowExpanded by mutableStateOf(false)
 

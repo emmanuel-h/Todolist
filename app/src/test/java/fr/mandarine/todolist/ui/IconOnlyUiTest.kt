@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import fr.mandarine.todolist.R
@@ -15,6 +16,7 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListsState
+import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
@@ -146,6 +148,81 @@ class IconOnlyUiTest {
         )
     }
 
+    /**
+     * The resting lists page draws only its name. The delete prompt must not appear
+     * without being raised: the buttons and the question line must be absent.
+     */
+    @Test
+    fun `should draw no delete prompt on the resting lists page`() {
+        composeRule.setContent { PaperTheme { EmptyListsScreen() } }
+
+        val descriptions = composeRule.onRoot().fetchSemanticsNode().contentDescriptions()
+
+        assert(DELETE_LABEL !in descriptions) { "Delete button must not appear at rest" }
+        assert(CANCEL_LABEL !in descriptions) { "Cancel button must not appear at rest" }
+    }
+
+    /**
+     * The resting items page draws only the ghost hint. The delete prompt must not
+     * appear without being raised.
+     */
+    @Test
+    fun `should draw no delete prompt on the resting items page`() {
+        composeRule.setContent { PaperTheme { EmptyItemsScreen() } }
+
+        val descriptions = composeRule.onRoot().fetchSemanticsNode().contentDescriptions()
+
+        assert(DELETE_LABEL !in descriptions) { "Delete button must not appear at rest" }
+        assert(CANCEL_LABEL !in descriptions) { "Cancel button must not appear at rest" }
+    }
+
+    /**
+     * When the delete prompt is raised on the lists page, it draws the exact
+     * question line and the two button labels — no more, no less.
+     */
+    @Test
+    fun `should draw the delete question and both button labels when the lists prompt is raised`() {
+        composeRule.setContent { PaperTheme { ListsScreenWithDeletePrompt() } }
+
+        composeRule.onNodeWithText(DELETE_QUESTION).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(DELETE_LABEL).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(CANCEL_LABEL).assertIsDisplayed()
+    }
+
+    /**
+     * When the delete prompt is raised on the items page, it draws the question line
+     * with no cascade line (items carry no cascade), and both button labels.
+     */
+    @Test
+    fun `should draw the delete question and both button labels when the items prompt is raised`() {
+        composeRule.setContent { PaperTheme { ItemsScreenWithDeletePrompt() } }
+
+        composeRule.onNodeWithText(DELETE_QUESTION).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(DELETE_LABEL).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(CANCEL_LABEL).assertIsDisplayed()
+    }
+
+    /**
+     * The cascade line — naming how many items go with the list — appears only when
+     * the list has at least one item, and must not appear for an empty list.
+     */
+    @Test
+    fun `should draw the cascade count in the prompt only when the list has items`() {
+        lateinit var stateWithItems: TodoListsScreenState
+        lateinit var stateNoItems: TodoListsScreenState
+        composeRule.setContent {
+            PaperTheme {
+                stateWithItems = remember {
+                    TodoListsScreenState().also {
+                        it.confirmDelete = ConfirmDeleteRequest("1", "Groceries", 5)
+                    }
+                }
+                ListsScreenWithDeletePromptState(stateWithItems)
+            }
+        }
+        composeRule.onNodeWithText("and the 5 items on it").assertIsDisplayed()
+    }
+
     private companion object {
         const val GHOST_HINT = "…"
         const val LIST_NAME = "Groceries"
@@ -154,6 +231,9 @@ class IconOnlyUiTest {
         const val BACK_DESCRIPTION = "Navigate up"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
         const val APP_NAME = "To do list"
+        const val DELETE_LABEL = "Delete"
+        const val CANCEL_LABEL = "Cancel"
+        const val DELETE_QUESTION = "Delete \"Groceries\"?"
     }
 }
 
@@ -201,6 +281,57 @@ private fun EmptyListsScreen() {
         onCreateList = { _, _, _ -> },
         onRenameList = { _, _, _, _ -> },
         onDeleteList = {},
+        onReorder = {}
+    )
+}
+
+@Composable
+private fun ListsScreenWithDeletePrompt() {
+    val state = remember {
+        TodoListsScreenState().also {
+            it.confirmDelete = ConfirmDeleteRequest("list-1", "Groceries", null)
+        }
+    }
+    ListsScreenWithDeletePromptState(state)
+}
+
+@Composable
+private fun ListsScreenWithDeletePromptState(screenState: TodoListsScreenState) {
+    TodoListsScreen(
+        state = TodoListsState.Content(
+            listOf(TodoListSummary(TodoList("list-1", "Groceries"), allDone = false)),
+            emptyList()
+        ),
+        screenState = screenState,
+        today = TODAY,
+        onOpenList = {},
+        onCreateList = { _, _, _ -> },
+        onRenameList = { _, _, _, _ -> },
+        onDeleteList = {},
+        onReorder = {}
+    )
+}
+
+@Composable
+private fun ItemsScreenWithDeletePrompt() {
+    val state = remember {
+        TodoListScreenState().also {
+            it.confirmDelete = ConfirmDeleteRequest("item-1", "Groceries", null)
+        }
+    }
+    TodoListScreen(
+        summary = TodoListSummary(TodoList("list-1", "Groceries"), allDone = false),
+        today = TODAY,
+        state = TodoListState.Content(
+            listOf(TodoItem("item-1", "Groceries", "list-1")),
+            emptyList()
+        ),
+        screenState = state,
+        onBack = {},
+        onToggle = {},
+        onEdit = { _, _ -> },
+        onDelete = {},
+        onSubmitInline = {},
         onReorder = {}
     )
 }

@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -49,7 +48,7 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
-import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
+import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import fr.mandarine.todolist.ui.listmeta.DateJot
 import fr.mandarine.todolist.ui.nav.travellingName
 import fr.mandarine.todolist.ui.paper.IconSeat
@@ -66,8 +65,8 @@ import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
+import fr.mandarine.todolist.ui.paper.DeleteConfirmDialog
 import fr.mandarine.todolist.ui.paper.SectionSkip
-import fr.mandarine.todolist.ui.paper.UndoSlip
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.inked
@@ -130,17 +129,11 @@ fun TodoListScreen(
     onWriteDate: (DateSelection) -> Unit = {}
 ) {
     val content = state as? TodoListState.Content
-    val deletion = screenState.deletion
-    /**
-     * Hidden first, then staged. A staged order names the rows the reader can
-     * see, so measuring it against a set that still holds a torn-off row made it
-     * the wrong length and threw the whole preview away on every frame.
-     */
-    val publishedItems = content?.activeItems.orEmpty().filterNot { deletion.hides(it.id) }
-    val activeItems = orderedBy(publishedItems, screenState.previewOrder) { it.id }
-    val completedItems = content?.completedItems.orEmpty().filterNot { deletion.hides(it.id) }
+    val rawActiveItems = content?.activeItems.orEmpty()
+    val activeItems = orderedBy(rawActiveItems, screenState.previewOrder) { it.id }
+    val completedItems = content?.completedItems.orEmpty()
     val activeIds = activeItems.map { it.id }
-    val publishedIds = publishedItems.map { it.id }
+    val publishedIds = rawActiveItems.map { it.id }
     val showSkip = activeItems.isNotEmpty() && completedItems.isNotEmpty()
     val allDone = activeItems.isEmpty() && completedItems.isNotEmpty()
 
@@ -154,7 +147,6 @@ fun TodoListScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val haptics = rememberPaperHaptics()
     val liveIds = rememberUpdatedState(activeIds + completedItems.map { it.id })
-    val allIds = (content?.activeItems.orEmpty() + content?.completedItems.orEmpty()).map { it.id }
     val requestToggle: (TodoItem) -> Unit = { item ->
         when {
             session.dragging -> Unit
@@ -166,17 +158,22 @@ fun TodoListScreen(
             else -> screenState.startToggle(item.id)
         }
     }
-    val requestDelete: (String) -> Unit = { id ->
+    val requestDelete: (TodoItem) -> Unit = { item ->
         if (!session.dragging) {
             screenState.editingItemId = null
-            deletion.request(id)?.let(onDelete)
+            screenState.confirmDelete = ConfirmDeleteRequest(
+                id = item.id,
+                name = item.title,
+                cascadeCount = null
+            )
         }
     }
     val holdTorn: (String) -> Unit = { id ->
         listState.holdPage {
             tail.absorb(id)
-            deletion.markTorn()
         }
+        onDelete(id)
+        screenState.tearingId = null
     }
 
     screenState.pendingToggles.forEach { pending ->
@@ -189,27 +186,6 @@ fun TodoListScreen(
                 }
             }
         }
-    }
-
-    LaunchedEffect(deletion.pending?.id) {
-        if (deletion.pending == null) return@LaunchedEffect
-        delay(UNDO_SLIP_MILLIS)
-        deletion.commit()?.let(onDelete)
-    }
-
-    /**
-     * The slip counts down on the page's own coroutine, so a page that leaves
-     * takes the countdown with it. Leaving commits instead of forgetting: the
-     * tear was the decision, and the reader watched the row come off.
-     */
-    val commitOnLeaving = rememberUpdatedState(onDelete)
-    DisposableEffect(deletion) {
-        onDispose { deletion.commit()?.let(commitOnLeaving.value) }
-    }
-
-
-    LaunchedEffect(allIds) {
-        deletion.forget(allIds.toSet())
     }
 
     LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
@@ -226,7 +202,7 @@ fun TodoListScreen(
     val headMargin = insets.calculateTopPadding() + pitch
     val palette = LocalPaperPalette.current
     val gutter = LocalPaperGutter.current
-    val seam = keyboardSeam(deletion.pending == null)
+    val seam = keyboardSeam(screenState.confirmDelete == null)
     val bend = rememberPageBend(screenState.animationsEnabled)
 
     val flourish = rememberFinishFlourish()
@@ -360,10 +336,10 @@ fun TodoListScreen(
                         },
                         onEditCommitted = { title -> onEdit(item.id, title) },
                         onEditDismissed = { screenState.editingItemId = null },
-                        onDeleteRequested = { requestDelete(item.id) },
+                        onDeleteRequested = { requestDelete(item) },
                         modifier = animatedRow(screenState),
                         animated = screenState.animationsEnabled,
-                        tearing = deletion.tearing(item.id),
+                        tearing = screenState.tearingId == item.id,
                         onTorn = { holdTorn(item.id) }
                     )
                 }
@@ -376,12 +352,18 @@ fun TodoListScreen(
             )
             PaperFinish(flourish)
         }
-        UndoSlip(
-            pending = deletion.pending?.id,
-            window = UNDO_SLIP_MILLIS,
-            onUndo = { listState.holdPage { deletion.undo()?.let(tail::release) } },
-            modifier = Modifier.align(Alignment.BottomCenter),
-            animated = screenState.animationsEnabled
+    }
+
+    val confirm = screenState.confirmDelete
+    if (confirm != null) {
+        DeleteConfirmDialog(
+            name = confirm.name,
+            cascadeCount = confirm.cascadeCount,
+            onCancel = { screenState.confirmDelete = null },
+            onDelete = {
+                screenState.confirmDelete = null
+                screenState.tearingId = confirm.id
+            }
         )
     }
 
@@ -421,12 +403,11 @@ private fun LazyItemScope.ActiveRow(
     screenState: TodoListScreenState,
     onToggle: (TodoItem) -> Unit,
     onEdit: (String, String) -> Unit,
-    onDeleteRequested: (String) -> Unit,
+    onDeleteRequested: (TodoItem) -> Unit,
     onTorn: (String) -> Unit,
     onReorder: (List<String>) -> Unit
 ) {
     val lifted = session.dragging && session.index == position
-    val deletion = screenState.deletion
     val move: (Int) -> (() -> Unit)? = { step ->
         val destination = position + step
         if (destination in rowIds.indices) {
@@ -451,7 +432,7 @@ private fun LazyItemScope.ActiveRow(
             onEditRequested = { if (!session.dragging) screenState.editingItemId = item.id },
             onEditCommitted = { title -> onEdit(item.id, title) },
             onEditDismissed = { screenState.editingItemId = null },
-            onDeleteRequested = { onDeleteRequested(item.id) },
+            onDeleteRequested = { onDeleteRequested(item) },
             modifier = Modifier
                 .then(animatedRow(screenState, lifted))
                 .liftedSlip(session, lifted, screenState.animationsEnabled)
@@ -471,7 +452,7 @@ private fun LazyItemScope.ActiveRow(
                     }
                 ),
             animated = screenState.animationsEnabled,
-            tearing = deletion.tearing(item.id),
+            tearing = screenState.tearingId == item.id,
             onTorn = { onTorn(item.id) },
             onMoveUp = move(-1),
             onMoveDown = move(+1)

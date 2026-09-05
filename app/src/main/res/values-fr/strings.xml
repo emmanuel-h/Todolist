@@ -49,4 +49,11 @@
     <string name="notification_channel_name">Rappels</string>
     <string name="date_kind_target_caption">À faire ce jour-là</string>
     <string name="date_kind_due_caption">À terminer avant ce jour</string>
+    <string name="delete_prompt">Supprimer « %1$s » ?</string>
+    <string name="delete">Supprimer</string>
+    <plurals name="delete_list_cascade">
+        <item quantity="one">et la %d tâche qu\'elle contient</item>
+        <item quantity="other">et les %d tâches qu\'elle contient</item>
+        <item quantity="many">et les %d tâches qu\'elle contient</item>
+    </plurals>
 </resources>

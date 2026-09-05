@@ -35,13 +35,13 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should leave a pending deletion alone when the create row opens`() {
-        state.deletion.request("list-1")
+    fun `should leave a pending confirm-delete alone when the create row opens`() {
+        state.confirmDelete = fr.mandarine.todolist.ui.ConfirmDeleteRequest("list-1", "Groceries", null)
 
         state.openAddRow()
 
         assertTrue(state.addRowExpanded)
-        assertEquals("list-1", state.deletion.pending?.id)
+        assertEquals("list-1", state.confirmDelete?.id)
     }
 
     @Test

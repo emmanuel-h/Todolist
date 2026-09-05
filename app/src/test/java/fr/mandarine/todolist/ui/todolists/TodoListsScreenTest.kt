@@ -3,7 +3,6 @@ package fr.mandarine.todolist.ui.todolists
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -33,7 +32,6 @@ import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
-import fr.mandarine.todolist.ui.UNDO_SLIP_MILLIS
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
 import java.util.Locale
@@ -324,78 +322,104 @@ class TodoListsScreenTest {
     // ── Delete ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `should take the list off the page without writing the delete through yet`() {
+    fun `should show a confirmation prompt when the list bin is pressed`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        tearOffGroceries()
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
 
         assertTrue(deleted.isEmpty())
-        composeRule.onNodeWithText("Groceries").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).assertIsDisplayed()
     }
 
     @Test
-    fun `should write the delete through once the undo slip has settled away`() {
+    fun `should write nothing when the list bin is pressed without confirming`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(deleted.isEmpty())
+    }
+
+    @Test
+    fun `should write nothing when Cancel is pressed on the list prompt`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(CANCEL).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(deleted.isEmpty())
+        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should write the delete exactly once when a list delete is confirmed`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
         tearOffGroceries()
-        slipSettles()
 
         assertEquals(listOf("1"), deleted)
-        composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
     }
 
     @Test
-    fun `should put the list back when the undo slip is tapped`() {
+    fun `should name the list in the confirmation prompt`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        tearOffGroceries()
-        composeRule.onNodeWithContentDescription(UNDO).performClick()
-        slipSettles()
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Delete \"Groceries\"?").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should show the cascade item count in the list prompt when the list has items`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries", activeCount = 3, completedCount = 2))))
+
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("and the 5 items on it").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should draw no cascade line when the list has no items`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("and the", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should offer no prompt while nothing has been pressed`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should leave the page as it was when a prompt is dismissed by tapping outside it`() {
+        screenState.animationsEnabled = false
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(CANCEL).performClick()
+        composeRule.waitForIdle()
 
         assertTrue(deleted.isEmpty())
-        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
-    }
-
-    @Test
-    fun `should offer no undo at all while nothing has been torn off`() {
-        render(content(active = listOf(summary("1", "Groceries"))))
-
-        composeRule.onNodeWithContentDescription(UNDO).assertDoesNotExist()
-    }
-
-    /**
-     * The scrap is spent as the window runs down, but a reader aims at where they
-     * saw it land. A reach that narrows with the paper turns a delete they meant to
-     * take back into one they cannot, and there is no second way to undo.
-     */
-    @Test
-    fun `should keep the undo within reach of where it landed as its paper is spent`() {
-        screenState.animationsEnabled = false
-        render(content(active = listOf(summary("1", "Groceries"))))
-
-        tearOffGroceries()
-        val landed = slipBounds()
-        composeRule.mainClock.advanceTimeBy(UNDO_SLIP_MILLIS * SPENT_NUMERATOR / SPENT_DIVISOR)
-
-        assertEquals(landed, slipBounds())
-    }
-
-    @Test
-    fun `should still put the list back when the undo is tapped late in its window`() {
-        screenState.animationsEnabled = false
-        render(content(active = listOf(summary("1", "Groceries"))))
-
-        tearOffGroceries()
-        composeRule.mainClock.advanceTimeBy(UNDO_SLIP_MILLIS * SPENT_NUMERATOR / SPENT_DIVISOR)
-        composeRule.onNodeWithContentDescription(UNDO).performClick()
-        slipSettles()
-
-        assertTrue(deleted.isEmpty())
-        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
     }
 
     // ── The jot in a row's margin ─────────────────────────────────────────────
@@ -584,14 +608,15 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should tear a list off when it is asked to be deleted without a gesture`() {
+    fun `should raise the prompt when the list bin is pressed`() {
         screenState.animationsEnabled = false
         render(content(active = listOf(summary("1", "Groceries"))))
 
         tear("Groceries")
 
-        composeRule.onNodeWithText("Groceries").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription(UNDO).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).assertIsDisplayed()
+        composeRule.onNodeWithText("Groceries").assertIsDisplayed()
+        assertTrue(deleted.isEmpty())
     }
 
     @Test
@@ -601,30 +626,6 @@ class TodoListsScreenTest {
         perform("Weekend", MOVE_UP)
 
         assertEquals(listOf(listOf("2", "1")), reordered)
-    }
-
-    /**
-     * A torn-off row is hidden on the page but still held by the repository for
-     * the length of its undo slip. The order the page hands down must name only
-     * the rows it is showing, or the row the reader moved and the row the
-     * repository moves are two different lists.
-     */
-    @Test
-    fun `should never name a torn-off list in the order it hands down`() {
-        render(
-            content(
-                active = listOf(
-                    summary("1", "Groceries"),
-                    summary("2", "Weekend"),
-                    summary("3", "Work")
-                )
-            )
-        )
-
-        tear("Groceries")
-        perform("Work", MOVE_UP)
-
-        assertEquals(listOf(listOf("3", "2")), reordered)
     }
 
     /**
@@ -1023,10 +1024,7 @@ class TodoListsScreenTest {
 
     private fun tearOffGroceries() {
         tear("Groceries")
-    }
-
-    private fun slipSettles() {
-        composeRule.mainClock.advanceTimeBy(SLIP_SETTLE_MILLIS)
+        composeRule.onNodeWithContentDescription(DELETE_CONFIRM).performClick()
         composeRule.waitForIdle()
     }
 
@@ -1095,18 +1093,19 @@ class TodoListsScreenTest {
         name: String,
         allDone: Boolean = false,
         targetDate: LocalDate? = null,
-        dueDate: LocalDate? = null
+        dueDate: LocalDate? = null,
+        activeCount: Int = 0,
+        completedCount: Int = 0
     ) = TodoListSummary(
         list = TodoList(id, name, targetDate = targetDate, dueDate = dueDate),
         allDone = allDone,
+        activeCount = activeCount,
+        completedCount = completedCount,
         dueDateStatus = dueDate?.let { DueDateStatus.FUTURE }
     )
 
     private fun spelled(date: LocalDate): String =
         formatListDate(date, showYear = true, locale = Locale.getDefault(Locale.Category.FORMAT))
-
-    private fun slipBounds(): Rect =
-        composeRule.onNodeWithContentDescription(UNDO).fetchSemanticsNode().boundsInRoot
 
     private fun texts(): List<String> = collectText(composeRule.onRoot().fetchSemanticsNode())
 
@@ -1135,10 +1134,8 @@ class TodoListsScreenTest {
         const val APP_NAME = "To do list"
         const val CREATE_LIST = "Create new list"
         const val DISCARD_LIST = "Discard the list being written"
-        const val UNDO = "Undo delete"
-        const val SLIP_SETTLE_MILLIS = UNDO_SLIP_MILLIS + 100L
-        const val SPENT_NUMERATOR = 3L
-        const val SPENT_DIVISOR = 4L
+        const val DELETE_CONFIRM = "Delete"
+        const val CANCEL = "Cancel"
         const val SET_TARGET_DATE = "Set target date"
         const val CLEAR_TARGET_DATE = "Clear target date"
         const val SET_DUE_DATE = "Set due date"
@@ -1149,6 +1146,5 @@ class TodoListsScreenTest {
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
         const val SAVE = "Save"
-        const val CANCEL = "Cancel"
     }
 }
