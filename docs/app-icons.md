@@ -43,3 +43,41 @@ Replaces the default Android Studio green-robot launcher icon with the app's own
 - **Screen(s)**: launcher (system-level, not an Activity)
 - **Layout file(s)**: `res/drawable/ic_launcher_background.xml`, `res/drawable/ic_launcher_foreground.xml`, `res/mipmap-anydpi-v26/ic_launcher.xml`, `res/mipmap-anydpi-v26/ic_launcher_round.xml`
 - **Design decisions**: A flat paper background (no gradient) is used so the icon looks identical in light and dark mode without needing a night-override drawable — and, since 2026-08-27, from a colour that cannot acquire one by accident. The checklist motif (rows 1–2 ticked, row 3 open ring) mirrors the existing `drawable/ic_checklist.xml` used for empty states (→ see `ui-polish.md`), keeping the visual language consistent. `fillType="evenOdd"` makes the checkmark a cutout revealing the background colour rather than a filled overlay, which eliminates the need for a separate check-mark colour and works correctly with Android 13+ monochrome tinting.
+
+## The sheet comes off the tile — _[#73](https://github.com/emmanuel-h/Todolist/issues/73)_
+
+> Rework the logo to not have a square inside a circle
+
+The foreground drew a rounded-rect note spanning 30→78 of the 108 viewport, with the
+writing on top of it. The background was flat colour and carried no shape at all, so the
+note had to provide the whole silhouette — and a launcher applying a circular mask then cut
+a circle around a 48-unit square. Exactly as reported.
+
+**The sheet is gone. The tile is the paper, and the mask is the silhouette.**
+
+The background stays `@color/launcher_paper`, which is the page's own paper and deliberately
+does not follow the lamp (a launcher rasterises an icon once and keeps it). The foreground
+now carries only what is written on that paper: three ruled lines, the first two ticked and
+the last still an open ring. Under circle, squircle or rounded square the tile reads the
+same, because the mask is cutting paper rather than cutting around a drawn edge.
+
+This also settles an inconsistency the issue flagged: the **monochrome** layer never had the
+sheet — it was writing-only all along, so the themed icon and the full-colour icon were two
+different drawings. They are the same drawing now, at the same coordinates, differing only in
+that the themed one is a shade heavier because a tint has no second colour to separate the
+ticks from the rules.
+
+**The splash keeps its note.** `avd_sticky_settle` is never masked — it plays full-bleed on
+the launch window — and a sheet settling onto the page reads there exactly as intended. The
+tile and the splash part company on purpose: the launcher gets the writing, the launch window
+gets the note it is written on. `LaunchMarkTest` pins both halves separately now.
+
+Everything downstream is generated from the same geometry rather than copied by hand:
+`tools/make-launcher-icons.py` writes the legacy `mipmap-*` rasters **and** the 512 px Play
+Store icon, and `listing/make-feature-graphic.py` draws the same mark in the listing graphic.
+One caveat when rasterising: PIL strokes inward from the bounding box while SVG centres the
+stroke on the path, so the ring's box is grown by half a nib to land on the vector's own ring.
+
+Still open, and not this ticket: the phone mock inside the feature graphic still shows the
+pre-Phase-2 row anatomy — no row controls, the old wide pitch. The listing needs a fresh pass
+before the next release.

@@ -59,23 +59,32 @@ def rounded(d, box, radius, fill):
 
 
 def launcher_icon(d, x, y, size):
-    """The adaptive icon as a launcher masks it: 72 of its 108 units, squircled."""
+    """The adaptive icon as a launcher masks it: 72 of its 108 units, squircled.
+
+    The writing sits straight on the paper — the sheet it used to be drawn on was
+    a square the launcher's mask cut a circle around (#73). Unit coordinates here
+    are the vector's own, less the 18-unit crop the mask takes off each edge.
+    """
     u = size / 72
     p = lambda ux, uy: (x + ux * u, y + uy * u)
     rounded(d, (x, y, x + size, y + size), size * 0.23, PAPER)
-    rounded(d, (*p(14, 14), *p(60, 60)), 4 * u, STICKY_EDGE)
-    rounded(d, (*p(12, 12), *p(58, 58)), 4 * u, STICKY_FACE)
-    rounded(d, (*p(12, 12), *p(58, 26)), 4 * u, STICKY_HEAD)
-    d.rectangle(scale(*p(12, 20), *p(58, 26)), fill=STICKY_FACE)
 
-    for uy in (29.5, 39.0, 48.5):
-        d.line(scale(*p(28, uy), *p(51, uy)), fill=PENCIL, width=round(2.4 * u * S))
-    for uy in (29.5, 39.0):
-        d.line([scale(*p(17.2, uy)), scale(*p(19.8, uy + 2.6)), scale(*p(24.4, uy - 3.2))],
-               fill=INK_BLUE, width=round(2.8 * u * S), joint="curve")
-    cx, cy, rad = *p(20.8, 48.5), 3 * u
-    d.ellipse(scale(cx - rad, cy - rad, cx + rad, cy + rad),
-              outline=PENCIL, width=round(2.2 * u * S))
+    def capped(points, fill, width):
+        d.line([scale(*p(*point)) for point in points],
+               fill=fill, width=round(width * u * S), joint="curve")
+        cap = width / 2
+        for ux, uy in (points[0], points[-1]):
+            d.ellipse(scale(*p(ux - cap, uy - cap), *p(ux + cap, uy + cap)), fill=fill)
+
+    for uy in (24.0, 36.0, 48.0):
+        capped(((32, uy), (58, uy)), PENCIL, 4.0)
+    for elbow, apex in ((23.5, 19.0), (35.0, 30.0)):
+        capped(((13, elbow), (16.5, elbow + 3.5), (22.5, apex)), INK_BLUE, 4.5)
+
+    cx, cy = p(17, 48.0)
+    outer = (4.5 + 3.5 / 2) * u
+    d.ellipse(scale(cx - outer, cy - outer, cx + outer, cy + outer),
+              outline=PENCIL, width=round(3.5 * u * S))
 
 
 def phone_layer(size):

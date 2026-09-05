@@ -30,6 +30,8 @@ private const val OPAQUE = 0xFF000000.toInt()
 private const val LEAST_INK = 0.02f
 private const val MOST_INK = 0.20f
 private const val NO_REFERENCE = 0
+private const val ALPHA_SHIFT = 24
+private const val TRANSPARENT = 0
 
 /**
  * The launcher tile and the window the app opens on are the same sheet of paper as
@@ -85,13 +87,28 @@ class LaunchMarkTest {
         assertEquals(PaperPalette.night.paper.toArgb(), context.getColor(R.color.paper))
     }
 
+    /**
+     * The tile carries writing and nothing else. A sheet drawn inside it would
+     * have to provide its own silhouette, and the launcher cuts a circle around
+     * whatever it is given — which is the square inside a circle of #73. The
+     * paper is the background layer's job, so the mask becomes the silhouette.
+     */
     @Test
-    fun `should write the icon with the pad's own tones`() {
+    fun `should draw no sheet of its own on the launcher tile`() {
         val face = icon().foreground
 
-        assertEquals(palette.stickyNote.toArgb(), face.pixelAt(36f, 45f))
-        assertEquals(palette.stickyNoteEdge.toArgb(), face.pixelAt(77f, 50f))
-        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(40.1f, 56.7f))
+        for (spot in listOf(20f to 20f, 88f to 20f, 20f to 88f, 88f to 88f, 63f to 48f)) {
+            val (x, y) = spot
+            assertEquals("ink at $x,$y", TRANSPARENT, face.alphaAt(x, y))
+        }
+    }
+
+    @Test
+    fun `should write the icon in the page's own pen`() {
+        val face = icon().foreground
+
+        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(34.5f, 45f))
+        assertEquals(palette.pencil.toArgb(), face.pixelAt(63f, 42f))
     }
 
     /**
@@ -103,17 +120,24 @@ class LaunchMarkTest {
     fun `should draw the tile as a list of lines, two struck and one still open`() {
         val face = icon().foreground
 
-        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(40.1f, 47.2f))
-        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(40.1f, 56.7f))
-        assertEquals(palette.pencil.toArgb(), face.pixelAt(35.8f, 66.5f))
-        for (rule in listOf(47.5f, 57f, 66.5f)) {
-            assertEquals("rule at $rule", palette.pencil.toArgb(), face.pixelAt(60f, rule))
+        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(34.5f, 45f))
+        assertEquals(palette.inkBlue.toArgb(), face.pixelAt(34.5f, 56f))
+        assertEquals(palette.pencil.toArgb(), face.pixelAt(30.5f, 66f))
+        for (rule in listOf(42f, 54f, 66f)) {
+            assertEquals("rule at $rule", palette.pencil.toArgb(), face.pixelAt(63f, rule))
         }
     }
 
+    /**
+     * The splash is the one half of the pair that is never masked, so it keeps the
+     * note settling onto the page — a sheet reads there exactly as it is meant to.
+     * The tile cannot keep it, so the two drawings part company on purpose: the
+     * launcher gets the writing, the launch window gets the note it is written on.
+     */
     @Test
-    fun `should shade the glued edge between the top sheet and the one under it`() {
-        val glue = Color(icon().foreground.pixelAt(50f, 33f))
+    fun `should shade the glued edge of the note the launch window settles`() {
+        val settle = checkNotNull(context.getDrawable(R.drawable.avd_sticky_settle))
+        val glue = Color(settle.pixelAt(50f, 33f))
 
         assertTrue("$glue", glue.grey() < palette.stickyNote.grey())
         assertTrue("$glue", glue.grey() > palette.stickyNoteMid.grey())
@@ -127,6 +151,12 @@ class LaunchMarkTest {
         val inked = checkNotNull(mark).render().count { it.ushr(24) > 0 }
         assertTrue("$inked inked", inked > LEAST_INK * SIDE * SIDE)
         assertTrue("$inked inked", inked < MOST_INK * SIDE * SIDE)
+    }
+
+    @Test
+    fun `should keep the drawn tile inside the mask the launcher cuts`() {
+        assertTrue("foreground reached ${furthestInkOf(icon().foreground)}",
+            furthestInkOf(icon().foreground) < SAFE_RADIUS)
     }
 
     @Test
@@ -177,7 +207,7 @@ class LaunchMarkTest {
     }
 
     @Test
-    fun `should settle the very note the launcher tile is stamped with`() {
+    fun `should settle a note drawn in the pad's own tones`() {
         val settle = checkNotNull(context.getDrawable(R.drawable.avd_sticky_settle))
 
         assertTrue("$settle", settle is AnimatedVectorDrawable)
@@ -185,6 +215,17 @@ class LaunchMarkTest {
         assertEquals(palette.stickyNoteEdge.toArgb(), settle.pixelAt(77f, 50f))
         assertEquals(palette.inkBlue.toArgb(), settle.pixelAt(40.1f, 56.7f))
         assertEquals(palette.pencil.toArgb(), settle.pixelAt(60f, 66.5f))
+    }
+
+    private fun furthestInkOf(drawable: Drawable): Float {
+        var furthest = 0f
+        drawable.render().forEachIndexed { at, pixel ->
+            if (pixel.ushr(ALPHA_SHIFT) == 0) return@forEachIndexed
+            val x = (at % SIDE) / UNIT - GRID / 2
+            val y = (at / SIDE) / UNIT - GRID / 2
+            furthest = maxOf(furthest, hypot(x, y))
+        }
+        return furthest
     }
 
     private fun icon(): AdaptiveIconDrawable =
@@ -207,6 +248,11 @@ class LaunchMarkTest {
         val pixels = IntArray(SIDE * SIDE)
         bitmap.getPixels(pixels, 0, SIDE, 0, 0, SIDE, SIDE)
         return pixels
+    }
+
+    private fun Drawable.alphaAt(x: Float, y: Float): Int {
+        val pixels = render()
+        return pixels[(y * UNIT).toInt() * SIDE + (x * UNIT).toInt()].ushr(ALPHA_SHIFT)
     }
 
     private fun Drawable.pixelAt(x: Float, y: Float): Int {

@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The themed tile: the same three ruled lines, two ticked and one open, drawn
+    as one silhouette. It is the foreground's drawing at the same coordinates —
+    the two layers used to disagree, the foreground carrying a sheet the
+    monochrome never had, which is half of why the sheet read as a square (#73).
+    Strokes are a shade heavier, because a tint has no second colour to separate
+    the ticks from the rules.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -7,41 +15,41 @@
 
     <path
         android:fillColor="#00000000"
-        android:pathData="M50,40 L80,40"
+        android:pathData="M50,42 L76,42"
         android:strokeColor="#FF000000"
-        android:strokeWidth="5"
+        android:strokeWidth="4.5"
         android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
-        android:pathData="M50,54 L80,54"
+        android:pathData="M50,54 L76,54"
         android:strokeColor="#FF000000"
-        android:strokeWidth="5"
+        android:strokeWidth="4.5"
         android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
-        android:pathData="M50,68 L80,68"
+        android:pathData="M50,66 L76,66"
         android:strokeColor="#FF000000"
-        android:strokeWidth="5"
+        android:strokeWidth="4.5"
         android:strokeLineCap="round" />
 
     <path
         android:fillColor="#00000000"
-        android:pathData="M28,40 L32.5,44.5 L40.5,34"
+        android:pathData="M31,41.5 L34.5,45 L40.5,37"
         android:strokeColor="#FF000000"
         android:strokeWidth="5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <path
         android:fillColor="#00000000"
-        android:pathData="M28,54 L32.5,58.5 L40.5,48"
+        android:pathData="M31,53 L34.5,56 L40.5,48"
         android:strokeColor="#FF000000"
         android:strokeWidth="5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <path
         android:fillColor="#00000000"
-        android:pathData="M29,68a5,5 0 1,0 10,0a5,5 0 1,0 -10,0z"
+        android:pathData="M30.5,66a4.5,4.5 0 1,0 9,0a4.5,4.5 0 1,0 -9,0z"
         android:strokeColor="#FF000000"
-        android:strokeWidth="4.5" />
+        android:strokeWidth="4" />
 
 </vector>

@@ -23,10 +23,11 @@ tools/
 ## The high-res icon
 
 `ic_launcher_play_store.png` is the 108 dp launcher canvas rendered 1:1 onto 512 px
-with the background full-bleed. It carries no code of its own — it must be redrawn
-by hand whenever `drawable/ic_launcher_background.xml` or
-`drawable/ic_launcher_foreground.xml` changes, and its five colours must equal
-theirs exactly. See `docs/app-icons.md`.
+with the background full-bleed, and Play applies its own mask to it. It is written
+by `tools/make-launcher-icons.py` alongside the legacy mipmaps, from the same
+geometry as the vector — it used to be redrawn by hand, which is a copy that can go
+stale against the drawable and quietly did. Re-run the tool whenever the vector
+changes. See `docs/app-icons.md`.
 
 ## The feature graphic
 
