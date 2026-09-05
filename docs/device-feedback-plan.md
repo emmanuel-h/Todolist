@@ -1,6 +1,6 @@
 # Device feedback — the tickets, and the order to fix them
 
-**Status: Phases 1, 2.0, 2.2 and 2.1 done. Phase 2.4 (#66) next.** Written 2026-09-01. This is a working plan, not
+**Status: Phases 1, 2.0, 2.2, 2.1 and 2.4 done. Phase 2.5 (#67 + #69) next.** Written 2026-09-01. This is a working plan, not
 a feature doc — it is meant to be read after a context clear, so it says where
 the work stands as well as what the work is.
 
@@ -74,7 +74,7 @@ probably wants a home in it. That decision should be made once.
 - [x] **Phase 2.0 — #75** delete the first-launch tutorial — landed 2026-09-01, [doc](tutorial-removal.md)
 - [x] **Phase 2.1 — #68** the line and the row become two measures — landed 2026-09-02, [doc](line-and-row.md). Not the 48dp the design pass chose: 48dp was built, driven and reverted because it keeps the ratio that is the actual complaint
 - [x] **Phase 2.2 — #72** row controls replace the swipe — landed 2026-09-02, [doc](row-controls.md)
-- [ ] **Phase 2.4 — #66** confirm a delete
+- [x] **Phase 2.4 — #66** confirm a delete — [doc](confirm-before-delete.md)
 - [ ] **Phase 2.5 — #67 + #69** the two discoverability tickets
 - [ ] **Phase 3 — #73** launcher icon *(unblocked from the start)*
 - [ ] **Phase 4.1 — #74** notification hour + first settings surface

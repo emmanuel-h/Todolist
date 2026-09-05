@@ -203,25 +203,21 @@ the corner is the only affordance.
 - The due date's jot is marked by the ⏰ glyph; the target date's by 📅. Neither appears on the other's row
 
 **Delete a list** — see **Delete an item**; both pages carry the same bin
-- Press the row's bin → the row tears off the page and an undo slip takes its place
-- The slip stands for **9 seconds** (`UNDO_SLIP_MILLIS`). Tapping it puts the row back
-- The write happens when the slip expires, when another row is torn off, or when the page
-  leaves — whichever comes first. Leaving commits rather than forgetting: the tear was the
-  decision, and the reader watched the row come off
-- The write is made on a scope the composition root owns, not the page's, so backing out of
-  a page mid-slip still lands it
-- Tearing off a row that is already pending is not a second delete and is ignored
-- Confirmed deletes cascade: the list and all its items go
+- Press the row's bin → a paper slip asks `Delete "<name>"?`, and under it, when the list
+  holds any, `and the N items on it`. A list with nothing on it is asked about in one line
+- **Delete** writes it through at once and the row tears off the page. **Cancel** leaves the
+  page exactly as it was, and so does back, and so does a tap on the veil
+- Deletes cascade: the list and all its items go
 
 **Reorder lists** — _implemented · [#6](https://github.com/emmanuel-h/Todolist/issues/6)_
 - Long-press-and-drag a row to reorder; TalkBack reaches the same move through the
   `Move up` / `Move down` custom actions on the row
 - The page hands the repository **the ids of the rows it is showing, in the order it is
-  showing them** — never a pair of indices. The page hides a torn-off row for the length of
-  its undo slip while the repository still holds it, so index spaces disagree and a drag
-  would otherwise move a different list
-- A row the page did not name — one finished, or one held behind a slip — keeps the slot it
-  had rather than being renumbered around
+  showing them** — never a pair of indices. The page and the repository used to disagree,
+  because a torn-off row stayed hidden for the length of its undo slip while the repository
+  still held it; with the slip gone the page shows exactly what the repository holds
+- A row the page did not name — a finished one — keeps the slot it had rather than being
+  renumbered around
 - Explicit position persists across restarts
 - New lists are always inserted at the top
 
@@ -275,7 +271,7 @@ gesture and so is still also a TalkBack custom action (`ui/paper/RowVerbs.kt`).
 |---------|-------------|----------------|
 | Tap the ring | Marks it done — the tick draws over 440ms, then the row crosses the divider | Restores it to the bottom of the active section |
 | Tap the title, or press the pencil | Opens an editor in place on the row | Opens an editor in place on the row |
-| Press the bin | Tears the row off behind a 9-second undo slip | Same |
+| Press the bin | Asks first, then tears the row off | Same |
 | Long-press and drag | Reorders within the active section | Not reorderable |
 
 The ring carries `Role.Checkbox` for a screen reader. The pen strike plus a dimmed tone is
@@ -313,17 +309,15 @@ ticking a list faster than the stroke lands every tick rather than only the last
 
 - **A row wears its two controls at rest** ([#72](https://github.com/emmanuel-h/Todolist/issues/72)): a pencil and a bin, at the row's end, on the rule it is written on. They are drawn at full ink in `InkTone.Margin`; pressed, they take `InkTone.Words`, raise the `PaperFocusMark` the title already uses, and buzz `PaperHaptics.pickUp()`
 - **The swipe is gone.** Every act on a row was a horizontal drag, hinted at by a mark and a chevron at each end drawn at 0.6 ink. On a list of nine rows that was eighteen faint half-glyphs that read as smudges rather than as controls, and three iterations on the hint never made the gesture findable. `SwipeRow.kt` and `CornerMark.kt` are deleted; there is one way to do each thing and it is visible
-- Press the bin → the row tears off and an undo slip stands in its place for 9 seconds
-- Same rules as a list: tapping the slip restores it, and the write lands when the slip
-  expires, when another row is torn off, or when the page leaves — on a scope that outlives
-  the page, so walking back out mid-slip still lands it
+- **Press the bin → the page asks before anything is written** ([#66](https://github.com/emmanuel-h/Todolist/issues/66)). The prompt names the row: `Delete "<title>"?`. An item takes nothing with it, so it is asked about in one line
+- **Nothing commits behind the reader's back.** A delete happens when, and only when, Delete is pressed. Cancel, back and a tap on the veil are all the same answer: nothing happened
+- This replaced a nine-second undo slip that committed on expiry, on the next tear, **and on leaving the page**. Leaving-commits is the surprise the report hit: tear a row off, walk out within nine seconds, and it was gone with nothing having asked. One decision point replaces the grace period
 - The tear-off animation survives the gesture that used to start it: a confirmed delete still tears the row off the page
 
 **Reorder active items** — _implemented · [#5](https://github.com/emmanuel-h/Todolist/issues/5)_
 - Long-press-and-drag an active row to reorder within the active section
 - As on the page of lists, the page hands down **the ids it is showing, in order** — never
-  indices. Completed rows and rows held behind an undo slip are named by nobody and keep
-  the slots they had
+  indices. Completed rows are named by nobody and keep the slots they had
 - Completed items cannot be manually reordered (always ordered by completion time)
 - Explicit position persists across restarts
 
@@ -452,7 +446,7 @@ Do not cut a Play Store release in that window.
 
 **Gesture-driven rows** — _superseded by [#72](https://github.com/emmanuel-h/Todolist/issues/72): the swipes are buttons now_
 - Rows show only the completion ring and the title (plus dates and counts on list rows).
-- Swipe end→start tore the row off behind an undo slip; long-press drags. On the page of
+- Swipe end→start tore the row off behind an undo slip (both gone: the swipe to #72, the slip to #66); long-press drags. On the page of
   lists, swipe start→end opened the edit sheet; on the page of items the title is tapped
   instead, which is where that gesture went. Only the long-press drag and the title tap
   survive — see **Item row**.
