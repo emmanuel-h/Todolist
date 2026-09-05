@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.data
 
+import fr.mandarine.todolist.domain.ListColour
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Before
@@ -18,15 +19,15 @@ class RoomTodoListRepositoryEditTest {
 
     @Test
     fun `should call dao update when update is called`() {
-        repository.update("1", "Supermarket", null, null)
+        repository.update("1", "Supermarket", null, null, ListColour.None)
 
-        verify { dao.update("1", "Supermarket", null, null) }
+        verify { dao.update("1", "Supermarket", null, null, "None") }
     }
 
     @Test
     fun `should call dao update with another id and name`() {
-        repository.update("list-42", "Work tasks", null, null)
+        repository.update("list-42", "Work tasks", null, null, ListColour.None)
 
-        verify { dao.update("list-42", "Work tasks", null, null) }
+        verify { dao.update("list-42", "Work tasks", null, null, "None") }
     }
 }

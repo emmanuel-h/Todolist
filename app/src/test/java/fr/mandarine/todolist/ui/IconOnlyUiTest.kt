@@ -312,7 +312,7 @@ private fun EmptyListsScreen() {
         today = LocalDate.of(2026, 1, 1),
         onOpenList = {},
         onCreateList = { _, _, _ -> },
-        onRenameList = { _, _, _, _ -> },
+        onRenameList = { _, _, _, _, _ -> },
         onDeleteList = {},
         onReorder = {}
     )
@@ -327,7 +327,7 @@ private fun ListsScreenWithSettingsOpen() {
         today = TODAY,
         onOpenList = {},
         onCreateList = { _, _, _ -> },
-        onRenameList = { _, _, _, _ -> },
+        onRenameList = { _, _, _, _, _ -> },
         onDeleteList = {},
         onReorder = {},
         reminderTime = LocalTime.of(8, 0),
@@ -356,7 +356,7 @@ private fun ListsScreenWithDeletePromptState(screenState: TodoListsScreenState) 
         today = TODAY,
         onOpenList = {},
         onCreateList = { _, _, _ -> },
-        onRenameList = { _, _, _, _ -> },
+        onRenameList = { _, _, _, _, _ -> },
         onDeleteList = {},
         onReorder = {}
     )

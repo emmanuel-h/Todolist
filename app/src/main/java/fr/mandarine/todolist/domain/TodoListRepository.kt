@@ -7,6 +7,6 @@ interface TodoListRepository {
     fun add(todoList: TodoList)
     fun addAtTop(todoList: TodoList)
     fun delete(todoListId: String)
-    fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?)
+    fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?, colour: ListColour)
     fun reorder(orderedActiveIds: List<String>)
 }

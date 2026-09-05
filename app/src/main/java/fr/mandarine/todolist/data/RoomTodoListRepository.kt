@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.data
 
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListRepository
 import java.time.LocalDate
@@ -10,7 +11,8 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
         dao.getAll().map { entity ->
             val dueDate = entity.dueDate?.let { LocalDate.ofEpochDay(it) }
             val targetDate = if (dueDate == null) entity.targetDate?.let { LocalDate.ofEpochDay(it) } else null
-            TodoList(entity.id, entity.name, entity.position, targetDate, dueDate)
+            val colour = ListColour.valueOf(entity.colour)
+            TodoList(entity.id, entity.name, entity.position, targetDate, dueDate, colour)
         }
 
     override fun add(todoList: TodoList) {
@@ -22,14 +24,14 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
     }
 
     private fun toEntity(todoList: TodoList) =
-        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay())
+        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay(), todoList.colour.name)
 
     override fun delete(todoListId: String) {
         dao.deleteById(todoListId)
     }
 
-    override fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?) {
-        dao.update(todoListId, name, targetDate?.toEpochDay(), dueDate?.toEpochDay())
+    override fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?, colour: ListColour) {
+        dao.update(todoListId, name, targetDate?.toEpochDay(), dueDate?.toEpochDay(), colour.name)
     }
 
     /**

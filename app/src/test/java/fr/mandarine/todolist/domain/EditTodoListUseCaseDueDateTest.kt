@@ -24,14 +24,14 @@ class EditTodoListUseCaseDueDateTest {
 
         useCase("list-1", "Groceries", targetDate = null, dueDate = dueDate)
 
-        verify { repository.update("list-1", "Groceries", null, dueDate) }
+        verify { repository.update("list-1", "Groceries", null, dueDate, ListColour.None) }
     }
 
     @Test
     fun `should update with null due date when due date is null`() {
         useCase("list-1", "Groceries", targetDate = null, dueDate = null)
 
-        verify { repository.update("list-1", "Groceries", null, null) }
+        verify { repository.update("list-1", "Groceries", null, null, ListColour.None) }
     }
 
     @Test
@@ -40,7 +40,7 @@ class EditTodoListUseCaseDueDateTest {
 
         useCase("list-1", "Groceries", targetDate = targetDate, dueDate = null)
 
-        verify { repository.update("list-1", "Groceries", targetDate, null) }
+        verify { repository.update("list-1", "Groceries", targetDate, null, ListColour.None) }
     }
 
     @Test
@@ -49,7 +49,7 @@ class EditTodoListUseCaseDueDateTest {
 
         useCase("list-42", "Work", targetDate = null, dueDate = dueDate)
 
-        verify { repository.update("list-42", "Work", null, dueDate) }
+        verify { repository.update("list-42", "Work", null, dueDate, ListColour.None) }
     }
 
     @Test
@@ -68,7 +68,7 @@ class EditTodoListUseCaseDueDateTest {
 
         runCatching { useCase("list-1", "   ", targetDate = null, dueDate = dueDate) }
 
-        verify(exactly = 0) { repository.update("list-1", "   ", null, dueDate) }
+        verify(exactly = 0) { repository.update("list-1", "   ", null, dueDate, ListColour.None) }
     }
 
     @Test
@@ -85,13 +85,13 @@ class EditTodoListUseCaseDueDateTest {
 
         runCatching { useCase("list-1", "Groceries", targetDate = targetDate, dueDate = dueDate) }
 
-        verify(exactly = 0) { repository.update("list-1", "Groceries", targetDate, dueDate) }
+        verify(exactly = 0) { repository.update("list-1", "Groceries", targetDate, dueDate, ListColour.None) }
     }
 
     @Test
     fun `should use null as default due date when not provided`() {
         useCase("list-1", "Groceries", targetDate = null)
 
-        verify { repository.update("list-1", "Groceries", null, null) }
+        verify { repository.update("list-1", "Groceries", null, null, ListColour.None) }
     }
 }

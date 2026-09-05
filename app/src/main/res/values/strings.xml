@@ -57,4 +57,11 @@
     <string name="reminder_every_day_at">Every day at</string>
     <string name="reminder_hour_picker_title">When shall I remind you?</string>
     <string name="done">Done</string>
+    <string name="colour_none">No colour</string>
+    <string name="colour_butter">Yellow</string>
+    <string name="colour_mint">Green</string>
+    <string name="colour_rose">Pink</string>
+    <string name="colour_sky">Blue</string>
+    <string name="colour_peach">Orange</string>
+    <string name="colour_lilac">Violet</string>
 </resources>

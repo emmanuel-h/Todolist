@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [TodoListEntity::class, TodoItemEntity::class], version = 7, exportSchema = true)
+@Database(entities = [TodoListEntity::class, TodoItemEntity::class], version = 8, exportSchema = true)
 abstract class TodoDatabase : RoomDatabase() {
     abstract fun todoListDao(): TodoListDao
     abstract fun todoItemDao(): TodoItemDao
@@ -49,6 +49,12 @@ abstract class TodoDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE todo_lists ADD COLUMN colour TEXT NOT NULL DEFAULT 'None'")
+            }
+        }
+
         @Volatile
         private var instance: TodoDatabase? = null
 
@@ -59,7 +65,7 @@ abstract class TodoDatabase : RoomDatabase() {
                     TodoDatabase::class.java,
                     "todo_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     /**
                      * Auto Backup copies the database file and its sidecars
                      * independently. Under WAL a snapshot can catch a committed

@@ -207,7 +207,7 @@ class ReminderSettingsDialogTest {
             today = TODAY,
             onOpenList = {},
             onCreateList = { _, _, _ -> },
-            onRenameList = { _, _, _, _ -> },
+            onRenameList = { _, _, _, _, _ -> },
             onDeleteList = {},
             onReorder = {},
             reminderTime = reminderTime,

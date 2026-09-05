@@ -7,7 +7,8 @@ data class TodoList(
     val name: String,
     val position: Int = 0,
     val targetDate: LocalDate? = null,
-    val dueDate: LocalDate? = null
+    val dueDate: LocalDate? = null,
+    val colour: ListColour = ListColour.None
 ) {
     init {
         require(targetDate == null || dueDate == null) {

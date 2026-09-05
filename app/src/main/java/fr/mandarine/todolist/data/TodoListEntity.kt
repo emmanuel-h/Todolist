@@ -9,5 +9,6 @@ data class TodoListEntity(
     val name: String,
     val position: Int = 0,
     val targetDate: Long? = null,
-    val dueDate: Long? = null
+    val dueDate: Long? = null,
+    val colour: String = "None"
 )

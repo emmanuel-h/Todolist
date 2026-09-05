@@ -32,6 +32,7 @@ This principle overrides any contradictory suggestion from a UI agent or the wir
 
 ### Theme & surface hierarchy — _implemented · [#32](https://github.com/emmanuel-h/Todolist/issues/32)_
 
+- **Colour is a semantic channel, and the reader's colour is not on it** ([#71](https://github.com/emmanuel-h/Todolist/issues/71)). `inkBlue` means *acted on*, `inkAmber` *due today*, `inkRed` *lost or tearing*. A list the reader paints red and a list overdue in red must stay different things, so the reader's colour goes **on the paper, never on the ink**: a highlighter wash behind the list's name. No glyph, rule, jot or numeral is ever tinted by it. See **Colour a list**.
 - The palette is a **fixed ink-on-paper set**, not wallpaper-derived, and it is a Kotlin object rather than a resource: `PaperPalette.light` and `PaperPalette.night` in `ui/paper/PaperPalette.kt`. Colours are named for stationery (`paper`, `ink`, `pencil`, `inkBlue`, `inkRed`, `inkAmber`, `stickyNote`, `rule`), and reached through `InkTone` rather than directly — see `ui/paper/InkBudget.kt` for what each tone is allowed to be spent on.
 - **The app has a night palette** and follows the system switch. `PaperPalette.night` is the same sheet by lamplight. `res/values-night/themes.xml` dresses the launch window to match, so the splash hands over without a tonal step.
 - `res/values/` holds only what a window needs before the first composition: the two `themes.xml` files, `colors.xml` (the flat `@color/paper` ground), `strings.xml`, and `integers.xml`. `android:windowLightNavigationBar` is API 27, so it lives in `values-v27/` and `values-night-v27/` overlays rather than in the base themes.
@@ -203,6 +204,13 @@ the corner is the only affordance.
 - The due date means "finish BEFORE/BY that day" (a hard deadline); overdue status is signalled by tint only; it does not affect list sort order
 - The due date's jot is marked by the ⏰ glyph; the target date's by 📅. Neither appears on the other's row
 
+**Colour a list** — _[#71](https://github.com/emmanuel-h/Todolist/issues/71)_
+- Seven marks on the edit sheet: `None` and six highlighter hues — Butter, Mint, Rose, Sky, Peach, Lilac. The chosen one is **circled in ink**, the same mark the paper calendar rings a day with and the hour grid rings an hour with; `None` reads as bare paper
+- The colour is drawn as a **highlighter wash behind the list's name**, ending where the name ends, because a highlighter follows the words. It sits under the writing: the name's ink, its strikethrough when the list is finished, and every mark on the row keep their own tones
+- It is a **closed set**, not a colour wheel, because `PaperPalette.night` is a second stock of paper rather than `light` inverted — every hue needs a lamplit twin, and a free ARGB value cannot have one. The night washes are authored separately to read as tonal paper shifts rather than coloured light
+- **Editing a name or a date leaves the colour alone.** Only the picker changes it. The edit path carries the colour through, because a default would have quietly stripped it on every rename
+- Colour is stored per list (`ListColour`, a TEXT column, schema 8); it does not affect sort order, and it means nothing to the app
+
 **Delete a list** — see **Delete an item**; both pages carry the same bin
 - Press the row's bin → a paper slip asks `Delete "<name>"?`, and under it, when the list
   holds any, `and the N items on it`. A list with nothing on it is asked about in one line
@@ -342,7 +350,7 @@ ticking a list faster than the stroke lands every tick rather than only the last
 
 ## Data & persistence
 
-- All data lives in SQLite via Room, schema version 7, `exportSchema = true`, with every migration 1→7 present and no destructive fallback
+- All data lives in SQLite via Room, schema version 8, `exportSchema = true`, with every migration 1→8 present and no destructive fallback
 - The database is opened `JournalMode.TRUNCATE`. Auto Backup copies the file and its sidecars independently, and under WAL a snapshot can catch a commit that lives only in the `-wal` half
 - Auto Backup is a whitelist naming the database alone (`backup_rules.xml`, `data_extraction_rules.xml`). That is what keeps `shared_prefs/` behind: a permission the old device already spent must not travel, or the restored one is silently reminder-less
 - Deleting a list cascades via a real `ForeignKey.CASCADE`, with `PRAGMA foreign_keys = ON` at every open

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import fr.mandarine.todolist.domain.ListColour
 
 private const val LAMPLIT = 0.18f
 
@@ -39,7 +40,22 @@ data class PaperPalette(
     val vignette: Color,
     val keyboardSeam: Color,
     val shadow: Color,
-    val lift: Color
+    val lift: Color,
+    /**
+     * Highlighter washes — one per [ListColour] hue. A wash sits under writing, so
+     * each value is pre-mixed against its sheet's paper: the alpha decision is made
+     * once here rather than at every draw call, and the ink above it stays fully
+     * legible on both sheets without any special treatment.
+     *
+     * The night twins are dimmer and less saturated than their daylight counterparts,
+     * reading as a subtle tonal shift on the dark sheet rather than a glow.
+     */
+    val butterWash: Color,
+    val mintWash: Color,
+    val roseWash: Color,
+    val skyWash: Color,
+    val peachWash: Color,
+    val lilacWash: Color
 ) {
     companion object {
         val light = PaperPalette(
@@ -73,7 +89,17 @@ data class PaperPalette(
             vignette = Color(0x063A2A10),
             keyboardSeam = Color(0x0F3A2A10),
             shadow = Color(0xFF3A2A10),
-            lift = Color(0xFF3A2A10)
+            lift = Color(0xFF3A2A10),
+            // Highlighter washes: hue at ~40 % opacity pre-mixed on paper #FAF5EA.
+            // Alpha was chosen as the minimum that makes the band legible as a
+            // colour choice while keeping the brown-black ink above it at full
+            // contrast (>7:1 on every swatch).
+            butterWash = Color(0xFFFCEF88),
+            mintWash = Color(0xFFB2E8BC),
+            roseWash = Color(0xFFFFCAD0),
+            skyWash = Color(0xFFBDD8F5),
+            peachWash = Color(0xFFFFD9A8),
+            lilacWash = Color(0xFFDCC8F5)
         )
 
         /**
@@ -116,7 +142,16 @@ data class PaperPalette(
             vignette = Color(0x14060404),
             keyboardSeam = Color(0x14E8E1D4),
             shadow = Color(0xFF060404),
-            lift = Color(0xFFF5EFE2)
+            lift = Color(0xFFF5EFE2),
+            // Lamplit twins: the same hues seen under a warm lamp rather than
+            // daylight — dimmer, less saturated, shifted toward the dark sheet's
+            // own warmth so they read as tonal paper rather than coloured light.
+            butterWash = Color(0xFF3F3820),
+            mintWash = Color(0xFF1C3E26),
+            roseWash = Color(0xFF3E1C22),
+            skyWash = Color(0xFF18203E),
+            peachWash = Color(0xFF3E2418),
+            lilacWash = Color(0xFF241838)
         )
     }
 }
@@ -124,5 +159,21 @@ data class PaperPalette(
 internal val Color.unlit: Boolean get() = luminance() < LAMPLIT
 
 internal val PaperPalette.byLamplight: Boolean get() = paper.unlit
+
+/**
+ * The highlighter wash for a given [ListColour], or [Color.Transparent] for
+ * [ListColour.None] so the caller can skip drawing entirely. Each palette carries
+ * its own set of values — the night twins are not the daylight washes inverted,
+ * they are a second set tuned for the dark sheet.
+ */
+fun PaperPalette.highlightWash(colour: ListColour): Color = when (colour) {
+    ListColour.None -> Color.Transparent
+    ListColour.Butter -> butterWash
+    ListColour.Mint -> mintWash
+    ListColour.Rose -> roseWash
+    ListColour.Sky -> skyWash
+    ListColour.Peach -> peachWash
+    ListColour.Lilac -> lilacWash
+}
 
 val LocalPaperPalette = staticCompositionLocalOf { PaperPalette.light }

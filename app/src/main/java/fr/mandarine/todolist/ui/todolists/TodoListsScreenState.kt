@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import java.time.LocalDate
@@ -32,13 +33,15 @@ data class DatePickerRequest(
 data class RenameState(
     val listId: String,
     val name: String,
-    val selection: DateSelection
+    val selection: DateSelection,
+    val colour: ListColour = ListColour.None
 ) {
     companion object {
         fun of(list: TodoList): RenameState = RenameState(
             listId = list.id,
             name = list.name,
-            selection = DateSelection.of(list.targetDate, list.dueDate)
+            selection = DateSelection.of(list.targetDate, list.dueDate),
+            colour = list.colour
         )
     }
 }
@@ -145,6 +148,7 @@ class TodoListsScreenState {
             outState.putString(RENAME_NAME, open.name)
             outState.putString(RENAME_KIND, open.selection.kind.name)
             open.selection.date?.let { outState.putLong(RENAME_DAY, it.toEpochDay()) }
+            outState.putString(RENAME_COLOUR, open.colour.name)
         }
     }
 
@@ -163,7 +167,9 @@ class TodoListsScreenState {
                 savedInstanceState.getString(RENAME_KIND)?.let(DateKind::valueOf)
                     ?: DateKind.TARGET,
                 savedInstanceState.dayOrNull(RENAME_DAY)
-            )
+            ),
+            colour = savedInstanceState.getString(RENAME_COLOUR)
+                ?.let(ListColour::valueOf) ?: ListColour.None
         )
     }
 }
@@ -179,4 +185,5 @@ private const val RENAME_ID = "lists-rename-id"
 private const val RENAME_NAME = "lists-rename-name"
 private const val RENAME_KIND = "lists-rename-kind"
 private const val RENAME_DAY = "lists-rename-day"
+private const val RENAME_COLOUR = "lists-rename-colour"
 

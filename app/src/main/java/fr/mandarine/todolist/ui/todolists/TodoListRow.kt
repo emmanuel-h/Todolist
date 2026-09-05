@@ -7,11 +7,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.DueDateStatus
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.listmeta.DateJot
 import fr.mandarine.todolist.ui.listmeta.OpenCount
@@ -22,9 +27,11 @@ import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
+import fr.mandarine.todolist.ui.paper.PenStrikeState
 import fr.mandarine.todolist.ui.paper.RowVerb
 import fr.mandarine.todolist.ui.paper.RuledRow
 import fr.mandarine.todolist.ui.paper.handwritten
+import fr.mandarine.todolist.ui.paper.highlightWash
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
 import fr.mandarine.todolist.ui.paper.rememberPenStrike
@@ -102,18 +109,49 @@ private fun RowScope.RowName(summary: TodoListSummary, animated: Boolean) {
     val style = MaterialTheme.typography.titleMedium
     val strike = rememberPenStrike(summary.list.id, summary.allDone, animated)
     val ink = palette.inked(InkBudget.words(summary.allDone))
+    val wash = palette.highlightWash(summary.list.colour)
     Text(
         text = remember(summary.list.name) { handwritten(summary.list.name) },
         modifier = Modifier
             .weight(1f)
             .padding(end = NAME_END_GAP)
             .seatOnRule()
+            .nameWash(wash, strike)
             .penStrike(strike, ink)
             .travellingName(summary.list.id),
         style = style,
         color = ink,
         onTextLayout = strike::onTextLayout
     )
+}
+
+/**
+ * A highlighter band behind the name: one filled rectangle per text line, each
+ * ending where that line's last glyph ends rather than at the composable's full
+ * width. Transparent for [ListColour.None] so no rectangle is drawn at all.
+ *
+ * Nothing is allocated inside the draw lambda: the layout is read in the cache
+ * block so a change to it rebuilds the cache rather than allocating per frame.
+ */
+private fun Modifier.nameWash(wash: Color, state: PenStrikeState): Modifier {
+    if (wash == Color.Transparent) return this
+    return drawWithCache {
+        val layout = state.layout
+        onDrawBehind {
+            if (layout == null) return@onDrawBehind
+            for (i in 0 until layout.lineCount) {
+                val top = layout.getLineTop(i)
+                val bottom = layout.getLineBottom(i)
+                val right = layout.getLineRight(i).coerceAtMost(size.width)
+                if (right <= 0f) continue
+                drawRect(
+                    color = wash,
+                    topLeft = Offset(0f, top),
+                    size = Size(right, bottom - top)
+                )
+            }
+        }
+    }
 }
 
 @Composable

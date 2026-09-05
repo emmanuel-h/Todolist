@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
@@ -36,6 +37,7 @@ class RenameListDialogTest {
     private var confirmed = 0
     private var dismissed = 0
     private val pickRequested = mutableListOf<DateKind>()
+    private val colourChosen = mutableListOf<ListColour>()
     private lateinit var state: MutableState<RenameState>
 
     @Test
@@ -209,6 +211,67 @@ class RenameListDialogTest {
         assertEquals(1, dismissed)
     }
 
+    // ── Colour picker ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `should circle the current colour swatch when the sheet opens`() {
+        render(RenameState.of(TodoList("1", "Groceries", colour = ListColour.Mint)))
+
+        composeRule.onNodeWithContentDescription(COLOUR_MINT).assertIsSelected()
+    }
+
+    @Test
+    fun `should not circle any other swatch when Mint is selected`() {
+        render(RenameState.of(TodoList("1", "Groceries", colour = ListColour.Mint)))
+
+        composeRule.onNodeWithContentDescription(COLOUR_BUTTER).assertIsNotSelected()
+        composeRule.onNodeWithContentDescription(COLOUR_NONE).assertIsNotSelected()
+    }
+
+    @Test
+    fun `should circle the None swatch when the list has no colour`() {
+        render(RenameState.of(TodoList("1", "Groceries")))
+
+        composeRule.onNodeWithContentDescription(COLOUR_NONE).assertIsSelected()
+    }
+
+    @Test
+    fun `should report the chosen colour when a swatch is pressed`() {
+        render(RenameState.of(TodoList("1", "Groceries")))
+
+        composeRule.onNodeWithContentDescription(COLOUR_SKY).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ListColour.Sky), colourChosen)
+    }
+
+    @Test
+    fun `should move the circle to the newly chosen swatch after a tap`() {
+        render(RenameState.of(TodoList("1", "Groceries")))
+
+        composeRule.onNodeWithContentDescription(COLOUR_BUTTER).performClick()
+        composeRule.runOnIdle {
+            state.value = state.value.copy(colour = ListColour.Butter)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(COLOUR_BUTTER).assertIsSelected()
+        composeRule.onNodeWithContentDescription(COLOUR_NONE).assertIsNotSelected()
+    }
+
+    @Test
+    fun `should show all seven swatches in the picker`() {
+        render(RenameState.of(TodoList("1", "Groceries")))
+
+        composeRule.onNodeWithContentDescription(COLOUR_NONE).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COLOUR_BUTTER).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COLOUR_MINT).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COLOUR_ROSE).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COLOUR_SKY).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COLOUR_PEACH).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COLOUR_LILAC).assertIsDisplayed()
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun render(initial: RenameState) {
@@ -233,7 +296,8 @@ class RenameListDialogTest {
             onPickDate = { pickRequested += it },
             onClearDate = { state.value = current.copy(selection = current.selection.cleared()) },
             onDismiss = { dismissed += 1 },
-            onConfirm = { confirmed += 1 }
+            onConfirm = { confirmed += 1 },
+            onColourChange = { colourChosen += it }
         )
     }
 
@@ -248,5 +312,12 @@ class RenameListDialogTest {
         const val SAVE_NAME = "Save list name"
         const val CANCEL = "Cancel"
         const val HINT = "…"
+        const val COLOUR_NONE = "No colour"
+        const val COLOUR_BUTTER = "Yellow"
+        const val COLOUR_MINT = "Green"
+        const val COLOUR_ROSE = "Pink"
+        const val COLOUR_SKY = "Blue"
+        const val COLOUR_PEACH = "Orange"
+        const val COLOUR_LILAC = "Violet"
     }
 }

@@ -1,6 +1,6 @@
 # Device feedback — the tickets, and the order to fix them
 
-**Status: Phases 2, 3 and 4.1 complete. Phase 4.2 (#71, colour per list) is all that is left.** Written 2026-09-01. This is a working plan, not
+**Status: every phase complete.** All nine device-feedback tickets are implemented and driven on a device. The issues are left open for the reporter to close after their own testing. Written 2026-09-01. This is a working plan, not
 a feature doc — it is meant to be read after a context clear, so it says where
 the work stands as well as what the work is.
 
@@ -78,7 +78,7 @@ probably wants a home in it. That decision should be made once.
 - [x] **Phase 2.5 — #67 + #69** the two discoverability tickets — [doc](discoverability.md)
 - [x] **Phase 3 — #73** launcher icon — the sheet comes off the tile, [doc](app-icons.md)
 - [x] **Phase 4.1 — #74** notification hour + first settings surface — [doc](reminder-hour.md)
-- [ ] **Phase 4.2 — #71** colour per list
+- [x] **Phase 4.2 — #71** colour per list — [doc](colour-per-list.md)
 
 ---
 
@@ -330,13 +330,13 @@ channel — see the open question below.
 
 ---
 
-## Open question
+## Open question — settled 2026-09-05
 
-Only one is left; it is not needed until Phase 4.2.
-
-**#71 — reader colour on the paper, never on the ink?** That is the only way
-found so far to keep a list the reader painted red distinguishable from a list
-that is overdue in red.
+**#71 — reader colour on the paper, never on the ink?** Yes. It is a highlighter
+wash behind the list's name, from a closed set of six hues, each with a lamplit
+twin because `PaperPalette.night` is a second stock of paper rather than `light`
+inverted. Nothing that carries meaning is tinted. See
+[colour-per-list.md](colour-per-list.md).
 
 ## Gate reminders
 

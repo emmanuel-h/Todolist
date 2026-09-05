@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.mandarine.todolist.domain.AnimationEvent
 import fr.mandarine.todolist.domain.CreateTodoListUseCase
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
@@ -41,9 +42,9 @@ class TodoListsViewModel(
         applyAndPublish { }
     }
 
-    fun createList(name: String, targetDate: LocalDate? = null, dueDate: LocalDate? = null) {
+    fun createList(name: String, targetDate: LocalDate? = null, dueDate: LocalDate? = null, colour: ListColour = ListColour.None) {
         applyAndPublishWithEvent {
-            createTodoListUseCase(name, targetDate, dueDate)
+            createTodoListUseCase(name, targetDate, dueDate, colour)
             AnimationEvent.ListAdded
         }
     }
@@ -66,9 +67,9 @@ class TodoListsViewModel(
         applyAndPublish(writeScope ?: viewModelScope) { deleteTodoListUseCase(todoListId) }
     }
 
-    fun editList(todoListId: String, newName: String, targetDate: LocalDate?, dueDate: LocalDate? = null) {
+    fun editList(todoListId: String, newName: String, targetDate: LocalDate?, dueDate: LocalDate? = null, colour: ListColour = ListColour.None) {
         if (newName.isBlank()) return
-        applyAndPublish { editTodoListUseCase(todoListId, newName, targetDate, dueDate) }
+        applyAndPublish { editTodoListUseCase(todoListId, newName, targetDate, dueDate, colour) }
     }
 
     fun reorderLists(orderedActiveIds: List<String>) {

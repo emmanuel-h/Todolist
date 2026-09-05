@@ -54,7 +54,7 @@ class RoomTodoListRepositoryTargetDateTest {
         val targetDate = LocalDate.of(2027, 6, 22)
         repository.add(TodoList("1", "Groceries"))
 
-        repository.update("1", "Groceries", targetDate, null)
+        repository.update("1", "Groceries", targetDate, null, fr.mandarine.todolist.domain.ListColour.None)
 
         assertEquals(targetDate, repository.getAll().first().targetDate)
     }
@@ -64,7 +64,7 @@ class RoomTodoListRepositoryTargetDateTest {
         val targetDate = LocalDate.of(2027, 6, 22)
         repository.add(TodoList("1", "Groceries", targetDate = targetDate))
 
-        repository.update("1", "Groceries", null, null)
+        repository.update("1", "Groceries", null, null, fr.mandarine.todolist.domain.ListColour.None)
 
         assertNull(repository.getAll().first().targetDate)
     }
@@ -75,7 +75,7 @@ class RoomTodoListRepositoryTargetDateTest {
         repository.add(TodoList("1", "Groceries"))
         repository.add(TodoList("2", "Work"))
 
-        repository.update("1", "Groceries", targetDate, null)
+        repository.update("1", "Groceries", targetDate, null, fr.mandarine.todolist.domain.ListColour.None)
 
         assertEquals(targetDate, repository.getAll()[0].targetDate)
         assertNull(repository.getAll()[1].targetDate)

@@ -5,6 +5,7 @@ import io.mockk.verify
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import org.junit.Assert.assertEquals
 
 class EditTodoListUseCaseTest {
 
@@ -21,14 +22,14 @@ class EditTodoListUseCaseTest {
     fun `should delegate update to repository with given id and name`() {
         useCase("list-1", "Groceries", null)
 
-        verify { repository.update("list-1", "Groceries", null, null) }
+        verify { repository.update("list-1", "Groceries", null, null, ListColour.None) }
     }
 
     @Test
     fun `should delegate update to repository with another id and name`() {
         useCase("list-42", "Work tasks", null)
 
-        verify { repository.update("list-42", "Work tasks", null, null) }
+        verify { repository.update("list-42", "Work tasks", null, null, ListColour.None) }
     }
 
     @Test
@@ -49,6 +50,6 @@ class EditTodoListUseCaseTest {
     fun `should not call repository when name is blank`() {
         runCatching { useCase("list-1", "   ", null) }
 
-        verify(exactly = 0) { repository.update("list-1", "   ", null, null) }
+        verify(exactly = 0) { repository.update("list-1", "   ", null, null, ListColour.None) }
     }
 }

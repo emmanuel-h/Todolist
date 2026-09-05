@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.data
 
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import io.mockk.every
 import io.mockk.mockk
@@ -25,25 +26,25 @@ class RoomTodoListRepositoryTargetDateUnitTest {
     fun `should call dao update with epoch day when update is called with a date`() {
         val targetDate = LocalDate.of(2027, 6, 22)
 
-        repository.update("1", "Groceries", targetDate, null)
+        repository.update("1", "Groceries", targetDate, null, ListColour.None)
 
-        verify { dao.update("1", "Groceries", targetDate.toEpochDay(), null) }
+        verify { dao.update("1", "Groceries", targetDate.toEpochDay(), null, "None") }
     }
 
     @Test
     fun `should call dao update with null when update is called with null`() {
-        repository.update("1", "Groceries", null, null)
+        repository.update("1", "Groceries", null, null, ListColour.None)
 
-        verify { dao.update("1", "Groceries", null, null) }
+        verify { dao.update("1", "Groceries", null, null, "None") }
     }
 
     @Test
     fun `should call dao update with another id and date`() {
         val targetDate = LocalDate.of(2026, 1, 15)
 
-        repository.update("list-42", "Work", targetDate, null)
+        repository.update("list-42", "Work", targetDate, null, ListColour.None)
 
-        verify { dao.update("list-42", "Work", targetDate.toEpochDay(), null) }
+        verify { dao.update("list-42", "Work", targetDate.toEpochDay(), null, "None") }
     }
 
     @Test

@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.ui.todolists
 
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import androidx.compose.ui.unit.dp
@@ -396,16 +397,18 @@ class TodoListsScreenStateTest {
         listId: String,
         name: String,
         targetDate: LocalDate?,
-        dueDate: LocalDate?
+        dueDate: LocalDate?,
+        colour: ListColour = ListColour.None
     ) {
-        renames += Rename(listId, name, targetDate, dueDate)
+        renames += Rename(listId, name, targetDate, dueDate, colour)
     }
 
     private data class Rename(
         val listId: String,
         val name: String,
         val targetDate: LocalDate?,
-        val dueDate: LocalDate?
+        val dueDate: LocalDate?,
+        val colour: ListColour = ListColour.None
     )
 
     private val page = TodoListsState.Content(

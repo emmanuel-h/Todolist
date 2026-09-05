@@ -24,14 +24,14 @@ class EditTodoListUseCaseTargetDateTest {
 
         useCase("list-1", "Groceries", targetDate)
 
-        verify { repository.update("list-1", "Groceries", targetDate, null) }
+        verify { repository.update("list-1", "Groceries", targetDate, null, ListColour.None) }
     }
 
     @Test
     fun `should update with null target date when target date is null`() {
         useCase("list-1", "Groceries", null)
 
-        verify { repository.update("list-1", "Groceries", null, null) }
+        verify { repository.update("list-1", "Groceries", null, null, ListColour.None) }
     }
 
     @Test
@@ -40,7 +40,7 @@ class EditTodoListUseCaseTargetDateTest {
 
         useCase("list-1", "Groceries", targetDate)
 
-        verify(exactly = 1) { repository.update("list-1", "Groceries", targetDate, null) }
+        verify(exactly = 1) { repository.update("list-1", "Groceries", targetDate, null, ListColour.None) }
     }
 
     @Test
@@ -49,7 +49,7 @@ class EditTodoListUseCaseTargetDateTest {
 
         useCase("list-42", "Work", targetDate)
 
-        verify { repository.update("list-42", "Work", targetDate, null) }
+        verify { repository.update("list-42", "Work", targetDate, null, ListColour.None) }
     }
 
     @Test
@@ -58,7 +58,7 @@ class EditTodoListUseCaseTargetDateTest {
 
         runCatching { useCase("list-1", "   ", targetDate) }
 
-        verify(exactly = 0) { repository.update("list-1", "   ", targetDate, null) }
+        verify(exactly = 0) { repository.update("list-1", "   ", targetDate, null, ListColour.None) }
     }
 
     @Test

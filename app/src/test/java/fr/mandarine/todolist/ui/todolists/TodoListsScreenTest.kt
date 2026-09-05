@@ -29,6 +29,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
 import fr.mandarine.todolist.domain.DueDateStatus
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
@@ -56,6 +57,7 @@ class TodoListsScreenTest {
     private val created = mutableListOf<Triple<String, LocalDate?, LocalDate?>>()
     private val renamed = mutableListOf<String>()
     private val renamedDates = mutableListOf<Pair<LocalDate?, LocalDate?>>()
+    private val renamedColours = mutableListOf<ListColour>()
     private val deleted = mutableListOf<String>()
     private val reordered = mutableListOf<List<String>>()
     private val opened = mutableListOf<String>()
@@ -565,6 +567,40 @@ class TodoListsScreenTest {
         assertNull(screenState.rename)
     }
 
+    /**
+     * Renaming a coloured list must carry the colour forward. Before this fix every
+     * edit that went through [writeListDate] or the rename confirm silently passed
+     * [ListColour.None] (the default), stripping whatever the reader had set.
+     */
+    @Test
+    fun `should preserve the list's colour when its name is changed`() {
+        screenState.rename = RenameState.of(
+            TodoList("1", "Groceries", colour = ListColour.Butter)
+        )
+        render(content(active = listOf(summary("1", "Groceries", colour = ListColour.Butter))))
+
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("Shopping")
+        composeRule.onNode(hasSetTextAction()).performImeAction()
+
+        assertEquals(listOf(ListColour.Butter), renamedColours)
+    }
+
+    @Test
+    fun `should preserve the list's colour when its date is written from the row`() {
+        screenState.animationsEnabled = false
+        render(
+            content(
+                active = listOf(summary("1", "Groceries", targetDate = DATE, colour = ListColour.Mint))
+            )
+        )
+
+        composeRule.onNodeWithContentDescription("Target date ${spelled(DATE)}").performClick()
+        composeRule.onNodeWithText(DATE.plusDays(1).dayOfMonth.toString()).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ListColour.Mint), renamedColours)
+    }
+
     // ── Reaching the gestures without one ─────────────────────────────────────
 
     @Test
@@ -1056,9 +1092,10 @@ class TodoListsScreenTest {
             today = DATE,
             onOpenList = { opened += it.name },
             onCreateList = { name, target, due -> created += Triple(name, target, due) },
-            onRenameList = { _, name, target, due ->
+            onRenameList = { _, name, target, due, colour ->
                 renamed += name
                 renamedDates += target to due
+                renamedColours += colour
             },
             onDeleteList = { deleted += it },
             onReorder = { orderedIds -> reordered += orderedIds },
@@ -1095,9 +1132,10 @@ class TodoListsScreenTest {
         targetDate: LocalDate? = null,
         dueDate: LocalDate? = null,
         activeCount: Int = 0,
-        completedCount: Int = 0
+        completedCount: Int = 0,
+        colour: ListColour = ListColour.None
     ) = TodoListSummary(
-        list = TodoList(id, name, targetDate = targetDate, dueDate = dueDate),
+        list = TodoList(id, name, targetDate = targetDate, dueDate = dueDate, colour = colour),
         allDone = allDone,
         activeCount = activeCount,
         completedCount = completedCount,

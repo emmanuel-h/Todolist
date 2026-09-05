@@ -62,4 +62,11 @@
     <string name="reminder_every_day_at">Chaque jour à</string>
     <string name="reminder_hour_picker_title">À quelle heure me rappeler ?</string>
     <string name="done">Terminé</string>
+    <string name="colour_none">Sans couleur</string>
+    <string name="colour_butter">Jaune</string>
+    <string name="colour_mint">Vert</string>
+    <string name="colour_rose">Rose</string>
+    <string name="colour_sky">Bleu</string>
+    <string name="colour_peach">Orange</string>
+    <string name="colour_lilac">Violet</string>
 </resources>

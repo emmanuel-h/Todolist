@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
@@ -118,7 +119,7 @@ fun TodoListsScreen(
     today: LocalDate,
     onOpenList: (TodoList) -> Unit,
     onCreateList: (String, LocalDate?, LocalDate?) -> Unit,
-    onRenameList: (String, String, LocalDate?, LocalDate?) -> Unit,
+    onRenameList: (String, String, LocalDate?, LocalDate?, ListColour) -> Unit,
     onDeleteList: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
     onDueDateSet: (ReminderNote) -> Unit = {},
@@ -447,6 +448,9 @@ fun TodoListsScreen(
             onClearDate = {
                 screenState.rename = rename.copy(selection = rename.selection.cleared())
             },
+            onColourChange = { colour ->
+                screenState.rename = rename.copy(colour = colour)
+            },
             animated = screenState.animationsEnabled,
             onDismiss = { screenState.rename = null },
             onConfirm = {
@@ -455,7 +459,8 @@ fun TodoListsScreen(
                         rename.listId,
                         rename.name,
                         rename.selection.targetDate,
-                        rename.selection.dueDate
+                        rename.selection.dueDate,
+                        rename.colour
                     )
                     screenState.rename = null
                 }
@@ -676,10 +681,10 @@ internal fun writeListDate(
     state: TodoListsState,
     listId: String,
     written: DateSelection,
-    onRenameList: (String, String, LocalDate?, LocalDate?) -> Unit
+    onRenameList: (String, String, LocalDate?, LocalDate?, ListColour) -> Unit
 ): Boolean {
     val list = listOnPage(state, listId) ?: return false
-    onRenameList(list.id, list.name, written.targetDate, written.dueDate)
+    onRenameList(list.id, list.name, written.targetDate, written.dueDate, list.colour)
     return reminderDateWritten(DateSelection.of(list.targetDate, list.dueDate), written)
 }
 

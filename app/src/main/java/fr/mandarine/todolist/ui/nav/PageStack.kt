@@ -47,6 +47,7 @@ import fr.mandarine.todolist.ui.paper.ReminderSlip
 import fr.mandarine.todolist.ui.paper.rememberReminderNotes
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
@@ -210,8 +211,8 @@ private fun ListsPage(
         onCreateList = { name, targetDate, dueDate ->
             viewModel.createList(name, targetDate, dueDate)
         },
-        onRenameList = { listId, name, targetDate, dueDate ->
-            viewModel.editList(listId, name, targetDate, dueDate)
+        onRenameList = { listId, name, targetDate, dueDate, colour ->
+            viewModel.editList(listId, name, targetDate, dueDate, colour)
         },
         onDeleteList = { listId -> viewModel.deleteList(listId) },
         onDueDateSet = onDueDateSet,
@@ -278,11 +279,17 @@ private fun ItemsPage(
             },
             onRenameList = { name ->
                 val list = summary?.list ?: return@TodoListScreen
-                listsViewModel.editList(listId, name, list.targetDate, list.dueDate)
+                listsViewModel.editList(listId, name, list.targetDate, list.dueDate, list.colour)
             },
             onWriteDate = { written ->
                 val list = summary?.list ?: return@TodoListScreen
-                listsViewModel.editList(listId, list.name, written.targetDate, written.dueDate)
+                listsViewModel.editList(
+                    listId,
+                    list.name,
+                    written.targetDate,
+                    written.dueDate,
+                    list.colour
+                )
                 val before = DateSelection.of(list.targetDate, list.dueDate)
                 if (reminderDateWritten(before, written)) {
                     onDueDateSet(ReminderNote(list.name, written.date))
