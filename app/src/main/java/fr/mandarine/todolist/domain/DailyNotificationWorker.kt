@@ -14,10 +14,18 @@ package fr.mandarine.todolist.domain
 class DailyNotificationWorker(
     private val todoListRepository: TodoListRepository,
     private val computeUseCase: ComputePendingNotificationsUseCase,
-    private val listNotifier: ListNotifier
+    private val listNotifier: ListNotifier,
+    private val notificationScheduler: NotificationScheduler
 ) {
+    /**
+     * Posting is only half of a run. The other half is aiming the next one at the
+     * next occurrence of the reader's hour in the zone the device is in now, which
+     * is what keeps a twenty-four hour period from walking off the hour once a
+     * daylight-saving change or a deferred run has moved it.
+     */
     fun execute() {
         val lists = todoListRepository.getAll()
         listNotifier.postNotifications(computeUseCase(lists))
+        notificationScheduler.rescheduleDailyCheck()
     }
 }

@@ -65,9 +65,6 @@ interface TodoItemDao {
     @Query("UPDATE todo_items SET title = :title WHERE id = :id")
     fun updateTitle(id: String, title: String)
 
-    @Query("DELETE FROM todo_items WHERE listId = :listId")
-    fun deleteAllByListId(listId: String)
-
     @Query("UPDATE todo_items SET position = :position WHERE id = :id")
     fun updatePosition(id: String, position: Int)
 

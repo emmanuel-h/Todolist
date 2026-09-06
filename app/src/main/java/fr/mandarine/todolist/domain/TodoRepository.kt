@@ -30,8 +30,6 @@ interface TodoRepository {
     fun updateTitle(todoId: String, title: String)
 
     /** Used when a whole list is deleted; the foreign key would cascade anyway, this is explicit. */
-    fun deleteAllByListId(listId: String)
-
     /**
      * Renumbers only the ids named, in the order given, leaving every item not
      * named where it was. See the implementation for why that matters.

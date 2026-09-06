@@ -3,6 +3,7 @@ package fr.mandarine.todolist.domain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -12,11 +13,12 @@ class DailyNotificationWorkerTest {
     private val repository: TodoListRepository = mockk()
     private val computeUseCase: ComputePendingNotificationsUseCase = mockk()
     private val listNotifier: ListNotifier = mockk(relaxed = true)
+    private val notificationScheduler: NotificationScheduler = mockk(relaxed = true)
     private lateinit var worker: DailyNotificationWorker
 
     @Before
     fun setUp() {
-        worker = DailyNotificationWorker(repository, computeUseCase, listNotifier)
+        worker = DailyNotificationWorker(repository, computeUseCase, listNotifier, notificationScheduler)
     }
 
     @Test
@@ -52,5 +54,32 @@ class DailyNotificationWorkerTest {
         every { computeUseCase(emptyList()) } returns emptyList()
         worker.execute()
         verify { listNotifier.postNotifications(emptyList()) }
+    }
+
+    /**
+     * A run that does not re-aim the next one is how a fixed twenty-four hour
+     * period walks off the reader's hour and never comes back.
+     */
+    @Test
+    fun `should aim the next check when execute is called`() {
+        every { repository.getAll() } returns emptyList()
+        every { computeUseCase(emptyList()) } returns emptyList()
+
+        worker.execute()
+
+        verify { notificationScheduler.rescheduleDailyCheck() }
+    }
+
+    @Test
+    fun `should post before aiming the next check when execute is called`() {
+        every { repository.getAll() } returns emptyList()
+        every { computeUseCase(emptyList()) } returns emptyList()
+
+        worker.execute()
+
+        verifyOrder {
+            listNotifier.postNotifications(emptyList())
+            notificationScheduler.rescheduleDailyCheck()
+        }
     }
 }

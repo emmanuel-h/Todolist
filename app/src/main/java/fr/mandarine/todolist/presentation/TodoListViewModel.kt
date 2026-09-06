@@ -82,23 +82,23 @@ class TodoListViewModel(
     }
 
     fun toggleTodo(todoId: String) {
-        val wasCompleted = isShownCompleted(todoId)
         applyAndPublishWithEvents {
+            val wasCompleted = storedCompletion(todoId)
             toggleTodoUseCase(todoId)
             toggleEvents(todoId, wasCompleted)
         }
     }
 
     /**
-     * Was the row already ticked, according to what the page is currently showing?
-     * Asked *before* the toggle is written, since afterwards the answer is
-     * necessarily the opposite of what it was.
+     * Was the row already ticked? Read on the database thread immediately before
+     * the flip, so the event the page is handed cannot disagree with the state
+     * published right after it. Read from the page instead — which is a frame
+     * behind the write — and two taps in quick succession describe the first flip
+     * twice.
      */
-    private fun isShownCompleted(todoId: String): Boolean {
-        val current = state.value
-        if (current !is TodoListState.Content) return false
-        for (item in current.completedItems) {
-            if (item.id == todoId) return true
+    private fun storedCompletion(todoId: String): Boolean {
+        for (item in getTodosUseCase(listId)) {
+            if (item.id == todoId) return item.isCompleted
         }
         return false
     }

@@ -35,7 +35,10 @@ class DailyNotificationWorkTest {
         application.container = AppContainer(
             application,
             databaseFactory = { database },
-            schedulerFactory = { _, _ -> NotificationScheduler { } }
+            schedulerFactory = { _, _ -> object : NotificationScheduler {
+                override fun ensureDailyCheck() = Unit
+                override fun rescheduleDailyCheck() = Unit
+            } }
         )
     }
 

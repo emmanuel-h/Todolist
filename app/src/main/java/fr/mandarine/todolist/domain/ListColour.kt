@@ -19,5 +19,21 @@ enum class ListColour {
     Rose,
     Sky,
     Peach,
-    Lilac
+    Lilac;
+
+    companion object {
+        /**
+         * The colour stored under [name], or [None] when the name is not one of
+         * these. Storage holds the constant's name as text and nothing constrains
+         * it, so a name this enum no longer has must read as an absent colour
+         * rather than throw — a row written by a later version, restored from a
+         * backup, would otherwise crash every launch with no way back into the app.
+         */
+        fun named(name: String): ListColour {
+            for (colour in entries) {
+                if (colour.name == name) return colour
+            }
+            return None
+        }
+    }
 }

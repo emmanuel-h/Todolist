@@ -12,12 +12,8 @@ package fr.mandarine.todolist.domain
  * Order matters: children before parent, so the database is never momentarily
  * holding items whose list is gone.
  */
-class DeleteTodoListUseCase(
-    private val todoListRepository: TodoListRepository,
-    private val todoRepository: TodoRepository
-) {
+class DeleteTodoListUseCase(private val todoListRepository: TodoListRepository) {
     operator fun invoke(todoListId: String) {
-        todoRepository.deleteAllByListId(todoListId)
         todoListRepository.delete(todoListId)
     }
 }

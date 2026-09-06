@@ -117,7 +117,9 @@ class TodoListViewModelAnimationTest {
         val bread = TodoItem("bread", "Bread", "list-1", isCompleted = true, completedAt = 1000L)
         every { getTodosUseCase("list-1") } returns listOf(apples, bread)
         viewModel.refresh()
-        every { getTodosUseCase("list-1") } returns listOf(apples.ticked(2000L), bread)
+        every { toggleTodoUseCase("apples") } answers {
+            every { getTodosUseCase("list-1") } returns listOf(apples.ticked(2000L), bread)
+        }
 
         val events = collectEvents { viewModel.toggleTodo("apples") }
 
@@ -135,7 +137,9 @@ class TodoListViewModelAnimationTest {
         val bread = TodoItem("bread", "Bread", "list-1")
         every { getTodosUseCase("list-1") } returns listOf(bread)
         viewModel.refresh()
-        every { getTodosUseCase("list-1") } returns listOf(bread.ticked(2000L))
+        every { toggleTodoUseCase("bread") } answers {
+            every { getTodosUseCase("list-1") } returns listOf(bread.ticked(2000L))
+        }
 
         val events = collectEvents { viewModel.toggleTodo("bread") }
 
@@ -148,7 +152,9 @@ class TodoListViewModelAnimationTest {
         val bread = TodoItem("bread", "Bread", "list-1")
         every { getTodosUseCase("list-1") } returns listOf(apples, bread)
         viewModel.refresh()
-        every { getTodosUseCase("list-1") } returns listOf(apples.ticked(2000L), bread)
+        every { toggleTodoUseCase("apples") } answers {
+            every { getTodosUseCase("list-1") } returns listOf(apples.ticked(2000L), bread)
+        }
 
         val events = collectEvents { viewModel.toggleTodo("apples") }
 

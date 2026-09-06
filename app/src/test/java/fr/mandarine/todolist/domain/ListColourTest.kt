@@ -6,77 +6,32 @@ import org.junit.Test
 class ListColourTest {
 
     @Test
-    fun `should have None constant`() {
-        assertEquals(ListColour.None, ListColour.valueOf("None"))
+    fun `should answer the colour when the stored name is one of them`() {
+        assertEquals(ListColour.Mint, ListColour.named("Mint"))
     }
 
     @Test
-    fun `should have Butter constant`() {
-        assertEquals(ListColour.Butter, ListColour.valueOf("Butter"))
+    fun `should answer the first colour when the stored name is that one`() {
+        assertEquals(ListColour.None, ListColour.named("None"))
     }
 
     @Test
-    fun `should have Mint constant`() {
-        assertEquals(ListColour.Mint, ListColour.valueOf("Mint"))
+    fun `should answer the last colour when the stored name is that one`() {
+        assertEquals(ListColour.Lilac, ListColour.named("Lilac"))
+    }
+
+    /**
+     * The case the app used to die on. A row written by a version that had a colour
+     * this one does not — restored from a backup, say — reads as no colour rather
+     * than throwing on every launch with no way back into the app.
+     */
+    @Test
+    fun `should answer None when the stored name is not a colour`() {
+        assertEquals(ListColour.None, ListColour.named("Vermilion"))
     }
 
     @Test
-    fun `should have Rose constant`() {
-        assertEquals(ListColour.Rose, ListColour.valueOf("Rose"))
-    }
-
-    @Test
-    fun `should have Sky constant`() {
-        assertEquals(ListColour.Sky, ListColour.valueOf("Sky"))
-    }
-
-    @Test
-    fun `should have Peach constant`() {
-        assertEquals(ListColour.Peach, ListColour.valueOf("Peach"))
-    }
-
-    @Test
-    fun `should have Lilac constant`() {
-        assertEquals(ListColour.Lilac, ListColour.valueOf("Lilac"))
-    }
-
-    @Test
-    fun `should store None by its name`() {
-        assertEquals("None", ListColour.None.name)
-    }
-
-    @Test
-    fun `should store Butter by its name`() {
-        assertEquals("Butter", ListColour.Butter.name)
-    }
-
-    @Test
-    fun `should store Mint by its name`() {
-        assertEquals("Mint", ListColour.Mint.name)
-    }
-
-    @Test
-    fun `should store Rose by its name`() {
-        assertEquals("Rose", ListColour.Rose.name)
-    }
-
-    @Test
-    fun `should store Sky by its name`() {
-        assertEquals("Sky", ListColour.Sky.name)
-    }
-
-    @Test
-    fun `should store Peach by its name`() {
-        assertEquals("Peach", ListColour.Peach.name)
-    }
-
-    @Test
-    fun `should store Lilac by its name`() {
-        assertEquals("Lilac", ListColour.Lilac.name)
-    }
-
-    @Test
-    fun `should have exactly seven constants`() {
-        assertEquals(7, ListColour.entries.size)
+    fun `should answer None when the stored name is empty`() {
+        assertEquals(ListColour.None, ListColour.named(""))
     }
 }

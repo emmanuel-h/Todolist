@@ -8,10 +8,13 @@ import fr.mandarine.todolist.DailyNotificationWork
 import fr.mandarine.todolist.FakeClock
 import fr.mandarine.todolist.TodoListApplication
 import fr.mandarine.todolist.domain.ReminderTimeRepository
+import java.time.LocalDate
 import java.time.LocalTime
-import kotlin.math.abs
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.TimeZone
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
@@ -24,93 +27,102 @@ import org.robolectric.annotation.Config
 class WorkManagerNotificationSchedulerTest {
 
     private val application = ApplicationProvider.getApplicationContext<TodoListApplication>()
+    private val originalZone: TimeZone = TimeZone.getDefault()
 
     @Before
     fun setUp() {
+        TimeZone.setDefault(TimeZone.getTimeZone(ZONE.id))
         WorkManagerTestInitHelper.initializeTestWorkManager(application)
     }
 
+    @After
+    fun tearDown() {
+        TimeZone.setDefault(originalZone)
+    }
+
     @Test
-    fun `should enqueue unique periodic work when scheduleDailyCheck is called`() {
-        val scheduler = WorkManagerNotificationScheduler(
-            application,
-            DailyNotificationWork::class.java,
-            FakeReminderTimeRepository(),
-            FakeClock()
-        )
+    fun `should enqueue one check when nothing is armed`() {
+        scheduler().ensureDailyCheck()
 
-        scheduler.scheduleDailyCheck()
-
-        val infos = WorkManager.getInstance(application)
-            .getWorkInfosForUniqueWork(WorkManagerNotificationScheduler.WORK_NAME)
-            .get()
+        val infos = checkInfos()
         assertEquals(1, infos.size)
         assertEquals(WorkInfo.State.ENQUEUED, infos.first().state)
     }
 
     /**
-     * Laying the schedule again is what every launch does, so it must not leave two
-     * checks behind, and with the hour unchanged it must still point at the moment
-     * it already pointed at.
+     * The moment is asserted absolutely rather than against a recomputation of the
+     * same call, so the schedule pointing at the wrong hour is a failure here and
+     * not something the assertion follows along with.
      */
     @Test
-    fun `should keep one check pointing at the same moment when the hour has not changed`() {
-        val scheduler = WorkManagerNotificationScheduler(
-            application,
-            DailyNotificationWork::class.java,
-            FakeReminderTimeRepository(),
-            FakeClock()
-        )
+    fun `should aim the check at the next occurrence of the chosen hour`() {
+        scheduler().ensureDailyCheck()
 
-        scheduler.scheduleDailyCheck()
-        val first = nextRunOfTheCheck()
-
-        scheduler.scheduleDailyCheck()
-
-        val infos = WorkManager.getInstance(application)
-            .getWorkInfosForUniqueWork(WorkManagerNotificationScheduler.WORK_NAME)
-            .get()
-        assertEquals(1, infos.size)
-        // WorkManager stamps the absolute moment at enqueue, so laying the same
-        // schedule twice lands a few real milliseconds apart. Hours apart is the
-        // failure being guarded against; milliseconds are the clock ticking.
-        assertTrue(
-            "moved by ${abs(nextRunOfTheCheck() - first)} ms",
-            abs(nextRunOfTheCheck() - first) < SAME_MOMENT_MILLIS
-        )
+        assertEquals(atLocal(MARCH_16, LocalTime.of(8, 0)), nextRunOfTheCheck())
     }
 
     /**
-     * The one that matters, and the one a policy check cannot make: a changed hour
-     * has to move the moment the check actually runs. `KEEP` never moved it, and
-     * `UPDATE` does not either — it replaces the request but keeps the period
-     * already running, so the new delay is dropped on the floor and the reminder
-     * still arrives at the old hour. Only re-enqueuing moves it, and on a device
-     * that is the difference between the setting working and doing nothing.
+     * What a launch must never do. A check the device deferred past its hour is
+     * still pending, and re-laying it would push it to tomorrow — the list due
+     * today then never gets its notification.
      */
+    @Test
+    fun `should leave a pending check where it is when the schedule is ensured again`() {
+        val repository = FakeReminderTimeRepository()
+        val scheduler = scheduler(repository)
+        scheduler.ensureDailyCheck()
+        val armed = nextRunOfTheCheck()
+
+        repository.time = LocalTime.of(23, 0)
+        scheduler.ensureDailyCheck()
+
+        assertEquals(1, checkInfos().size)
+        assertEquals(armed, nextRunOfTheCheck())
+    }
+
     @Test
     fun `should move the next check when the chosen hour changes`() {
         val repository = FakeReminderTimeRepository()
-        val scheduler = WorkManagerNotificationScheduler(
-            application,
-            DailyNotificationWork::class.java,
-            repository,
-            FakeClock()
-        )
-
-        scheduler.scheduleDailyCheck()
+        val scheduler = scheduler(repository)
+        scheduler.ensureDailyCheck()
         val atEight = nextRunOfTheCheck()
 
         repository.time = LocalTime.of(23, 0)
-        scheduler.scheduleDailyCheck()
+        scheduler.rescheduleDailyCheck()
 
         assertNotEquals(atEight, nextRunOfTheCheck())
+        assertEquals(atLocal(MARCH_15, LocalTime.of(23, 0)), nextRunOfTheCheck())
     }
 
-    private fun nextRunOfTheCheck(): Long =
+    @Test
+    fun `should keep one check when the schedule is laid again`() {
+        val scheduler = scheduler()
+
+        scheduler.ensureDailyCheck()
+        scheduler.rescheduleDailyCheck()
+        scheduler.ensureDailyCheck()
+
+        assertEquals(1, checkInfos().size)
+    }
+
+    private fun scheduler(
+        repository: ReminderTimeRepository = FakeReminderTimeRepository()
+    ) = WorkManagerNotificationScheduler(
+        application,
+        DailyNotificationWork::class.java,
+        repository,
+        FakeClock(nowMillis = atLocal(MARCH_15, LocalTime.of(9, 0)))
+    )
+
+    private fun checkInfos(): List<WorkInfo> =
         WorkManager.getInstance(application)
             .getWorkInfosForUniqueWork(WorkManagerNotificationScheduler.WORK_NAME)
-            .get().first().nextScheduleTimeMillis
+            .get()
+
+    private fun nextRunOfTheCheck(): Long = checkInfos().first().nextScheduleTimeMillis
+
+    private fun atLocal(date: LocalDate, time: LocalTime): Long =
+        ZonedDateTime.of(date, time, ZONE).toInstant().toEpochMilli()
 
     private class FakeReminderTimeRepository : ReminderTimeRepository {
         var time: LocalTime = LocalTime.of(8, 0)
@@ -121,7 +133,9 @@ class WorkManagerNotificationSchedulerTest {
     }
 
     private companion object {
+        val ZONE: ZoneId = ZoneId.of("Europe/Paris")
+        val MARCH_15: LocalDate = LocalDate.of(2026, 3, 15)
+        val MARCH_16: LocalDate = LocalDate.of(2026, 3, 16)
         const val MINUTES_IN_HOUR = 60
-        const val SAME_MOMENT_MILLIS = 1_000L
     }
 }

@@ -33,6 +33,34 @@ class RoomTodoListRepositoryTest {
         database.close()
     }
 
+    /**
+     * Tearing a list off has to take its items with it, in one go. Two statements
+     * left an emptied list behind when the process died between them.
+     */
+    @Test
+    fun `should remove the items of a list when that list is deleted`() {
+        repository.add(TodoList("1", "Groceries"))
+        database.todoItemDao().insert(TodoItemEntity("i1", "milk", "1", false, null, 0))
+        database.todoItemDao().insert(TodoItemEntity("i2", "eggs", "1", false, null, 1))
+
+        repository.delete("1")
+
+        assertTrue(database.todoItemDao().getAllByListId("1").isEmpty())
+        assertTrue(repository.getAll().isEmpty())
+    }
+
+    @Test
+    fun `should leave the items of other lists when a list is deleted`() {
+        repository.add(TodoList("1", "Groceries"))
+        repository.add(TodoList("2", "Chores"))
+        database.todoItemDao().insert(TodoItemEntity("i1", "milk", "1", false, null, 0))
+        database.todoItemDao().insert(TodoItemEntity("i2", "sweep", "2", false, null, 0))
+
+        repository.delete("1")
+
+        assertEquals(1, database.todoItemDao().getAllByListId("2").size)
+    }
+
     @Test
     fun `should return empty list when no lists have been added`() {
         assertTrue(repository.getAll().isEmpty())

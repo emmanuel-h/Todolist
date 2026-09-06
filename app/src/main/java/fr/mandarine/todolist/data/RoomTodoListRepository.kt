@@ -13,9 +13,9 @@ import java.time.LocalDate
  * - dates are stored as epoch **days** and converted with `LocalDate.ofEpochDay` /
  *   `toEpochDay`;
  * - the colour is stored as the enum constant's `name` and read back with
- *   `ListColour.valueOf`, which **throws** on an unknown name. A colour constant
- *   removed from the enum without a migration therefore crashes on read rather than
- *   silently falling back.
+ *   [ListColour.named], which answers [ListColour.None] for a name the enum does
+ *   not have. A row written by a later version and then restored onto an older one
+ *   loses its colour; it does not take the app down with it.
  *
  * On read, a row that somehow holds both dates is resolved in favour of the hard
  * one: `targetDate` is only taken when `dueDate` is null. Nothing should ever write
@@ -28,7 +28,7 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
         dao.getAll().map { entity ->
             val dueDate = entity.dueDate?.let { LocalDate.ofEpochDay(it) }
             val targetDate = if (dueDate == null) entity.targetDate?.let { LocalDate.ofEpochDay(it) } else null
-            val colour = ListColour.valueOf(entity.colour)
+            val colour = ListColour.named(entity.colour)
             TodoList(entity.id, entity.name, entity.position, targetDate, dueDate, colour)
         }
 
@@ -43,8 +43,13 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
     private fun toEntity(todoList: TodoList) =
         TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay(), todoList.colour.name)
 
+    /**
+     * The list and everything on it go in one transaction. Two statements meant a
+     * process killed between them left the list behind with nothing on it, which
+     * comes back on the next launch as an empty list nobody asked to keep.
+     */
     override fun delete(todoListId: String) {
-        dao.deleteById(todoListId)
+        dao.deleteWithItems(todoListId)
     }
 
     override fun update(todoListId: String, name: String, targetDate: LocalDate?, dueDate: LocalDate?, colour: ListColour) {

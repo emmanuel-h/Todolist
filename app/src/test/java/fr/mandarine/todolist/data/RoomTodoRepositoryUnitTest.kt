@@ -97,13 +97,6 @@ class RoomTodoRepositoryUnitTest {
     }
 
     @Test
-    fun `should delete all items for list via dao when deleteAllByListId is called`() {
-        every { dao.deleteAllByListId("list-1") } returns Unit
-        repository.deleteAllByListId("list-1")
-        verify { dao.deleteAllByListId("list-1") }
-    }
-
-    @Test
     fun `should complete item keeping its position via dao when toggle is called on inactive item`() {
         clock.nowMillis = 7000L
         every { dao.updateCompletedAndPosition("item-1", true, 7000L, 3) } returns Unit

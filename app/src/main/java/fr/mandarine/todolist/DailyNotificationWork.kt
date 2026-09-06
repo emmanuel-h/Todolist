@@ -34,7 +34,8 @@ class DailyNotificationWork(
         DailyNotificationWorker(
             container.todoListRepository,
             ComputePendingNotificationsUseCase(container.clock),
-            container.listNotifier
+            container.listNotifier,
+            container.notificationScheduler
         ).execute()
         return Result.success()
     }

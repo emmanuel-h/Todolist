@@ -20,6 +20,22 @@ interface TodoListDao {
     @Query("DELETE FROM todo_lists WHERE id = :id")
     fun deleteById(id: String)
 
+    @Query("DELETE FROM todo_items WHERE listId = :id")
+    fun deleteItemsOf(id: String)
+
+    /**
+     * Tearing a list off takes its items with it, in one transaction.
+     *
+     * The foreign key already cascades, so the explicit item delete is belt and
+     * braces; what `@Transaction` adds is that the two statements cannot be torn
+     * apart by a process death, which is what used to leave an emptied list behind.
+     */
+    @Transaction
+    fun deleteWithItems(id: String) {
+        deleteItemsOf(id)
+        deleteById(id)
+    }
+
     /**
      * Writes every editable field at once. The default on [colour] is a Kotlin
      * default argument, not a SQL one — Room still always binds a value.

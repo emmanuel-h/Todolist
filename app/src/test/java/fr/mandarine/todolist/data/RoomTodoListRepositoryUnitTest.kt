@@ -53,8 +53,8 @@ class RoomTodoListRepositoryUnitTest {
 
     @Test
     fun `should delete entity via dao when delete is called`() {
-        every { dao.deleteById("1") } returns Unit
+        every { dao.deleteWithItems("1") } returns Unit
         repository.delete("1")
-        verify { dao.deleteById("1") }
+        verify { dao.deleteWithItems("1") }
     }
 }

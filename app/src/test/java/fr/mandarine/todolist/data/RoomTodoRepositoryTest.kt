@@ -73,28 +73,6 @@ class RoomTodoRepositoryTest {
     }
 
     @Test
-    fun `should remove all items for given list when deleteAllByListId is called`() {
-        repository.add(TodoItem("1", "Item 1", "list-1"))
-        repository.add(TodoItem("2", "Item 2", "list-1"))
-        repository.deleteAllByListId("list-1")
-        assertTrue(repository.getAllByListId("list-1").isEmpty())
-    }
-
-    @Test
-    fun `should not remove items of other lists when deleteAllByListId is called`() {
-        repository.add(TodoItem("1", "Item 1", "list-1"))
-        repository.add(TodoItem("2", "Item 2", "list-2"))
-        repository.deleteAllByListId("list-1")
-        assertEquals(1, repository.getAllByListId("list-2").size)
-    }
-
-    @Test
-    fun `should do nothing when deleteAllByListId is called for a list with no items`() {
-        repository.deleteAllByListId("list-nonexistent")
-        assertTrue(repository.getAllByListId("list-nonexistent").isEmpty())
-    }
-
-    @Test
     fun `should persist isCompleted false by default when item is added`() {
         val item = TodoItem("1", "Item 1", "list-1")
         repository.add(item)

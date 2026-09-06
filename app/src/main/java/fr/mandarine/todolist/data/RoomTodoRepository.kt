@@ -69,10 +69,6 @@ class RoomTodoRepository(
         dao.updateTitle(todoId, title)
     }
 
-    override fun deleteAllByListId(listId: String) {
-        dao.deleteAllByListId(listId)
-    }
-
     /**
      * The page names the rows it is showing, in the order it is showing them, and
      * nothing else. Those rows are laid back into the slots they already occupy

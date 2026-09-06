@@ -46,7 +46,7 @@ class ReminderSettingsViewModel(
     fun setReminderTime(minuteOfDay: Int) {
         viewModelScope.launch(dispatcher) {
             setReminderTimeUseCase(minuteOfDay)
-            notificationScheduler.scheduleDailyCheck()
+            notificationScheduler.rescheduleDailyCheck()
             _reminderTime.value = getReminderTimeUseCase()
         }
     }

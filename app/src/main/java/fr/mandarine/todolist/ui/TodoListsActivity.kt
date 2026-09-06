@@ -91,7 +91,7 @@ class TodoListsActivity : ComponentActivity() {
             viewModelFactory {
                 TodoListsViewModel(
                     CreateTodoListUseCase(todoListRepository),
-                    DeleteTodoListUseCase(todoListRepository, todoRepository),
+                    DeleteTodoListUseCase(todoListRepository),
                     EditTodoListUseCase(todoListRepository),
                     getTodoListsWithStatusUseCase,
                     ReorderTodoListsUseCase(todoListRepository),
@@ -123,7 +123,7 @@ class TodoListsActivity : ComponentActivity() {
             ActivityResultContracts.RequestPermission()
         ) { notificationAsk.markAsked() }
 
-        container.notificationScheduler.scheduleDailyCheck()
+        container.notificationScheduler.ensureDailyCheck()
 
         preparePaperSheet()
 

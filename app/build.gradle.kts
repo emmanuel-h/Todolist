@@ -214,6 +214,7 @@ tasks.register<JavaExec>("pitest") {
                 "fr.mandarine.todolist.data.RoomTodoListRepositoryTest," +
                 "fr.mandarine.todolist.data.RoomTodoRepositoryTest," +
                 "fr.mandarine.todolist.data.TodoDatabaseTest," +
+                "fr.mandarine.todolist.data.TodoDatabaseMigrationTest," +
                 "fr.mandarine.todolist.data.TodoItemDaoPositionsTest," +
                 "fr.mandarine.todolist.data.TodoListDaoIncrementTest," +
                 "fr.mandarine.todolist.data.WorkManagerNotificationSchedulerTest," +
