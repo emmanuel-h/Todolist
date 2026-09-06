@@ -50,8 +50,7 @@ private val PARTIAL_BOTTOM = 4.dp
 // Clock layout constants
 private const val CLOCK_POSITIONS = 12
 private const val CLOCK_MINUTE_STEP = 5
-private const val CLOCK_OUTER_FRACTION = 0.72f
-private const val CLOCK_INNER_FRACTION = 0.50f
+private const val CLOCK_RING_FRACTION = 0.72f
 private const val CLOCK_FACE_FRACTION = 0.93f
 private const val CLOCK_FACE_SEED = 0x1CE
 private const val HALF_MORNING_SEED = 0x2A1
@@ -246,7 +245,6 @@ private fun HourFace(
         ClockFace(
             count = CLOCK_POSITIONS,
             labelOf = { i -> if (i == 0) CLOCK_POSITIONS.toString() else i.toString() },
-            isInner = { _ -> false },
             seedOf = { i -> i },
             isSelected = { i -> i == selectedHour % CLOCK_POSITIONS && secondHalf == afternoon },
             animated = animated,
@@ -343,7 +341,6 @@ private fun MinuteFace(
     ClockFace(
         count = CLOCK_POSITIONS,
         labelOf = { i -> (i * CLOCK_MINUTE_STEP).toString() },
-        isInner = { _ -> false },
         seedOf = { i -> 0x100 + i },
         isSelected = { i -> i == roundedPos },
         animated = animated,
@@ -353,8 +350,11 @@ private fun MinuteFace(
 }
 
 /**
- * The ink circle the numerals sit on. Each numeral is a selectable box placed by
- * angle and radius; outer and inner rings share the same twelve angular positions.
+ * The ink circle the numerals sit on: twelve selectable boxes placed by angle on
+ * one ring. There were two rings once, so twenty-four hours could be shown at once,
+ * and at this sheet's width they sat closer than a finger — each target overlapped
+ * its neighbour on the other ring and aiming at one numeral chose the other. One
+ * ring cannot do that.
  * The face ring is cut once in the cache block — only how much of a numeral's ring
  * is drawn changes per frame.
  */
@@ -362,7 +362,6 @@ private fun MinuteFace(
 private fun ClockFace(
     count: Int,
     labelOf: (Int) -> String,
-    isInner: (Int) -> Boolean,
     seedOf: (Int) -> Int,
     isSelected: (Int) -> Boolean,
     animated: Boolean,
@@ -390,16 +389,14 @@ private fun ClockFace(
             }
     ) {
         val halfDiam = maxWidth / 2
-        val outerR = halfDiam * CLOCK_OUTER_FRACTION
-        val innerR = halfDiam * CLOCK_INNER_FRACTION
+        val ringR = halfDiam * CLOCK_RING_FRACTION
         val touchHalf = PaperDimens.touchTarget / 2
 
         for (i in 0 until count) {
             val pos = i % CLOCK_POSITIONS
-            val r = if (isInner(i)) innerR else outerR
             val angle = pos.toFloat() / CLOCK_POSITIONS.toFloat() * TWO_PI - HALF_PI
-            val x = halfDiam + r * cos(angle) - touchHalf
-            val y = halfDiam + r * sin(angle) - touchHalf
+            val x = halfDiam + ringR * cos(angle) - touchHalf
+            val y = halfDiam + ringR * sin(angle) - touchHalf
 
             Box(modifier = Modifier.absoluteOffset(x = x, y = y)) {
                 ClockNumeral(
