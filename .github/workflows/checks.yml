@@ -1,0 +1,65 @@
+# The gates CLAUDE.md describes, run by something other than whoever remembers to.
+#
+# Dependabot opens up to ten Gradle pull requests a day against this repository.
+# Until this file existed nothing stood between those and `main`, which is how a
+# Compose compiler bump that broke `bundleRelease` — and only `bundleRelease` —
+# reached a release. That is why `release` is a job here: the unit-test gate is
+# green for that failure.
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 100% line and branch across domain/, data/ and presentation/, enforced
+          # by verifyGatedCoverage rather than read off a report by eye.
+          - name: unit tests and coverage
+            task: testDebugUnitTest verifyGatedCoverage verifyBaselineProfile
+          # 100% mutation score. The only gate that already failed on its own.
+          - name: mutation score
+            task: pitest
+          # NewApi is fatal: it is what stands between minSdk 24 and java.time.
+          - name: lint
+            task: lintDebug
+          # Release-only breakage lives here — R8, resource shrinking and the
+          # Compose compiler are not exercised by any debug build.
+          - name: release bundle
+            task: bundleRelease lintVitalRelease
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: ./gradlew ${{ matrix.task }}
+        run: ./gradlew --no-daemon ${{ matrix.task }}
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ strategy.job-index }}
+          path: |
+            app/build/reports/
+          retention-days: 7
