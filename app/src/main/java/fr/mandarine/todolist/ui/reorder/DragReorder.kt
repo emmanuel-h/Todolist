@@ -58,7 +58,16 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
      */
     val draggedId: String? get() = ids.getOrNull(index)
 
-    fun start(from: Int, rowIds: List<String>, rowHeights: List<Int>) {
+    /**
+     * Takes the drag, or refuses it because one is already in hand. Every row has
+     * its own gesture detector and they all write into this one session, so without
+     * the refusal a second finger resting on another row rewrites the ids and
+     * heights under the first finger — and the drop commits an order neither of
+     * them asked for. The session stays in hand for the whole settle glide, so a
+     * fresh long-press during it is refused too.
+     */
+    fun start(from: Int, rowIds: List<String>, rowHeights: List<Int>): Boolean {
+        if (dragging) return false
         require(rowIds.size == rowHeights.size) {
             "${rowIds.size} ids against ${rowHeights.size} heights"
         }
@@ -70,6 +79,7 @@ class DragSession(private val onOrderChanged: (List<String>) -> Unit) {
         edgeScrolling = false
         ids = rowIds
         heights = rowHeights
+        return true
     }
 
     fun drag(delta: Float) {

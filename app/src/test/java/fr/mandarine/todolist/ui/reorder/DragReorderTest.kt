@@ -353,5 +353,51 @@ class DragReorderTest {
         canScrollDown = canScrollDown
     )
 
+    /**
+     * Every row has its own gesture detector and they all write into one session.
+     * A second finger resting on another row for long enough used to rewrite the
+     * ids and heights under the first, and the drop then committed an order neither
+     * finger had asked for.
+     */
+    @Test
+    fun `should refuse a second drag while one is already in hand`() {
+        val session = DragSession { }
+        session.start(0, listOf("a", "b", "c"), uniform.take(3))
+
+        val took = session.start(2, listOf("x", "y", "z"), uniform.take(3))
+
+        assertFalse(took)
+        assertEquals("a", session.draggedId)
+        assertEquals(0, session.index)
+    }
+
+    @Test
+    fun `should keep driving the first row when a second drag is refused`() {
+        var published: List<String>? = null
+        val session = DragSession { published = it }
+        session.start(0, listOf("a", "b", "c"), uniform.take(3))
+        session.start(2, listOf("x", "y", "z"), uniform.take(3))
+
+        session.drag(60f)
+
+        assertEquals(listOf("b", "a", "c"), published)
+    }
+
+    @Test
+    fun `should take the drag when nothing is in hand`() {
+        val session = DragSession { }
+
+        assertTrue(session.start(0, listOf("a", "b", "c"), uniform.take(3)))
+    }
+
+    @Test
+    fun `should take a drag again once the last one has been let go`() {
+        val session = DragSession { }
+        session.start(0, listOf("a", "b", "c"), uniform.take(3))
+        session.cancel()
+
+        assertTrue(session.start(1, listOf("a", "b", "c"), uniform.take(3)))
+    }
+
     private fun item(id: String) = TodoItem(id, "title-$id", "list-1")
 }

@@ -104,6 +104,14 @@ import kotlinx.coroutines.delay
 internal const val INK_TICK_MILLIS = 220L
 internal const val INK_STRIKE_MILLIS = 220L
 
+/**
+ * How long the page goes on drawing a tick after the write has been issued, if the
+ * store has not confirmed it by then. Normally `releaseToggles` lets go first; this
+ * is only the way out of a write that was refused, which would otherwise leave the
+ * row inked forever against a store that never agreed.
+ */
+private const val TOGGLE_SETTLE_MILLIS = 2_000L
+
 private val NAME_END_GAP = 8.dp
 
 private const val HEAD_KEY = "head"
@@ -158,6 +166,8 @@ fun TodoListScreen(
     val completedItems = content?.completedItems.orEmpty()
     val activeIds = activeItems.map { it.id }
     val publishedIds = rawActiveItems.map { it.id }
+    val publishedItems = rawActiveItems + completedItems
+    val publishedInk = publishedItems.map { it.id to it.isCompleted }
     val showSkip = activeItems.isNotEmpty() && completedItems.isNotEmpty()
     val allDone = activeItems.isEmpty() && completedItems.isNotEmpty()
 
@@ -179,7 +189,7 @@ fun TodoListScreen(
                 listState.holdPage { onToggle(item.id) }
             }
             item.id in screenState.pendingToggles -> screenState.finishToggle(item.id)
-            else -> screenState.startToggle(item.id)
+            else -> screenState.startToggle(item.id, drawing = !item.isCompleted)
         }
     }
     val requestDelete: (TodoItem) -> Unit = { item ->
@@ -200,19 +210,21 @@ fun TodoListScreen(
         screenState.tearingId = null
     }
 
-    screenState.pendingToggles.forEach { pending ->
+    screenState.pendingToggles.keys.forEach { pending ->
         key(pending) {
             LaunchedEffect(pending) {
                 delay(INK_TICK_MILLIS + INK_STRIKE_MILLIS)
-                screenState.finishToggle(pending)
                 if (liveIds.value.contains(pending)) {
                     listState.holdPage { onToggle(pending) }
+                    delay(TOGGLE_SETTLE_MILLIS)
                 }
+                screenState.finishToggle(pending)
             }
         }
     }
 
     LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
+    LaunchedEffect(publishedInk) { screenState.releaseToggles(publishedItems) }
 
     LaunchedEffect(screenState.hideKeyboardSignal) {
         if (screenState.hideKeyboardSignal > 0) keyboard?.hide()

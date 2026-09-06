@@ -42,4 +42,26 @@ class NavStageTest {
         assertEquals(listOf(ListsRoute), backStack.toList())
         assertFalse(stage.onItems)
     }
+
+    /**
+     * The arriving page fades in from an eighth of the window down and alpha does
+     * not stop a tap, so the row that opened the list is pressable for a few more
+     * frames. Two sheets went on the stack and the first back press then looked
+     * like it had done nothing.
+     */
+    @Test
+    fun `should lay only one sheet when a row is tapped twice`() {
+        stage.open(TodoList("list-1", "Groceries"))
+        stage.open(TodoList("list-1", "Groceries"))
+
+        assertEquals(listOf(ListsRoute, ItemsRoute("list-1")), backStack.toList())
+    }
+
+    @Test
+    fun `should not open another list while one is already open`() {
+        stage.open(TodoList("list-1", "Groceries"))
+        stage.open(TodoList("list-2", "Chores"))
+
+        assertEquals(listOf(ListsRoute, ItemsRoute("list-1")), backStack.toList())
+    }
 }

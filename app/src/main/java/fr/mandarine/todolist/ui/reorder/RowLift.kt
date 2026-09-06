@@ -97,35 +97,48 @@ fun Modifier.liftToReorder(
     val latestIds = rememberUpdatedState(ids)
     val latestDrop = rememberUpdatedState(onDrop)
     return pointerInput(id) {
+        // Whether *this* row is the one holding the session. A second finger that
+        // long-presses another row while one is in hand is refused the session, and
+        // has to be refused its own drag, drop and cancel too — otherwise it goes on
+        // driving the row the first finger picked up.
+        var holdsTheDrag = false
         detectDragGesturesAfterLongPress(
             onDragStart = {
                 val current = latestIds.value
-                session.start(
+                holdsTheDrag = session.start(
                     from = current.indexOf(id),
                     rowIds = current,
                     rowHeights = rowHeights(listState, current)
                 )
-                haptics.pickUp()
+                if (holdsTheDrag) haptics.pickUp()
             },
             onDrag = { change, amount ->
-                change.consume()
-                val before = session.index
-                session.drag(amount.y)
-                if (session.index != before) haptics.pass()
-                session.edgeScrolling = edgeScrollDelta(listState, session, edgeScroll) != 0f
+                if (holdsTheDrag) {
+                    change.consume()
+                    val before = session.index
+                    session.drag(amount.y)
+                    if (session.index != before) haptics.pass()
+                    session.edgeScrolling = edgeScrollDelta(listState, session, edgeScroll) != 0f
+                }
             },
             onDragEnd = {
-                haptics.drop()
-                scope.launch {
-                    val reorder = session.settle(PaperMotion.sheetSettle)
-                    if (reorder != null) haptics.submit()
-                    latestDrop.value(reorder)
+                if (holdsTheDrag) {
+                    holdsTheDrag = false
+                    haptics.drop()
+                    scope.launch {
+                        val reorder = session.settle(PaperMotion.sheetSettle)
+                        if (reorder != null) haptics.submit()
+                        latestDrop.value(reorder)
+                    }
                 }
             },
             onDragCancel = {
-                scope.launch {
-                    session.settle(PaperMotion.sheetSettle)
-                    latestDrop.value(null)
+                if (holdsTheDrag) {
+                    holdsTheDrag = false
+                    scope.launch {
+                        session.settle(PaperMotion.sheetSettle)
+                        latestDrop.value(null)
+                    }
                 }
             }
         )
@@ -224,8 +237,17 @@ private fun edgeScrollDelta(
     )
 }
 
+/**
+ * The heights the drag steps through, one per row, guessed for the rows that are
+ * off screen at pick-up.
+ *
+ * The guess has to come from a *row*. Taking the first visible item took the page
+ * head — a spacer one rule tall, where a row is two — so a drag that autoscrolled
+ * past rows it had not seen stepped at half the distance it should have and ran
+ * ahead of the finger by a rule per row.
+ */
 private fun rowHeights(listState: LazyListState, ids: List<String>): List<Int> {
     val sizes = listState.layoutInfo.visibleItemsInfo.associate { it.key to it.size }
-    val fallback = sizes.values.firstOrNull() ?: 0
+    val fallback = ids.firstNotNullOfOrNull { sizes[it] } ?: 0
     return ids.map { sizes[it] ?: fallback }
 }

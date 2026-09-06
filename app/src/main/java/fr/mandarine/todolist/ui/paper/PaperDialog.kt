@@ -23,6 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import fr.mandarine.todolist.R
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
@@ -100,6 +102,7 @@ fun PaperDialog(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = PaperFocusMark,
+                        onClickLabel = stringResource(R.string.cancel),
                         onClick = leave
                     )
             )

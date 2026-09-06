@@ -66,7 +66,16 @@ class TodoListScreenState {
      * the effect carrying it was cancelled mid-stroke — so ticking a list
      * quickly left most of it unticked.
      */
-    var pendingToggles by mutableStateOf<Set<String>>(emptySet())
+    /**
+     * The rows whose ink the page is drawing ahead of the store, and what it is
+     * drawing on each of them.
+     *
+     * Held until the store agrees. Dropping the row the moment the write is *issued*
+     * left a frame in which the ring read the stored value again — the tick erased
+     * itself, buzzed for the erasing, and then drew itself back when the write
+     * landed. What the reader felt was two buzzes half a second apart on one tap.
+     */
+    var pendingToggles by mutableStateOf<Map<String, Boolean>>(emptyMap())
         private set
 
     var previewOrder by mutableStateOf<List<String>?>(null)
@@ -108,14 +117,27 @@ class TodoListScreenState {
     var hideKeyboardSignal by mutableStateOf(0)
         private set
 
-    fun inked(item: TodoItem): Boolean = item.isCompleted != (item.id in pendingToggles)
+    fun inked(item: TodoItem): Boolean = pendingToggles[item.id] ?: item.isCompleted
 
-    fun startToggle(id: String) {
-        pendingToggles = pendingToggles + id
+    fun startToggle(id: String, drawing: Boolean) {
+        pendingToggles = pendingToggles + (id to drawing)
     }
 
     fun finishToggle(id: String) {
         pendingToggles = pendingToggles - id
+    }
+
+    /**
+     * Lets go of every row the store has caught up with. The counterpart of
+     * [releaseOrder], and the same idea: the page keeps drawing ahead of storage
+     * only until storage says the same thing.
+     */
+    fun releaseToggles(published: List<TodoItem>) {
+        if (pendingToggles.isEmpty()) return
+        val settled = published.filter { pendingToggles[it.id] == it.isCompleted }
+        if (settled.isNotEmpty()) {
+            pendingToggles = pendingToggles - settled.map { it.id }.toSet()
+        }
     }
 
     fun requestHideKeyboard() {

@@ -1,9 +1,15 @@
 package fr.mandarine.todolist.ui.paper
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
+import org.junit.Assert.assertTrue
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -12,6 +18,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.ui.listmeta.DateJot
+import fr.mandarine.todolist.ui.todolists.DateKind
+import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -92,6 +101,64 @@ class RowTouchTargetTest {
                             onClick = {},
                             seat = IconSeat.OnRule,
                             foot = GlyphFoot.trash
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(ROW).assertHeightIsEqualTo(pitch * 2)
+    }
+
+    /**
+     * The jot is a control too — it opens the calendar — and it was the one on-rule
+     * control with only its own line of text to be pressed by, so a thumb aiming at
+     * it and landing a little low opened the list instead.
+     *
+     * Asserted by pressing rather than by measuring: the jot says the date and
+     * answers the tap on one node, so the node that carries the description is the
+     * outer one and still measures a rule. What grew is the area that answers.
+     */
+    @Test
+    fun `should answer a press below the jot's own line`() {
+        var rewritten = false
+        composeRule.setContent {
+            PaperTheme {
+                Box(Modifier.testTag(ROW).height(TOUCH_TARGET)) {
+                    DateJot(
+                        date = LocalDate.of(2026, 3, 15),
+                        kind = DateKind.DUE,
+                        showYear = false,
+                        tint = LocalPaperPalette.current.inked(InkTone.Margin),
+                        onRewrite = { rewritten = true }
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(ROW).performTouchInput {
+            click(Offset(left + 1f, bottom - 1f))
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(rewritten)
+    }
+
+    @Test
+    fun `should keep a row with a jot two rules tall`() {
+        var pitch = 0.dp
+        composeRule.setContent {
+            PaperTheme {
+                pitch = LocalPagePitch.current
+                Column {
+                    RuledRow(modifier = Modifier.testTag(ROW)) {
+                        Text("Groceries")
+                        DateJot(
+                            date = LocalDate.of(2026, 3, 15),
+                            kind = DateKind.DUE,
+                            showYear = false,
+                            tint = LocalPaperPalette.current.inked(InkTone.Margin),
+                            onRewrite = {}
                         )
                     }
                 }

@@ -3,6 +3,7 @@ package fr.mandarine.todolist.ui.listmeta
 import android.text.format.DateFormat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -20,10 +21,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.ui.paper.InkIcon
+import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalRuledHand
 import fr.mandarine.todolist.ui.paper.OnRuleSlot
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.formatLocale
+import fr.mandarine.todolist.ui.paper.pressableBelowTheRule
 import fr.mandarine.todolist.ui.paper.seatOnRule
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
@@ -83,7 +86,10 @@ fun DateJot(
                 if (rewrite == null) {
                     Modifier
                 } else {
-                    Modifier.clickable(onClickLabel = rewriting, onClick = rewrite)
+                    Modifier
+                        .height(LocalPagePitch.current)
+                        .pressableBelowTheRule(onRule = true)
+                        .clickable(onClickLabel = rewriting, onClick = rewrite)
                 }
             ),
         verticalAlignment = Alignment.Top

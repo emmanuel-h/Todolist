@@ -179,7 +179,7 @@ private fun ReminderClockPickerDialog(
 
     val partialLabel = when (phase) {
         ClockPhase.HOURS -> rememberFormattedTime(LocalTime.of(pickedHour, currentMinute), locale)
-        ClockPhase.MINUTES -> "$pickedHour:--"
+        ClockPhase.MINUTES -> rememberFormattedHour(pickedHour, locale)
     }
 
     PaperDialog(onDismissRequest = onDismiss) {
@@ -475,6 +475,19 @@ private fun ClockNumeral(
             maxLines = ONE_LINE
         )
     }
+}
+
+/**
+ * The hour on its own, while the minutes are still being chosen. Written with the
+ * locale's own hour field for the same reason the whole time is: an en-US reader
+ * picks 8 in the afternoon and is shown "8 PM", where the hard-coded "20:--" it
+ * replaced said an hour they had not chosen in a cycle they do not read.
+ */
+@Composable
+internal fun rememberFormattedHour(hour: Int, locale: Locale): String {
+    val pattern = remember(locale) { DateFormat.getBestDateTimePattern(locale, "j") }
+    val formatter = remember(locale, pattern) { DateTimeFormatter.ofPattern(pattern, locale) }
+    return remember(hour, formatter) { LocalTime.of(hour, 0).format(formatter) }
 }
 
 @Composable
