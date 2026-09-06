@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -17,14 +21,21 @@ import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 
 private const val GRAIN_ALPHA = 0.35f
 private const val VIGNETTE_RADIUS_FRACTION = 0.95f
 private const val SMALLEST_RADIUS = 1f
+private const val SMALLEST_SHEET = 1f
 private const val HALF = 2f
 private const val OPAQUE = 1f
 private const val TRANSPARENT = 0f
+private val UNPLACED = Float.NaN
 
 @Immutable
 internal class PaperSheetBrushes(
@@ -34,6 +45,12 @@ internal class PaperSheetBrushes(
     val blend: BlendMode
 )
 
+/**
+ * Every brush here is told the sheet it is for. A brush handed no measurements takes
+ * them from whatever is being drawn with it, which for a strip sampling one line of a
+ * sheet means the sheet's whole light compressed into that line — the very thing the
+ * strip exists to avoid.
+ */
 internal fun paperSheetBrushes(
     tile: ImageBitmap,
     lit: Color,
@@ -42,7 +59,10 @@ internal fun paperSheetBrushes(
     size: Size,
     grain: PaperGrain
 ): PaperSheetBrushes = PaperSheetBrushes(
-    light = Brush.verticalGradient(listOf(lit, tone)),
+    light = Brush.verticalGradient(
+        colors = listOf(lit, tone),
+        endY = size.height.coerceAtLeast(SMALLEST_SHEET)
+    ),
     grain = ShaderBrush(ImageShader(tile, TileMode.Repeated, TileMode.Repeated)),
     blend = grain.blend,
     corners = Brush.radialGradient(
@@ -53,11 +73,15 @@ internal fun paperSheetBrushes(
     )
 )
 
-internal fun DrawScope.drawPaperSheet(brushes: PaperSheetBrushes, alpha: Float = OPAQUE) {
+internal fun DrawScope.drawPaperSheet(
+    brushes: PaperSheetBrushes,
+    alpha: Float = OPAQUE,
+    sheet: Size = size
+) {
     if (alpha <= TRANSPARENT) return
-    drawRect(brushes.light, alpha = alpha)
-    drawRect(brushes.grain, alpha = GRAIN_ALPHA * alpha, blendMode = brushes.blend)
-    drawRect(brushes.corners, alpha = alpha)
+    drawRect(brushes.light, size = sheet, alpha = alpha)
+    drawRect(brushes.grain, size = sheet, alpha = GRAIN_ALPHA * alpha, blendMode = brushes.blend)
+    drawRect(brushes.corners, size = sheet, alpha = alpha)
 }
 
 @Composable
@@ -75,29 +99,48 @@ fun Modifier.paperSheet(
 }
 
 /**
- * A strip of the page rather than a sheet of its own. A fresh sheet runs the whole
- * top-lit gradient inside the strip's few millimetres, so at the foot of the page —
- * where the page has long since arrived at its own tone — the strip came out at the
- * lit end of that gradient and read as a white card lying on cream. It takes the
- * tone the page has reached there, with the page's grain and none of a sheet's own
- * corners.
+ * A strip of the page rather than a sheet of its own. A sheet is lit at its top and
+ * shaded at its corners, and a sheet only a line tall runs the whole of that inside
+ * its own few millimetres: laid at the foot of the page it came out at the lit end
+ * of a gradient the page had long since spent, and read as a white card lying on
+ * cream.
+ *
+ * So the strip draws the whole sheet the window is painted with and shows the reader
+ * the part of it it happens to be standing on. Being told where it stands is what a
+ * fixed tone cannot do: the strip rides up the page with the keyboard, and a tone
+ * taken from the foot of the page is wrong everywhere else. Before it has been
+ * placed it stands at the foot, which is where it spends its life.
+ *
+ * The clip is what keeps it a strip. Nothing clips a draw to the bounds of the thing
+ * that asked for it, so the sheet drawn here to be sampled a line at a time will
+ * otherwise be drawn whole, over the page and everything written on it.
  */
 @Composable
 fun Modifier.paperStrip(): Modifier {
-    val paper = LocalPaperPalette.current.paper
-    val grain = paperGrainOn(paper)
+    val palette = LocalPaperPalette.current
+    val grain = paperGrainOn(palette.paper)
     val tile = paperGrainTile(LocalDensity.current.density, grain)
-    return this.drawWithCache {
-        val brushes = paperSheetBrushes(
-            tile = tile,
-            lit = paper,
-            tone = paper,
-            vignette = Color.Transparent,
-            size = size,
-            grain = grain
-        )
-        onDrawBehind { drawPaperSheet(brushes) }
-    }
+    val window = LocalWindowInfo.current.containerSize
+    var placed by remember { mutableFloatStateOf(UNPLACED) }
+    return this
+        .onPlaced { placed = it.positionInRoot().y }
+        .drawWithCache {
+            val sheet = Size(size.width, window.height.toFloat().coerceAtLeast(size.height))
+            val stands = if (placed.isNaN()) sheet.height - size.height else placed
+            val brushes = paperSheetBrushes(
+                tile = tile,
+                lit = palette.paperSheet,
+                tone = palette.paper,
+                vignette = palette.vignette,
+                size = sheet,
+                grain = grain
+            )
+            onDrawBehind {
+                clipRect {
+                    translate(top = -stands) { drawPaperSheet(brushes, sheet = sheet) }
+                }
+            }
+        }
 }
 
 /**
