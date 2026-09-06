@@ -65,9 +65,28 @@ TIME=+23h59m20s      # still tomorrow's old hour
 18:14 → TIME=+1h46m   # 20:00, after changing it again
 ```
 
-Re-laying the schedule on every launch costs nothing, because the delay is always computed
-as the time until the next occurrence of the chosen hour — laying it again points it at the
-moment it already pointed at.
+### The third trap, found in the audit
+
+_Superseded._ The reasoning above is right about `KEEP` and `UPDATE` on their own, and the
+conclusion it drew from them was wrong in two ways.
+
+"Re-laying the schedule on every launch costs nothing" is false. `CANCEL_AND_REENQUEUE`
+cancels whatever is pending, including a run the device deferred while dozing and has not got
+to yet. Unlock the phone at 08:30 after a quiet night, open the app before the deferred check
+runs, and it is cancelled and re-aimed at tomorrow: a list due *today* never gets its
+notification.
+
+And "the delay is always computed to the next occurrence of the chosen hour" is only true at
+the moment of enqueue. A `PeriodicWorkRequest` repeats on elapsed time, so after a
+daylight-saving change — or after any deferred run — every following run has moved by the same
+amount, and only the next launch put it back.
+
+What the code does now: `setNextScheduleTimeOverride` names the absolute moment rather than the
+gap, which is the API that `UPDATE` does honour. A launch calls `ensureDailyCheck` (`KEEP`), so
+a pending run is never disturbed; a changed hour calls `rescheduleDailyCheck` (`UPDATE` + the
+override), which moves the next run without cancelling the work; and the check itself calls the
+same thing at the end of every run, so the aim is recomputed daily in the zone the device is
+actually in.
 
 The test that replaced the generation check asserts the thing that matters: **a changed hour
 moves the next run time**, and an unchanged hour leaves it where it was (within a second —

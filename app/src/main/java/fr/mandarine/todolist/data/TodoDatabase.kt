@@ -23,8 +23,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * 2. bump `version` here;
  * 3. add a `MIGRATION_n_n+1` and list it in `addMigrations(...)`.
  *
- * `exportSchema = true` writes the resulting schema as JSON under `app/schemas/`,
- * which is checked in — that is what a migration test compares against.
+ * `exportSchema = true` writes the resulting schema as JSON under `app/schemas/`, which is
+ * checked in. Only 7 and 8 were ever exported, so `TodoDatabaseMigrationTest` builds a
+ * version 1 database by hand and opens it through `getInstance` — the real ladder against
+ * real SQLite, which is the only thing that catches a wrong `DEFAULT` or a migration that
+ * was written and never registered.
  *
  * ### The singleton
  * `getInstance` is the classic double-checked lock: the `@Volatile` field is read

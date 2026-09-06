@@ -15,11 +15,20 @@ Android native to-do list app (`fr.mandarine.todolist`). Kotlin, single `:app` m
 # JaCoCo coverage report (XML: app/build/reports/coverage/test/debug/report.xml)
 ./gradlew createDebugUnitTestCoverageReport
 
+# Fail the build under 100% line+branch in domain/, data/, presentation/
+./gradlew verifyGatedCoverage
+
+# Fail the build if the committed baseline profile names classes the app no longer has
+./gradlew verifyBaselineProfile
+
 # Pitest mutation report (HTML/XML: app/build/reports/pitest/)
 ./gradlew pitest
 
 # All quality gates in one shot
-./gradlew testDebugUnitTest createDebugUnitTestCoverageReport pitest
+./gradlew testDebugUnitTest verifyGatedCoverage verifyBaselineProfile pitest lintDebug
+
+# What CI runs, including the release build the test gate cannot see
+./gradlew bundleRelease lintVitalRelease
 
 # Run a single test class
 ./gradlew testDebugUnitTest --tests "fr.mandarine.todolist.SomeTest"
@@ -32,8 +41,15 @@ Android native to-do list app (`fr.mandarine.todolist`). Kotlin, single `:app` m
 
 Every feature must reach **100% JaCoCo line+branch coverage** and **100% Pitest mutation score** before it is considered done. The `developer` agent (`.claude/agents/developer.md`) enforces this automatically.
 
+**The gates run in CI** (`.github/workflows/checks.yml`) on every push and pull request:
+unit tests + `verifyGatedCoverage` + `verifyBaselineProfile`, `pitest`, `lintDebug`, and
+`bundleRelease` + `lintVitalRelease`. The release job is there because a Compose compiler
+bump once broke `bundleRelease` and only `bundleRelease` — the whole test gate stayed green.
+`verifyGatedCoverage` is what makes the coverage number a gate rather than a report someone
+remembers to read.
+
 **Know what the gate actually covers.** Pitest's `--targetClasses` is `domain.*`, `data.*`,
-`presentation.*` — the whole of `ui.*` is never mutated, and seven `data` classes are
+`presentation.*` — the whole of `ui.*` is never mutated, and six `data` classes are
 excluded by name. So "100%" means 100% of those packages. `domain/` and `presentation/` are
 genuinely at 100% line+branch; `ui/` is not measured by the gate and sits lower. When you
 change something under `ui/`, the gate passing is not evidence that you tested it.
@@ -80,8 +96,7 @@ app/src/main/java/fr/mandarine/todolist/
     ├── paper/       # The design system: PaperInk, PaperDimens, PaperMotion, primitives
     ├── todolist/    # Screen 2 — the items on one list
     ├── todolists/   # Screen 1 — the page of lists
-    ├── reorder/     # Drag reorder, shared by both screens
-    └── tutorial/    # Anchor registry and the first-launch overlay
+    └── reorder/     # Drag reorder, shared by both screens
 ```
 
 **The app is entirely Compose.** There is no `res/layout/`, no View-system dependency in the graph (`appcompat`, `recyclerview` and Views `material` were dropped in the Compose migration), and no `AppCompatActivity`. The palette, dimensions and motion specs are Kotlin objects, not resources — `res/values/` holds the window themes, `colors.xml`, `strings.xml` and `integers.xml`, and nothing else. There is no `dimens.xml` and no `attrs.xml`.
@@ -96,7 +111,9 @@ Test sources mirror the main layout under `app/src/test/java/fr/mandarine/todoli
 - Mocking: MockK (`mockk<T>()`, `every`, `coEvery`, `verify`, `coVerify`)
 - Coroutines: `kotlinx-coroutines-test` (`runTest`, `TestCoroutineScheduler.advanceTimeBy()`)
 - Test name pattern: `` fun `should <expected behaviour> when <condition>`() ``
-- Assert behaviour, not implementation; never use `any()` in `verify`
+- Assert behaviour, not implementation. Never use `any()` to match an argument you are
+  asserting on — `verify { repo.save(any()) }` proves nothing. `verify(exactly = 0) { … any() … }`
+  is the exception and is fine: there it says *no call at all*, which is the assertion.
 
 ## Pitest setup note
 

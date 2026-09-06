@@ -407,16 +407,22 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 - Notifications are posted on a dedicated channel ("Reminders"), tagged by list id so two lists
   never overwrite each other's notification.
 - The daily check runs as a WorkManager unique `PeriodicWorkRequest`
-  (`daily_notification_check`), enqueued on app launch with an initial delay to the next local
-  occurrence of the chosen hour. WorkManager persists it across reboots and crashes — no
+  (`daily_notification_check`). WorkManager persists it across reboots and crashes — no
   `BOOT_COMPLETED` receiver is needed.
-- **The policy is `CANCEL_AND_REENQUEUE`, and it has to be.** `KEEP` left a changed hour never
-  taking effect, which is the bug #74 reports. `UPDATE` looks like the fix and is not: it
-  replaces the request but keeps the period already running, so the new initial delay is
-  dropped and the check still lands at the old hour — which passes a policy assertion and
-  fails on a device. Only cancelling and re-enqueuing moves it. Laying it again on every
-  launch costs nothing, because the delay is always computed to the next occurrence of the
-  same hour.
+- **The next run is an absolute moment, not a delay.** A twenty-four hour period repeats on
+  elapsed time, which is not the same as "every day at eight": an hour lost to a
+  daylight-saving change, or a run the device deferred while dozing, moves every following
+  run by the same amount and it never comes back. `setNextScheduleTimeOverride` names the
+  moment instead of the gap, and the check re-aims itself at the next occurrence of the
+  chosen hour — in whatever zone the device is in *now* — at the end of every run. That is
+  what stops the drift accumulating.
+- **A launch ensures; only a changed hour reschedules.** `ensureDailyCheck` uses `KEEP`, so a
+  run the device has merely not got to yet is left exactly where it is. It used to re-lay the
+  schedule with `CANCEL_AND_REENQUEUE` on every `onCreate`, which cancelled a deferred run:
+  unlock at 08:30 after a dozing night, open the app, and a list due today lost its only
+  notification. `rescheduleDailyCheck` uses `UPDATE` together with the override, which moves
+  the next run without cancelling the work — that is what #74 needs, and what `UPDATE` alone
+  could not do, because on its own it drops the new initial delay and keeps the old hour.
 - "Today" is evaluated in the device's local timezone via `Clock.today()`.
 - Lists with no due date and no target date, or whose date does not match the above conditions, produce no notification.
 - **The permission ask belongs to the first reminder of either kind**, not to due dates alone — both fire, so gating on the alarm left a reader who only circles calendar days silently un-remindable.
