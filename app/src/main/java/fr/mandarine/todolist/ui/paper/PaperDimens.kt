@@ -17,7 +17,16 @@ object PaperDimens {
     val iconButton = 48.dp
     val iconGlyph = 24.dp
     val rowGlyph = 18.dp
-    val rowGlyphButton = 44.dp
+    /**
+     * A row control is drawn tight to its glyph so the writing keeps the line.
+     * Three of these sit at the end of every row, so every dp of box around the
+     * mark is a dp the name does not get — and the name is the thing the reader
+     * came to read. The box is narrower than the 48dp square the guidance asks
+     * for; the **height** is not, and on a row that is the axis a thumb misses
+     * on. A near miss to either side lands on the row itself, which opens the
+     * list rather than doing nothing.
+     */
+    val rowGlyphButton = 34.dp
     val jotGlyph = 14.dp
     val marginColumn = 32.dp
 

@@ -41,7 +41,7 @@ import fr.mandarine.todolist.ui.paper.seatOnRule
 import fr.mandarine.todolist.ui.paper.spokenVerbs
 import fr.mandarine.todolist.ui.paper.tearOff
 
-private val NAME_END_GAP = 8.dp
+private val NAME_END_GAP = 4.dp
 
 @Composable
 fun TodoListRow(
