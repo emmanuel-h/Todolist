@@ -41,6 +41,7 @@ import fr.mandarine.todolist.ui.paper.GlyphFoot
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.InkRing
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
@@ -113,7 +114,8 @@ fun TodoRow(
             tint = palette.inked(InkTone.Margin),
             pressedTint = palette.inked(InkTone.Words),
             seat = IconSeat.OnRule,
-            foot = GlyphFoot.pencil
+            foot = GlyphFoot.pencil,
+            glyphSize = PaperDimens.rowGlyph
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_delete),
@@ -122,7 +124,8 @@ fun TodoRow(
             tint = palette.inked(InkTone.Margin),
             pressedTint = palette.inked(InkTone.Words),
             seat = IconSeat.OnRule,
-            foot = GlyphFoot.trash
+            foot = GlyphFoot.trash,
+            glyphSize = PaperDimens.rowGlyph
         )
     }
 }

@@ -2,14 +2,16 @@ package fr.mandarine.todolist.ui.paper
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,40 +19,60 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.cos
+import kotlin.math.sin
 
-private const val HOUR_ROWS = 4
-private const val HOUR_COLUMNS = 6
-private const val RING_SPREAD = 1.55f
-private const val RING_FIT = 0.9f
 private const val ONE_LINE = 1
 private val TITLE_BOTTOM = 8.dp
 private val TIME_GLYPH_GAP = 8.dp
 private val BUTTON_TOP = 4.dp
+private val PARTIAL_BOTTOM = 4.dp
+
+// Clock layout constants
+private const val CLOCK_POSITIONS = 12
+private const val CLOCK_MINUTE_STEP = 5
+private const val CLOCK_OUTER_FRACTION = 0.72f
+private const val CLOCK_INNER_FRACTION = 0.50f
+private const val CLOCK_FACE_FRACTION = 0.93f
+private const val CLOCK_FACE_SEED = 0x1CE
+private const val HALF_MORNING_SEED = 0x2A1
+private const val HALF_AFTERNOON_SEED = 0x2B7
+private val HALF_GAP = 12.dp
+private val HALF_PADDING = 14.dp
+private val HALF_PADDING_TOP = 6.dp
+private const val CLOCK_WOBBLE = 0.012f
+private const val CLOCK_RING_FIT = 0.80f
+private val CLOCK_FACE_STROKE = 1.75.dp
+
+private const val TWO_PI = 6.2831855f
+private const val HALF_PI = 1.5707963f
+
+private enum class ClockPhase { HOURS, MINUTES }
 
 /**
  * The settings slip: a paper sheet carrying the hour the daily reminder arrives.
- * Pressing the time jot opens the hour grid where a new hour can be circled.
+ * The time jot carries a small pen mark at its end so a reader can see by looking
+ * that it can be pressed. Pressing it opens the clock, where an hour is circled
+ * first and then a minute in five-minute steps, giving any time of day.
  */
 @Composable
 fun ReminderSettingsDialog(
@@ -60,7 +82,7 @@ fun ReminderSettingsDialog(
     animated: Boolean = true
 ) {
     val palette = LocalPaperPalette.current
-    var hourPickerOpen by remember { mutableStateOf(false) }
+    var clockOpen by remember { mutableStateOf(false) }
     val locale = formatLocale
     val timeText = rememberFormattedTime(reminderTime, locale)
     val everyDayAt = stringResource(R.string.reminder_every_day_at)
@@ -82,7 +104,7 @@ fun ReminderSettingsDialog(
                 .selectable(
                     selected = false,
                     role = Role.Button,
-                    onClick = { hourPickerOpen = true }
+                    onClick = { clockOpen = true }
                 )
                 .semantics { contentDescription = timeLabel },
             verticalAlignment = Alignment.CenterVertically
@@ -97,7 +119,14 @@ fun ReminderSettingsDialog(
                 text = handwritten(timeLabel),
                 style = PaperType.prose,
                 color = palette.inked(InkTone.Words),
-                maxLines = ONE_LINE
+                maxLines = ONE_LINE,
+                modifier = Modifier.weight(1f)
+            )
+            InkIcon(
+                painter = painterResource(R.drawable.ic_edit),
+                contentDescription = null,
+                tint = palette.inked(InkTone.Margin),
+                size = PaperDimens.jotGlyph
             )
         }
         Spacer(Modifier.height(BUTTON_TOP))
@@ -111,33 +140,44 @@ fun ReminderSettingsDialog(
         }
     }
 
-    if (hourPickerOpen) {
-        ReminderHourPickerDialog(
-            currentHour = reminderTime.hour,
-            onHourPicked = { hour ->
-                onSetReminderTime(hour * 60)
-                hourPickerOpen = false
+    if (clockOpen) {
+        ReminderClockPickerDialog(
+            currentMinuteOfDay = reminderTime.hour * 60 + reminderTime.minute,
+            onMinuteOfDayPicked = { minuteOfDay ->
+                onSetReminderTime(minuteOfDay)
+                clockOpen = false
             },
-            onDismiss = { hourPickerOpen = false },
+            onDismiss = { clockOpen = false },
             animated = animated
         )
     }
 }
 
 /**
- * The hour grid: 24 cells, 6 across, each numbered 0–23. The chosen hour is
- * circled in the same ink ring the calendar throws around a chosen day.
+ * Two-step clock: the hour is circled first (0–11 outer, 12–23 inner), then the
+ * minute in five-minute steps. The time-in-progress shows in the header so the
+ * reader can see the time forming before they commit with the second tap.
  */
 @Composable
-private fun ReminderHourPickerDialog(
-    currentHour: Int,
-    onHourPicked: (Int) -> Unit,
+private fun ReminderClockPickerDialog(
+    currentMinuteOfDay: Int,
+    onMinuteOfDayPicked: (Int) -> Unit,
     onDismiss: () -> Unit,
     animated: Boolean
 ) {
     val palette = LocalPaperPalette.current
-    val pitch = LocalPagePitch.current
-    val cellHeight = maxOf(pitch, PaperDimens.touchTarget)
+    val locale = formatLocale
+    val currentHour = currentMinuteOfDay / 60
+    val currentMinute = currentMinuteOfDay % 60
+
+    var phase by remember { mutableStateOf(ClockPhase.HOURS) }
+    var pickedHour by remember { mutableIntStateOf(currentHour) }
+    val pickedMinute by remember { mutableIntStateOf(currentMinute) }
+
+    val partialLabel = when (phase) {
+        ClockPhase.HOURS -> rememberFormattedTime(LocalTime.of(pickedHour, currentMinute), locale)
+        ClockPhase.MINUTES -> "$pickedHour:--"
+    }
 
     PaperDialog(onDismissRequest = onDismiss) {
         Text(
@@ -146,97 +186,274 @@ private fun ReminderHourPickerDialog(
             color = palette.inked(InkTone.Words),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = TITLE_BOTTOM)
+                .padding(bottom = PARTIAL_BOTTOM)
         )
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val glyph = with(LocalDensity.current) {
-                LocalRuledHand.current.itemLine.fontSize.toDp()
-            }
-            val ring = minOf(glyph * RING_SPREAD, maxWidth / HOUR_COLUMNS * RING_FIT)
-            Column(modifier = Modifier.fillMaxWidth()) {
-                repeat(HOUR_ROWS) { row ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(cellHeight)
-                            .hourRuleUnder(palette.rule),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        repeat(HOUR_COLUMNS) { col ->
-                            val hour = row * HOUR_COLUMNS + col
-                            HourCell(
-                                hour = hour,
-                                selected = hour == currentHour,
-                                ring = ring,
-                                glyph = glyph,
-                                cellHeight = cellHeight,
-                                animated = animated,
-                                palette = palette,
-                                onPick = { onHourPicked(hour) }
-                            )
-                        }
+        Text(
+            text = handwritten(partialLabel),
+            style = PaperType.field,
+            color = palette.inked(InkTone.Acted),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = PARTIAL_BOTTOM)
+        )
+        when (phase) {
+            ClockPhase.HOURS -> HourFace(
+                selectedHour = pickedHour,
+                animated = animated,
+                palette = palette,
+                onHourPicked = { hour ->
+                    pickedHour = hour
+                    phase = ClockPhase.MINUTES
+                }
+            )
+            ClockPhase.MINUTES -> MinuteFace(
+                selectedMinute = pickedMinute,
+                animated = animated,
+                palette = palette,
+                onMinutePicked = { minute -> onMinuteOfDayPicked(pickedHour * 60 + minute) }
+            )
+        }
+    }
+}
+
+/**
+ * The hour face: twelve numerals on one ring, and a pair beside it saying which
+ * half of the day they belong to.
+ *
+ * It carried twenty-four numerals on two rings first, 0–11 outside and 12–23
+ * inside. At this sheet's width the rings sat closer than a finger is wide, so
+ * each outer numeral's target overlapped the inner one at the same angle and the
+ * inner one — composed later, and therefore on top — took the tap: aiming at 7
+ * chose 19. Two targets cannot share that much of the same paper, and no pair of
+ * radii fixes it at this size. One ring cannot overlap itself.
+ */
+@Composable
+private fun HourFace(
+    selectedHour: Int,
+    animated: Boolean,
+    palette: PaperPalette,
+    onHourPicked: (Int) -> Unit
+) {
+    val afternoon = selectedHour >= CLOCK_POSITIONS
+    var secondHalf by remember(selectedHour) { mutableStateOf(afternoon) }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        HalfOfDay(
+            secondHalf = secondHalf,
+            animated = animated,
+            palette = palette,
+            onChoose = { secondHalf = it }
+        )
+        ClockFace(
+            count = CLOCK_POSITIONS,
+            labelOf = { i -> if (i == 0) CLOCK_POSITIONS.toString() else i.toString() },
+            isInner = { _ -> false },
+            seedOf = { i -> i },
+            isSelected = { i -> i == selectedHour % CLOCK_POSITIONS && secondHalf == afternoon },
+            animated = animated,
+            palette = palette,
+            onPick = { i -> onHourPicked(if (secondHalf) i + CLOCK_POSITIONS else i) }
+        )
+    }
+}
+
+/**
+ * Which half of the day the numeral on the face means. The two are written out
+ * rather than drawn, because there is no mark that says "the hours before noon"
+ * that a reader would not have to be taught first.
+ */
+@Composable
+private fun HalfOfDay(
+    secondHalf: Boolean,
+    animated: Boolean,
+    palette: PaperPalette,
+    onChoose: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = PARTIAL_BOTTOM),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        HalfOfDayMark(
+            label = stringResource(R.string.reminder_morning),
+            selected = !secondHalf,
+            seed = HALF_MORNING_SEED,
+            animated = animated,
+            palette = palette,
+            onChoose = { onChoose(false) }
+        )
+        Spacer(Modifier.width(HALF_GAP))
+        HalfOfDayMark(
+            label = stringResource(R.string.reminder_afternoon),
+            selected = secondHalf,
+            seed = HALF_AFTERNOON_SEED,
+            animated = animated,
+            palette = palette,
+            onChoose = { onChoose(true) }
+        )
+    }
+}
+
+@Composable
+private fun HalfOfDayMark(
+    label: String,
+    selected: Boolean,
+    seed: Int,
+    animated: Boolean,
+    palette: PaperPalette,
+    onChoose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .heightIn(min = PaperDimens.touchTarget)
+            .selectable(selected = selected, role = Role.Button, onClick = onChoose)
+            .semantics { contentDescription = label }
+            .padding(horizontal = HALF_PADDING, vertical = HALF_PADDING_TOP),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .circledInInk(
+                    circled = selected,
+                    seed = seed,
+                    color = palette.inked(InkTone.Acted),
+                    animated = animated
+                )
+        )
+        Text(
+            text = handwritten(label),
+            style = PaperType.prose,
+            color = palette.inked(if (selected) InkTone.Acted else InkTone.Words),
+            maxLines = ONE_LINE
+        )
+    }
+}
+
+/**
+ * The minute face: twelve positions at five-minute intervals. The closest five-minute
+ * mark to the stored minute is pre-ringed so the current time reads immediately.
+ */
+@Composable
+private fun MinuteFace(
+    selectedMinute: Int,
+    animated: Boolean,
+    palette: PaperPalette,
+    onMinutePicked: (Int) -> Unit
+) {
+    val roundedPos = (selectedMinute + 2) / CLOCK_MINUTE_STEP % CLOCK_POSITIONS
+    ClockFace(
+        count = CLOCK_POSITIONS,
+        labelOf = { i -> (i * CLOCK_MINUTE_STEP).toString() },
+        isInner = { _ -> false },
+        seedOf = { i -> 0x100 + i },
+        isSelected = { i -> i == roundedPos },
+        animated = animated,
+        palette = palette,
+        onPick = { i -> onMinutePicked(i * CLOCK_MINUTE_STEP) }
+    )
+}
+
+/**
+ * The ink circle the numerals sit on. Each numeral is a selectable box placed by
+ * angle and radius; outer and inner rings share the same twelve angular positions.
+ * The face ring is cut once in the cache block — only how much of a numeral's ring
+ * is drawn changes per frame.
+ */
+@Composable
+private fun ClockFace(
+    count: Int,
+    labelOf: (Int) -> String,
+    isInner: (Int) -> Boolean,
+    seedOf: (Int) -> Int,
+    isSelected: (Int) -> Boolean,
+    animated: Boolean,
+    palette: PaperPalette,
+    onPick: (Int) -> Unit
+) {
+    val faceColor = palette.rule
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .drawWithCache {
+                val faceDiam = size.minDimension * CLOCK_FACE_FRACTION
+                val faceSize = Size(faceDiam, faceDiam)
+                val jitter = faceDiam * CLOCK_WOBBLE
+                val faceRing = ringPath(faceSize, seed = CLOCK_FACE_SEED, jitter = jitter)
+                val faceNib = InkNib(CLOCK_FACE_STROKE.toPx())
+                val dx = (size.width - faceDiam) / 2
+                val dy = (size.height - faceDiam) / 2
+                onDrawBehind {
+                    withTransform({ translate(dx, dy) }) {
+                        inked(faceRing, faceColor, faceNib)
                     }
                 }
+            }
+    ) {
+        val halfDiam = maxWidth / 2
+        val outerR = halfDiam * CLOCK_OUTER_FRACTION
+        val innerR = halfDiam * CLOCK_INNER_FRACTION
+        val touchHalf = PaperDimens.touchTarget / 2
+
+        for (i in 0 until count) {
+            val pos = i % CLOCK_POSITIONS
+            val r = if (isInner(i)) innerR else outerR
+            val angle = pos.toFloat() / CLOCK_POSITIONS.toFloat() * TWO_PI - HALF_PI
+            val x = halfDiam + r * cos(angle) - touchHalf
+            val y = halfDiam + r * sin(angle) - touchHalf
+
+            Box(modifier = Modifier.absoluteOffset(x = x, y = y)) {
+                ClockNumeral(
+                    label = labelOf(i),
+                    selected = isSelected(i),
+                    seed = seedOf(i),
+                    animated = animated,
+                    palette = palette,
+                    onPick = { onPick(i) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun RowScope.HourCell(
-    hour: Int,
+private fun ClockNumeral(
+    label: String,
     selected: Boolean,
-    ring: Dp,
-    glyph: Dp,
-    cellHeight: Dp,
+    seed: Int,
     animated: Boolean,
     palette: PaperPalette,
     onPick: () -> Unit
 ) {
-    val label = hour.toString()
+    val ringSize = PaperDimens.touchTarget * CLOCK_RING_FIT
     Box(
         modifier = Modifier
-            .weight(1f)
-            .height(cellHeight)
+            .size(PaperDimens.touchTarget)
             .selectable(
                 selected = selected,
                 role = Role.Button,
                 onClick = onPick
             )
             .semantics { contentDescription = label },
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = LocalPagePitch.current - glyph / 2 - ring / 2)
-                .size(ring)
+                .size(ringSize)
                 .circledInInk(
                     circled = selected,
-                    seed = hour,
+                    seed = seed,
                     color = palette.inked(InkTone.Acted),
                     animated = animated
                 )
         )
         Text(
             text = label,
-            modifier = Modifier.seatOnRule(),
-            style = LocalRuledHand.current.itemLine,
-            color = palette.inked(InkTone.Words),
+            style = LocalRuledHand.current.margin,
+            color = palette.inked(if (selected) InkTone.Acted else InkTone.Words),
             maxLines = ONE_LINE
         )
     }
 }
-
-private fun Modifier.hourRuleUnder(color: Color): Modifier =
-    drawBehind {
-        val thickness = PaperDimens.rule.toPx()
-        drawRect(
-            color = color,
-            topLeft = Offset(0f, size.height - thickness),
-            size = Size(size.width, thickness)
-        )
-    }
 
 @Composable
 internal fun rememberFormattedTime(time: LocalTime, locale: Locale): String {

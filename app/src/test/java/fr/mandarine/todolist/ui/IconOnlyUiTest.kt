@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
@@ -18,6 +19,8 @@ import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import fr.mandarine.todolist.ui.paper.PaperTheme
+import fr.mandarine.todolist.ui.todolists.DateKind
+import fr.mandarine.todolist.ui.todolists.ListDatePickerDialog
 import fr.mandarine.todolist.ui.paper.SectionSkip
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
@@ -159,6 +162,21 @@ class IconOnlyUiTest {
     }
 
     /**
+     * "Morning" and "Afternoon" are drawn words on the hour clock face — they are
+     * the only labels that teach which half of the day each numeral belongs to. Pinned
+     * here so adding a glyph that replaces them is a deliberate act with a test update.
+     */
+    @Test
+    fun `should draw Morning and Afternoon when the hour clock is open`() {
+        composeRule.setContent { PaperTheme { ListsScreenWithSettingsOpen() } }
+
+        composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
+
+        composeRule.onNodeWithText(MORNING_LABEL).assertIsDisplayed()
+        composeRule.onNodeWithText(AFTERNOON_LABEL).assertIsDisplayed()
+    }
+
+    /**
      * The gesture map is spoken to a screen reader as a list of named verbs. None
      * of those names may leak onto the page as a label, which is what would happen
      * if a verb were ever wired to a `Text` instead of to `customActions`.
@@ -199,6 +217,50 @@ class IconOnlyUiTest {
 
         assert(DELETE_LABEL !in descriptions) { "Delete button must not appear at rest" }
         assert(CANCEL_LABEL !in descriptions) { "Cancel button must not appear at rest" }
+    }
+
+    /**
+     * The Remove button appears inside the date picker only when a date is already
+     * set — it is the visible route to clearing a date that the ink ring alone did
+     * not teach. When no date is set there is nothing to remove and the button must
+     * not appear.
+     */
+    @Test
+    fun `should show the Remove button in the date picker when a date is set`() {
+        composeRule.setContent { PaperTheme { DatePickerWithDate() } }
+
+        composeRule.onNodeWithContentDescription(REMOVE_DATE_LABEL).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should not show the Remove button in the date picker when no date is set`() {
+        composeRule.setContent { PaperTheme { DatePickerWithoutDate() } }
+
+        composeRule.onNodeWithContentDescription(REMOVE_DATE_LABEL).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should call onCleared when the Remove button is pressed in the date picker`() {
+        var cleared = false
+        composeRule.setContent {
+            PaperTheme {
+                ListDatePickerDialog(
+                    initial = TODAY,
+                    today = TODAY,
+                    kind = DateKind.TARGET,
+                    animated = false,
+                    onDismiss = {},
+                    onPicked = {},
+                    onKindAsked = {},
+                    onKindChange = {},
+                    onCleared = { cleared = true }
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(REMOVE_DATE_LABEL).performClick()
+
+        assert(cleared) { "Expected onCleared to be called when Remove is pressed" }
     }
 
     /**
@@ -260,13 +322,17 @@ class IconOnlyUiTest {
         const val ADD_ITEM_LABEL = "Add an item"
         const val BACK_DESCRIPTION = "Navigate up"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
-        const val SETTINGS_DESCRIPTION = "Settings"
+        const val SETTINGS_DESCRIPTION = "Reminder time"
         const val APP_NAME = "To do list"
         const val DELETE_LABEL = "Delete"
         const val CANCEL_LABEL = "Cancel"
         const val DELETE_QUESTION = "Delete \"Groceries\"?"
         const val REMINDERS_TITLE = "Reminders"
         const val DONE_LABEL = "Done"
+        const val TIME_ROW_LABEL = "Every day at"
+        const val MORNING_LABEL = "Morning"
+        const val AFTERNOON_LABEL = "Afternoon"
+        const val REMOVE_DATE_LABEL = "Remove"
     }
 }
 
@@ -383,6 +449,36 @@ private fun ItemsScreenWithDeletePrompt() {
         onDelete = {},
         onSubmitInline = {},
         onReorder = {}
+    )
+}
+
+@Composable
+private fun DatePickerWithDate() {
+    ListDatePickerDialog(
+        initial = TODAY,
+        today = TODAY,
+        kind = DateKind.TARGET,
+        animated = false,
+        onDismiss = {},
+        onPicked = {},
+        onKindAsked = {},
+        onKindChange = {},
+        onCleared = {}
+    )
+}
+
+@Composable
+private fun DatePickerWithoutDate() {
+    ListDatePickerDialog(
+        initial = null,
+        today = TODAY,
+        kind = DateKind.TARGET,
+        animated = false,
+        onDismiss = {},
+        onPicked = {},
+        onKindAsked = {},
+        onKindChange = {},
+        onCleared = {}
     )
 }
 

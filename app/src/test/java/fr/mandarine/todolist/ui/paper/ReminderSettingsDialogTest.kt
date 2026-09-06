@@ -3,6 +3,7 @@ package fr.mandarine.todolist.ui.paper
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -21,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The settings gear and the two dialogs it raises: the settings slip and the hour
+ * The bell and the two dialogs it raises: the settings slip and the hour
  * grid. Each test addresses exactly one behaviour so regressions are easy to name.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -31,28 +32,28 @@ class ReminderSettingsDialogTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    // ── Settings gear on the page ─────────────────────────────────────────────
+    // ── Bell on the page ──────────────────────────────────────────────────────
 
     @Test
-    fun `should display the settings gear on the empty lists page`() {
+    fun `should display the bell on the empty lists page`() {
         composeRule.setContent { PaperTheme { ListsScreen() } }
 
         composeRule.onNodeWithContentDescription(SETTINGS).assertIsDisplayed()
     }
 
     @Test
-    fun `should give the settings gear a touch target of at least 48 dp`() {
+    fun `should give the bell a touch target of at least 48 dp`() {
         composeRule.setContent { PaperTheme { ListsScreen() } }
 
         composeRule.onNodeWithContentDescription(SETTINGS).assertHeightIsAtLeast(TOUCH_FLOOR)
     }
 
     /**
-     * When the add line opens the masthead strip clears; the gear goes with it so
+     * When the add line opens the masthead strip clears; the bell goes with it so
      * the strip does not compete for the top-end corner with the keyboard.
      */
     @Test
-    fun `should hide the settings gear while the add row is open`() {
+    fun `should hide the bell while the add row is open`() {
         composeRule.setContent {
             PaperTheme {
                 ListsScreen(addRowOpen = true)
@@ -65,7 +66,7 @@ class ReminderSettingsDialogTest {
     // ── Settings slip ─────────────────────────────────────────────────────────
 
     @Test
-    fun `should open the settings slip when the gear is pressed`() {
+    fun `should open the settings slip when the bell is pressed`() {
         composeRule.setContent { PaperTheme { ListsScreen() } }
 
         composeRule.onNodeWithContentDescription(SETTINGS).performClick()
@@ -117,7 +118,7 @@ class ReminderSettingsDialogTest {
     }
 
     @Test
-    fun `should call onSetReminderTime with hour times 60 when an hour cell is selected`() {
+    fun `should call onSetReminderTime with hour times 60 when an hour then minute zero is selected`() {
         val calls = mutableListOf<Int>()
         composeRule.setContent {
             PaperTheme {
@@ -131,13 +132,15 @@ class ReminderSettingsDialogTest {
         }
 
         composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
-        composeRule.onNodeWithContentDescription(HOUR_14).performClick()
+        composeRule.onNodeWithContentDescription(AFTERNOON).performClick()
+        composeRule.onNodeWithContentDescription(HOUR_2).performClick()
+        composeRule.onNodeWithContentDescription(MINUTE_0).performClick()
 
         assertEquals(listOf(14 * 60), calls)
     }
 
     @Test
-    fun `should close the hour picker after a selection is made`() {
+    fun `should close the clock picker after both hour and minute are selected`() {
         composeRule.setContent {
             PaperTheme {
                 ReminderSettingsDialog(
@@ -151,9 +154,51 @@ class ReminderSettingsDialogTest {
 
         composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
         composeRule.onNodeWithText(PICKER_TITLE).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription(HOUR_14).performClick()
+        composeRule.onNodeWithContentDescription(AFTERNOON).performClick()
+        composeRule.onNodeWithContentDescription(HOUR_2).performClick()
+        composeRule.onNodeWithText(PICKER_TITLE).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(MINUTE_0).performClick()
 
         composeRule.onNodeWithText(PICKER_TITLE).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should call onSetReminderTime with 450 when hour 7 then minute 30 is selected`() {
+        val calls = mutableListOf<Int>()
+        composeRule.setContent {
+            PaperTheme {
+                ReminderSettingsDialog(
+                    reminderTime = DEFAULT_TIME,
+                    onSetReminderTime = { calls += it },
+                    onDismiss = {},
+                    animated = false
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
+        composeRule.onNodeWithContentDescription(HOUR_7).performClick()
+        composeRule.onNodeWithContentDescription(MINUTE_30).performClick()
+
+        assertEquals(listOf(7 * 60 + 30), calls)
+    }
+
+    @Test
+    fun `should show the current hour as selected when the clock opens`() {
+        composeRule.setContent {
+            PaperTheme {
+                ReminderSettingsDialog(
+                    reminderTime = DEFAULT_TIME,
+                    onSetReminderTime = {},
+                    onDismiss = {},
+                    animated = false
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
+
+        composeRule.onNodeWithContentDescription(HOUR_8).assertIsSelected()
     }
 
     @Test
@@ -180,12 +225,17 @@ class ReminderSettingsDialogTest {
         val TODAY: LocalDate = LocalDate.of(2026, 1, 1)
         val DEFAULT_TIME: LocalTime = LocalTime.of(8, 0)
         val TOUCH_FLOOR = 48.dp
-        const val SETTINGS = "Settings"
+        const val SETTINGS = "Reminder time"
         const val REMINDERS = "Reminders"
         const val DONE = "Done"
         const val PICKER_TITLE = "When shall I remind you?"
         const val TIME_ROW_LABEL = "Every day at"
-        const val HOUR_14 = "14"
+        const val HOUR_7 = "7"
+        const val HOUR_8 = "8"
+        const val HOUR_2 = "2"
+        const val AFTERNOON = "Afternoon"
+        const val MINUTE_0 = "0"
+        const val MINUTE_30 = "30"
     }
 
     @androidx.compose.runtime.Composable

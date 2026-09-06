@@ -179,41 +179,46 @@ class TodoListsScreenTest {
 
     /**
      * The pad does not leave — a sheet was taken off it, not the whole thing — but
-     * what it offers changes: the sheet now showing tears up the line rather than
+     * what it offers changes: the sheet now showing confirms the line rather than
      * starting another one.
      */
     @Test
-    fun `should offer to tear the line up rather than start another while it is being written`() {
+    fun `should offer to confirm the line rather than start another while it is being written`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
         composeRule.onNodeWithContentDescription(CREATE_LIST).assertDoesNotExist()
-        composeRule.onNodeWithContentDescription(DISCARD_LIST).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(COMMIT_LIST).assertIsDisplayed()
     }
 
     @Test
-    fun `should tear up the line and what was written on it when the pad is pressed again`() {
+    fun `should commit the list and close the add row when the pad is pressed with text`() {
         armAddLine()
         render(TodoListsState.Empty)
         addLine().performTextReplacement("Throwaway")
 
-        composeRule.onNodeWithContentDescription(DISCARD_LIST).performClick()
+        /**
+         * When text is present the CommitMark tick on the add line and the pad's
+         * own tick share the same content description. The pad is the last such node
+         * in the top-to-bottom semantics order (it sits at the bottom of the screen).
+         */
+        composeRule.onAllNodesWithContentDescription(COMMIT_LIST).onLast().performClick()
         composeRule.waitForIdle()
 
         assertFalse(screenState.addRowExpanded)
-        assertEquals("", screenState.addRowText)
-        assertEquals(emptyList<Triple<String, LocalDate?, LocalDate?>>(), created)
+        assertEquals(listOf(Triple("Throwaway", null, null)), created)
     }
 
     @Test
-    fun `should leave the date written beside a torn-up line behind with it`() {
+    fun `should close the add row without creating when the pad is pressed on a blank line`() {
         armAddLine(selection = DateSelection(DateKind.DUE, DATE))
         render(TodoListsState.Empty)
 
-        composeRule.onNodeWithContentDescription(DISCARD_LIST).performClick()
+        composeRule.onNodeWithContentDescription(COMMIT_LIST).performClick()
         composeRule.waitForIdle()
 
-        assertEquals(DateSelection.None, screenState.addRowSelection)
+        assertFalse(screenState.addRowExpanded)
+        assertEquals(emptyList<Triple<String, LocalDate?, LocalDate?>>(), created)
     }
 
     @Test
@@ -232,7 +237,7 @@ class TodoListsScreenTest {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
-        assertEquals(listOf(ADD_LIST, DISCARD_LIST), descriptions())
+        assertEquals(listOf(ADD_LIST, COMMIT_LIST), descriptions())
     }
 
     @Test
@@ -1171,7 +1176,7 @@ class TodoListsScreenTest {
         const val ADD_LIST = "Add a list"
         const val APP_NAME = "To do list"
         const val CREATE_LIST = "Create new list"
-        const val DISCARD_LIST = "Discard the list being written"
+        const val COMMIT_LIST = "Add this list"
         const val DELETE_CONFIRM = "Delete"
         const val CANCEL = "Cancel"
         const val SET_TARGET_DATE = "Set target date"

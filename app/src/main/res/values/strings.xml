@@ -24,7 +24,6 @@
     <string name="add_list_fab_description">Create new list</string>
     <string name="add_list">Add a list</string>
     <string name="commit_list">Add this list</string>
-    <string name="discard_list">Discard the list being written</string>
     <string name="add_item">Add an item</string>
     <string name="commit_item">Add this item</string>
     <string name="item_edit">Edit item</string>
@@ -52,11 +51,12 @@
         <item quantity="other">and the %d items on it</item>
     </plurals>
     <string name="give_list_a_day">Give this list a day</string>
-    <string name="settings">Settings</string>
+    <string name="reminder_time">Reminder time</string>
     <string name="reminders_title">Reminders</string>
     <string name="reminder_every_day_at">Every day at</string>
     <string name="reminder_hour_picker_title">When shall I remind you?</string>
     <string name="done">Done</string>
+    <string name="remove_date">Remove</string>
     <string name="colour_none">No colour</string>
     <string name="colour_butter">Yellow</string>
     <string name="colour_mint">Green</string>
@@ -64,4 +64,6 @@
     <string name="colour_sky">Blue</string>
     <string name="colour_peach">Orange</string>
     <string name="colour_lilac">Violet</string>
+    <string name="reminder_morning">Morning</string>
+    <string name="reminder_afternoon">Afternoon</string>
 </resources>

@@ -54,12 +54,6 @@ object GlyphFoot {
      */
     const val add = 18f / 24f
 
-    /**
-     * The gear's lowest tooth tip sits at y≈19.5 on the 24-unit grid (tooth at 60°
-     * and 120°); the round cap adds one unit, placing the bottommost ink at y≈20.5.
-     * Rounding up to 21/24 keeps the mark on the rule with a hair of margin.
-     */
-    const val gear = 21f / 24f
 }
 
 @Composable
@@ -88,7 +82,8 @@ fun InkIconButton(
     enabled: Boolean = true,
     seat: IconSeat = IconSeat.Centred,
     foot: Float = GlyphFoot.arrow,
-    pressedTint: Color? = null
+    pressedTint: Color? = null,
+    glyphSize: Dp = PaperDimens.iconGlyph
 ) {
     val haptics = rememberPaperHaptics()
     val onRule = seat == IconSeat.OnRule
@@ -126,7 +121,8 @@ fun InkIconButton(
                 scaleX = squash
                 scaleY = squash
             },
-            tint = if (enabled) effectiveTint else tint.copy(alpha = DISABLED_TINT_ALPHA)
+            tint = if (enabled) effectiveTint else tint.copy(alpha = DISABLED_TINT_ALPHA),
+            size = glyphSize
         )
     }
 }

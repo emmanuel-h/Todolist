@@ -119,6 +119,18 @@ private fun TextStyle.offRule(leading: TextUnit): TextStyle = copy(
     )
 )
 
+/**
+ * Filling the line rather than evening the lines out.
+ *
+ * The page's hand breaks lines `Balanced`, which is right for prose: it trades a
+ * full first line for two lines of similar length. A name on a row is not prose —
+ * it is writing on a rule with marks after it, and a balanced break leaves a gap
+ * before those marks that reads as space the writing was not allowed to use.
+ */
+fun TextStyle.fillingTheLine(): TextStyle = copy(
+    lineBreak = lineBreak.copy(strategy = LineBreak.Strategy.Simple)
+)
+
 fun TextStyle.trimmedToGlyphs(): TextStyle = copy(
     lineHeightStyle = LineHeightStyle(
         alignment = LineHeightStyle.Alignment.Bottom,

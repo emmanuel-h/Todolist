@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui.todolists
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -10,12 +11,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.ui.paper.DialogButton
+import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperCalendar
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperSlipCaption
 import fr.mandarine.todolist.ui.paper.PaperDialog
+import fr.mandarine.todolist.ui.paper.inked
 import java.time.LocalDate
 
 /**
@@ -86,6 +90,17 @@ fun ListDatePickerDialog(
             ),
             modifier = Modifier.fillMaxWidth()
         )
+        if (initial != null) {
+            val palette = LocalPaperPalette.current
+            Row(modifier = Modifier.fillMaxWidth()) {
+                DialogButton(
+                    label = stringResource(R.string.remove_date),
+                    tint = palette.inked(InkTone.Margin),
+                    onClick = onCleared
+                )
+                Spacer(Modifier.weight(1f))
+            }
+        }
         PaperCalendar(
             selected = initial,
             today = today,

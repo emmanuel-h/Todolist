@@ -165,7 +165,7 @@ the corner is the only affordance.
 
 **Create a list**
 - Tap the sticky pad → a sheet peels off and the add line unfolds under the head rule, hint `…`
-- The keyboard's own Done commits the line; there is no send glyph
+- The keyboard's own Done commits the line, and so does the sticky pad, which becomes a **tick** while the line is open. It used to become a minus that tore the line up — the same corner, the same shape, doing the opposite of what the items page's tick does ([#80](https://github.com/emmanuel-h/Todolist/issues/80))
 - Commit is a no-op if the line is blank
 - On commit: new list inserted at the top
 - Putting the pen down (back, a tap on bare paper, dismissing the keyboard) folds the line away **without discarding what was written** — reopening it finds the words and any day circled still there. Only a commit clears it.
@@ -181,7 +181,8 @@ the corner is the only affordance.
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
 - **A committed row carries a visible route to a day** ([#67](https://github.com/emmanuel-h/Todolist/issues/67)). The date slot on a list row holds *either* the calendar button *or* the date itself: with no date, a `[📅]` button that opens the paper calendar; with a date, the jot, which was already pressable and opens the same calendar. No row ever carries four controls, because a list holds a target date **or** a due date and never both. Before this there was no mark on a committed row saying a list could have a day at all — the only route was the edit sheet, and the reporter could not find it
 - **A ring means a day** ([#36](https://github.com/emmanuel-h/Todolist/issues/36), [#37](https://github.com/emmanuel-h/Todolist/issues/37)). A kind is something a date has, not something chosen before there is one, so with nothing written neither mark is ringed and nothing trails them. `DateSelection.kind` is still non-nullable; it is simply not read while `date` is null.
-- Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**. There is no separate clear mark — the ringed mark is the clear, which is also the only way back to the neutral state
+- Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**
+- **The calendar sheet also says `Remove` in words when a day is set** ([#82](https://github.com/emmanuel-h/Todolist/issues/82)). The ringed mark still clears, but nothing about a ring says "press me to remove" — it reads as *this is the current kind* — and a reader who set a due date and went back to take it off concluded it could not be done. The ring had been tried and did not teach it, which is exactly when this app writes the word instead
 - The calendar sheet carries the caption for the kind it is asking for, and moving a day across raises the same caption on a slip under the marks for a beat. One pair of words on one slip (`PaperSlipCaption`), wherever the reader meets the distinction
 - The day attaches to the list the line commits; circling a target date clears any due date
 - The date is displayed on a second line of the list row, below the list name, with a calendar icon
@@ -427,17 +428,26 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 
 The app's **first settings surface**, and it is one glyph and one slip.
 
-- A gear sits at the end of the masthead strip on Screen 1 — the slot the tour's replay `?`
-  left empty. It leaves with the masthead when the pen comes out. The strip is one 28dp rule
+- A **bell** sits at the end of the masthead strip on Screen 1 — the slot the tour's replay `?`
+  left empty. It was a gear first, which promises a drawer of options and delivers one time
+  ([#78](https://github.com/emmanuel-h/Todolist/issues/78)); a bell names what is behind it,
+  and `ic_alarm` could not be borrowed because it already means *due date* on a row. It leaves with the masthead when the pen comes out. The strip is one 28dp rule
   tall, well under a finger, so the gear's touch target spans the whole head margin (the
   status-bar inset plus the rule) and grows **upward**: reaching down would have taken taps
   from the first list row.
 - Pressing it lays a paper slip carrying `Reminders` and the chosen time as a pressable jot.
-- Pressing the time opens a grid of the twenty-four hours, ruled like the page, with the
-  chosen one circled in ink — the same mark, and the same grid idiom, the paper calendar
-  rings a day with.
-- Whole hours only. The stored value is a **minute of day**, so half-hours can be added later
-  without touching anything below `ui/` or migrating what is stored.
+- The time carries a pencil, because a line of writing with nothing on it does not look like
+  something you press ([#79](https://github.com/emmanuel-h/Todolist/issues/79)).
+- Pressing it opens a **clock** drawn in the page's own hand: an ink circle with twelve
+  numerals, 12 at the top, and `Morning` / `Afternoon` above it saying which half of the day
+  they mean. An hour is circled in ink, then the face becomes minutes at five-minute steps,
+  and the time being built is written above the face as it forms.
+- It was a grid of the twenty-four whole hours first, which could not say 7:30. A face
+  carrying all twenty-four on two rings was tried and abandoned: at this sheet's width the
+  rings sat closer than a finger, every outer numeral's target overlapped the inner one at
+  the same angle, and aiming at 7 chose 19. One ring of twelve cannot overlap itself.
+- Any five minutes is reachable. The stored value is a **minute of day**, so a finer step
+  needs nothing below `ui/`.
 - The time is written in the reader's own convention: the ICU skeleton is `jm`, so a French
   reader is shown `20:00` and an en-US one `8:00 PM`. `HH` would have forced twenty-four
   hours on everybody.

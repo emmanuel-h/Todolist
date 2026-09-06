@@ -193,14 +193,25 @@ private fun DrawScope.drawWash(color: Color, wash: Float) {
     drawCircle(color = color, radius = size.minDimension * HALF * wash)
 }
 
-private fun ringPath(size: Size, seed: Int, jitter: Float): Path {
+/**
+ * The ring takes a radius per axis rather than one for both, so it goes round what
+ * it is thrown around. On a square — a day on the calendar, an hour on the face,
+ * the completion ring — the two radii are the same number and this is the circle
+ * it always was; around a word it is the oval a pen actually draws, instead of a
+ * small circle sitting in the middle of the writing.
+ */
+internal fun ringPath(size: Size, seed: Int, jitter: Float): Path {
     val random = Random(seed)
-    val radius = size.minDimension * HALF - jitter
+    val radiusX = size.width * HALF - jitter
+    val radiusY = size.height * HALF - jitter
     val centre = Offset(size.width * HALF, size.height * HALF)
     val points = List(RING_STEPS) { step ->
         val angle = TWO_PI * step / RING_STEPS
-        val reach = radius + (random.nextFloat() * JITTER_SPAN - JITTER_CENTRE) * jitter
-        Offset(centre.x + cos(angle) * reach, centre.y + sin(angle) * reach)
+        val wobble = (random.nextFloat() * JITTER_SPAN - JITTER_CENTRE) * jitter
+        Offset(
+            centre.x + cos(angle) * (radiusX + wobble),
+            centre.y + sin(angle) * (radiusY + wobble)
+        )
     }
     val path = Path()
     val start = points.last().midpointTo(points.first())

@@ -149,7 +149,7 @@ fun TodoListsScreen(
     val bottomInset = insets.calculateBottomPadding()
     val headMargin = topInset + pitch
     val palette = LocalPaperPalette.current
-    val settingsLabel = stringResource(R.string.settings)
+    val settingsLabel = stringResource(R.string.reminder_time)
     val gutter = LocalPaperGutter.current
     val headRuleSeat = headRuleSeat(headMargin, gutter)
     val seam = keyboardSeam(screenState.confirmDelete == null)
@@ -357,10 +357,10 @@ fun TodoListsScreen(
             }
         }
         /**
-         * The settings gear sits at the top-end corner of the page. Its touch target
-         * spans the full headMargin (status bar + pitch) so it never steals from the
-         * first list row below; the glyph sits at the bottom of that area and appears
-         * visually inside the masthead strip while fingers reach across the whole height.
+         * The bell sits at the top-end corner of the page. Its touch target spans the
+         * full headMargin (status bar + pitch) so it never steals from the first list
+         * row below; the glyph sits at the bottom of that area and appears visually
+         * inside the masthead strip while fingers reach across the whole height.
          */
         AnimatedVisibility(
             visible = !screenState.addRowExpanded,
@@ -386,7 +386,7 @@ fun TodoListsScreen(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 InkIcon(
-                    painter = painterResource(R.drawable.ic_settings),
+                    painter = painterResource(R.drawable.ic_bell),
                     contentDescription = settingsLabel,
                     tint = palette.inked(InkTone.Margin)
                 )
@@ -404,11 +404,12 @@ fun TodoListsScreen(
             beckons = pageEmpty,
             landing = headRuleSeat,
             putBack = StickyNotePutBack(
-                painter = painterResource(R.drawable.ic_remove),
-                contentDescription = stringResource(R.string.discard_list),
+                painter = painterResource(R.drawable.ic_check),
+                contentDescription = stringResource(R.string.commit_list),
                 onPress = {
                     focusManager.clearFocus()
-                    screenState.abandonAddRow()
+                    submitAddRow(screenState, onCreateList, onDueDateSet)
+                    screenState.closeAddRow()
                 }
             )
         )

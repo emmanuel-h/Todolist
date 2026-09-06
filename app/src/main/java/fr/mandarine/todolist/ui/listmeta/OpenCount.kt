@@ -33,7 +33,7 @@ fun OpenCount(count: Int, modifier: Modifier = Modifier, animated: Boolean = tru
         Text(
             text = if (tally > NOTHING_LEFT) tally.toString() else NO_TALLY,
             modifier = Modifier
-                .widthIn(min = PaperDimens.marginColumn)
+                .then(if (tally > NOTHING_LEFT) Modifier.widthIn(min = PaperDimens.marginColumn) else Modifier)
                 .seatOnRule(),
             style = LocalRuledHand.current.margin,
             color = LocalPaperPalette.current.inked(InkTone.Margin),

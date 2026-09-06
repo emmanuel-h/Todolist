@@ -25,11 +25,13 @@ import fr.mandarine.todolist.ui.paper.GlyphFoot
 import fr.mandarine.todolist.ui.paper.IconSeat
 import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
+import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PenStrikeState
 import fr.mandarine.todolist.ui.paper.RowVerb
 import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.fillingTheLine
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.highlightWash
 import fr.mandarine.todolist.ui.paper.inked
@@ -77,7 +79,8 @@ fun TodoListRow(
                 tint = palette.inked(InkTone.Margin),
                 pressedTint = palette.inked(InkTone.Words),
                 seat = IconSeat.OnRule,
-                foot = GlyphFoot.pencil
+                foot = GlyphFoot.pencil,
+                glyphSize = PaperDimens.rowGlyph
             )
         }
         if (!hasDate && onRewriteDate != null) {
@@ -88,7 +91,8 @@ fun TodoListRow(
                 tint = palette.inked(InkTone.Margin),
                 pressedTint = palette.inked(InkTone.Words),
                 seat = IconSeat.OnRule,
-                foot = GlyphFoot.calendar
+                foot = GlyphFoot.calendar,
+                glyphSize = PaperDimens.rowGlyph
             )
         }
         InkIconButton(
@@ -98,7 +102,8 @@ fun TodoListRow(
             tint = palette.inked(InkTone.Margin),
             pressedTint = palette.inked(InkTone.Words),
             seat = IconSeat.OnRule,
-            foot = GlyphFoot.trash
+            foot = GlyphFoot.trash,
+            glyphSize = PaperDimens.rowGlyph
         )
     }
 }
@@ -106,7 +111,7 @@ fun TodoListRow(
 @Composable
 private fun RowScope.RowName(summary: TodoListSummary, animated: Boolean) {
     val palette = LocalPaperPalette.current
-    val style = MaterialTheme.typography.titleMedium
+    val style = MaterialTheme.typography.titleMedium.fillingTheLine()
     val strike = rememberPenStrike(summary.list.id, summary.allDone, animated)
     val ink = palette.inked(InkBudget.words(summary.allDone))
     val wash = palette.highlightWash(summary.list.colour)

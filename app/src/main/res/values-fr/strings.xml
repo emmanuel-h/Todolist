@@ -28,7 +28,6 @@
     <string name="add_list_fab_description">Créer une nouvelle liste</string>
     <string name="add_list">Ajouter une liste</string>
     <string name="commit_list">Ajouter cette liste</string>
-    <string name="discard_list">Abandonner la liste commencée</string>
     <string name="add_item">Ajouter une tâche</string>
     <string name="commit_item">Ajouter cette tâche</string>
     <string name="item_edit">Modifier la tâche</string>
@@ -57,11 +56,12 @@
         <item quantity="many">et les %d tâches qu\'elle contient</item>
     </plurals>
     <string name="give_list_a_day">Donner un jour à cette liste</string>
-    <string name="settings">Paramètres</string>
+    <string name="reminder_time">Heure du rappel</string>
     <string name="reminders_title">Rappels</string>
     <string name="reminder_every_day_at">Chaque jour à</string>
     <string name="reminder_hour_picker_title">À quelle heure me rappeler ?</string>
     <string name="done">Terminé</string>
+    <string name="remove_date">Retirer</string>
     <string name="colour_none">Sans couleur</string>
     <string name="colour_butter">Jaune</string>
     <string name="colour_mint">Vert</string>
@@ -69,4 +69,6 @@
     <string name="colour_sky">Bleu</string>
     <string name="colour_peach">Orange</string>
     <string name="colour_lilac">Violet</string>
+    <string name="reminder_morning">Matin</string>
+    <string name="reminder_afternoon">Après-midi</string>
 </resources>
