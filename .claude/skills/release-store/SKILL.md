@@ -168,33 +168,58 @@ Rules:
   - French: `- Améliorations internes et corrections mineures.`
   - English: `- Internal improvements and minor fixes.`
 
-Write the notes in **French** (`<fr-FR>`) and **English** (`<en-US>`):
+### The 500-character limit
 
-```
-<fr-FR>
-- …
-</fr-FR>
+**Play Console rejects any language whose notes exceed 500 characters**, with
+`La note de version pour fr-FR est trop longue`. The limit is per language and counts the
+body only, not the `<fr-FR>` tags.
 
-<en-US>
-- …
-</en-US>
-```
+French runs 15–25% longer than the same English, so **French is the block that blows the
+budget**. Write French first and let its length decide how much detail every bullet carries;
+an English block that fits proves nothing about the French one.
 
-Copy the full block to clipboard:
+Aim for **≤ 460 characters** per language — headroom, because a late wording change is
+cheaper than a rejected upload. That is roughly **8 bullets of one line each**.
+
+When over budget, cut in this order:
+1. **Qualifiers before bullets** — "even on a long list", "in five-minute steps",
+   "including the items on a list". The change survives; the elaboration goes.
+2. **Bullets describing an absence** — a removed tour or a deleted gesture is nothing the
+   user can go looking for.
+3. **Whole bullets**, least visible first. Never merge two unrelated changes into one
+   comma-spliced line to save characters; that costs more clarity than it saves space.
+
+### Write, measure, then copy
+
+Write each language body to its own file in your scratchpad directory and **measure before
+copying** — never copy an unmeasured block.
 
 ```bash
-NOTES="<fr-FR>
-- …
-</fr-FR>
+SCRATCH="<your scratchpad directory>"
 
-<en-US>
+cat > "$SCRATCH/fr.txt" <<'EOF'
 - …
-</en-US>"
+EOF
 
-WAYLAND_DISPLAY=wayland-0 wl-copy "$NOTES"
+cat > "$SCRATCH/en.txt" <<'EOF'
+- …
+EOF
+
+wc -m "$SCRATCH/fr.txt" "$SCRATCH/en.txt"
 ```
 
-Display the notes to the user and confirm they are in the clipboard.
+If either count exceeds 500, trim by the order above and measure again. Only once both are
+under the limit, assemble the tagged block and copy it:
+
+```bash
+{ echo "<fr-FR>"; cat "$SCRATCH/fr.txt"; echo "</fr-FR>"; echo;
+  echo "<en-US>"; cat "$SCRATCH/en.txt"; echo "</en-US>"; } > "$SCRATCH/notes.txt"
+
+WAYLAND_DISPLAY=wayland-0 wl-copy < "$SCRATCH/notes.txt"
+```
+
+Display the notes to the user with **both character counts**, confirm they are in the
+clipboard, and say what was cut to fit if anything was.
 
 ---
 
@@ -202,7 +227,7 @@ Display the notes to the user and confirm they are in the clipboard.
 
 ```bash
 gh release view "$TAG" --json assets \
-  --jq '.assets[] | select(.name | endswith(".aab")) | .browserDownloadUrl'
+  --jq '.assets[] | select(.name | endswith(".aab")) | .url'
 ```
 
 Display the URL clearly to the user. Also remind the user:
