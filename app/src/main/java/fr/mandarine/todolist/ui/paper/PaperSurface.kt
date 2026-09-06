@@ -75,6 +75,32 @@ fun Modifier.paperSheet(
 }
 
 /**
+ * A strip of the page rather than a sheet of its own. A fresh sheet runs the whole
+ * top-lit gradient inside the strip's few millimetres, so at the foot of the page —
+ * where the page has long since arrived at its own tone — the strip came out at the
+ * lit end of that gradient and read as a white card lying on cream. It takes the
+ * tone the page has reached there, with the page's grain and none of a sheet's own
+ * corners.
+ */
+@Composable
+fun Modifier.paperStrip(): Modifier {
+    val paper = LocalPaperPalette.current.paper
+    val grain = paperGrainOn(paper)
+    val tile = paperGrainTile(LocalDensity.current.density, grain)
+    return this.drawWithCache {
+        val brushes = paperSheetBrushes(
+            tile = tile,
+            lit = paper,
+            tone = paper,
+            vignette = Color.Transparent,
+            size = size,
+            grain = grain
+        )
+        onDrawBehind { drawPaperSheet(brushes) }
+    }
+}
+
+/**
  * A sheet whose opacity is read at draw time, so a row can lift off the page and
  * lay back down without recomposing once per frame.
  */

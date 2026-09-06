@@ -73,7 +73,7 @@ import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.keyboardSeam
 import fr.mandarine.todolist.ui.paper.pageFrame
-import fr.mandarine.todolist.ui.paper.paperGround
+import fr.mandarine.todolist.ui.paper.paperStrip
 import fr.mandarine.todolist.ui.paper.paperRuling
 import fr.mandarine.todolist.ui.paper.pageVerticalInsets
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -391,7 +391,9 @@ fun TodoListScreen(
              * it, so it carries the page's own ground and its own rule: the rows
              * scroll underneath and must not show through it, which they did while
              * it was transparent — a row passing behind the line drew its ring
-             * through the plus.
+             * through the plus. It grounds itself as a strip and not as a sheet:
+             * a sheet is lit at its top, and a sheet only a line tall laid at the
+             * foot of the page was a white card lying on cream.
              */
             Box(
                 modifier = Modifier
@@ -402,7 +404,7 @@ fun TodoListScreen(
                             WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
                         )
                     )
-                    .paperGround()
+                    .paperStrip()
                     .paperRuling(pitch = pitch, color = palette.rule, gutter = gutter)
             ) {
                 InkAddLine(
