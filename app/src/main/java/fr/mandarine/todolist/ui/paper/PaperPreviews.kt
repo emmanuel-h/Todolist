@@ -1,5 +1,17 @@
 package fr.mandarine.todolist.ui.paper
 
+/**
+ * Android Studio previews for the design-system primitives.
+ *
+ * A `@Preview` function is rendered by the IDE without running the app; open this
+ * file and use the split/design view to see the ink, paper and motion primitives
+ * side by side in both light and dark. Nothing here is reachable from the app, so
+ * R8 drops it from the release build (minification is on), and nothing here is
+ * covered by the quality gates.
+ *
+ * This is the cheapest place to try a change to `ui/paper/` before wiring it into a
+ * screen.
+ */
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

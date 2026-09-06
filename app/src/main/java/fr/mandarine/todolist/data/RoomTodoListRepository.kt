@@ -5,6 +5,23 @@ import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListRepository
 import java.time.LocalDate
 
+/**
+ * The Room-backed [TodoListRepository]. Maps [TodoListEntity] to and from
+ * `fr.mandarine.todolist.domain.TodoList`.
+ *
+ * Two conversions are worth knowing about:
+ * - dates are stored as epoch **days** and converted with `LocalDate.ofEpochDay` /
+ *   `toEpochDay`;
+ * - the colour is stored as the enum constant's `name` and read back with
+ *   `ListColour.valueOf`, which **throws** on an unknown name. A colour constant
+ *   removed from the enum without a migration therefore crashes on read rather than
+ *   silently falling back.
+ *
+ * On read, a row that somehow holds both dates is resolved in favour of the hard
+ * one: `targetDate` is only taken when `dueDate` is null. Nothing should ever write
+ * such a row — the domain forbids it — but the storage layer has no constraint
+ * enforcing it, and [TodoList] would throw from its `init` if handed both.
+ */
 class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository {
 
     override fun getAll(): List<TodoList> =

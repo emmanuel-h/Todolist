@@ -61,6 +61,35 @@ private fun paperBaseline(palette: PaperPalette): ColorScheme =
 fun paperUnderTheLight(): PaperPalette =
     if (isSystemInDarkTheme()) PaperPalette.night else PaperPalette.light
 
+/**
+ * Wraps the whole app and establishes the paper it is drawn on. Called once, in
+ * `TodoListsActivity.setContent`.
+ *
+ * ### CompositionLocals — how the theme reaches the leaves
+ * A composable deep in the tree needs the palette, but threading a `PaperPalette`
+ * parameter through every function between here and there would be intolerable. A
+ * `CompositionLocal` is an implicit parameter for a subtree:
+ * `CompositionLocalProvider(LocalPaperPalette provides palette) { … }` makes it
+ * available to everything inside, read as `LocalPaperPalette.current`.
+ *
+ * Six are provided here, and between them they are the design system:
+ * - `LocalPaperPalette` — every colour (`PaperPalette`)
+ * - `LocalPagePitch` — the distance between ruled lines, derived from the largest
+ *   text style so the rules fit whatever font scale the reader has chosen
+ * - `LocalPageFit` / `LocalPaperGutter` — how the sheet sits in the window, and how
+ *   wide its margin is
+ * - `LocalRuledHand` — the type scale, seated on that pitch
+ * - `LocalPaperVeil` — the shared dimming used behind dialogs
+ *
+ * `MaterialTheme` is still wrapped around it. Material 3 components are used for
+ * their behaviour and accessibility, so they must be handed a `ColorScheme`; that
+ * scheme is derived from the palette by `paperColorScheme`, which is what stops a
+ * stock component drawing in Material purple. `LocalIndication` is replaced so
+ * every ripple in the app becomes a pen mark instead.
+ *
+ * The whole theme depends on nothing but the palette. To try the app under a
+ * different light, pass a different [palette] — that is what the previews do.
+ */
 @Composable
 fun PaperTheme(
     palette: PaperPalette = paperUnderTheLight(),

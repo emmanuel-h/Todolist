@@ -13,6 +13,17 @@ import fr.mandarine.todolist.domain.SystemClock
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
+/**
+ * Books the daily check with WorkManager, the Android scheduler that survives
+ * process death and reboots.
+ *
+ * [runs] is the `Worker` class to instantiate, passed in rather than named directly:
+ * that worker lives at the root of the app package and knowing about it here would
+ * point `data/` upwards. The composition root hands it down — see `AppContainer`.
+ *
+ * The work is *unique* (keyed on [WORK_NAME]), so however many times this is called
+ * there is at most one daily check booked.
+ */
 class WorkManagerNotificationScheduler(
     private val context: Context,
     private val runs: Class<out ListenableWorker>,

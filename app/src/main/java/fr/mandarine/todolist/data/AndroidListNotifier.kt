@@ -17,10 +17,31 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
+ * Turns the domain's [ListNotification] values into real Android notifications.
+ *
  * Which window a tapped notification opens is a question about the app's shape,
- * not about notifications, so it is answered by whoever assembles the app. This
- * layer used to import the window directly, which pointed data/ at ui/ and made
- * the two mutually dependent.
+ * not about notifications, so it is answered by whoever assembles the app — [opens]
+ * is handed down by `AppContainer`. This layer used to import the window directly,
+ * which pointed `data/` at `ui/` and made the two mutually dependent.
+ *
+ * ### Things worth knowing before changing this
+ * - The channel is created on every post. `createNotificationChannel` is idempotent
+ *   after the first call, and creating it here rather than at app start means the
+ *   channel only exists once there is something to say.
+ * - The notification **tag** is the list id and the **id** is a constant. That pair
+ *   is what makes notifications unique per list: posting again for the same list
+ *   replaces its notification instead of stacking a second one.
+ * - `TaskStackBuilder` synthesises a back stack, so backing out of a list opened
+ *   from a notification lands on the page of lists rather than leaving the app.
+ * - The `data` URI is what makes each `PendingIntent` distinct. `PendingIntent`
+ *   equality ignores extras, so without a differing URI (or the differing request
+ *   code, which is also supplied) every list would share one intent and every
+ *   notification would open the same list.
+ * - `FLAG_IMMUTABLE` is required from Android 12; `FLAG_UPDATE_CURRENT` refreshes
+ *   the extras of an intent that already exists.
+ * - The text is a glyph plus a date, with no words, and the date pattern comes from
+ *   `getBestDateTimePattern` so it follows the reader's locale rather than a
+ *   hard-coded order.
  */
 class AndroidListNotifier(
     private val context: Context,

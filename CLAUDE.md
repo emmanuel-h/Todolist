@@ -52,6 +52,10 @@ has been tried and does not teach the thing, write the words, translated, in `va
 deliberate act; update it when you add words on purpose, and never weaken it. See the design
 principle in `docs/SPEC.md`.
 
+**`docs/CODE_TOUR.md` is the orientation guide** — the Kotlin/Compose idioms this project
+uses, a map of every package, and walkthroughs that follow one change through all the
+layers. Read it before touching unfamiliar parts of the tree.
+
 **`docs/SPEC.md` is the authoritative product definition.** Every agent must read it before starting any feature work. It defines all screens, behaviors, invariants, and which behaviors are not yet implemented (with linked GitHub issues). Do not implement anything that contradicts it; if a planned feature conflicts with the spec, flag it to the user before proceeding.
 
 ## Agent pipeline

@@ -19,6 +19,31 @@ private const val RENAMING = "renaming-list"
 private const val SHEET_KIND = "sheet-kind"
 private const val SHEET_DAY = "sheet-day"
 
+/**
+ * Everything the page of one list is *doing* that is not worth storing.
+ *
+ * This is the counterpart to `TodoListViewModel`: the ViewModel holds what is in
+ * the database, and this holds what the reader's hands are in the middle of — a
+ * half-typed line, which row is being torn off, which tick is still being drawn,
+ * where the last finger went. None of it is a fact about the list, so none of it
+ * belongs in the domain.
+ *
+ * ### `by mutableStateOf`
+ * Every property here is a Compose *snapshot state*. `by` is Kotlin property
+ * delegation: reading `addRowText` calls the delegate's getter, writing it calls the
+ * setter. What Compose adds is that a read inside a composable is **recorded**, so
+ * writing the property later re-runs exactly the composables that read it. That is
+ * the whole recomposition mechanism — there is no `invalidate()` and no observer to
+ * register.
+ *
+ * A property whose setter must not be public uses `private set` plus a method
+ * ([startToggle], [requestHideKeyboard]) so the invariant stays in one place.
+ *
+ * ### Lifetime
+ * Created by `rememberSaveable(listId, saver = Saver)` in `PageStack`, so it lives
+ * as long as the page and survives a rotation. [Saver] decides what survives; see
+ * its own note for why that is deliberately only the half-typed text.
+ */
 class TodoListScreenState {
 
     var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)

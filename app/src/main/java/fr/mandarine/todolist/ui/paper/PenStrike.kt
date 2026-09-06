@@ -33,6 +33,26 @@ private const val TWO_THIRDS = 2f
 private const val JITTER_SPAN = 2f
 private const val JITTER_CENTRE = 1f
 
+/**
+ * The strike-through on a completed item, drawn as a pen stroke rather than as a
+ * line.
+ *
+ * A `TextDecoration.LineThrough` would be a straight rule at a fixed height and
+ * would appear instantly. This draws a slightly curved path along the measured
+ * baseline, jittered by a seed derived from the item's id — so every item's strike
+ * is a little different but the *same* item's strike never changes between frames —
+ * and reveals it progressively, so the stroke is seen being written.
+ *
+ * ### How the reveal works
+ * [PenStrikeState.progress] is an `Animatable` running 0..1. On each frame the draw
+ * modifier takes `progress × totalLength` of path and walks the strokes handing out
+ * that budget, using `PathMeasure.getSegment` to cut a partial path. Multi-line text
+ * therefore strikes line by line rather than all at once.
+ *
+ * Everything is scaled by `em` — the font size in pixels — so the curve, the
+ * overshoot at each end and the nib width all hold their proportions at any text
+ * size, including the reader's system font scaling.
+ */
 @Stable
 class PenStrikeState internal constructor(internal val seed: Int, struck: Boolean) {
 
@@ -45,6 +65,20 @@ class PenStrikeState internal constructor(internal val seed: Int, struck: Boolea
     }
 }
 
+/**
+ * Holds one row's strike across recompositions.
+ *
+ * `remember(id)` keys the state on the item, so a `LazyColumn` recycling this slot
+ * for a different item gets a fresh, correctly-seeded state instead of inheriting
+ * the previous item's half-drawn stroke.
+ *
+ * The `LaunchedEffect` restarts whenever any of its keys change and is cancelled
+ * when this leaves the composition. The early return matters: without it, a
+ * recomposition for an unrelated reason would re-run an animation that has already
+ * finished. When animations are off the value is snapped rather than animated, and
+ * [delayMillis] lets the strike start after the ring has finished being inked, so
+ * the two marks read as one gesture rather than as two at once.
+ */
 @Composable
 fun rememberPenStrike(
     id: String,
@@ -66,6 +100,16 @@ fun rememberPenStrike(
     return state
 }
 
+/**
+ * Draws the strike over whatever the node it is applied to draws.
+ *
+ * `drawWithCache` has two halves, and the split is the point: the outer block runs
+ * only when the size or the captured values change, and is where the paths are
+ * measured; `onDrawWithContent` runs every frame. Building the paths in the outer
+ * block means an animating strike is not re-measuring text sixty times a second.
+ *
+ * `drawContent()` draws the text itself; anything after it lands on top.
+ */
 fun Modifier.penStrike(state: PenStrikeState, color: Color): Modifier = drawWithCache {
     val layout = state.layout
     val strokes = if (layout == null) emptyList() else strikeStrokes(layout, state.seed)
@@ -92,6 +136,15 @@ private class PenStroke(val measure: PathMeasure, val length: Float, val drawn: 
 private fun TextLayoutResult.emPixels(scope: CacheDrawScope): Float =
     with(scope) { layoutInput.style.fontSize.toPx() }
 
+/**
+ * One curved path per line of text, from just before the first glyph to just past
+ * the last.
+ *
+ * `Random(seed)` is seeded from the item id, so the wobble is stable for an item
+ * across every redraw and every process — a strike that re-rolled its jitter each
+ * frame would shimmer. `cubicTo` with two control points at roughly the thirds of
+ * the run gives a stroke that sags and lifts the way a hand does.
+ */
 private fun CacheDrawScope.strikeStrokes(
     layout: TextLayoutResult,
     seed: Int

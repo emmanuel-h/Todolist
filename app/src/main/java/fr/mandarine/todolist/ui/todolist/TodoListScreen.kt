@@ -113,6 +113,30 @@ private const val ACTIVE_TYPE = "active"
 private const val SKIP_TYPE = "skip"
 private const val COMPLETED_TYPE = "completed"
 
+/**
+ * Screen 2: the items on one list.
+ *
+ * Reached by tapping a row on [TodoListsScreen]; the list's name travels from that
+ * row into this page's head rule (see `Modifier.travellingName`). Same arrangement
+ * as screen 1 — state in, events out, nothing owned here.
+ *
+ * ### The moving parts, in the order they appear
+ * - `activeItems` is [state]'s items **overridden by** `screenState.previewOrder`
+ *   when a drag has just finished, so the page keeps the order the reader dropped
+ *   things in until the database read catches up. See `TodoListScreenState.stageOrder`.
+ * - `requestToggle` does not toggle. It starts *drawing* a tick, and the
+ *   `LaunchedEffect` further down commits the real toggle once the ink has landed.
+ *   That is why a row can be visibly ticked before the database agrees. With
+ *   animations off it commits immediately instead.
+ * - `holdPage { … }` keeps the scroll position steady across a change that alters
+ *   the height of things above the viewport, so ticking an item near the bottom
+ *   does not jump the page.
+ * - `requestDelete` only raises the confirmation; the tear-off and the actual
+ *   delete happen after the reader answers.
+ *
+ * The `session.dragging` guards are there because a drag ends with a pointer-up
+ * that would otherwise read as a tap on whatever is underneath the finger.
+ */
 @Composable
 fun TodoListScreen(
     summary: TodoListSummary?,

@@ -22,6 +22,23 @@ private const val NO_TALLY = ""
 private const val ONE_LINE = 1
 
 @Composable
+/**
+ * The tally in the margin: how many items on this list are still open.
+ *
+ * Drawn as digits only, with no word beside them, and **nothing at all** when the
+ * count is zero — a finished list says so with its whole appearance rather than
+ * with a `0`. The blank is a real empty string rather than a hidden composable so
+ * the margin column keeps its width and the rows below stay aligned.
+ *
+ * Words are supplied to screen readers only, via `pluralStringResource` (which
+ * picks the right grammatical plural for the locale — not just one-versus-many;
+ * some languages have more forms). `contentDescription` is set only when there is
+ * something to count, so a finished list is silent there too.
+ *
+ * [TallyRoll] is what animates a change of digits; this composable supplies the
+ * text for whichever value the roll is currently showing, which is why the lambda
+ * parameter `tally` is used rather than `count` inside it.
+ */
 fun OpenCount(count: Int, modifier: Modifier = Modifier, animated: Boolean = true) {
     val spoken = pluralStringResource(R.plurals.open_items, count, count)
     TallyRoll(

@@ -112,6 +112,30 @@ private const val ONE_LINE = 1
 private val CORNER_MARGIN = 8.dp
 private val DROP_IN_TRAVEL = 16.dp
 
+/**
+ * Screen 1: the page of lists.
+ *
+ * The entry point for everything the reader sees at rest. It receives a
+ * [TodoListsState] and a bag of `on…` callbacks and owns no data of its own — the
+ * stored data is in `TodoListsViewModel`, the in-progress gesture state is in
+ * [TodoListsScreenState], and this function only arranges and reports.
+ *
+ * ### What it puts on the page
+ * A `LazyColumn` — the Compose equivalent of a `RecyclerView`, composing only the
+ * rows currently on screen — carrying, in order: the head, the inline "write a new
+ * list" line, the active lists, a section skip, and the finished lists. The
+ * sticky-note pad sits *outside* the column, laid over the page.
+ *
+ * ### Keys
+ * Every `items(...)` call passes a stable key (the list id). Without one, Compose
+ * identifies rows by position, and inserting at the top would make every row
+ * believe it had become a different list: animations run on the wrong rows and
+ * per-row state follows the wrong item. Keys are what make reorder and insert
+ * animate correctly.
+ *
+ * If you are changing this file, most of the visual vocabulary it uses — the ruled
+ * ground, the ink tones, the springs — is defined in `ui/paper/` rather than here.
+ */
 @Composable
 fun TodoListsScreen(
     state: TodoListsState,

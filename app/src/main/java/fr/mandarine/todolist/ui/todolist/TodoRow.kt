@@ -62,6 +62,37 @@ import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 private const val ROW_BODY_LABEL = "rowBody"
 
+/**
+ * One item, drawn as one ruled line: the ring, the words, and the two glyphs at the
+ * end of the row.
+ *
+ * ### Reading a composable like this one
+ * A `@Composable` function draws; it returns nothing and holds nothing. Everything
+ * it needs comes in as a parameter, and everything it wants to *change* it reports
+ * by calling one of the `on…` lambdas — the "state down, events up" arrangement.
+ * So this function cannot tick an item; it can only say that the ring was tapped,
+ * and something above it decides what that means.
+ *
+ * That is why [checked] is a separate parameter from `item.isCompleted`: while a
+ * tick is being *drawn* the two disagree deliberately, and the page (not the
+ * database) owns that intermediate truth. See `TodoListScreenState.inked`.
+ *
+ * ### The `modifier` parameter
+ * By convention every composable takes a `modifier` as its first optional parameter
+ * and applies it to its outermost element, so a caller can position and size it
+ * without this function knowing anything about the layout it lands in. Modifiers
+ * chain left to right and **order matters** — `.padding().background()` and
+ * `.background().padding()` draw differently.
+ *
+ * ### The three states of the row body
+ * A row is either being read, being retyped, or being torn off. Reading and
+ * retyping are swapped by [RowBody]'s `AnimatedContent`; tearing is the
+ * `.tearOff(...)` modifier, which is why it wraps the whole [RuledRow] rather than
+ * living inside it.
+ *
+ * Every lambda parameter is a *request*, not an action: `onDeleteRequested` raises
+ * the confirmation prompt, it does not delete.
+ */
 @Composable
 fun TodoRow(
     item: TodoItem,
@@ -132,6 +163,19 @@ fun TodoRow(
     }
 }
 
+/**
+ * Swaps the row's text between "being read" and "being retyped", crossfading
+ * between the two.
+ *
+ * `RowScope.` as a receiver is what makes `Modifier.weight(1f)` available — weight
+ * only means something inside a `Row`, and declaring the receiver is how Compose
+ * enforces that at compile time rather than at runtime. The weight is what makes
+ * the words take all the space the ring and the two glyphs do not.
+ *
+ * `using null` disables the default size transform, so the swap does not also
+ * animate the row's height; the two states are the same height and animating it
+ * only introduces a wobble.
+ */
 @Composable
 private fun RowScope.RowBody(
     item: TodoItem,
@@ -172,6 +216,22 @@ private fun RowScope.RowBody(
     }
 }
 
+/**
+ * The item's words, at rest.
+ *
+ * Three things are layered on the one text node, and the order in the modifier
+ * chain is what makes them work: `seatOnRule` puts the baseline on the ruled line,
+ * `penStrike` draws the strike-through *over* the glyphs, and `clickable` makes the
+ * words themselves the target for retyping.
+ *
+ * `onTextLayout = strike::onTextLayout` is the key connection — the strike is drawn
+ * as a real path along the measured glyph baseline, so it cannot be computed until
+ * the text has been laid out. `::` is a method reference, the same as writing
+ * `{ strike.onTextLayout(it) }`.
+ *
+ * `spokenVerbs` adds the move-up/move-down actions for screen readers, since
+ * reordering is otherwise only reachable by dragging.
+ */
 @Composable
 private fun RowTitle(
     item: TodoItem,
@@ -203,6 +263,27 @@ private fun RowTitle(
     )
 }
 
+/**
+ * The row while it is being retyped.
+ *
+ * `BasicTextField` rather than Material's `TextField` because the latter draws a
+ * container, a label and an indicator line — furniture that would sit on top of the
+ * ruled paper. Here the paper *is* the decoration.
+ *
+ * The value is held as a `TextFieldValue` rather than a `String` so it can carry
+ * the selection: `TextRange(title.length)` puts the caret at the end on open rather
+ * than at the start. `remember(title)` re-seeds it if the underlying title changes.
+ *
+ * ### Committing
+ * There are two ways out — the IME's Done key, and losing focus — and both funnel
+ * into [commitTitle]. The `everFocused` flag guards the focus path: a text field is
+ * unfocused for the first instant of its life, and without the flag it would commit
+ * and dismiss itself before the reader ever saw it.
+ *
+ * `LaunchedEffect(Unit)` runs its body once when the composable first enters the
+ * composition (and is cancelled when it leaves); it is how a composable does a
+ * one-off side effect like grabbing focus.
+ */
 @Composable
 internal fun RowTitleEditor(
     title: String,
@@ -247,6 +328,10 @@ internal fun RowTitleEditor(
     }
 }
 
+/**
+ * Blank text is a dismissal, not a rename — an emptied row keeps the words it had
+ * rather than becoming a line with nothing on it. Either way the editor closes.
+ */
 internal fun commitTitle(
     text: String,
     onCommit: (String) -> Unit,

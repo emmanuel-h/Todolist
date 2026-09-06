@@ -8,6 +8,23 @@ import fr.mandarine.todolist.domain.ListColour
 
 private const val LAMPLIT = 0.18f
 
+/**
+ * Every colour in the app, as one value.
+ *
+ * There is no `colors.xml` driving this and no `if (isDark)` anywhere downstream:
+ * the room's light is read once, in `paperUnderTheLight`, and from then on every
+ * mark, rule and shadow is a *field of this object*. That is what makes the light
+ * and dark versions impossible to drift apart — a new colour has to be added to
+ * both `light` and `night` or the code will not compile.
+ *
+ * The names describe the material rather than the role: `paper`, `rule`, `ink`,
+ * `pencil`. Where a role is wanted, the `InkTone` enum and `palette.inked(tone)`
+ * map one onto the other, so a caller asks for "the tone margin notes are written
+ * in" rather than picking a colour.
+ *
+ * Reached from any composable as `LocalPaperPalette.current`. `@Immutable`
+ * promises Compose the fields never change, which lets it skip recomposition.
+ */
 @Immutable
 data class PaperPalette(
     val paper: Color,

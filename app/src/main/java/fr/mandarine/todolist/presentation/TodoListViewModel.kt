@@ -20,6 +20,20 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * The page of one list, as state. Constructed per list — [listId] is fixed at
+ * construction, which is why the factory in `TodoListsActivity` takes an id and why
+ * the composable remembers a factory keyed on it.
+ *
+ * Follows the same write-then-re-read-then-publish shape as [TodoListsViewModel];
+ * see that class for the `_x`/`x` flow pair, the two flows, and the dispatcher.
+ *
+ * The extra work here is around ticking: a tick can be the tick that finishes the
+ * list, and that has to be reported as a second event *after* the first — see
+ * [toggleEvents]. The rest of the page's per-gesture state (what is half-typed,
+ * which row is being torn) lives in `TodoListScreenState` in the UI layer, not
+ * here; this class holds only what is stored.
+ */
 class TodoListViewModel(
     private val addTodoUseCase: AddTodoUseCase,
     private val getTodosUseCase: GetTodosUseCase,
@@ -75,6 +89,11 @@ class TodoListViewModel(
         }
     }
 
+    /**
+     * Was the row already ticked, according to what the page is currently showing?
+     * Asked *before* the toggle is written, since afterwards the answer is
+     * necessarily the opposite of what it was.
+     */
     private fun isShownCompleted(todoId: String): Boolean {
         val current = state.value
         if (current !is TodoListState.Content) return false
@@ -101,6 +120,10 @@ class TodoListViewModel(
         return listOf(AnimationEvent.ItemCompleted(todoId))
     }
 
+    /**
+     * True only when the list has items and every one of them is done. The
+     * `written` flag is what stops an empty list reporting itself as finished.
+     */
     private fun nothingLeftActive(): Boolean {
         var written = false
         for (item in getTodosUseCase(listId)) {
@@ -151,6 +174,18 @@ class TodoListViewModel(
         }
     }
 
+    /**
+     * The single definition of what the page of one list is.
+     *
+     * The list is checked for existence first, because a deleted list must produce
+     * [TodoListState.NotFound] rather than [TodoListState.Empty] — the screen leaves
+     * on the former and stays on the latter.
+     *
+     * Active items keep their stored order; completed items are sorted by
+     * `completedAt` **descending**, so the thing just finished is at the top of the
+     * done section. The arguments are swapped (`b, a`) to get descending order, and
+     * `compareValues` handles the nullable timestamp without unwrapping it.
+     */
     private fun buildState(): TodoListState {
         if (!listExists()) return TodoListState.NotFound
         val items = getTodosUseCase(listId)

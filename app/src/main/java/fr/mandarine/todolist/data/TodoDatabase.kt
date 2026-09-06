@@ -7,6 +7,31 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+/**
+ * The SQLite database, its two tables, and the ladder of migrations that has taken
+ * it from version 1 to version 8.
+ *
+ * ### Reading the migrations
+ * Each `Migration(from, to)` is one released schema change, in order, and together
+ * they tell the history of the app: `completed`, then `completedAt`, then item
+ * `position`, then list `position`, then `targetDate`, then `dueDate`, then
+ * `colour`. Room runs whichever subset a given device needs on first open.
+ *
+ * **Changing the schema is a three-step job**, and skipping any of them means a
+ * crash on upgrade for existing users:
+ * 1. change the `@Entity` data class;
+ * 2. bump `version` here;
+ * 3. add a `MIGRATION_n_n+1` and list it in `addMigrations(...)`.
+ *
+ * `exportSchema = true` writes the resulting schema as JSON under `app/schemas/`,
+ * which is checked in — that is what a migration test compares against.
+ *
+ * ### The singleton
+ * `getInstance` is the classic double-checked lock: the `@Volatile` field is read
+ * without synchronisation on the happy path, and only contended callers pay for the
+ * `synchronized` block. Room databases are expensive to open and are designed to be
+ * held one per process, so this is created once and handed out by `AppContainer`.
+ */
 @Database(entities = [TodoListEntity::class, TodoItemEntity::class], version = 8, exportSchema = true)
 abstract class TodoDatabase : RoomDatabase() {
     abstract fun todoListDao(): TodoListDao

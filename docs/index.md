@@ -6,6 +6,10 @@
 > a changelog, not a description of the app: where a later change overtook an earlier one,
 > the entry carries a _superseded by_ marker. When an entry and `SPEC.md` disagree, `SPEC.md`
 > is right.
+>
+> **New to this codebase?** [CODE_TOUR.md](CODE_TOUR.md) is the orientation guide: the
+> Kotlin and Compose idioms this project uses, where everything lives, and walkthroughs
+> that follow one change through all the layers.
 
 
 - [Todo List Screen](todo-list-screen.md) — single-list view with checkbox rows, inline add bar, and empty state
