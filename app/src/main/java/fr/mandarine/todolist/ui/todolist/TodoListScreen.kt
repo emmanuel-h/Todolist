@@ -67,6 +67,7 @@ import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.DeleteConfirmDialog
 import fr.mandarine.todolist.ui.paper.SectionSkip
+import fr.mandarine.todolist.ui.paper.fillingTheLine
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.headMarginFade
 import fr.mandarine.todolist.ui.paper.inked
@@ -594,7 +595,7 @@ private fun HeadLine(
         Spacer(Modifier.height(pitch * 2))
         return
     }
-    val style = MaterialTheme.typography.titleLarge
+    val style = MaterialTheme.typography.titleLarge.fillingTheLine()
     /**
      * The head rule grows in whole pitches the way every other row does. Pinned to
      * one, a name long enough to wrap had its second line cut off with nothing to

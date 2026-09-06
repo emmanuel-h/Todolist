@@ -50,6 +50,7 @@ import fr.mandarine.todolist.ui.paper.PaperFocusMark
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.RowVerb
 import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.fillingTheLine
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.penStrike
@@ -200,7 +201,7 @@ private fun RowScope.RowBody(
         if (typing) {
             RowTitleEditor(
                 title = item.title,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge.fillingTheLine(),
                 onCommit = onEditCommitted,
                 onDismiss = onEditDismissed
             )
@@ -241,7 +242,7 @@ private fun RowTitle(
     onEditRequested: () -> Unit
 ) {
     val palette = LocalPaperPalette.current
-    val style = MaterialTheme.typography.bodyLarge
+    val style = MaterialTheme.typography.bodyLarge.fillingTheLine()
     val strike = rememberPenStrike(item.id, checked, animated, INK_TICK_MILLIS)
     val ink = palette.inked(InkBudget.words(item.isCompleted))
     Text(
