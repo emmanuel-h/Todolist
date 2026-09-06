@@ -1,37 +1,27 @@
-A to-do list written on paper.
+Other to-do apps want to run your life. This is a sheet of paper.
 
-To Do List is one sheet of ruled paper. You write lists on it, open one, and tick things off. There is no toolbar, no menu and no settings screen — the page is the app, and nearly everything it does is a gesture you already know.
+Open it and that is all there is: a ruled page, a few lines in your own hand, and room for more. No projects. No tags. No inbox to get to zero. No streak to keep alive. You write a list, you open it, you cross things off. Nothing asks anything more of you.
 
-WHAT YOU CAN DO
+Everything a line can do is on the line — a ring to tick it, a pencil to rewrite it, a bin to tear it off. Nothing hides behind a swipe you were supposed to discover, and nothing is thrown away without asking first. Tick something and the pen strikes it through, the row slides under the divider, and the page keeps the count so you don't have to. Hold a line and drag it if the order is wrong. Finish a whole list and it steps aside on its own, so what is on the page is only ever what is left to do.
 
-• Keep as many lists as you need — Groceries, Weekend trip, Reading list, whatever your week looks like
-• Start a list by peeling a sheet off the pad in the corner; the line opens and you write on it
-• Add items line by line, without leaving the page or opening a dialog
-• Tap the ring to tick something off — the pen strikes it through and the row crosses the divider into the done section, which keeps count
-• Tap any name to correct it, in place, on the row
-• Pull a row one way to edit it, the other way to tear it off; a torn row leaves an undo slip that stands for nine seconds
-• Hold a row and drag it to put your lists and tasks in the order that makes sense to you
-• Lists you have finished move below the line on their own, so what is left is what still needs doing
+RUN A HIGHLIGHTER OVER IT
 
-DAYS AND REMINDERS
+Give a list a wash of yellow, green, pink, blue, orange or violet, and you will find it again without reading a word.
 
-A list can carry one day, and only one: a target day, meaning do this on that day, or a deadline, meaning finish before it. Circle the day on the paper calendar and it is written in the margin of the row, so you can see what is coming without opening anything. A deadline that has arrived is written in amber, one that has passed in red.
+The colour goes on the paper and never on the ink. That is the whole trick: amber still means due today and red still means overdue, on a yellow list exactly as on a plain one. Nothing you decorate stops meaning what it meant.
 
-Every morning the app looks over your lists and quietly mentions the ones due that day and the ones you planned for tomorrow. One notification, once a day, only when there is something to say. Decline the notification permission and everything else works exactly the same.
+A DAY, NOT A SCHEDULE
 
-BUILT TO BE QUIET
+A list carries one day, and only one — the day you mean to get to it, or the day it has to be finished. Circle it on the paper calendar and it appears in the margin of the row. That is the entire planning system. A deadline that lands today is written in amber, one that has slipped is written in red, and you will know which is which from across the room.
 
-• Ink on cream by day, chalk on charcoal by lamplight — the page follows your system setting
-• A short tour the first time you open it, replayable whenever you like from the corner of the page
-• Written out to TalkBack: every gesture is also a named action, and every mark on the page has a name
-• English and French, switchable from Android's per-app language picker
-• Phones and tablets — a wider screen is a wider sheet, not a wider column of text
-• No account, no sign-up, no email address
-• No ads, no trackers, no analytics
-• No internet permission at all — the app cannot send your data anywhere, because it cannot reach the network
+Once a day, and only if there is genuinely something to say, the page mentions the lists due today and the ones you set for tomorrow. Once. At eight in the morning, or whatever hour you tell the bell in the corner of the page. Turn notifications down altogether and nothing else changes.
 
-YOUR DATA STAYS YOURS
+WHAT ISN'T HERE
 
-Your lists live in a private database on your device and nowhere else. We never see them. The only copy that can leave your phone is Android's own backup to your personal Google Drive, which you control in your device settings and which we cannot access.
+No account. No sign-up. No email address. No ads, no trackers, no analytics.
 
-Works on Android 7.0 and later.
+And no internet permission — not a promise that we won't look, but no way to reach the network at all. Your lists sit in a private database on your phone. They cannot go anywhere, and we have never seen one.
+
+Ink on cream by day, chalk on charcoal by lamplight. Spoken properly to TalkBack. English and French. On a tablet you get a wider sheet, not a wider column of text.
+
+Android 7.0 and later.

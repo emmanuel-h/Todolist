@@ -1,37 +1,27 @@
-Une liste de tâches écrite sur du papier.
+Ailleurs, on veut organiser votre vie. Ici, c'est une feuille de cahier.
 
-Liste de tâches, c'est une feuille de papier réglé. Vous y écrivez vos listes, vous en ouvrez une, vous cochez. Pas de barre d'outils, pas de menu, pas d'écran de réglages : la page est l'application, et presque tout ce qu'elle fait est un geste que vous connaissez déjà.
+Vous l'ouvrez : rien d'autre. Des lignes, votre écriture, et de la place en dessous. Pas de projets, pas d'étiquettes, pas de boîte de réception à vider, pas de série à entretenir. Vous écrivez une to-do list, vous l'ouvrez, vous rayez. On ne vous demande rien de plus.
 
-CE QUE VOUS POUVEZ FAIRE
+Chaque ligne a ce qu'il faut : une case à cocher, un crayon pour se corriger, une corbeille pour arracher la feuille. Aucun geste à deviner, et rien ne part sans qu'on vous l'ait demandé. Cochez une tâche : elle se raye sous vos yeux et passe sous le trait, avec celles qui sont déjà faites. L'ordre ne vous va pas ? Attrapez une ligne, posez-la ailleurs. Une to-do list terminée passe sous le trait toute seule : en haut, il ne reste que ce qui vous attend encore.
 
-• Gardez autant de listes que nécessaire — Courses, Week-end, Lectures, ce qui rythme votre semaine
-• Commencez une liste en détachant une feuille du bloc, dans le coin : la ligne s'ouvre et vous écrivez dessus
-• Ajoutez vos tâches ligne après ligne, sans quitter la page ni ouvrir de fenêtre
-• Touchez l'anneau pour cocher : le stylo raye la ligne, qui passe sous le trait, dans la partie terminée, laquelle tient le compte
-• Touchez un nom pour le corriger, sur place, sur sa ligne
-• Tirez une ligne d'un côté pour la modifier, de l'autre pour la déchirer ; une ligne déchirée laisse un billet d'annulation qui tient neuf secondes
-• Maintenez une ligne et faites-la glisser pour ranger listes et tâches dans l'ordre qui vous convient
-• Les listes achevées passent sous le trait d'elles-mêmes : il ne reste sous vos yeux que ce qui compte encore
+LE SURLIGNEUR
 
-JOURS ET RAPPELS
+Jaune, vert, rose, bleu, orange, violet. Une to-do list surlignée se retrouve sans se lire.
 
-Une liste porte un jour, et un seul : un jour prévu, c'est-à-dire à faire ce jour-là, ou une échéance, c'est-à-dire à terminer avant. Entourez le jour sur le calendrier de papier et il s'inscrit dans la marge de la ligne : vous voyez ce qui arrive sans rien ouvrir. Une échéance arrivée s'écrit en ambre, une échéance passée en rouge.
+La couleur va sur le papier, jamais sur l'encre — c'est toute la règle. L'ambre continue de dire aujourd'hui, le rouge continue de dire trop tard, sur une liste jaune comme sur une liste nue. Ce que vous décorez ne change pas de sens.
 
-Chaque matin, l'application passe vos listes en revue et signale discrètement celles qui arrivent à échéance dans la journée et celles que vous aviez prévues pour le lendemain. Une notification, une fois par jour, uniquement s'il y a quelque chose à dire. Refusez la permission de notification : tout le reste fonctionne à l'identique.
+UN JOUR SUFFIT
 
-CONÇUE POUR SE FAIRE OUBLIER
+Une to-do list porte un jour. Un seul. Celui où vous comptez vous y mettre, ou celui où il faudra que ce soit fini. Vous l'entourez sur un calendrier de papier, il s'inscrit dans la marge, et voilà tout l'agenda. L'échéance du jour s'écrit en ambre, celle qu'on a laissée passer en rouge : de loin, sans lunettes, vous savez laquelle est laquelle.
 
-• Encre sur crème le jour, craie sur charbon à la lampe : la page suit le réglage de votre système
-• Une courte visite à la première ouverture, que vous pouvez rejouer quand vous voulez depuis le coin de la page
-• Écrite pour TalkBack : chaque geste est aussi une action nommée, et chaque marque de la page porte un nom
-• Français et anglais, au choix depuis le sélecteur de langue par application d'Android
-• Téléphones et tablettes — un écran plus large est une feuille plus large, pas une colonne de texte plus large
-• Aucun compte, aucune inscription, aucune adresse e-mail
-• Aucune publicité, aucun traceur, aucune analyse d'usage
-• Aucune permission Internet : l'application ne peut envoyer vos données nulle part, faute d'accès au réseau
+Une fois par jour, et seulement s'il y a matière, la page vous glisse un mot — ce qui tombe aujourd'hui, ce que vous aviez prévu pour demain. Une fois. À huit heures, ou à l'heure que vous soufflerez à la cloche, en haut de la feuille. Et si vous préférez qu'elle se taise, refusez-lui les notifications : le reste ne bougera pas d'un cil.
 
-VOS DONNÉES RESTENT LES VÔTRES
+CE QU'IL N'Y A PAS
 
-Vos listes vivent dans une base privée sur votre appareil, et nulle part ailleurs. Nous ne les voyons jamais. La seule copie susceptible de quitter votre téléphone est la sauvegarde Android vers votre propre Google Drive, que vous maîtrisez dans les réglages de votre appareil et à laquelle nous n'avons pas accès.
+Pas de compte. Pas d'inscription. Pas d'adresse e-mail. Pas de publicité, pas de traceur, pas de statistiques dans votre dos.
 
-Compatible avec Android 7.0 et versions ultérieures.
+Et pas la moindre permission Internet. Non pas la promesse de ne pas regarder : l'incapacité d'aller voir. Vos listes dorment dans une base privée, sur votre téléphone. Elles ne peuvent aller nulle part. Nous n'en avons jamais lu une seule.
+
+Encre sur crème le jour, craie sur ardoise le soir. Lue correctement par TalkBack. En français comme en anglais. Sur une tablette, c'est la feuille qui s'élargit, pas la colonne de texte.
+
+À partir d'Android 7.0.
