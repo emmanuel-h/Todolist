@@ -2,67 +2,67 @@ import sqlite3, os, sys
 
 OUT = sys.argv[1]
 if os.path.exists(OUT): os.remove(OUT)
-IDENTITY = "31ef59047f6e20e6911bd945838e6b43"
+IDENTITY = "714f29a6c2859a9709de50688104e017"
 
-TODAY = 20692  # 2026-08-27
+TODAY = 20702  # 2026-09-06
 
-# (id, name, targetDay, dueDay, [(title, completed), ...])
+# (id, name, targetDay, dueDay, colour, [(title, completed), ...])
 LISTS = [
-    ("l1", "Groceries",       None, TODAY + 2, [
+    ("l1", "Groceries",       None, TODAY + 2, "Butter", [
         ("Milk", 0), ("Bread", 0), ("Eggs", 0), ("Coffee beans", 0),
         ("Olive oil", 1), ("Lemons", 1)]),
-    ("l2", "Weekend trip",    TODAY + 6, None, [
+    ("l2", "Weekend trip",    TODAY + 6, None, "None", [
         ("Book the train", 0), ("Pack a raincoat", 0), ("Charge the camera", 0),
         ("Find the tent", 1), ("Print the tickets", 1)]),
-    ("l3", "Birthday party",  None, TODAY, [
+    ("l3", "Birthday party",  None, TODAY, "Rose", [
         ("Order the cake", 0), ("Send the invitations", 0), ("Borrow chairs", 0),
         ("Make a playlist", 0), ("Buy candles", 0),
         ("Book the room", 1)]),
-    ("l4", "Reading list",    None, None, [
+    ("l4", "Reading list",    None, None, "None", [
         ("Piranesi", 0), ("The Overstory", 0), ("A Pale View of Hills", 0),
         ("Tokyo Ueno Station", 0)]),
-    ("l5", "Apartment move",  None, TODAY + 9, [
+    ("l5", "Apartment move",  None, TODAY + 9, "Sky", [
         ("Call the movers", 0), ("Change the address", 0), ("Return the keys", 0),
         ("Box up the kitchen", 0), ("Cancel the internet", 0), ("Measure the sofa", 0),
         ("Book the lift", 1)]),
-    ("l6", "Guitar practice", TODAY + 1, None, [
+    ("l6", "Guitar practice", TODAY + 1, None, "None", [
         ("Learn the bridge", 0),
         ("Restring it", 1), ("Tune by ear", 1), ("Chord chart", 1)]),
-    ("l8", "Home office setup", None, None, [
+    ("l8", "Home office setup", None, None, "None", [
         ("Order the lamp", 1), ("Hang the shelf", 1), ("Route the cables", 1)]),
-    ("l9", "Bike service",    None, None, [
+    ("l9", "Bike service",    None, None, "None", [
         ("New brake pads", 1), ("Straighten the wheel", 1)]),
 ]
 
 
 BIG = [
-    ("m1", "Garden jobs",     TODAY + 3, None, [
+    ("m1", "Garden jobs",     TODAY + 3, None, "Mint", [
         ("Repot the basil", 0), ("Buy compost", 0), ("Fix the water timer", 0),
         ("Prune the olive", 1)]),
-    ("m2", "Tax paperwork",   None, TODAY + 14, [
+    ("m2", "Tax paperwork",   None, TODAY + 14, "None", [
         ("Find last year's return", 0), ("Scan the receipts", 0),
         ("Email the accountant", 0)]),
-    ("m3", "Sunday cooking",  TODAY + 4, None, [
+    ("m3", "Sunday cooking",  TODAY + 4, None, "None", [
         ("Sourdough starter", 0), ("Roast the peppers", 0)]),
-    ("m4", "Camera bag",      None, None, [
+    ("m4", "Camera bag",      None, None, "Peach", [
         ("Spare batteries", 0), ("Lens cloth", 0), ("SD cards", 0), ("Rain cover", 0)]),
-    ("m5", "Flat repairs",    None, TODAY + 21, [
+    ("m5", "Flat repairs",    None, TODAY + 21, "None", [
         ("Silicone the bath", 0), ("Bleed the radiators", 0), ("Draught strip", 0),
         ("Replace the fuse box cover", 0), ("Sand the door", 1)]),
-    ("m6", "Language study",  TODAY + 2, None, [
+    ("m6", "Language study",  TODAY + 2, None, "Lilac", [
         ("Chapter 7 exercises", 0), ("Twenty new words", 0)]),
-    ("m7", "Winter clothes",  None, None, [
+    ("m7", "Winter clothes",  None, None, "None", [
         ("Wash the coats", 0), ("Reproof the shell", 0), ("Mend the gloves", 0)]),
-    ("m8", "Passport renewal", None, None, [
+    ("m8", "Passport renewal", None, None, "None", [
         ("Photo booth", 1), ("Fill the form", 1), ("Post the old one", 1)]),
-    ("m9", "Loft clear-out",  None, None, [
+    ("m9", "Loft clear-out",  None, None, "None", [
         ("Sort the boxes", 1), ("Book the tip run", 1), ("Sell the old desk", 1)]),
 ]
 
 if "--big" in sys.argv:
     tail = LISTS[-2:]
     LISTS = LISTS[:-2] + BIG[:7] + tail + BIG[7:]
-    LISTS[4] = ("l5", "Apartment move", None, TODAY + 9, [
+    LISTS[4] = ("l5", "Apartment move", None, TODAY + 9, "Sky", [
         ("Call the movers", 0), ("Change the address", 0), ("Return the keys", 0),
         ("Box up the kitchen", 0), ("Cancel the internet", 0), ("Measure the sofa", 0),
         ("Redirect the post", 0), ("Read the meters", 0), ("Defrost the freezer", 0),
@@ -71,22 +71,22 @@ if "--big" in sys.argv:
 
 db = sqlite3.connect(OUT)
 c = db.cursor()
-c.execute("CREATE TABLE IF NOT EXISTS `todo_lists` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `position` INTEGER NOT NULL, `targetDate` INTEGER, `dueDate` INTEGER, PRIMARY KEY(`id`))")
+c.execute("CREATE TABLE IF NOT EXISTS `todo_lists` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `position` INTEGER NOT NULL, `targetDate` INTEGER, `dueDate` INTEGER, `colour` TEXT NOT NULL, PRIMARY KEY(`id`))")
 c.execute("CREATE TABLE IF NOT EXISTS `todo_items` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `listId` TEXT NOT NULL, `completed` INTEGER NOT NULL, `completedAt` INTEGER, `position` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`listId`) REFERENCES `todo_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
 c.execute("CREATE INDEX IF NOT EXISTS `index_todo_items_listId` ON `todo_items` (`listId`)")
 c.execute("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY, identity_hash TEXT)")
 c.execute("INSERT OR REPLACE INTO room_master_table (id, identity_hash) VALUES (42, ?)", (IDENTITY,))
 
 done_at = 1787000000000
-for pos, (lid, name, target, due, items) in enumerate(LISTS):
-    c.execute("INSERT INTO todo_lists VALUES (?,?,?,?,?)", (lid, name, pos, target, due))
+for pos, (lid, name, target, due, colour, items) in enumerate(LISTS):
+    c.execute("INSERT INTO todo_lists VALUES (?,?,?,?,?,?)", (lid, name, pos, target, due, colour))
     for i, (title, completed) in enumerate(items):
         done_at += 60000
         c.execute("INSERT INTO todo_items VALUES (?,?,?,?,?,?)",
                   (f"{lid}-i{i}", title, lid, completed, done_at if completed else None, i))
 
 db.commit()
-c.execute("PRAGMA user_version = 7")
+c.execute("PRAGMA user_version = 8")
 c.execute("PRAGMA journal_mode = TRUNCATE")
 db.commit()
 db.close()

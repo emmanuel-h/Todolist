@@ -40,7 +40,8 @@ def dump(dev):
     raise RuntimeError("no ui dump")
 
 
-def find(xml, *, text=None, desc=None):
+def find(xml, *, text=None, desc=None, near=None):
+    hits = []
     for node in re.finditer(r"<node [^>]*>", xml):
         n = node.group(0)
         if text is not None and f'text="{text}"' not in n:
@@ -49,8 +50,12 @@ def find(xml, *, text=None, desc=None):
             continue
         m = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
         x1, y1, x2, y2 = map(int, m.groups())
-        return (x1 + x2) // 2, (y1 + y2) // 2
-    return None
+        hits.append(((x1 + x2) // 2, (y1 + y2) // 2))
+    if not hits:
+        return None
+    if near is None:
+        return hits[0]
+    return min(hits, key=lambda p: abs(p[1] - near[1]))
 
 
 def need(xml, **kw):
@@ -58,6 +63,12 @@ def need(xml, **kw):
     if p is None:
         raise RuntimeError(f"not found: {kw}")
     return p
+
+
+def hush(dev):
+    shell(dev, "am broadcast -a com.android.systemui.demo -e command notifications -e visible false")
+    for key in shell(dev, "cmd notification list").split():
+        shell(dev, f"cmd notification snooze --for 86400000 '{key}'")
 
 
 def demo_mode(dev):
@@ -69,27 +80,27 @@ def demo_mode(dev):
     b("-e command battery -e level 100 -e plugged false -e powersave false")
     b("-e command network -e wifi show -e level 4 -e fully true -e mobile hide -e airplane hide")
     b("-e command notifications -e visible false")
+    shell(dev, f"pm revoke {PKG} android.permission.POST_NOTIFICATIONS")
     b("-e command status -e volume hide -e bluetooth hide -e location hide -e alarm hide"
       " -e sync hide -e tty hide -e eri hide -e mute hide -e speakerphone hide"
       " -e managed_profile hide -e zen hide -e vpn hide -e cast hide -e hotspot hide")
-    for key in shell(dev, "cmd notification list").split():
-        shell(dev, f"cmd notification snooze --for 86400000 '{key}'")
+    hush(dev)
 
 
 def seed(dev):
     shell(dev, f"am force-stop {PKG}")
     sh(dev, "push", f"{SEED}/" + os.environ.get("SEED_DB", "todo_database"), "/data/local/tmp/todo_database")
-    sh(dev, "push", f"{SEED}/tutorial_state.xml", "/data/local/tmp/tutorial_state.xml")
     shell(dev, f"run-as {PKG} sh -c '"
                "rm -f databases/todo_database databases/todo_database-wal databases/todo_database-shm; "
-               "mkdir -p databases shared_prefs; "
-               "cp /data/local/tmp/todo_database databases/todo_database; "
-               "cp /data/local/tmp/tutorial_state.xml shared_prefs/tutorial_state.xml'")
+               "mkdir -p databases; "
+               "cp /data/local/tmp/todo_database databases/todo_database'")
 
 
 def launch(dev):
     shell(dev, f"am start -n {PKG}/.ui.TodoListsActivity")
     time.sleep(4)
+    hush(dev)
+    time.sleep(1)
 
 
 def main():
@@ -120,11 +131,8 @@ def main():
 
         if f"date{tag}" in want:
             xml = dump(dev)
-            x, y = need(xml, text="Reading list")
-            shell(dev, f"input swipe {x // 3} {y} {x * 3 // 2} {y} 300")
-            time.sleep(2)
-            xml = dump(dev)
-            cx, cy = need(xml, desc="Set target date")
+            row = need(xml, text="Reading list")
+            cx, cy = need(xml, desc="Give this list a day", near=row)
             shell(dev, f"input tap {cx} {cy}")
             time.sleep(3)
             screencap(dev, f"{outdir}/{prefix}-date{tag}.png")

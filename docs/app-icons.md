@@ -30,7 +30,7 @@ Replaces the default Android Studio green-robot launcher icon with the app's own
 - `app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp` — 96×96 px round raster
 - `app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp` — 144×144 px round raster
 - `app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp` — 192×192 px round raster
-- `store-assets/ic_launcher_play_store.png` — 512×512 Play Store high-res icon, the 108 dp canvas rendered 1:1 onto 512 px with the background full-bleed; stored outside `app/src/main/res/` so it is not bundled into the APK. It is generated from the same paths as the two layer drawables and must be redrawn whenever they change — it was still carrying the retired purple long after the layers had been repainted.
+- `store-assets/listing/ic_launcher_play_store.png` — 512×512 Play Store high-res icon, the 108 dp canvas rendered 1:1 onto 512 px with the background full-bleed; stored outside `app/src/main/res/` so it is not bundled into the APK. It is generated from the same paths as the two layer drawables and must be redrawn whenever they change — it was still carrying the retired purple long after the layers had been repainted.
 
 ## Invariants & contracts
 - `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml` were left unchanged; both already declare `<background>`, `<foreground>`, and `<monochrome>`. The `<monochrome>` layer is its own file, `@drawable/ic_launcher_monochrome` — a bare tick stroked in solid black on transparency, which is what Android 13+ themed-icon tinting needs; the colour foreground would tint to a solid block.
