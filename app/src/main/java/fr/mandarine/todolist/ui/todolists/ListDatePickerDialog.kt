@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -55,7 +56,7 @@ fun ListDatePickerDialog(
     onKindChange: (DateKind) -> Unit,
     onCleared: () -> Unit
 ) {
-    var confirmClear by remember { mutableStateOf(false) }
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
     val said = rememberDateKindSaid()
     val rule = LocalPaperPalette.current.rule
     PaperDialog(onDismissRequest = onDismiss) {

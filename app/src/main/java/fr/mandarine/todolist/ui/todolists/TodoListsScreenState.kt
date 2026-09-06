@@ -132,15 +132,29 @@ class TodoListsScreenState {
      * demo's stage holds it before there is a composition to hold it in — so it
      * is saved and restored by hand alongside the window.
      *
-     * What is kept is what the reader was in the middle of writing. A tear
-     * mid-slip and a staged drag order belong to a gesture the rotation ended
-     * anyway; a half-typed list name and the day circled next to it do not.
+     * What is kept is what the reader was in the middle of, and what they have
+     * already answered for. A staged drag order belongs to a gesture the rotation
+     * ended; a half-typed list name and the day circled next to it do not, and
+     * neither does a delete already confirmed on the slip — that one used to be
+     * dropped, so the delete simply did not happen and the row came back.
      */
     fun saveTo(outState: Bundle) {
         outState.putBoolean(ADD_OPEN, addRowExpanded)
         outState.putString(ADD_TEXT, addRowText)
         outState.putString(ADD_KIND, addRowSelection.kind.name)
         addRowSelection.date?.let { outState.putLong(ADD_DAY, it.toEpochDay()) }
+        outState.putBoolean(SETTINGS_OPEN, settingsOpen)
+        tearingId?.let { outState.putString(TEARING, it) }
+        confirmDelete?.let { confirm ->
+            outState.putString(CONFIRM_ID, confirm.id)
+            outState.putString(CONFIRM_NAME, confirm.name)
+            confirm.cascadeCount?.let { outState.putInt(CONFIRM_CASCADE, it) }
+        }
+        datePickerRequest?.let { request ->
+            outState.putString(PICKER_TARGET, request.target.saved())
+            outState.putString(PICKER_KIND, request.kind.name)
+            request.initial?.let { outState.putLong(PICKER_DAY, it.toEpochDay()) }
+        }
         rename?.let { open ->
             outState.putString(RENAME_ID, open.listId)
             outState.putString(RENAME_NAME, open.name)
@@ -157,6 +171,27 @@ class TodoListsScreenState {
             savedInstanceState.getString(ADD_KIND)?.let(DateKind::valueOf) ?: DateKind.TARGET,
             savedInstanceState.dayOrNull(ADD_DAY)
         )
+        settingsOpen = savedInstanceState.getBoolean(SETTINGS_OPEN)
+        tearingId = savedInstanceState.getString(TEARING)
+        savedInstanceState.getString(CONFIRM_ID)?.let { id ->
+            confirmDelete = ConfirmDeleteRequest(
+                id = id,
+                name = savedInstanceState.getString(CONFIRM_NAME).orEmpty(),
+                cascadeCount = if (savedInstanceState.containsKey(CONFIRM_CASCADE)) {
+                    savedInstanceState.getInt(CONFIRM_CASCADE)
+                } else {
+                    null
+                }
+            )
+        }
+        savedInstanceState.getString(PICKER_TARGET)?.let { target ->
+            datePickerRequest = DatePickerRequest(
+                target = restoredTarget(target),
+                kind = savedInstanceState.getString(PICKER_KIND)?.let(DateKind::valueOf)
+                    ?: DateKind.TARGET,
+                initial = savedInstanceState.dayOrNull(PICKER_DAY)
+            )
+        }
         val renamedId = savedInstanceState.getString(RENAME_ID) ?: return
         rename = RenameState(
             listId = renamedId,
@@ -175,6 +210,33 @@ class TodoListsScreenState {
 private fun Bundle.dayOrNull(key: String): LocalDate? =
     if (containsKey(key)) LocalDate.ofEpochDay(getLong(key)) else null
 
+/**
+ * A [DateTarget] is a sealed interface, and only one of its shapes carries
+ * anything: the row names the list it is about.
+ */
+private fun DateTarget.saved(): String = when (this) {
+    DateTarget.AddRow -> TARGET_ADD_ROW
+    DateTarget.Rename -> TARGET_RENAME
+    is DateTarget.Row -> TARGET_ROW + listId
+}
+
+private fun restoredTarget(saved: String): DateTarget = when {
+    saved == TARGET_ADD_ROW -> DateTarget.AddRow
+    saved == TARGET_RENAME -> DateTarget.Rename
+    else -> DateTarget.Row(saved.removePrefix(TARGET_ROW))
+}
+
+private const val TARGET_ADD_ROW = "add-row"
+private const val TARGET_RENAME = "rename"
+private const val TARGET_ROW = "row:"
+private const val SETTINGS_OPEN = "lists-settings-open"
+private const val TEARING = "lists-tearing"
+private const val CONFIRM_ID = "lists-confirm-id"
+private const val CONFIRM_NAME = "lists-confirm-name"
+private const val CONFIRM_CASCADE = "lists-confirm-cascade"
+private const val PICKER_TARGET = "lists-picker-target"
+private const val PICKER_KIND = "lists-picker-kind"
+private const val PICKER_DAY = "lists-picker-day"
 private const val ADD_OPEN = "lists-add-open"
 private const val ADD_TEXT = "lists-add-text"
 private const val ADD_KIND = "lists-add-kind"

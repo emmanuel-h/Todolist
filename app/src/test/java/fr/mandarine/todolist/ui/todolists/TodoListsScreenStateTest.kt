@@ -266,12 +266,18 @@ class TodoListsScreenStateTest {
     }
 
     @Test
-    fun `should report the ask owed when the alarm is rung over the day on the sheet`() {
+    /**
+     * The sheet holds the day; nothing is written until the sheet is put down, so
+     * nothing is owed here. Owing it at this point promised a reminder to a reader
+     * who could still blank the name and throw the whole sheet away — and spent the
+     * one ask doing it.
+     */
+    fun `should owe no ask when the alarm is rung over the day on the sheet`() {
         state.rename = RenameState.of(TodoList("list-1", "Groceries", targetDate = date))
 
         val owed = writeRenameSelection(state, DateSelection(DateKind.DUE, date))
 
-        assertTrue(owed)
+        assertFalse(owed)
         assertEquals(date, state.rename?.selection?.dueDate)
     }
 

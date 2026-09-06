@@ -36,3 +36,22 @@ class NotificationAsk(context: Context) {
  */
 internal fun shouldAskForNotifications(sdkInt: Int, granted: Boolean, asked: Boolean): Boolean =
     sdkInt >= Build.VERSION_CODES.TIRAMISU && !granted && !asked
+
+/**
+ * Did the reader actually answer the permission dialog?
+ *
+ * The result alone cannot say. A dialog dismissed by the back key, by an incoming
+ * call or by anything else that takes the window away reports exactly what a
+ * refusal reports: not granted. Spending the one ask on that leaves a reader who
+ * never saw the question routed to the system settings page for the rest of the
+ * install.
+ *
+ * What separates them is the rationale flag, which the platform moves only when
+ * the reader chooses: false to true on the first refusal, and true to false on the
+ * refusal that makes it permanent. An interruption leaves it where it was.
+ */
+internal fun answeredTheAsk(
+    granted: Boolean,
+    rationaleBefore: Boolean,
+    rationaleAfter: Boolean
+): Boolean = granted || rationaleBefore != rationaleAfter

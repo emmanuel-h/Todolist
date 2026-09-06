@@ -18,6 +18,16 @@ private const val EDITING = "editing-item"
 private const val RENAMING = "renaming-list"
 private const val SHEET_KIND = "sheet-kind"
 private const val SHEET_DAY = "sheet-day"
+private const val TEARING = "tearing-item"
+private const val CONFIRM_ID = "confirm-id"
+private const val CONFIRM_NAME = "confirm-name"
+private const val CONFIRM_CASCADE = "confirm-cascade"
+private const val TICKING = "ticking"
+private const val UNTICKING = "unticking"
+private const val ISSUED = "issued-toggles"
+
+@Suppress("UNCHECKED_CAST")
+private fun savedIds(saved: Any?): List<String> = (saved as? List<String>).orEmpty()
 
 /**
  * Everything the page of one list is *doing* that is not worth storing.
@@ -78,6 +88,14 @@ class TodoListScreenState {
     var pendingToggles by mutableStateOf<Map<String, Boolean>>(emptyMap())
         private set
 
+    /**
+     * The rows whose write has already gone to the store. A restored page re-arms
+     * the effect that writes, and a toggle written twice flips back — so a row that
+     * has already been written keeps its ink and waits, rather than writing again.
+     */
+    var issuedToggles by mutableStateOf<Set<String>>(emptySet())
+        private set
+
     var previewOrder by mutableStateOf<List<String>?>(null)
 
     /**
@@ -123,8 +141,13 @@ class TodoListScreenState {
         pendingToggles = pendingToggles + (id to drawing)
     }
 
+    fun markToggleIssued(id: String) {
+        issuedToggles = issuedToggles + id
+    }
+
     fun finishToggle(id: String) {
         pendingToggles = pendingToggles - id
+        issuedToggles = issuedToggles - id
     }
 
     /**
@@ -136,7 +159,9 @@ class TodoListScreenState {
         if (pendingToggles.isEmpty()) return
         val settled = published.filter { pendingToggles[it.id] == it.isCompleted }
         if (settled.isNotEmpty()) {
-            pendingToggles = pendingToggles - settled.map { it.id }.toSet()
+            val ids = settled.map { it.id }.toSet()
+            pendingToggles = pendingToggles - ids
+            issuedToggles = issuedToggles - ids
         }
     }
 
@@ -146,9 +171,11 @@ class TodoListScreenState {
 
     companion object {
         /**
-         * What the reader was in the middle of writing, and nothing else. A tear
-         * mid-slip, a staged drag order and a half-drawn tick all belong to a
-         * gesture that the rotation ended anyway; a half-typed item does not.
+         * What the reader was in the middle of, and what they have already answered
+         * for. A staged drag order belongs to a gesture the rotation ended; a
+         * half-typed item does not, and neither does a delete already confirmed on
+         * the slip or a tick already drawn — both of those used to be dropped, so a
+         * confirmed delete simply did not happen and the row came back.
          */
         val Saver: Saver<TodoListScreenState, Any> = mapSaver(
             save = { state ->
@@ -158,7 +185,14 @@ class TodoListScreenState {
                     EDITING to state.editingItemId,
                     RENAMING to state.renamingList,
                     SHEET_KIND to state.dateSheet?.kind?.name,
-                    SHEET_DAY to state.dateSheet?.date?.toEpochDay()
+                    SHEET_DAY to state.dateSheet?.date?.toEpochDay(),
+                    TEARING to state.tearingId,
+                    CONFIRM_ID to state.confirmDelete?.id,
+                    CONFIRM_NAME to state.confirmDelete?.name,
+                    CONFIRM_CASCADE to state.confirmDelete?.cascadeCount,
+                    TICKING to ArrayList(state.pendingToggles.filterValues { it }.keys),
+                    UNTICKING to ArrayList(state.pendingToggles.filterValues { !it }.keys),
+                    ISSUED to ArrayList(state.issuedToggles)
                 )
             },
             restore = { saved ->
@@ -173,6 +207,17 @@ class TodoListScreenState {
                             (saved[SHEET_DAY] as Long?)?.let(LocalDate::ofEpochDay)
                         )
                     }
+                    tearingId = saved[TEARING] as String?
+                    (saved[CONFIRM_ID] as String?)?.let { id ->
+                        confirmDelete = ConfirmDeleteRequest(
+                            id = id,
+                            name = saved[CONFIRM_NAME] as String? ?: "",
+                            cascadeCount = saved[CONFIRM_CASCADE] as Int?
+                        )
+                    }
+                    pendingToggles = savedIds(saved[TICKING]).associateWith { true } +
+                        savedIds(saved[UNTICKING]).associateWith { false }
+                    issuedToggles = savedIds(saved[ISSUED]).toSet()
                 }
             }
         )

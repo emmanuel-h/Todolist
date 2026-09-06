@@ -314,7 +314,7 @@ internal fun RowTitleEditor(
                     if (focusState.isFocused) {
                         everFocused = true
                     } else if (everFocused) {
-                        commitTitle(value.text, onCommit, onDismiss)
+                        commitTitle(value.text, title, onCommit, onDismiss)
                     }
                 },
             textStyle = style.trimmedToGlyphs().copy(color = palette.inked(InkTone.Words)),
@@ -322,7 +322,7 @@ internal fun RowTitleEditor(
             cursorBrush = SolidColor(palette.inked(InkTone.Acted)),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
-                onDone = { commitTitle(value.text, onCommit, onDismiss) }
+                onDone = { commitTitle(value.text, title, onCommit, onDismiss) }
             )
         )
     }
@@ -334,10 +334,11 @@ internal fun RowTitleEditor(
  */
 internal fun commitTitle(
     text: String,
+    original: String,
     onCommit: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    if (text.isNotBlank()) {
+    if (text.isNotBlank() && text != original) {
         onCommit(text)
     }
     onDismiss()

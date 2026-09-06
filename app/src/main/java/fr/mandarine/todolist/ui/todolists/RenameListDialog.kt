@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import fr.mandarine.todolist.ui.paper.highlightWash
 import fr.mandarine.todolist.ui.paper.inked
 import fr.mandarine.todolist.ui.paper.rememberPaperHaptics
 import fr.mandarine.todolist.ui.paper.seatOnRule
+import fr.mandarine.todolist.ui.paper.RemoveDateConfirmDialog
 import fr.mandarine.todolist.ui.paper.trimmedToGlyphs
 
 /**
@@ -76,6 +78,7 @@ fun RenameListDialog(
 ) {
     val haptics = rememberPaperHaptics()
     val said = rememberDateKindSaid()
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
     val putDown: () -> Unit = {
         if (state.name.isBlank()) {
             onDismiss()
@@ -92,7 +95,7 @@ fun RenameListDialog(
                 said = said,
                 onKindChange = onKindChange,
                 onPickDate = onPickDate,
-                onClearDate = onClearDate
+                onClearDate = { confirmClear = true }
             )
         }
         DateKindCaption(said = said, animated = animated)
@@ -101,6 +104,22 @@ fun RenameListDialog(
             onSelect = onColourChange,
             animated = animated
         )
+        /**
+         * Taking a day off a list takes the reminder it scheduled with it, so it
+         * asks first — the same slip the paper calendar raises, because the ringed
+         * mark on this sheet is the same gesture and it was the one route that
+         * still cleared on a single press.
+         */
+        if (confirmClear) {
+            RemoveDateConfirmDialog(
+                listName = state.name,
+                onCancel = { confirmClear = false },
+                onRemove = {
+                    confirmClear = false
+                    onClearDate()
+                }
+            )
+        }
     }
 }
 

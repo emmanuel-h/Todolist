@@ -703,6 +703,26 @@ class TodoListScreenTest {
         assertEquals(listOf("1"), toggled)
     }
 
+    /**
+     * Moving the pen from one row to another. The editor that closes reports the
+     * focus it lost *after* the new one has opened, and clearing the page's editing
+     * row without checking which row it is closed the editor that had just opened —
+     * so the second row needed two taps, and the first was rewritten with the title
+     * it already had.
+     */
+    @Test
+    fun `should keep the editor open on the row it was moved to`() {
+        render(content(active = listOf(item("1", "Apples"), item("2", "Bread"))))
+
+        composeRule.onNodeWithText("Apples").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Bread").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals("2", screenState.editingItemId)
+        assertTrue(edited.isEmpty())
+    }
+
     @Test
     fun `should open the editor on an item when its edit button is pressed`() {
         render(content(active = listOf(item("1", "Apples"))))

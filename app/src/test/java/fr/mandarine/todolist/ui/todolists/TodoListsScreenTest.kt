@@ -542,6 +542,7 @@ class TodoListsScreenTest {
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        pressRemoveOnTheSlip()
         composeRule.onNode(hasSetTextAction()).performImeAction()
 
         assertEquals(listOf(null to null), renamedDates)
@@ -919,13 +920,24 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should ask for notifications when the alarm is rung over a day already written`() {
+    /**
+     * The ask waits for the sheet to be put down, because that is when the reminder
+     * exists. Raised when the mark was pressed, a reader who then blanked the name
+     * and dismissed had a slip promising a reminder never written, and the one ask
+     * already spent on it.
+     */
+    fun `should ask for notifications only once the sheet carrying a reminder is put down`() {
         screenState.rename = RenameState.of(TodoList("1", "Groceries", targetDate = DATE))
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onAllNodesWithContentDescription(SET_DUE_DATE)[0].performClick()
 
         assertEquals(DATE, screenState.rename?.selection?.dueDate)
+        assertEquals(0, dueDatesSet)
+
+        composeRule.onNode(hasSetTextAction()).performImeAction()
+        composeRule.waitForIdle()
+
         assertEquals(1, dueDatesSet)
     }
 
@@ -940,11 +952,15 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should ask for notifications when a due date is turned into a target`() {
+    fun `should ask for notifications when a due date turned into a target is put down`() {
         screenState.rename = RenameState.of(TodoList("1", "Groceries", dueDate = DATE))
         render(content(active = listOf(summary("1", "Groceries"))))
 
         composeRule.onAllNodesWithContentDescription(SET_TARGET_DATE)[0].performClick()
+        assertEquals(0, dueDatesSet)
+
+        composeRule.onNode(hasSetTextAction()).performImeAction()
+        composeRule.waitForIdle()
 
         assertEquals(1, dueDatesSet)
     }
@@ -1043,14 +1059,37 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should rub the date off the line when the ringed mark is pressed again`() {
+    fun `should rub the date off the line when the ringed mark is pressed and the slip agrees`() {
         armAddLine(text = "Work", selection = DateSelection(DateKind.TARGET, DATE))
         render(TodoListsState.Empty)
 
         composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        pressRemoveOnTheSlip()
         addLine().performImeAction()
 
         assertEquals(listOf(Triple("Work", null, null)), created)
+    }
+
+    /**
+     * The line has no list yet, but rubbing a day out is the same gesture wherever
+     * it is made, and the spec asks on every route.
+     */
+    @Test
+    fun `should keep the date on the line when the slip that asks is cancelled`() {
+        armAddLine(text = "Work", selection = DateSelection(DateKind.TARGET, DATE))
+        render(TodoListsState.Empty)
+
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        composeRule.onAllNodesWithContentDescription(CANCEL).onLast().performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(DATE, screenState.addRowSelection.date)
+    }
+
+    private fun pressRemoveOnTheSlip() {
+        val remove = composeRule.onAllNodesWithContentDescription(REMOVE_DATE_LABEL)
+        remove[remove.fetchSemanticsNodes().size - 1].performClick()
+        composeRule.waitForIdle()
     }
 
     @Test

@@ -148,4 +148,35 @@ class NotificationPermissionTest {
             )
         )
     }
+
+    /**
+     * The one ask must not be spent on a dialog nobody answered. A dialog taken
+     * away by the back key, or by an incoming call, reports exactly what a refusal
+     * reports — so the rationale flag, which the platform moves only when the
+     * reader chooses, is what separates them.
+     */
+    @Test
+    fun `should count a grant as an answer`() {
+        assertTrue(answeredTheAsk(granted = true, rationaleBefore = false, rationaleAfter = false))
+    }
+
+    @Test
+    fun `should count a first refusal as an answer`() {
+        assertTrue(answeredTheAsk(granted = false, rationaleBefore = false, rationaleAfter = true))
+    }
+
+    @Test
+    fun `should count the refusal that makes it permanent as an answer`() {
+        assertTrue(answeredTheAsk(granted = false, rationaleBefore = true, rationaleAfter = false))
+    }
+
+    @Test
+    fun `should not count a dialog taken away before it was answered`() {
+        assertFalse(answeredTheAsk(granted = false, rationaleBefore = false, rationaleAfter = false))
+    }
+
+    @Test
+    fun `should not count a dialog taken away after an earlier refusal`() {
+        assertFalse(answeredTheAsk(granted = false, rationaleBefore = true, rationaleAfter = true))
+    }
 }

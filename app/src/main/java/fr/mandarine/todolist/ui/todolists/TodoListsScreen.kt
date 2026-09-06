@@ -35,6 +35,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -65,6 +69,7 @@ import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.LocalPaperGutter
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
+import fr.mandarine.todolist.ui.paper.RemoveDateConfirmDialog
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.PaperType
@@ -458,10 +463,7 @@ fun TodoListsScreen(
             state = rename,
             onNameChange = { screenState.rename = rename.copy(name = it) },
             onKindChange = { kind ->
-                val moved = rename.selection.withKind(kind)
-                if (writeRenameSelection(screenState, moved)) {
-                    onDueDateSet(ReminderNote(rename.name, moved.date))
-                }
+                writeRenameSelection(screenState, rename.selection.withKind(kind))
             },
             onPickDate = { kind ->
                 screenState.datePickerRequest = DatePickerRequest(
@@ -480,6 +482,16 @@ fun TodoListsScreen(
             onDismiss = { screenState.rename = null },
             onConfirm = {
                 if (rename.name.isNotBlank()) {
+                    /**
+                     * The ask waits for the sheet to be put down, because that is
+                     * when the reminder exists. Raised when the mark was pressed
+                     * instead, a reader who blanked the name and dismissed had a
+                     * slip promising a reminder that was never written and an ask
+                     * they only get once already spent.
+                     */
+                    val before = listOnPage(state, rename.listId)
+                        ?.let { DateSelection.of(it.targetDate, it.dueDate) }
+                        ?: DateSelection.None
                     onRenameList(
                         rename.listId,
                         rename.name,
@@ -488,6 +500,9 @@ fun TodoListsScreen(
                         rename.colour
                     )
                     screenState.rename = null
+                    if (reminderDateWritten(before, rename.selection)) {
+                        onDueDateSet(ReminderNote(rename.name, rename.selection.date))
+                    }
                 }
             }
         )
@@ -584,6 +599,7 @@ private fun Masthead(modifier: Modifier = Modifier) {
 private fun AddLineDateRule(screenState: TodoListsScreenState) {
     val selection = screenState.addRowSelection
     val said = rememberDateKindSaid()
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
     Column {
     RuledRow {
         DateMarks(
@@ -599,10 +615,25 @@ private fun AddLineDateRule(screenState: TodoListsScreenState) {
                     initial = selection.date
                 )
             },
-            onClearDate = { screenState.addRowSelection = selection.cleared() }
+            onClearDate = { confirmClear = true }
         )
     }
     DateKindCaption(said = said, animated = screenState.animationsEnabled)
+    }
+    /**
+     * The line has no list yet, so the slip names what is being written rather
+     * than a list that exists. It still asks: this is the same gesture as on a
+     * committed row, and the spec asks on both routes.
+     */
+    if (confirmClear) {
+        RemoveDateConfirmDialog(
+            listName = screenState.addRowText,
+            onCancel = { confirmClear = false },
+            onRemove = {
+                confirmClear = false
+                screenState.addRowSelection = selection.cleared()
+            }
+        )
     }
 }
 
@@ -752,13 +783,19 @@ internal fun writeAddRowSelection(
     return reminderDateWritten(before, written)
 }
 
+/**
+ * A day circled on the edit sheet is held on the sheet, not written through — the
+ * sheet is put down to commit it and blanking the name throws it away. So nothing
+ * is owed here: the ask belongs to the moment the reminder is persisted, which is
+ * where the sheet's own confirm raises it.
+ */
 internal fun writeRenameSelection(
     screenState: TodoListsScreenState,
     written: DateSelection
 ): Boolean {
     val rename = screenState.rename ?: return false
     screenState.rename = rename.copy(selection = written)
-    return reminderDateWritten(rename.selection, written)
+    return false
 }
 
 @Composable

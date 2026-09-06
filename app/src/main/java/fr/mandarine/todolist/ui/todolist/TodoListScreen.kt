@@ -213,11 +213,19 @@ fun TodoListScreen(
     screenState.pendingToggles.keys.forEach { pending ->
         key(pending) {
             LaunchedEffect(pending) {
-                delay(INK_TICK_MILLIS + INK_STRIKE_MILLIS)
-                if (liveIds.value.contains(pending)) {
+                // A restored page re-arms this effect for every tick it was still
+                // drawing. One already written must not be written again — that
+                // would flip the row back — so it only waits out the settle.
+                if (pending !in screenState.issuedToggles) {
+                    delay(INK_TICK_MILLIS + INK_STRIKE_MILLIS)
+                    if (!liveIds.value.contains(pending)) {
+                        screenState.finishToggle(pending)
+                        return@LaunchedEffect
+                    }
+                    screenState.markToggleIssued(pending)
                     listState.holdPage { onToggle(pending) }
-                    delay(TOGGLE_SETTLE_MILLIS)
                 }
+                delay(TOGGLE_SETTLE_MILLIS)
                 screenState.finishToggle(pending)
             }
         }
@@ -352,7 +360,16 @@ fun TodoListScreen(
                             if (!session.dragging) screenState.editingItemId = item.id
                         },
                         onEditCommitted = { title -> onEdit(item.id, title) },
-                        onEditDismissed = { screenState.editingItemId = null },
+                        onEditDismissed = {
+                            // Only if this row is still the one being retyped.
+                            // Tapping another row's title moves the editor there,
+                            // and this row losing focus arrives afterwards — an
+                            // unconditional clear closed the editor that had just
+                            // opened, so the reader had to tap twice.
+                            if (screenState.editingItemId == item.id) {
+                                screenState.editingItemId = null
+                            }
+                        },
                         onDeleteRequested = { requestDelete(item) },
                         modifier = animatedRow(screenState),
                         animated = screenState.animationsEnabled,
@@ -485,7 +502,15 @@ private fun LazyItemScope.ActiveRow(
             onToggle = { onToggle(item) },
             onEditRequested = { if (!session.dragging) screenState.editingItemId = item.id },
             onEditCommitted = { title -> onEdit(item.id, title) },
-            onEditDismissed = { screenState.editingItemId = null },
+            onEditDismissed = {
+                // Only if this row is still the one being retyped. Tapping another
+                // row's title moves the editor there, and this row losing focus
+                // arrives afterwards — an unconditional clear closed the editor
+                // that had just opened, so the reader had to tap twice.
+                if (screenState.editingItemId == item.id) {
+                    screenState.editingItemId = null
+                }
+            },
             onDeleteRequested = { onDeleteRequested(item) },
             modifier = Modifier
                 .then(animatedRow(screenState, lifted))
@@ -650,6 +675,7 @@ private fun HeadJots(summary: TodoListSummary, onDateRequested: (DateSelection) 
             kind = DateKind.TARGET,
             showYear = summary.showTargetYear,
             tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
+            struck = summary.isTargetDateElapsed,
             onRewrite = onDateRequested
         )
     }

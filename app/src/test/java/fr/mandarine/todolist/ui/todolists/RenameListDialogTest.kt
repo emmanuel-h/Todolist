@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -162,13 +163,40 @@ class RenameListDialogTest {
     }
 
     @Test
-    fun `should rub the date out when the ringed mark is pressed again`() {
+    fun `should rub the date out when the ringed mark is pressed and the slip agrees`() {
+        render(RenameState.of(TodoList("1", "Groceries", targetDate = DATE)))
+
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET).performClick()
+        pressRemove()
+
+        assertNull(current().selection.date)
+        assertEquals(DateKind.TARGET, current().selection.kind)
+    }
+
+    /**
+     * Taking a day off a list takes the reminder it scheduled with it, so both
+     * routes ask first. The ringed mark on this sheet was the one that still
+     * cleared on a single press.
+     */
+    @Test
+    fun `should keep the date when the slip that asks is cancelled`() {
+        render(RenameState.of(TodoList("1", "Groceries", targetDate = DATE)))
+
+        composeRule.onNodeWithContentDescription(CLEAR_TARGET).performClick()
+        composeRule.onAllNodesWithContentDescription(CANCEL)
+            .onLast()
+            .performClick()
+
+        assertEquals(DATE, current().selection.date)
+    }
+
+    @Test
+    fun `should ask before rubbing the date out`() {
         render(RenameState.of(TodoList("1", "Groceries", targetDate = DATE)))
 
         composeRule.onNodeWithContentDescription(CLEAR_TARGET).performClick()
 
-        assertNull(current().selection.date)
-        assertEquals(DateKind.TARGET, current().selection.kind)
+        assertEquals(DATE, current().selection.date)
     }
 
     @Test
@@ -176,8 +204,17 @@ class RenameListDialogTest {
         render(RenameState.of(TodoList("1", "Groceries", dueDate = DATE)))
 
         composeRule.onNodeWithContentDescription(CLEAR_DUE).performClick()
+        pressRemove()
 
+        assertNull(current().selection.date)
         assertEquals(DateKind.DUE, current().selection.kind)
+    }
+
+    private fun pressRemove() {
+        composeRule.onAllNodesWithContentDescription(REMOVE)
+            .onLast()
+            .performClick()
+        composeRule.waitForIdle()
     }
 
     @Test
@@ -311,6 +348,7 @@ class RenameListDialogTest {
         const val CLEAR_DUE = "Clear due date"
         const val SAVE_NAME = "Save list name"
         const val CANCEL = "Cancel"
+        const val REMOVE = "Remove"
         const val HINT = "…"
         const val COLOUR_NONE = "No colour"
         const val COLOUR_BUTTER = "Yellow"

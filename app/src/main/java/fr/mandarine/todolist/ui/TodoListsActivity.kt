@@ -45,6 +45,7 @@ import fr.mandarine.todolist.ui.nav.NavStage
 import fr.mandarine.todolist.ui.nav.PageStack
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.drawEdgeToEdge
+import java.time.LocalDate
 import fr.mandarine.todolist.ui.paper.openOnPaper
 import fr.mandarine.todolist.ui.paper.preparePaperSheet
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
@@ -55,6 +56,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 private const val BLANK_PAGE_MILLIS = 500L
 private const val LIST_ID_EXTRA = "LIST_ID"
 private const val OPEN_PAGE = "open-list-id"
+private const val LEGACY_PACKAGE_EXTRA = "app_package"
+private const val LEGACY_UID_EXTRA = "app_uid"
 
 /**
  * The one window the notebook is read in. Both pages live in it and the back stack
@@ -74,6 +77,8 @@ class TodoListsActivity : ComponentActivity() {
     private lateinit var notificationAsk: NotificationAsk
     private lateinit var notificationPermission: ActivityResultLauncher<String>
     private var pageWritten by mutableStateOf(false)
+    private var today by mutableStateOf(LocalDate.MIN)
+    private var rationaleBeforeAsk = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         openOnPaper { pageWritten }
@@ -114,14 +119,17 @@ class TodoListsActivity : ComponentActivity() {
         )[ReminderSettingsViewModel::class.java]
 
         stage = NavStage(backStack)
-        stage.animationsEnabled = animationsAllowed()
         savedInstanceState?.let(screenState::restoreFrom)
         openedListId(savedInstanceState)?.let { backStack.add(ItemsRoute(it)) }
 
         notificationAsk = NotificationAsk(this)
         notificationPermission = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ) { notificationAsk.markAsked() }
+        ) { granted ->
+            if (answeredTheAsk(granted, rationaleBeforeAsk, rationaleForNotifications())) {
+                notificationAsk.markAsked()
+            }
+        }
 
         container.notificationScheduler.ensureDailyCheck()
 
@@ -148,7 +156,7 @@ class TodoListsActivity : ComponentActivity() {
                     listsViewModel = viewModel,
                     listsScreenState = screenState,
                     stage = stage,
-                    today = clock.today(),
+                    today = today,
                     itemsViewModelFactory = { listId -> itemsViewModelFactory(listId) },
                     onDueDateSet = { askForNotifications() },
                     reminderSettingsViewModel = reminderSettingsViewModel
@@ -165,8 +173,22 @@ class TodoListsActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Both of these are read again on the way in rather than once at construction.
+     * A window that outlives midnight was handing the calendar yesterday — the
+     * pencil dot sat on the wrong day and today was drawn as already past — and a
+     * reader who turns animations off in system settings and comes back was still
+     * being shown them.
+     */
+    override fun onStart() {
+        super.onStart()
+        today = clock.today()
+        stage.animationsEnabled = animationsAllowed()
+    }
+
     override fun onResume() {
         super.onResume()
+        today = clock.today()
         viewModel.refresh()
     }
 
@@ -192,15 +214,28 @@ class TodoListsActivity : ComponentActivity() {
         val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
         if (shouldAskForNotifications(Build.VERSION.SDK_INT, granted, notificationAsk.alreadyAsked())) {
+            rationaleBeforeAsk = rationaleForNotifications()
             notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             return
         }
         openNotificationSettings()
     }
 
+    private fun rationaleForNotifications(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)
+
+    /**
+     * The extras are named twice on purpose. `EXTRA_APP_PACKAGE` is the API 26 name
+     * and the only one the modern page reads; the two lower-case ones are what the
+     * page on API 24 and 25 reads, and without them it opens, finds no app named,
+     * toasts and closes — which for a reader on 7.x is no route back at all.
+     */
     private fun openNotificationSettings() {
         val settings = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            .putExtra(LEGACY_PACKAGE_EXTRA, packageName)
+            .putExtra(LEGACY_UID_EXTRA, applicationInfo.uid)
         if (settings.resolveActivity(packageManager) != null) startActivity(settings)
     }
 
