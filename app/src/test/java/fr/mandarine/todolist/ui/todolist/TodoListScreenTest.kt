@@ -188,6 +188,8 @@ class TodoListScreenTest {
             .onNodeWithContentDescription("Target date ${formatListDate(TODAY, true, locale())}")
             .performClick()
         composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        val allRemove = composeRule.onAllNodesWithContentDescription(REMOVE_DATE_LABEL)
+        allRemove[allRemove.fetchSemanticsNodes().size - 1].performClick()
         composeRule.waitForIdle()
 
         assertEquals(listOf(DateSelection(DateKind.TARGET, null)), datesWritten)
@@ -896,6 +898,7 @@ class TodoListScreenTest {
         const val DELETE_CONFIRM = "Delete"
         const val CANCEL = "Cancel"
         const val CLEAR_TARGET_DATE = "Clear target date"
+        const val REMOVE_DATE_LABEL = "Remove"
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
         const val NO_FEEDBACK = -1

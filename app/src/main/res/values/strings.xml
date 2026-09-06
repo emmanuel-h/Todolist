@@ -57,6 +57,7 @@
     <string name="reminder_hour_picker_title">When shall I remind you?</string>
     <string name="done">Done</string>
     <string name="remove_date">Remove</string>
+    <string name="remove_date_prompt">Remove the date for \"%1$s\"?</string>
     <string name="colour_none">No colour</string>
     <string name="colour_butter">Yellow</string>
     <string name="colour_mint">Green</string>

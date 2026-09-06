@@ -26,7 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,11 +58,13 @@ private const val CLOCK_FACE_SEED = 0x1CE
 private const val HALF_MORNING_SEED = 0x2A1
 private const val HALF_AFTERNOON_SEED = 0x2B7
 private val HALF_GAP = 12.dp
-private val HALF_PADDING = 14.dp
-private val HALF_PADDING_TOP = 6.dp
+private val HALF_PADDING = 20.dp
+private val HALF_PADDING_TOP = 12.dp
 private const val CLOCK_WOBBLE = 0.012f
-private const val CLOCK_RING_FIT = 0.80f
+private const val CLOCK_RING_FIT = 0.88f
 private val CLOCK_FACE_STROKE = 1.75.dp
+private val CLOCK_HAND_STROKE = 2.5.dp
+private const val CLOCK_HAND_REACH = 0.72f
 
 private const val TWO_PI = 6.2831855f
 private const val HALF_PI = 1.5707963f
@@ -249,7 +253,8 @@ private fun HourFace(
             isSelected = { i -> i == selectedHour % CLOCK_POSITIONS && secondHalf == afternoon },
             animated = animated,
             palette = palette,
-            onPick = { i -> onHourPicked(if (secondHalf) i + CLOCK_POSITIONS else i) }
+            onPick = { i -> onHourPicked(if (secondHalf) i + CLOCK_POSITIONS else i) },
+            pointsAt = (selectedHour % CLOCK_POSITIONS).takeIf { secondHalf == afternoon }
         )
     }
 }
@@ -303,8 +308,7 @@ private fun HalfOfDayMark(
         modifier = Modifier
             .heightIn(min = PaperDimens.touchTarget)
             .selectable(selected = selected, role = Role.Button, onClick = onChoose)
-            .semantics { contentDescription = label }
-            .padding(horizontal = HALF_PADDING, vertical = HALF_PADDING_TOP),
+            .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -319,6 +323,7 @@ private fun HalfOfDayMark(
         )
         Text(
             text = handwritten(label),
+            modifier = Modifier.padding(horizontal = HALF_PADDING, vertical = HALF_PADDING_TOP),
             style = PaperType.prose,
             color = palette.inked(if (selected) InkTone.Acted else InkTone.Words),
             maxLines = ONE_LINE
@@ -345,7 +350,8 @@ private fun MinuteFace(
         isSelected = { i -> i == roundedPos },
         animated = animated,
         palette = palette,
-        onPick = { i -> onMinutePicked(i * CLOCK_MINUTE_STEP) }
+        onPick = { i -> onMinutePicked(i * CLOCK_MINUTE_STEP) },
+        pointsAt = roundedPos
     )
 }
 
@@ -366,9 +372,11 @@ private fun ClockFace(
     isSelected: (Int) -> Boolean,
     animated: Boolean,
     palette: PaperPalette,
-    onPick: (Int) -> Unit
+    onPick: (Int) -> Unit,
+    pointsAt: Int?
 ) {
     val faceColor = palette.rule
+    val handColor = palette.inked(InkTone.Acted)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -379,12 +387,29 @@ private fun ClockFace(
                 val jitter = faceDiam * CLOCK_WOBBLE
                 val faceRing = ringPath(faceSize, seed = CLOCK_FACE_SEED, jitter = jitter)
                 val faceNib = InkNib(CLOCK_FACE_STROKE.toPx())
+                val handNib = InkNib(CLOCK_HAND_STROKE.toPx())
                 val dx = (size.width - faceDiam) / 2
                 val dy = (size.height - faceDiam) / 2
+                /**
+                 * The hand is what makes the drawing a clock rather than numbers
+                 * in a circle, and it is what fills a face that otherwise has
+                 * nothing in the middle of it. It reaches from the centre to just
+                 * short of the numeral it points at.
+                 */
+                val hand = pointsAt?.let { at ->
+                    val centre = Offset(size.width / 2, size.height / 2)
+                    val angle = at.toFloat() / CLOCK_POSITIONS.toFloat() * TWO_PI - HALF_PI
+                    val reach = size.minDimension / 2 * CLOCK_RING_FRACTION * CLOCK_HAND_REACH
+                    Path().apply {
+                        moveTo(centre.x, centre.y)
+                        lineTo(centre.x + reach * cos(angle), centre.y + reach * sin(angle))
+                    }
+                }
                 onDrawBehind {
                     withTransform({ translate(dx, dy) }) {
                         inked(faceRing, faceColor, faceNib)
                     }
+                    hand?.let { inked(it, handColor, handNib) }
                 }
             }
     ) {
@@ -445,7 +470,7 @@ private fun ClockNumeral(
         )
         Text(
             text = label,
-            style = LocalRuledHand.current.margin,
+            style = PaperType.prose,
             color = palette.inked(if (selected) InkTone.Acted else InkTone.Words),
             maxLines = ONE_LINE
         )

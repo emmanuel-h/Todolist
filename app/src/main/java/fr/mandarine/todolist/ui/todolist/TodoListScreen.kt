@@ -387,6 +387,7 @@ fun TodoListScreen(
     val sheet = screenState.dateSheet
     if (sheet != null) {
         ListDatePickerDialog(
+            listName = summary?.list?.name.orEmpty(),
             initial = sheet.date,
             today = today,
             kind = sheet.kind,

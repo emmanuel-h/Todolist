@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -19,6 +23,7 @@ import fr.mandarine.todolist.ui.paper.PaperCalendar
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperSlipCaption
 import fr.mandarine.todolist.ui.paper.PaperDialog
+import fr.mandarine.todolist.ui.paper.RemoveDateConfirmDialog
 import fr.mandarine.todolist.ui.paper.inked
 import java.time.LocalDate
 
@@ -32,9 +37,14 @@ import java.time.LocalDate
  * sheet carry, answering to the same three presses — which is what makes a day
  * removable from wherever the reader pressed to see it. Reaching the marks used to
  * mean pressing the list's *name* instead, and nothing on a date said so.
+ *
+ * Removing a day is destructive — the reminder it scheduled goes with it — so both
+ * routes (the Remove button and the already-ringed mark) ask first, naming the list
+ * whose day will go. Nothing is cleared unless the confirm is pressed.
  */
 @Composable
 fun ListDatePickerDialog(
+    listName: String,
     initial: LocalDate?,
     today: LocalDate,
     kind: DateKind,
@@ -45,6 +55,7 @@ fun ListDatePickerDialog(
     onKindChange: (DateKind) -> Unit,
     onCleared: () -> Unit
 ) {
+    var confirmClear by remember { mutableStateOf(false) }
     val said = rememberDateKindSaid()
     val rule = LocalPaperPalette.current.rule
     PaperDialog(onDismissRequest = onDismiss) {
@@ -66,7 +77,7 @@ fun ListDatePickerDialog(
                 said = said,
                 onKindChange = onKindChange,
                 onPickDate = onKindAsked,
-                onClearDate = onCleared
+                onClearDate = { confirmClear = true }
             )
         }
         /**
@@ -96,7 +107,7 @@ fun ListDatePickerDialog(
                 DialogButton(
                     label = stringResource(R.string.remove_date),
                     tint = palette.inked(InkTone.Margin),
-                    onClick = onCleared
+                    onClick = { confirmClear = true }
                 )
                 Spacer(Modifier.weight(1f))
             }
@@ -107,5 +118,15 @@ fun ListDatePickerDialog(
             onPick = onPicked,
             animated = animated
         )
+        if (confirmClear) {
+            RemoveDateConfirmDialog(
+                listName = listName,
+                onCancel = { confirmClear = false },
+                onRemove = {
+                    confirmClear = false
+                    onCleared()
+                }
+            )
+        }
     }
 }

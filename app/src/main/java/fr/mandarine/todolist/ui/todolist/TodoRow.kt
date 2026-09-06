@@ -115,7 +115,8 @@ fun TodoRow(
             pressedTint = palette.inked(InkTone.Words),
             seat = IconSeat.OnRule,
             foot = GlyphFoot.pencil,
-            glyphSize = PaperDimens.rowGlyph
+            glyphSize = PaperDimens.rowGlyph,
+            buttonWidth = PaperDimens.rowGlyphButton
         )
         InkIconButton(
             painter = painterResource(R.drawable.ic_delete),
@@ -125,7 +126,8 @@ fun TodoRow(
             pressedTint = palette.inked(InkTone.Words),
             seat = IconSeat.OnRule,
             foot = GlyphFoot.trash,
-            glyphSize = PaperDimens.rowGlyph
+            glyphSize = PaperDimens.rowGlyph,
+            buttonWidth = PaperDimens.rowGlyphButton
         )
     }
 }

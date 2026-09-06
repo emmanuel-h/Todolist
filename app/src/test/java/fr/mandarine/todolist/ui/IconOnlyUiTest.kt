@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -240,11 +241,12 @@ class IconOnlyUiTest {
     }
 
     @Test
-    fun `should call onCleared when the Remove button is pressed in the date picker`() {
+    fun `should ask before clearing the date when Remove is pressed in the date picker`() {
         var cleared = false
         composeRule.setContent {
             PaperTheme {
                 ListDatePickerDialog(
+                    listName = "Groceries",
                     initial = TODAY,
                     today = TODAY,
                     kind = DateKind.TARGET,
@@ -260,7 +262,61 @@ class IconOnlyUiTest {
 
         composeRule.onNodeWithContentDescription(REMOVE_DATE_LABEL).performClick()
 
-        assert(cleared) { "Expected onCleared to be called when Remove is pressed" }
+        assert(!cleared) { "Expected onCleared NOT to be called before confirmation" }
+        composeRule.onNodeWithContentDescription(CANCEL_LABEL).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should clear the date only when the removal confirmation is pressed`() {
+        var cleared = false
+        composeRule.setContent {
+            PaperTheme {
+                ListDatePickerDialog(
+                    listName = "Groceries",
+                    initial = TODAY,
+                    today = TODAY,
+                    kind = DateKind.TARGET,
+                    animated = false,
+                    onDismiss = {},
+                    onPicked = {},
+                    onKindAsked = {},
+                    onKindChange = {},
+                    onCleared = { cleared = true }
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(REMOVE_DATE_LABEL).performClick()
+        val allRemove = composeRule.onAllNodesWithContentDescription(REMOVE_DATE_LABEL)
+        allRemove[allRemove.fetchSemanticsNodes().size - 1].performClick()
+
+        assert(cleared) { "Expected onCleared to be called after confirmation" }
+    }
+
+    @Test
+    fun `should not clear the date when the removal is cancelled`() {
+        var cleared = false
+        composeRule.setContent {
+            PaperTheme {
+                ListDatePickerDialog(
+                    listName = "Groceries",
+                    initial = TODAY,
+                    today = TODAY,
+                    kind = DateKind.TARGET,
+                    animated = false,
+                    onDismiss = {},
+                    onPicked = {},
+                    onKindAsked = {},
+                    onKindChange = {},
+                    onCleared = { cleared = true }
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(REMOVE_DATE_LABEL).performClick()
+        composeRule.onNodeWithContentDescription(CANCEL_LABEL).performClick()
+
+        assert(!cleared) { "Expected onCleared NOT to be called when cancelled" }
     }
 
     /**
@@ -455,6 +511,7 @@ private fun ItemsScreenWithDeletePrompt() {
 @Composable
 private fun DatePickerWithDate() {
     ListDatePickerDialog(
+        listName = "Groceries",
         initial = TODAY,
         today = TODAY,
         kind = DateKind.TARGET,
@@ -470,6 +527,7 @@ private fun DatePickerWithDate() {
 @Composable
 private fun DatePickerWithoutDate() {
     ListDatePickerDialog(
+        listName = "Groceries",
         initial = null,
         today = TODAY,
         kind = DateKind.TARGET,

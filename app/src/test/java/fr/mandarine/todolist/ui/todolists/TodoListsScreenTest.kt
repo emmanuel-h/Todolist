@@ -802,6 +802,8 @@ class TodoListsScreenTest {
         openDateSheet(DateKind.TARGET, DateTarget.Row("1"), initial = DATE)
 
         composeRule.onNodeWithContentDescription(CLEAR_TARGET_DATE).performClick()
+        val allRemove = composeRule.onAllNodesWithContentDescription(REMOVE_DATE_LABEL)
+        allRemove[allRemove.fetchSemanticsNodes().size - 1].performClick()
         composeRule.waitForIdle()
 
         assertEquals(listOf(null to null), renamedDates)
@@ -1181,6 +1183,7 @@ class TodoListsScreenTest {
         const val CANCEL = "Cancel"
         const val SET_TARGET_DATE = "Set target date"
         const val CLEAR_TARGET_DATE = "Clear target date"
+        const val REMOVE_DATE_LABEL = "Remove"
         const val SET_DUE_DATE = "Set due date"
         const val DUE_CAPTION = "Finish before this day"
         const val CLEAR_DUE_DATE = "Clear due date"

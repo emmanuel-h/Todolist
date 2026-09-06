@@ -407,8 +407,8 @@ fun TodoListsScreen(
                 painter = painterResource(R.drawable.ic_check),
                 contentDescription = stringResource(R.string.commit_list),
                 onPress = {
-                    focusManager.clearFocus()
                     submitAddRow(screenState, onCreateList, onDueDateSet)
+                    focusManager.clearFocus()
                     screenState.closeAddRow()
                 }
             )
@@ -471,7 +471,13 @@ fun TodoListsScreen(
 
     val request = screenState.datePickerRequest
     if (request != null) {
+        val requestListName = when (val target = request.target) {
+            DateTarget.AddRow -> screenState.addRowText
+            DateTarget.Rename -> screenState.rename?.name.orEmpty()
+            is DateTarget.Row -> listOnPage(state, target.listId)?.name.orEmpty()
+        }
         ListDatePickerDialog(
+            listName = requestListName,
             initial = request.initial,
             today = today,
             kind = request.kind,

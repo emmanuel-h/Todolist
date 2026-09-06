@@ -16,7 +16,8 @@ object PaperDimens {
     val touchTarget = 48.dp
     val iconButton = 48.dp
     val iconGlyph = 24.dp
-    val rowGlyph = 20.dp
+    val rowGlyph = 18.dp
+    val rowGlyphButton = 44.dp
     val jotGlyph = 14.dp
     val marginColumn = 32.dp
 

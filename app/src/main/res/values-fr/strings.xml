@@ -62,6 +62,7 @@
     <string name="reminder_hour_picker_title">À quelle heure me rappeler ?</string>
     <string name="done">Terminé</string>
     <string name="remove_date">Retirer</string>
+    <string name="remove_date_prompt">Retirer la date de « %1$s » ?</string>
     <string name="colour_none">Sans couleur</string>
     <string name="colour_butter">Jaune</string>
     <string name="colour_mint">Vert</string>

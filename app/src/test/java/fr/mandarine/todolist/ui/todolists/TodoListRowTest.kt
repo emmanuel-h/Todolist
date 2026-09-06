@@ -166,7 +166,7 @@ class TodoListRowTest {
     fun `should add the jot to what a row can be pressed for and nothing else`() {
         render(summary(activeCount = 3, dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        assertEquals(listOf(OPENS_THE_LIST, "Set due date", EDIT_NAME, DELETE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, EDIT_NAME, "Set due date", DELETE_LIST), presses())
     }
 
     @Test
@@ -219,14 +219,15 @@ class TodoListRowTest {
 
     @Test
     /**
-     * A dated row carries two controls: edit and delete. The date jot in the margin
-     * is pressable and takes the calendar's role, so no calendar button is added.
+     * A dated row carries edit and delete. The date jot is in the slot between them,
+     * taking the calendar button's place — the row does not rearrange itself when a
+     * day is written on it, only that one slot changes its contents.
      */
     fun `should carry nothing at rest but the name, its marginalia and its two controls on a dated row`() {
         render(summary(activeCount = 2, targetDate = DATE))
 
         assertEquals(
-            listOf("2 items left", "Target date ${spelled(DATE)}", EDIT_NAME, DELETE_LIST),
+            listOf("2 items left", EDIT_NAME, "Target date ${spelled(DATE)}", DELETE_LIST),
             descriptions()
         )
     }
@@ -377,6 +378,26 @@ class TodoListRowTest {
     @Test
     fun `should not draw the calendar button when the row has no rewrite surface`() {
         render(summary(), rewritable = false)
+
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should draw the date jot in the control group when the list has a date`() {
+        render(summary(targetDate = DATE))
+
+        val descriptions = descriptions()
+        val jotIndex = descriptions.indexOf("Target date ${spelled(DATE)}")
+        val editIndex = descriptions.indexOf(EDIT_NAME)
+        val deleteIndex = descriptions.indexOf(DELETE_LIST)
+
+        assert(jotIndex > editIndex) { "Jot must appear after the pencil, not before it" }
+        assert(jotIndex < deleteIndex) { "Jot must appear before the bin" }
+    }
+
+    @Test
+    fun `should draw no calendar button when the list has a date`() {
+        render(summary(targetDate = DATE))
 
         composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
     }

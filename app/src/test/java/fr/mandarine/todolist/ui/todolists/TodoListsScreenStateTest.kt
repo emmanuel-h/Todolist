@@ -179,10 +179,10 @@ class TodoListsScreenStateTest {
 
     @Test
     /**
-     * Putting the pen down folds the line away without tearing up what was on it,
-     * which is what the page of items has always done with a half-written row.
+     * Tapping away is the gesture that discards the line — putting the pen down
+     * means throwing it away, and the pad always opens on blank paper afterwards.
      */
-    fun `should keep the typed name when the pen goes down on the create row`() {
+    fun `should discard the typed name when the pen goes down on the create row`() {
         state.openAddRow()
         state.addRowText = "Groceries"
         state.addRowSelection = DateSelection(DateKind.DUE, date)
@@ -190,8 +190,8 @@ class TodoListsScreenStateTest {
         state.closeAddRow()
 
         assertFalse(state.addRowExpanded)
-        assertEquals("Groceries", state.addRowText)
-        assertEquals(DateSelection(DateKind.DUE, date), state.addRowSelection)
+        assertEquals("", state.addRowText)
+        assertEquals(DateSelection.None, state.addRowSelection)
     }
 
     @Test

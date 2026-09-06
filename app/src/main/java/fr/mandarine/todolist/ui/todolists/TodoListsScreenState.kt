@@ -92,19 +92,17 @@ class TodoListsScreenState {
     }
 
     /**
-     * Putting the pen down folds the line away without tearing up what was on it.
-     * The two pages used to disagree — a name half-written here was destroyed by
-     * a tap on the paper while an item half-written on the other page survived
-     * one — and the page that kept it was right: losing what the reader wrote is
-     * a mistake the app made, not an instruction it was given.
+     * Putting the pen down discards the line — tapping away is how the reader
+     * throws it away, and finding the words again later was the surprise. The pad
+     * always opens on blank paper. Only a commit keeps what was written.
      */
     fun closeAddRow() {
         addRowExpanded = false
+        clearAddRow()
     }
 
     fun abandonAddRow() {
-        addRowExpanded = false
-        clearAddRow()
+        closeAddRow()
     }
 
     fun clearAddRow() {

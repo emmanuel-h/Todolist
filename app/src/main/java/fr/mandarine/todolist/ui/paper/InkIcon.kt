@@ -83,7 +83,8 @@ fun InkIconButton(
     seat: IconSeat = IconSeat.Centred,
     foot: Float = GlyphFoot.arrow,
     pressedTint: Color? = null,
-    glyphSize: Dp = PaperDimens.iconGlyph
+    glyphSize: Dp = PaperDimens.iconGlyph,
+    buttonWidth: Dp = PaperDimens.iconButton
 ) {
     val haptics = rememberPaperHaptics()
     val onRule = seat == IconSeat.OnRule
@@ -100,7 +101,7 @@ fun InkIconButton(
     val effectiveTint = if (pressed && pressedTint != null) pressedTint else tint
     Box(
         modifier = modifier
-            .width(PaperDimens.iconButton)
+            .width(buttonWidth)
             .height(if (onRule) LocalPagePitch.current else PaperDimens.iconButton)
             .pressableBelowTheRule(onRule)
             .clickable(

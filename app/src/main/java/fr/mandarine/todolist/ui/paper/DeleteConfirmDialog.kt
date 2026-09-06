@@ -84,6 +84,47 @@ fun DeleteConfirmDialog(
     }
 }
 
+/**
+ * Confirmation slip for removing a date from a list. A smaller sheet carrying the
+ * list name, with Cancel and Remove — nothing cleared unless Remove is pressed.
+ */
+@Composable
+fun RemoveDateConfirmDialog(
+    listName: String,
+    onCancel: () -> Unit,
+    onRemove: () -> Unit
+) {
+    val palette = LocalPaperPalette.current
+    PaperDialog(onDismissRequest = onCancel) {
+        Text(
+            text = handwritten(stringResource(R.string.remove_date_prompt, listName)),
+            style = PaperType.field,
+            color = palette.inked(InkTone.Words),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = QUESTION_BOTTOM)
+        )
+        Spacer(Modifier.height(BUTTONS_TOP))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(Modifier.weight(1f))
+            DialogButton(
+                label = stringResource(R.string.cancel),
+                tint = palette.inked(InkTone.Margin),
+                onClick = onCancel
+            )
+            Spacer(Modifier.width(BUTTON_GAP))
+            DialogButton(
+                label = stringResource(R.string.remove_date),
+                tint = palette.inked(InkTone.Words),
+                onClick = onRemove
+            )
+        }
+    }
+}
+
 @Composable
 internal fun DialogButton(label: String, tint: Color, onClick: () -> Unit) {
     val source = remember { MutableInteractionSource() }

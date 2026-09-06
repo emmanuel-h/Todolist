@@ -16,7 +16,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.DueDateStatus
-import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.listmeta.DateJot
 import fr.mandarine.todolist.ui.listmeta.OpenCount
@@ -63,14 +62,16 @@ fun TodoListRow(
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
-    val hasDate = summary.list.targetDate != null ||
-        (summary.list.dueDate != null && summary.dueDateStatus != null)
+    val targetDate = summary.list.targetDate
+    val dueDate = summary.list.dueDate
+    val dueDateStatus = summary.dueDateStatus
+    val hasDate = targetDate != null || (dueDate != null && dueDateStatus != null)
     RuledRow(
         modifier = modifier.tearOff(tearing, animated, onTorn).spokenVerbs(verbs),
         onClick = onOpen
     ) {
         RowName(summary = summary, animated = animated)
-        Marginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
+        OpenCount(count = summary.activeCount, animated = animated)
         if (onRenameRequested != null) {
             InkIconButton(
                 painter = painterResource(R.drawable.ic_edit),
@@ -80,10 +81,33 @@ fun TodoListRow(
                 pressedTint = palette.inked(InkTone.Words),
                 seat = IconSeat.OnRule,
                 foot = GlyphFoot.pencil,
-                glyphSize = PaperDimens.rowGlyph
+                glyphSize = PaperDimens.rowGlyph,
+                buttonWidth = PaperDimens.rowGlyphButton
             )
         }
-        if (!hasDate && onRewriteDate != null) {
+        // Date slot: the calendar button when no date is set, the date jot(s) when one is.
+        // One slot, two things that can be in it — the row never rearranges itself.
+        if (hasDate) {
+            if (targetDate != null) {
+                DateJot(
+                    date = targetDate,
+                    kind = DateKind.TARGET,
+                    showYear = summary.showTargetYear,
+                    tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
+                    struck = summary.isTargetDateElapsed,
+                    onRewrite = onRewriteDate
+                )
+            }
+            if (dueDate != null && dueDateStatus != null) {
+                DateJot(
+                    date = dueDate,
+                    kind = DateKind.DUE,
+                    showYear = summary.showDueDateYear,
+                    tint = palette.inked(dueTone(dueDateStatus)),
+                    onRewrite = onRewriteDate
+                )
+            }
+        } else if (onRewriteDate != null) {
             InkIconButton(
                 painter = painterResource(R.drawable.ic_event),
                 contentDescription = stringResource(R.string.give_list_a_day),
@@ -92,7 +116,8 @@ fun TodoListRow(
                 pressedTint = palette.inked(InkTone.Words),
                 seat = IconSeat.OnRule,
                 foot = GlyphFoot.calendar,
-                glyphSize = PaperDimens.rowGlyph
+                glyphSize = PaperDimens.rowGlyph,
+                buttonWidth = PaperDimens.rowGlyphButton
             )
         }
         InkIconButton(
@@ -103,7 +128,8 @@ fun TodoListRow(
             pressedTint = palette.inked(InkTone.Words),
             seat = IconSeat.OnRule,
             foot = GlyphFoot.trash,
-            glyphSize = PaperDimens.rowGlyph
+            glyphSize = PaperDimens.rowGlyph,
+            buttonWidth = PaperDimens.rowGlyphButton
         )
     }
 }
@@ -157,38 +183,6 @@ private fun Modifier.nameWash(wash: Color, state: PenStrikeState): Modifier {
             }
         }
     }
-}
-
-@Composable
-private fun Marginalia(
-    summary: TodoListSummary,
-    animated: Boolean,
-    onRewriteDate: ((DateSelection) -> Unit)?
-) {
-    val palette = LocalPaperPalette.current
-    val targetDate = summary.list.targetDate
-    val dueDate = summary.list.dueDate
-    val dueStatus = summary.dueDateStatus
-    if (targetDate != null) {
-        DateJot(
-            date = targetDate,
-            kind = DateKind.TARGET,
-            showYear = summary.showTargetYear,
-            tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
-            struck = summary.isTargetDateElapsed,
-            onRewrite = onRewriteDate
-        )
-    }
-    if (dueDate != null && dueStatus != null) {
-        DateJot(
-            date = dueDate,
-            kind = DateKind.DUE,
-            showYear = summary.showDueDateYear,
-            tint = palette.inked(dueTone(dueStatus)),
-            onRewrite = onRewriteDate
-        )
-    }
-    OpenCount(count = summary.activeCount, animated = animated)
 }
 
 /**
