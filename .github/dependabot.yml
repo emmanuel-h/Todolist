@@ -10,6 +10,12 @@ updates:
     schedule:
       interval: daily
     open-pull-requests-limit: 10
+    # The compose plugin must match the Kotlin version AGP embeds. Past it, the
+    # release-only produceReleaseComposeMapping task fails to resolve
+    # compose-group-mapping, and only bundleRelease notices. Bump it by hand
+    # together with AGP.
+    ignore:
+      - dependency-name: org.jetbrains.kotlin.plugin.compose
     commit-message:
       prefix: chore
       include: scope
