@@ -101,7 +101,9 @@ class TodoListsActivity : ComponentActivity() {
                     getTodoListsWithStatusUseCase,
                     ReorderTodoListsUseCase(todoListRepository),
                     container.databaseDispatcher,
-                    container.writeScope
+                    container.writeScope,
+                    container.setListReminderTimeUseCase,
+                    container.syncDailyChecksUseCase
                 )
             }
         )[TodoListsViewModel::class.java]
@@ -131,7 +133,7 @@ class TodoListsActivity : ComponentActivity() {
             }
         }
 
-        container.notificationScheduler.ensureDailyCheck()
+        container.writeScope.launch { container.syncDailyChecksUseCase() }
 
         preparePaperSheet()
 

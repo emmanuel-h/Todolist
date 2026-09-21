@@ -3,6 +3,7 @@ package fr.mandarine.todolist.data
 import fr.mandarine.todolist.domain.ListColour
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.Before
 import org.junit.Test
 
@@ -29,5 +30,12 @@ class RoomTodoListRepositoryEditTest {
         repository.update("list-42", "Work tasks", null, null, ListColour.None)
 
         verify { dao.update("list-42", "Work tasks", null, null, "None") }
+    }
+
+    @Test
+    fun `should not call setReminderMinute when update is called`() {
+        repository.update("1", "Supermarket", null, null, ListColour.None)
+
+        verify(exactly = 0) { dao.setReminderMinute(any(), any()) }
     }
 }

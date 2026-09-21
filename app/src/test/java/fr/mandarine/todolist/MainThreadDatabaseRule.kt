@@ -4,6 +4,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.domain.NotificationScheduler
+import fr.mandarine.todolist.domain.ReminderSlot
+import java.time.LocalTime
 import kotlinx.coroutines.Dispatchers
 import org.junit.rules.ExternalResource
 
@@ -23,8 +25,8 @@ class MainThreadDatabaseRule : ExternalResource() {
             application,
             databaseFactory = { database },
             schedulerFactory = { _, _ -> object : NotificationScheduler {
-                override fun ensureDailyCheck() = Unit
-                override fun rescheduleDailyCheck() = Unit
+                override fun ensureDailyChecks(ownTimes: Set<LocalTime>) = Unit
+                override fun rescheduleDailyCheck(slot: ReminderSlot) = Unit
             } },
             databaseDispatcher = Dispatchers.Unconfined
         )

@@ -3,8 +3,11 @@ package fr.mandarine.todolist
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import fr.mandarine.todolist.data.WorkManagerNotificationScheduler
 import fr.mandarine.todolist.domain.ComputePendingNotificationsUseCase
 import fr.mandarine.todolist.domain.DailyNotificationWorker
+import fr.mandarine.todolist.domain.ReminderSlot
+import java.time.LocalTime
 
 /**
  * The Android end of the daily check — the class WorkManager actually instantiates.
@@ -23,6 +26,10 @@ import fr.mandarine.todolist.domain.DailyNotificationWorker
  * calls are fine here without a dispatcher. It lives at the root of the package
  * rather than in `data/` because it depends on both the container and the domain,
  * which is a composition-root job.
+ *
+ * The slot is determined by the input data: if [WorkManagerNotificationScheduler.SLOT_MINUTE_KEY]
+ * is present, this is an own-time check for the list(s) at that minute of day;
+ * otherwise it is the app-wide check.
  */
 class DailyNotificationWork(
     context: Context,
@@ -31,12 +38,19 @@ class DailyNotificationWork(
 
     override fun doWork(): Result {
         val container = (applicationContext as TodoListApplication).container
+        val slot = slotFromInputData()
         DailyNotificationWorker(
             container.todoListRepository,
             ComputePendingNotificationsUseCase(container.clock),
             container.listNotifier,
             container.notificationScheduler
-        ).execute()
+        ).execute(slot)
         return Result.success()
+    }
+
+    private fun slotFromInputData(): ReminderSlot {
+        val minute = inputData.getInt(WorkManagerNotificationScheduler.SLOT_MINUTE_KEY, -1)
+        return if (minute < 0) ReminderSlot.AppWide
+        else ReminderSlot.At(LocalTime.of(minute / 60, minute % 60))
     }
 }

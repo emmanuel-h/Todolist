@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.domain
 
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * Everything the app can do to lists, stated without saying where they are kept.
@@ -33,4 +34,10 @@ interface TodoListRepository {
 
     /** Renumbers only the ids named, leaving lists not named where they were. */
     fun reorder(orderedActiveIds: List<String>)
+
+    /**
+     * Writes only the reminder time for one list. Null clears the per-list time so
+     * the list follows the app-wide hour instead.
+     */
+    fun setReminderTime(todoListId: String, reminderTime: LocalTime?)
 }

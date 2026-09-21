@@ -43,7 +43,7 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
     }
 
     private fun toEntity(todoList: TodoList) =
-        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay(), todoList.reminderTime?.let { it.toSecondOfDay() * 60 }, todoList.colour.name)
+        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay(), todoList.reminderTime?.let { it.hour * 60 + it.minute }, todoList.colour.name)
 
     /**
      * The list and everything on it go in one transaction. Two statements meant a
@@ -65,6 +65,10 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
      * behind an undo slip — keeps the place it had rather than being renumbered
      * around a row that was never on screen.
      */
+    override fun setReminderTime(todoListId: String, reminderTime: LocalTime?) {
+        dao.setReminderMinute(todoListId, reminderTime?.let { it.hour * 60 + it.minute })
+    }
+
     override fun reorder(orderedActiveIds: List<String>) {
         if (orderedActiveIds.isEmpty()) return
         val sorted = dao.getAll().sortedBy { it.position }

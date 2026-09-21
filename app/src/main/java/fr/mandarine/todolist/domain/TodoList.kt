@@ -32,6 +32,9 @@ data class TodoList(
     val reminderTime: LocalTime? = null,
     val colour: ListColour = ListColour.None
 ) {
+    val reminderSlot: ReminderSlot
+        get() = if (reminderTime == null) ReminderSlot.AppWide else ReminderSlot.At(reminderTime)
+
     init {
         require(targetDate == null || dueDate == null) {
             "A list cannot have both a target date and a due date"

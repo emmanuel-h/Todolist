@@ -1,8 +1,8 @@
 package fr.mandarine.todolist.domain
 
 /**
- * The daily check, as three plain calls: read the lists, decide what is worth
- * saying, say it.
+ * The daily check, as three plain calls: read the lists for this slot, decide what
+ * is worth saying, say it.
  *
  * This is the whole of the job and it has no Android in it, so it is unit-testable
  * with three fakes. The Android `Worker` that WorkManager actually instantiates is
@@ -22,10 +22,14 @@ class DailyNotificationWorker(
      * next occurrence of the reader's hour in the zone the device is in now, which
      * is what keeps a twenty-four hour period from walking off the hour once a
      * daylight-saving change or a deferred run has moved it.
+     *
+     * Only lists whose [TodoList.reminderSlot] equals [slot] are included in this
+     * run, so the app-wide check never fires for a list that has its own time and
+     * vice versa.
      */
-    fun execute() {
-        val lists = todoListRepository.getAll()
+    fun execute(slot: ReminderSlot) {
+        val lists = todoListRepository.getAll().filter { it.reminderSlot == slot }
         listNotifier.postNotifications(computeUseCase(lists))
-        notificationScheduler.rescheduleDailyCheck()
+        notificationScheduler.rescheduleDailyCheck(slot)
     }
 }
