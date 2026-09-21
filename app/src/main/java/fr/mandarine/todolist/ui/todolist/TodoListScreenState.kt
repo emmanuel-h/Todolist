@@ -18,6 +18,7 @@ private const val EDITING = "editing-item"
 private const val RENAMING = "renaming-list"
 private const val SHEET_KIND = "sheet-kind"
 private const val SHEET_DAY = "sheet-day"
+private const val CLOCK_MINUTE = "clock-minute"
 private const val TEARING = "tearing-item"
 private const val CONFIRM_ID = "confirm-id"
 private const val CONFIRM_NAME = "confirm-name"
@@ -69,6 +70,15 @@ class TodoListScreenState {
     var renamingList by mutableStateOf(false)
 
     var dateSheet by mutableStateOf<DateSelection?>(null)
+
+    /**
+     * The minute-of-day the clock opened on for the current list. Non-null while
+     * the per-list reminder clock is visible; null when it is closed. Stored as a
+     * plain Int rather than a wrapper so the Saver can write it as a single map
+     * entry. The list ID is not stored here — the screen already holds it via the
+     * summary it received.
+     */
+    var clockSheet by mutableStateOf<Int?>(null)
 
     /**
      * Every row whose tick is still being drawn, not just the latest one. A
@@ -186,6 +196,7 @@ class TodoListScreenState {
                     RENAMING to state.renamingList,
                     SHEET_KIND to state.dateSheet?.kind?.name,
                     SHEET_DAY to state.dateSheet?.date?.toEpochDay(),
+                    CLOCK_MINUTE to state.clockSheet,
                     TEARING to state.tearingId,
                     CONFIRM_ID to state.confirmDelete?.id,
                     CONFIRM_NAME to state.confirmDelete?.name,
@@ -207,6 +218,7 @@ class TodoListScreenState {
                             (saved[SHEET_DAY] as Long?)?.let(LocalDate::ofEpochDay)
                         )
                     }
+                    clockSheet = saved[CLOCK_MINUTE] as Int?
                     tearingId = saved[TEARING] as String?
                     (saved[CONFIRM_ID] as String?)?.let { id ->
                         confirmDelete = ConfirmDeleteRequest(

@@ -30,6 +30,15 @@ data class DatePickerRequest(
     val initial: LocalDate?
 )
 
+/**
+ * Which list's clock is open and what minute-of-day to pre-ring on it. Kept in
+ * screen state so a rotation does not close the clock mid-pick.
+ */
+data class ClockPickerRequest(
+    val listId: String,
+    val initialMinuteOfDay: Int
+)
+
 data class RenameState(
     val listId: String,
     val name: String,
@@ -61,6 +70,8 @@ class TodoListsScreenState {
     var addRowSelection by mutableStateOf(DateSelection.None)
 
     var datePickerRequest by mutableStateOf<DatePickerRequest?>(null)
+
+    var clockPickerRequest by mutableStateOf<ClockPickerRequest?>(null)
 
     var rename by mutableStateOf<RenameState?>(null)
 
@@ -155,6 +166,10 @@ class TodoListsScreenState {
             outState.putString(PICKER_KIND, request.kind.name)
             request.initial?.let { outState.putLong(PICKER_DAY, it.toEpochDay()) }
         }
+        clockPickerRequest?.let { req ->
+            outState.putString(CLOCK_LIST_ID, req.listId)
+            outState.putInt(CLOCK_MINUTE, req.initialMinuteOfDay)
+        }
         rename?.let { open ->
             outState.putString(RENAME_ID, open.listId)
             outState.putString(RENAME_NAME, open.name)
@@ -190,6 +205,12 @@ class TodoListsScreenState {
                 kind = savedInstanceState.getString(PICKER_KIND)?.let(DateKind::valueOf)
                     ?: DateKind.TARGET,
                 initial = savedInstanceState.dayOrNull(PICKER_DAY)
+            )
+        }
+        savedInstanceState.getString(CLOCK_LIST_ID)?.let { listId ->
+            clockPickerRequest = ClockPickerRequest(
+                listId = listId,
+                initialMinuteOfDay = savedInstanceState.getInt(CLOCK_MINUTE, 0)
             )
         }
         val renamedId = savedInstanceState.getString(RENAME_ID) ?: return
@@ -237,6 +258,8 @@ private const val CONFIRM_CASCADE = "lists-confirm-cascade"
 private const val PICKER_TARGET = "lists-picker-target"
 private const val PICKER_KIND = "lists-picker-kind"
 private const val PICKER_DAY = "lists-picker-day"
+private const val CLOCK_LIST_ID = "lists-clock-list-id"
+private const val CLOCK_MINUTE = "lists-clock-minute"
 private const val ADD_OPEN = "lists-add-open"
 private const val ADD_TEXT = "lists-add-text"
 private const val ADD_KIND = "lists-add-kind"

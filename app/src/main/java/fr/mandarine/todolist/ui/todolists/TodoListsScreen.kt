@@ -102,6 +102,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.PaperFocusMark
+import fr.mandarine.todolist.ui.paper.ReminderClockPickerDialog
 import fr.mandarine.todolist.ui.paper.ReminderSettingsDialog
 
 private const val HEAD_KEY = "head"
@@ -153,7 +154,8 @@ fun TodoListsScreen(
     onReorder: (List<String>) -> Unit,
     onDueDateSet: (ReminderNote) -> Unit = {},
     reminderTime: LocalTime = LocalTime.of(8, 0),
-    onSetReminderTime: (Int) -> Unit = {}
+    onSetReminderTime: (Int) -> Unit = {},
+    onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> }
 ) {
     val content = state as? TodoListsState.Content
     val rawActiveSummaries = content?.activeSummaries.orEmpty()
@@ -530,6 +532,13 @@ fun TodoListsScreen(
                 if (owed) {
                     reminderNoteFor(screenState, state, request, date)?.let(onDueDateSet)
                 }
+                val rowTarget = request.target as? DateTarget.Row
+                if (rowTarget != null) {
+                    val list = listOnPage(state, rowTarget.listId)
+                    val initMinute = list?.reminderTime?.let { t -> t.hour * 60 + t.minute }
+                        ?: (reminderTime.hour * 60 + reminderTime.minute)
+                    screenState.clockPickerRequest = ClockPickerRequest(rowTarget.listId, initMinute)
+                }
             },
             onKindAsked = { kind -> screenState.datePickerRequest = request.copy(kind = kind) },
             onKindChange = { kind ->
@@ -549,6 +558,26 @@ fun TodoListsScreen(
                 }
                 screenState.datePickerRequest = null
             }
+        )
+    }
+
+    val clockReq = screenState.clockPickerRequest
+    if (clockReq != null) {
+        val clockList = listOnPage(state, clockReq.listId)
+        ReminderClockPickerDialog(
+            currentMinuteOfDay = clockReq.initialMinuteOfDay,
+            onMinuteOfDayPicked = { minuteOfDay ->
+                onSetListReminderTime(clockReq.listId, minuteOfDay)
+                screenState.clockPickerRequest = null
+            },
+            onDismiss = { screenState.clockPickerRequest = null },
+            animated = screenState.animationsEnabled,
+            onRubOut = if (clockList?.reminderTime != null) {
+                {
+                    onSetListReminderTime(clockReq.listId, null)
+                    screenState.clockPickerRequest = null
+                }
+            } else null
         )
     }
 
