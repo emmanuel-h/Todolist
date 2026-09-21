@@ -4,6 +4,7 @@ import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListRepository
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * The Room-backed [TodoListRepository]. Maps [TodoListEntity] to and from
@@ -29,7 +30,8 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
             val dueDate = entity.dueDate?.let { LocalDate.ofEpochDay(it) }
             val targetDate = if (dueDate == null) entity.targetDate?.let { LocalDate.ofEpochDay(it) } else null
             val colour = ListColour.named(entity.colour)
-            TodoList(entity.id, entity.name, entity.position, targetDate, dueDate, colour)
+            val reminderTime = entity.reminderMinute?.let { LocalTime.of(it / 60, it % 60) }
+            TodoList(entity.id, entity.name, entity.position, targetDate, dueDate, reminderTime, colour)
         }
 
     override fun add(todoList: TodoList) {
@@ -41,7 +43,7 @@ class RoomTodoListRepository(private val dao: TodoListDao) : TodoListRepository 
     }
 
     private fun toEntity(todoList: TodoList) =
-        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay(), todoList.colour.name)
+        TodoListEntity(todoList.id, todoList.name, todoList.position, todoList.targetDate?.toEpochDay(), todoList.dueDate?.toEpochDay(), todoList.reminderTime?.let { it.toSecondOfDay() * 60 }, todoList.colour.name)
 
     /**
      * The list and everything on it go in one transaction. Two statements meant a

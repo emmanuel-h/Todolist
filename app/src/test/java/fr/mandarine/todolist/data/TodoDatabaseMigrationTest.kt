@@ -65,6 +65,7 @@ class TodoDatabaseMigrationTest {
         assertEquals(0, list.position)
         assertNull(list.targetDate)
         assertNull(list.dueDate)
+        assertNull(list.reminderMinute)
         assertEquals("None", list.colour)
         assertEquals(false, item.completed)
         assertNull(item.completedAt)
@@ -77,7 +78,7 @@ class TodoDatabaseMigrationTest {
 
         val database = TodoDatabase.getInstance(context).also { opened = it }
         offMainThread {
-            database.todoListDao().insert(TodoListEntity("second", "chores", 1, null, null, "Blue"))
+            database.todoListDao().insert(TodoListEntity("second", "chores", 1, null, null, null, "Blue"))
             database.todoItemDao().insert(TodoItemEntity("i2", "sweep", "second", true, 42L, 3))
         }
 
