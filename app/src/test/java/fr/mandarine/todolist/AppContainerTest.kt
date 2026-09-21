@@ -6,6 +6,8 @@ import fr.mandarine.todolist.data.RoomTodoListRepository
 import fr.mandarine.todolist.data.RoomTodoRepository
 import fr.mandarine.todolist.data.SharedPreferencesReminderTimeRepository
 import fr.mandarine.todolist.data.WorkManagerNotificationScheduler
+import fr.mandarine.todolist.domain.SetListReminderTimeUseCase
+import fr.mandarine.todolist.domain.SyncDailyChecksUseCase
 import fr.mandarine.todolist.domain.SystemClock
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,6 +41,16 @@ class AppContainerTest {
     @Test
     fun `should wire shared preferences reminder time repository by default`() {
         assertTrue(application.container.reminderTimeRepository is SharedPreferencesReminderTimeRepository)
+    }
+
+    @Test
+    fun `should wire set-list-reminder-time use case by default`() {
+        assertTrue(application.container.setListReminderTimeUseCase is SetListReminderTimeUseCase)
+    }
+
+    @Test
+    fun `should wire sync-daily-checks use case by default`() {
+        assertTrue(application.container.syncDailyChecksUseCase is SyncDailyChecksUseCase)
     }
 
 }

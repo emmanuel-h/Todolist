@@ -20,6 +20,7 @@ import fr.mandarine.todolist.presentation.TodoListState
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import fr.mandarine.todolist.ui.paper.PaperTheme
+import fr.mandarine.todolist.ui.paper.ReminderClockPickerDialog
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.ListDatePickerDialog
 import fr.mandarine.todolist.ui.paper.SectionSkip
@@ -366,6 +367,34 @@ class IconOnlyUiTest {
         composeRule.onNodeWithText("and the 5 items on it").assertIsDisplayed()
     }
 
+    /**
+     * "Rub out" appears on the per-list clock only when the list already has its
+     * own reminder time — it is the route to clearing that time and falling back to
+     * the app-wide hour. The masthead clock (app-wide setting) never carries it.
+     */
+    @Test
+    fun `should draw the rub out button on the clock when the list has its own time`() {
+        composeRule.setContent { PaperTheme { ClockWithOwnTime() } }
+
+        composeRule.onNodeWithContentDescription(RUB_OUT_LABEL).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should not draw the rub out button on the clock when the list follows the app-wide hour`() {
+        composeRule.setContent { PaperTheme { ClockWithoutOwnTime() } }
+
+        composeRule.onNodeWithContentDescription(RUB_OUT_LABEL).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should not draw the rub out button on the app-wide reminder settings clock`() {
+        composeRule.setContent { PaperTheme { ListsScreenWithSettingsOpen() } }
+
+        composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
+
+        composeRule.onNodeWithContentDescription(RUB_OUT_LABEL).assertDoesNotExist()
+    }
+
     private companion object {
         const val LIST_NAME = "Groceries"
         const val ITEM_TITLE = "Apples"
@@ -389,6 +418,7 @@ class IconOnlyUiTest {
         const val MORNING_LABEL = "Morning"
         const val AFTERNOON_LABEL = "Afternoon"
         const val REMOVE_DATE_LABEL = "Remove"
+        const val RUB_OUT_LABEL = "Rub out"
     }
 }
 
@@ -537,6 +567,28 @@ private fun DatePickerWithoutDate() {
         onKindAsked = {},
         onKindChange = {},
         onCleared = {}
+    )
+}
+
+@Composable
+private fun ClockWithOwnTime() {
+    ReminderClockPickerDialog(
+        currentMinuteOfDay = 12 * 60,
+        onMinuteOfDayPicked = {},
+        onDismiss = {},
+        animated = false,
+        onRubOut = {}
+    )
+}
+
+@Composable
+private fun ClockWithoutOwnTime() {
+    ReminderClockPickerDialog(
+        currentMinuteOfDay = 8 * 60,
+        onMinuteOfDayPicked = {},
+        onDismiss = {},
+        animated = false,
+        onRubOut = null
     )
 }
 

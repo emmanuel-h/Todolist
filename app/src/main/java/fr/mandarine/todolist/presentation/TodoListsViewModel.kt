@@ -9,6 +9,8 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import fr.mandarine.todolist.domain.SetListReminderTimeUseCase
+import fr.mandarine.todolist.domain.SyncDailyChecksUseCase
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +56,9 @@ class TodoListsViewModel(
     private val getTodoListsWithStatusUseCase: GetTodoListsWithStatusUseCase,
     private val reorderTodoListsUseCase: ReorderTodoListsUseCase,
     private val dispatcher: CoroutineDispatcher,
-    private val writeScope: CoroutineScope? = null
+    private val writeScope: CoroutineScope? = null,
+    private val setListReminderTimeUseCase: SetListReminderTimeUseCase,
+    private val syncDailyChecksUseCase: SyncDailyChecksUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<TodoListsState>(TodoListsState.Empty)
@@ -102,6 +106,13 @@ class TodoListsViewModel(
 
     fun reorderLists(orderedActiveIds: List<String>) {
         applyAndPublish { reorderTodoListsUseCase(orderedActiveIds) }
+    }
+
+    fun setListReminderTime(listId: String, minuteOfDay: Int?) {
+        applyAndPublish {
+            setListReminderTimeUseCase(listId, minuteOfDay)
+            syncDailyChecksUseCase()
+        }
     }
 
     /**

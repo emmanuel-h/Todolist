@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.domain
 
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * One list in the notebook.
@@ -28,8 +29,12 @@ data class TodoList(
     val position: Int = 0,
     val targetDate: LocalDate? = null,
     val dueDate: LocalDate? = null,
+    val reminderTime: LocalTime? = null,
     val colour: ListColour = ListColour.None
 ) {
+    val reminderSlot: ReminderSlot
+        get() = if (reminderTime == null) ReminderSlot.AppWide else ReminderSlot.At(reminderTime)
+
     init {
         require(targetDate == null || dueDate == null) {
             "A list cannot have both a target date and a due date"
