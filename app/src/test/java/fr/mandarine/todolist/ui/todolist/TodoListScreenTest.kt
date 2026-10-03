@@ -286,10 +286,10 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should carry an edit and delete button alongside the ring on an active row`() {
+    fun `should carry only a delete button alongside the ring on an active row`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        assertEquals(listOf(MARK_COMPLETED, EDIT, DELETE, BACK, ADD_ITEM_LABEL), descriptions())
+        assertEquals(listOf(MARK_COMPLETED, DELETE, BACK, ADD_ITEM_LABEL), descriptions())
     }
 
     @Test
@@ -849,13 +849,13 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should open the editor on an item when its edit button is pressed`() {
+    fun `should name the edit as the action of a press on the words`() {
         render(content(active = listOf(item("1", "Apples"))))
 
-        composeRule.onNodeWithContentDescription(EDIT).performClick()
-        composeRule.waitForIdle()
+        val press = composeRule.onNodeWithText("Apples").fetchSemanticsNode()
+            .config[SemanticsActions.OnClick]
 
-        assertEquals("1", screenState.editingItemId)
+        assertEquals(EDIT, press.label)
     }
 
     @Test
