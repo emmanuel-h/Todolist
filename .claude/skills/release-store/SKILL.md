@@ -1,11 +1,11 @@
 ---
 name: release-store
-description: Automate the full Todolist release workflow — bump semver, build signed AAB, create GitHub release, upload artifact. Use when the user wants to publish a new version to the Play Store.
+description: Automate the full Todolist release workflow — bump semver, optionally reshoot the store screenshots in English and French, build the signed AAB, create the GitHub release, and publish the bundle, release notes and screenshots to Google Play. Use when the user wants to publish a new version to the Play Store.
 argument-hint: "[major|minor|hotfix]  (default: minor)"
-allowed-tools: Bash Read Edit Glob Grep Write
+allowed-tools: Bash Read Edit Glob Grep Write AskUserQuestion
 ---
 
-Automate the full Todolist release workflow.
+Automate the full Todolist release workflow, from version bump to Google Play.
 
 ## Input
 
@@ -16,7 +16,7 @@ Default to `minor` if the argument is absent or unrecognised.
 
 ## Step 1 — Parse the release type
 
-```
+```bash
 RELEASE_TYPE="${ARGUMENTS:-minor}"
 if [[ "$RELEASE_TYPE" != "major" && "$RELEASE_TYPE" != "minor" && "$RELEASE_TYPE" != "hotfix" ]]; then
   RELEASE_TYPE="minor"
@@ -38,83 +38,146 @@ echo "Current: versionCode=$CURRENT_CODE  versionName=$CURRENT_NAME"
 
 ## Step 3 — Calculate the next version
 
-Split `CURRENT_NAME` on `.` into MAJOR, MINOR, and PATCH components.
-PATCH defaults to 0 if the current name has only two parts.
-
 ```bash
 IFS='.' read -r VER_MAJOR VER_MINOR VER_PATCH <<< "$CURRENT_NAME"
 VER_PATCH="${VER_PATCH:-0}"
 
 case "$RELEASE_TYPE" in
-  major)
-    VER_MAJOR=$((VER_MAJOR + 1))
-    VER_MINOR=0
-    VER_PATCH=0
-    ;;
-  minor)
-    VER_MINOR=$((VER_MINOR + 1))
-    VER_PATCH=0
-    ;;
-  hotfix)
-    VER_PATCH=$((VER_PATCH + 1))
-    ;;
+  major)  VER_MAJOR=$((VER_MAJOR + 1)); VER_MINOR=0; VER_PATCH=0 ;;
+  minor)  VER_MINOR=$((VER_MINOR + 1)); VER_PATCH=0 ;;
+  hotfix) VER_PATCH=$((VER_PATCH + 1)) ;;
 esac
 
 NEW_CODE=$((CURRENT_CODE + 1))
 NEW_NAME="${VER_MAJOR}.${VER_MINOR}.${VER_PATCH}"
-
 echo "Next:    versionCode=$NEW_CODE  versionName=$NEW_NAME"
 ```
 
 ---
 
-## Step 4 — Confirm with the user
+## Step 4 — Preflight: the Play service account key
 
-Show the user the planned version bump before touching any file:
-
-```
-Current version : $CURRENT_NAME  (code $CURRENT_CODE)
-Next version    : $NEW_NAME      (code $NEW_CODE)
-Release type    : $RELEASE_TYPE
+```bash
+PLAY_KEY="${PLAY_SERVICE_ACCOUNT:-$HOME/.config/todolist/play-service-account.json}"
+test -f "$PLAY_KEY" && echo "Play key: $PLAY_KEY" || echo "MISSING Play key: $PLAY_KEY"
 ```
 
-Ask: **"Proceed with this version bump and release? (yes/no)"**
-
-If the user says no, stop and let them specify the correct release type.
+If the key is missing, **stop before changing anything**. Tell the user the one-time
+setup in `store-assets/README.md` ("Publishing to Google Play") has not been done, and
+point them at it. Never look for the key anywhere else, and never print its contents.
 
 ---
 
-## Step 5 — Patch `app/build.gradle.kts`
+## Step 5 — Ask the user three questions
+
+Ask all three in **one** `AskUserQuestion` call. Every option carries a `preview` that
+shows what that choice produces (the user's global instructions require it on every
+option).
+
+1. **Version** — "Proceed with $CURRENT_NAME (code $CURRENT_CODE) → $NEW_NAME (code
+   $NEW_CODE)?" Options: the computed bump (Recommended), the two other release types
+   with their resulting numbers, and "Don't release". Preview: the `build.gradle.kts`
+   diff and the tag.
+2. **Track** — "Which Play track does $NEW_NAME go to?" Options: `production`
+   (Recommended — this is what the store users get, after Google's review) and
+   `internal` (internal testers only; promote it in the console later). Preview: who
+   receives the build.
+3. **Screenshots** — "Update the store screenshots?" Options: "Yes — reshoot in English
+   and French" and "No — keep the current listing images". Preview: for yes, the 22
+   files under `store-assets/screenshots/{en-US,fr-FR}/` that get regenerated and
+   replace the Play listing's phone, 7-inch and 10-inch slots in both languages; for
+   no, "listing images unchanged".
+
+If the user picks "Don't release", stop. If they pick a different release type,
+recompute Step 3 with it.
+
+---
+
+## Step 6 — Patch `app/build.gradle.kts`
 
 ```bash
 sed -i "s/versionCode\s*=\s*${CURRENT_CODE}/versionCode = ${NEW_CODE}/" app/build.gradle.kts
 sed -i "s/versionName\s*=\s*\"${CURRENT_NAME}\"/versionName = \"${NEW_NAME}\"/" app/build.gradle.kts
-```
-
-Verify:
-
-```bash
 grep -E 'versionCode|versionName' app/build.gradle.kts
 ```
 
 ---
 
-## Step 6 — Build the signed App Bundle
+## Step 7 — Reshoot the screenshots (only if the user said yes)
+
+Skip this whole step if the user chose not to update the screenshots.
+
+**7a. An emulator.** Use a running one if `adb devices` lists an `emulator-*`;
+otherwise boot the phone AVD (the README explains why it is the phone AVD, resized):
+
+```bash
+export ANDROID_HOME=~/Android/Sdk
+ADB=$ANDROID_HOME/platform-tools/adb
+DEV=$($ADB devices | awk '/^emulator-/{print $1; exit}')
+if [ -z "$DEV" ]; then
+  $ANDROID_HOME/emulator/emulator -avd Medium_Phone_API_36.1 -no-snapshot-save >/dev/null 2>&1 &
+  $ADB wait-for-device
+  until [ "$($ADB shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
+  DEV=$($ADB devices | awk '/^emulator-/{print $1; exit}')
+fi
+echo "Device: $DEV"
+```
+
+(Start the emulator with `run_in_background` rather than `&` if the shell will not
+leave it running.)
+
+**7b. Move the demo "today" to today**, so the amber due-today row is amber and no
+date has drifted into the past:
+
+```bash
+TODAY_EPOCH=$(( $(date -u -d "$(date +%F)" +%s) / 86400 ))
+sed -i -E "s/^TODAY = [0-9]+  # .*/TODAY = ${TODAY_EPOCH}  # $(date +%F)/" store-assets/tools/make-demo-database.py
+grep -n '^TODAY' store-assets/tools/make-demo-database.py
+```
+
+**7c. Install the build and reshoot both languages:**
+
+```bash
+./gradlew installDebug
+python3 store-assets/tools/reshoot-store.py "$DEV"
+```
+
+If the demo database fails with a Room crash on screen, the schema moved: update
+`IDENTITY`, the `CREATE TABLE` statements and `PRAGMA user_version` in
+`make-demo-database.py` from the newest `app/schemas/…/<n>.json`, and run 7c again.
+
+**7d. Look at every screenshot before going further.** `reshoot-store.py` cannot tell
+a good capture from a bad one. Read all five phone shots per language, and a contact
+sheet of the tablet shots, and check each one for:
+- the app's page, not the splash screen (the logo alone, or the logo fading over the list)
+- no crash dialog, no notification glyph in the status bar
+- the right language: English names and "Oct 5" dates under `en-US/`, French names and
+  "5 oct." dates under `fr-FR/`
+
+If any shot fails, fix the cause and run 7c again. Never publish a set you have not seen.
+
+**7e. Commit the screenshots** (and the moved `TODAY`):
+
+```bash
+git add store-assets/screenshots store-assets/tools/make-demo-database.py
+git commit -m "chore: reshoot the store for ${NEW_NAME}"
+```
+
+---
+
+## Step 8 — Build the signed App Bundle
 
 ```bash
 ./gradlew bundleRelease
 ```
 
-The output artifact will be at:
-```
-app/build/outputs/bundle/release/app-release.aab
-```
-
-If the build fails, show the error output to the user and stop.
+Outputs: `app/build/outputs/bundle/release/app-release.aab` and
+`app/build/outputs/mapping/release/mapping.txt`. If the build fails, show the error and
+stop.
 
 ---
 
-## Step 7 — Commit and push the version bump
+## Step 9 — Commit and push the version bump
 
 ```bash
 git add app/build.gradle.kts
@@ -124,115 +187,102 @@ git push
 
 ---
 
-## Step 8 — Create the GitHub release and upload the artifact
+## Step 10 — Create the GitHub release
+
+The GitHub release is the archive of every bundle and mapping file shipped.
 
 ```bash
 TAG="v${NEW_NAME}"
-
-gh release create "$TAG" \
-  --title "$TAG" \
-  --generate-notes
-
-gh release upload "$TAG" \
-  "app/build/outputs/bundle/release/app-release.aab" \
-  --clobber
-
-gh release upload "$TAG" \
-  "app/build/outputs/mapping/release/mapping.txt" \
-  --clobber
+gh release create "$TAG" --title "$TAG" --generate-notes
+gh release upload "$TAG" app/build/outputs/bundle/release/app-release.aab --clobber
+gh release upload "$TAG" app/build/outputs/mapping/release/mapping.txt --clobber
 ```
 
 ---
 
-## Step 9 — Generate Play Store release notes and copy to clipboard
+## Step 11 — Write the Play release notes
 
-Get all commits since the last release tag (feat/fix only):
+List what changed since the previous release. This repository's commit subjects are
+mostly plain sentences without `feat:`/`fix:` prefixes, so read them all and drop only
+the dependency bumps:
 
 ```bash
 PREV_TAG=$(gh release list --limit 2 --json tagName --jq '.[1].tagName')
-git log "${PREV_TAG}..HEAD" --oneline --no-merges \
-  | grep -E '^[a-f0-9]+ (feat|fix)' \
-  | sed 's/^[a-f0-9]* //' \
-  | sed 's/^(feat|fix)(\([^)]*\))?!?:\s*//'
+git log "${PREV_TAG}..HEAD" --oneline --no-merges | grep -vE '^[a-f0-9]+ chore\(deps\)'
 ```
 
-**Rewrite those raw commit subjects into user-facing release notes.** Do NOT copy commit messages verbatim.
+**Rewrite them into user-facing release notes.** Do NOT copy commit messages verbatim.
 
 Rules:
 - Describe **what the user can now do or what changed from their perspective**.
-- Use **plain language** (no conventional-commit prefixes).
-- Use **imperative style** ("Add …", "Fix …", "Improve …").
+- Use **plain language**, **imperative style** ("Add …", "Fix …", "Improve …").
 - Merge commits that describe the same end-user change into a single bullet.
-- Omit changes with zero visible impact (refactors, CI changes, test improvements, build system changes).
+- Omit changes with zero visible impact (refactors, CI, tests, build, store assets).
 - If all changes are purely technical, use a single generic line instead:
   - French: `- Améliorations internes et corrections mineures.`
   - English: `- Internal improvements and minor fixes.`
 
 ### The 500-character limit
 
-**Play Console rejects any language whose notes exceed 500 characters**, with
-`La note de version pour fr-FR est trop longue`. The limit is per language and counts the
-body only, not the `<fr-FR>` tags.
-
-French runs 15–25% longer than the same English, so **French is the block that blows the
-budget**. Write French first and let its length decide how much detail every bullet carries;
-an English block that fits proves nothing about the French one.
-
-Aim for **≤ 460 characters** per language — headroom, because a late wording change is
-cheaper than a rejected upload. That is roughly **8 bullets of one line each**.
+**Play rejects any language whose notes exceed 500 characters.** The limit is per
+language. French runs 15–25% longer than the same English, so **write French first**
+and let its length decide how much detail every bullet carries. Aim for **≤ 460
+characters** per language — roughly 8 one-line bullets.
 
 When over budget, cut in this order:
-1. **Qualifiers before bullets** — "even on a long list", "in five-minute steps",
-   "including the items on a list". The change survives; the elaboration goes.
-2. **Bullets describing an absence** — a removed tour or a deleted gesture is nothing the
-   user can go looking for.
-3. **Whole bullets**, least visible first. Never merge two unrelated changes into one
-   comma-spliced line to save characters; that costs more clarity than it saves space.
+1. **Qualifiers before bullets** — the change survives; the elaboration goes.
+2. **Bullets describing an absence** — a removed control is nothing to go looking for.
+3. **Whole bullets**, least visible first. Never comma-splice two unrelated changes.
 
-### Write, measure, then copy
+### Write and measure
 
-Write each language body to its own file in your scratchpad directory and **measure before
-copying** — never copy an unmeasured block.
+The file names are the Play language codes — `publish-play.py` reads them as such.
 
 ```bash
-SCRATCH="<your scratchpad directory>"
-
-cat > "$SCRATCH/fr.txt" <<'EOF'
+NOTES="<your scratchpad directory>/notes"
+mkdir -p "$NOTES"
+cat > "$NOTES/fr-FR.txt" <<'EOF'
 - …
 EOF
-
-cat > "$SCRATCH/en.txt" <<'EOF'
+cat > "$NOTES/en-US.txt" <<'EOF'
 - …
 EOF
-
-wc -m "$SCRATCH/fr.txt" "$SCRATCH/en.txt"
+wc -m "$NOTES/fr-FR.txt" "$NOTES/en-US.txt"
 ```
 
-If either count exceeds 500, trim by the order above and measure again. Only once both are
-under the limit, assemble the tagged block and copy it:
-
-```bash
-{ echo "<fr-FR>"; cat "$SCRATCH/fr.txt"; echo "</fr-FR>"; echo;
-  echo "<en-US>"; cat "$SCRATCH/en.txt"; echo "</en-US>"; } > "$SCRATCH/notes.txt"
-
-WAYLAND_DISPLAY=wayland-0 wl-copy < "$SCRATCH/notes.txt"
-```
-
-Display the notes to the user with **both character counts**, confirm they are in the
-clipboard, and say what was cut to fit if anything was.
+If either exceeds 500, trim by the order above and measure again. (`publish-play.py`
+refuses over-long notes too, but catch it here.)
 
 ---
 
-## Step 10 — Display the artifact download URL
+## Step 12 — Publish to Google Play
+
+One edit, one commit: the bundle, its mapping, the release on the chosen track with both
+languages' notes, and — only if the user said yes in Step 5 — the screenshots.
 
 ```bash
-gh release view "$TAG" --json assets \
-  --jq '.assets[] | select(.name | endswith(".aab")) | .url'
+python3 store-assets/tools/publish-play.py \
+  --bundle app/build/outputs/bundle/release/app-release.aab \
+  --mapping app/build/outputs/mapping/release/mapping.txt \
+  --track "$TRACK" \
+  --release-name "$NEW_NAME" \
+  --notes-dir "$NOTES" \
+  $([ "$SCREENSHOTS" = yes ] && echo --screenshots)
 ```
 
-Display the URL clearly to the user. Also remind the user:
-- Upload the `.aab` to **Google Play Console → Production (or Internal testing) → Create new release**.
-- The same signing keystore must be used for every future release.
+On failure the script deletes the edit, so nothing half-done reaches the listing. Read
+the error it prints:
+- **"Changes cannot be sent for review automatically"** — the app is set to need a
+  manual send. Re-run with `--changes-not-sent-for-review`, then tell the user to press
+  *Send for review* under *Publishing overview* in the Play Console.
+- **"version code … already been used"** — this version code is already on Play. Do not
+  bump again on your own; report it to the user.
+- **401 / 403 on sign-in or on the first call** — the service account is missing its
+  Play Console permissions; point the user at the README setup.
+
+Any other failure: show the error and stop. Never retry blindly; the GitHub release is
+already made and the version is already pushed, so a re-run of this step alone is all
+that is needed once the cause is fixed.
 
 ---
 
@@ -240,8 +290,12 @@ Display the URL clearly to the user. Also remind the user:
 
 ```
 ✓ Version bumped  : $CURRENT_NAME (code $CURRENT_CODE) → $NEW_NAME (code $NEW_CODE)
+✓ Screenshots     : reshot in en-US and fr-FR (22) | unchanged
 ✓ AAB built       : app/build/outputs/bundle/release/app-release.aab
 ✓ GitHub release  : https://github.com/emmanuel-h/Todolist/releases/tag/$TAG
-✓ Download URL    : <url from step 10>
-✓ Release notes   : copied to clipboard
+✓ Google Play     : $NEW_NAME on the $TRACK track, sent for review
+✓ Release notes   : fr-FR <n> chars, en-US <n> chars
 ```
+
+Then show both release-note blocks, and say what was cut to fit if anything was.
+Google still reviews every release and listing change; it goes live when review passes.

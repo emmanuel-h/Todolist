@@ -16,3 +16,6 @@ local.properties
 # Keystore files — never commit signing keys to source control
 *.jks
 *.keystore
+
+# Play publishing service account key — lives in ~/.config/todolist/, never here
+*service-account*.json

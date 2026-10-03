@@ -69,6 +69,61 @@ if "--big" in sys.argv:
         ("Label every box", 0), ("Hand back the parking fob", 0),
         ("Book the lift", 1), ("Buy tape", 1), ("Count the keys", 1)])
 
+FRENCH = {
+    "Groceries": "Courses", "Milk": "Lait", "Bread": "Pain", "Eggs": "Œufs",
+    "Coffee beans": "Café en grains", "Olive oil": "Huile d'olive", "Lemons": "Citrons",
+    "Weekend trip": "Week-end", "Book the train": "Réserver le train",
+    "Pack a raincoat": "Prendre un imper", "Charge the camera": "Charger l'appareil",
+    "Find the tent": "Trouver la tente", "Print the tickets": "Imprimer les billets",
+    "Birthday party": "Anniversaire", "Order the cake": "Commander le gâteau",
+    "Send the invitations": "Envoyer les invitations", "Borrow chairs": "Emprunter des chaises",
+    "Make a playlist": "Faire une playlist", "Buy candles": "Acheter des bougies",
+    "Book the room": "Réserver la salle",
+    "Reading list": "À lire", "Piranesi": "Piranesi", "The Overstory": "L'Arbre-monde",
+    "A Pale View of Hills": "Lumière pâle sur les collines",
+    "Tokyo Ueno Station": "Sous le ciel de Tokyo",
+    "Apartment move": "Déménagement", "Call the movers": "Appeler les déménageurs",
+    "Change the address": "Changer d'adresse", "Return the keys": "Rendre les clés",
+    "Box up the kitchen": "Emballer la cuisine", "Cancel the internet": "Résilier la box",
+    "Measure the sofa": "Mesurer le canapé", "Redirect the post": "Faire suivre le courrier",
+    "Read the meters": "Relever les compteurs", "Defrost the freezer": "Dégivrer le congélateur",
+    "Label every box": "Étiqueter les cartons", "Hand back the parking fob": "Rendre le badge du parking",
+    "Book the lift": "Réserver l'ascenseur", "Buy tape": "Acheter du scotch",
+    "Count the keys": "Compter les clés",
+    "Guitar practice": "Guitare", "Learn the bridge": "Apprendre le pont",
+    "Restring it": "Changer les cordes", "Tune by ear": "Accorder à l'oreille",
+    "Chord chart": "Grille d'accords",
+    "Home office setup": "Bureau à la maison", "Order the lamp": "Commander la lampe",
+    "Hang the shelf": "Poser l'étagère", "Route the cables": "Ranger les câbles",
+    "Bike service": "Révision du vélo", "New brake pads": "Plaquettes de frein",
+    "Straighten the wheel": "Dévoiler la roue",
+    "Garden jobs": "Jardin", "Repot the basil": "Rempoter le basilic",
+    "Buy compost": "Acheter du terreau", "Fix the water timer": "Réparer le programmateur",
+    "Prune the olive": "Tailler l'olivier",
+    "Tax paperwork": "Impôts", "Find last year's return": "Retrouver la déclaration",
+    "Scan the receipts": "Scanner les reçus", "Email the accountant": "Écrire au comptable",
+    "Sunday cooking": "Cuisine du dimanche", "Sourdough starter": "Levain",
+    "Roast the peppers": "Griller les poivrons",
+    "Camera bag": "Sac photo", "Spare batteries": "Batteries de rechange",
+    "Lens cloth": "Chiffon", "SD cards": "Cartes SD", "Rain cover": "Housse de pluie",
+    "Flat repairs": "Travaux", "Silicone the bath": "Refaire le joint de la baignoire",
+    "Bleed the radiators": "Purger les radiateurs", "Draught strip": "Joint de porte",
+    "Replace the fuse box cover": "Changer le capot du tableau", "Sand the door": "Poncer la porte",
+    "Language study": "Cours d'italien", "Chapter 7 exercises": "Exercices du chapitre 7",
+    "Twenty new words": "Vingt mots nouveaux",
+    "Winter clothes": "Vêtements d'hiver", "Wash the coats": "Laver les manteaux",
+    "Reproof the shell": "Réimperméabiliser la veste", "Mend the gloves": "Repriser les gants",
+    "Passport renewal": "Passeport", "Photo booth": "Photomaton",
+    "Fill the form": "Remplir le formulaire", "Post the old one": "Envoyer l'ancien",
+    "Loft clear-out": "Grenier", "Sort the boxes": "Trier les cartons",
+    "Book the tip run": "Aller à la déchetterie", "Sell the old desk": "Vendre le vieux bureau",
+}
+
+if "--fr" in sys.argv:
+    LISTS = [(lid, FRENCH[name], target, due, colour,
+              [(FRENCH[title], completed) for title, completed in items])
+             for lid, name, target, due, colour, items in LISTS]
+
 db = sqlite3.connect(OUT)
 c = db.cursor()
 c.execute("CREATE TABLE IF NOT EXISTS `todo_lists` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `position` INTEGER NOT NULL, `targetDate` INTEGER, `dueDate` INTEGER, `reminderMinute` INTEGER, `colour` TEXT NOT NULL, PRIMARY KEY(`id`))")

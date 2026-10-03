@@ -17,7 +17,7 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SHOT = os.path.join(HERE, "..", "screenshots", "phone-01-lists.png")
+SHOT = os.path.join(HERE, "..", "screenshots", "en-US", "phone-01-lists.png")
 SANS = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"
 SANS_TEXT = "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"
 

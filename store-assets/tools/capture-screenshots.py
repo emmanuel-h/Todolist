@@ -5,7 +5,9 @@
 
 A shot is one of: lists, items, date, and the -dark variant of each. The demo
 database comes from SEED_DIR (default: this directory) and is named by SEED_DB
-(default: todo_database) — see make-demo-database.py.
+(default: todo_database) — see make-demo-database.py. LOCALE (default: en-US)
+picks the app's language and the names the script looks for; the database has
+to be written in the same language (make-demo-database.py --fr for fr-FR).
 """
 import os, re, subprocess, sys, time
 
@@ -13,6 +15,13 @@ SDK = os.environ.get("ANDROID_HOME") or os.path.expanduser("~/Android/Sdk")
 ADB = f"{SDK}/platform-tools/adb"
 PKG = "fr.mandarine.todolist"
 SEED = os.environ.get("SEED_DIR", os.path.dirname(os.path.abspath(__file__)))
+LOCALE = os.environ.get("LOCALE", "en-US")
+WORDS = {
+    "en-US": {"first": "Groceries", "open": "Apartment move", "undated": "Reading list",
+              "give_a_day": "Give this list a day"},
+    "fr-FR": {"first": "Courses", "open": "Déménagement", "undated": "À lire",
+              "give_a_day": "Donner un jour à cette liste"},
+}[LOCALE]
 
 
 def sh(dev, *args, timeout=120):
@@ -81,6 +90,7 @@ def demo_mode(dev):
     b("-e command network -e wifi show -e level 4 -e fully true -e mobile hide -e airplane hide")
     b("-e command notifications -e visible false")
     shell(dev, f"pm revoke {PKG} android.permission.POST_NOTIFICATIONS")
+    shell(dev, f"cmd locale set-app-locales {PKG} --locales {LOCALE}")
     b("-e command status -e volume hide -e bluetooth hide -e location hide -e alarm hide"
       " -e sync hide -e tty hide -e eri hide -e mute hide -e speakerphone hide"
       " -e managed_profile hide -e zen hide -e vpn hide -e cast hide -e hotspot hide")
@@ -99,7 +109,7 @@ def seed(dev):
 def launch(dev):
     shell(dev, f"am start -n {PKG}/.ui.TodoListsActivity")
     for _ in range(30):
-        if find(dump(dev), text="Groceries") is not None:
+        if find(dump(dev), text=WORDS["first"]) is not None:
             break
         time.sleep(1)
     else:
@@ -128,7 +138,7 @@ def main():
 
         if f"items{tag}" in want:
             xml = dump(dev)
-            x, y = need(xml, text="Apartment move")
+            x, y = need(xml, text=WORDS["open"])
             shell(dev, f"input tap {x} {y}")
             time.sleep(3)
             screencap(dev, f"{outdir}/{prefix}-items{tag}.png")
@@ -137,8 +147,8 @@ def main():
 
         if f"date{tag}" in want:
             xml = dump(dev)
-            row = need(xml, text="Reading list")
-            cx, cy = need(xml, desc="Give this list a day", near=row)
+            row = need(xml, text=WORDS["undated"])
+            cx, cy = need(xml, desc=WORDS["give_a_day"], near=row)
             shell(dev, f"input tap {cx} {cy}")
             time.sleep(3)
             screencap(dev, f"{outdir}/{prefix}-date{tag}.png")
@@ -148,6 +158,7 @@ def main():
             time.sleep(1)
 
     shell(dev, "cmd uimode night no")
+    shell(dev, f"cmd locale set-app-locales {PKG} --locales ''")
     print("captured", prefix, "->", outdir)
 
 

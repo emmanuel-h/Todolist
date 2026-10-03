@@ -2,7 +2,7 @@
 
 Everything the Play Console listing needs, and the tooling that regenerates it.
 The screenshots were reshot on 2026-10-03 for the tightened row controls and the
-per-list reminder time; the rest was redrawn on 2026-09-06 for the row controls,
+per-list reminder time, and in French as well as English for the first time; the rest was redrawn on 2026-09-06 for the row controls,
 the date slot and the per-list colours. The 2026-08-27 set shows the page before
 those, and anything older in the history shows the retired Material 3 build.
 
@@ -14,12 +14,15 @@ listing/
   full-description-*.txt     en-US, fr-FR
   short-description-*.txt    en-US, fr-FR (80 characters is the Play ceiling)
 screenshots/
-  phone-0*.png               1080×1920
-  tablet-7/                  1200×1920
-  tablet-10/                 1600×2560
+  en-US/, fr-FR/             one set per listing language, named by Play's code
+    phone-0*.png             1080×1920
+    tablet-7/                1200×1920
+    tablet-10/               1600×2560
 tools/
   make-demo-database.py      writes the Room database the screenshots show
-  capture-screenshots.py     drives the app and takes the captures
+  capture-screenshots.py     drives the app and takes one language's captures
+  reshoot-store.py           runs both languages at every size into screenshots/
+  publish-play.py            uploads bundle, notes and screenshots to Google Play
 ```
 
 ## The high-res icon
@@ -54,24 +57,23 @@ so the phone AVD is resized instead — the app only ever sees the window it is
 given.
 
 ```bash
-export ANDROID_HOME=~/Android/Sdk
-D=emulator-5554
-
-python3 tools/make-demo-database.py tools/todo_database
-python3 tools/make-demo-database.py tools/todo_database_big --big
-
-adb -s $D shell wm size 1080x1920 && adb -s $D shell wm density 420
-python3 tools/capture-screenshots.py $D out/phone phone \
-    lists items date lists-dark items-dark
-
-adb -s $D shell wm size 1200x1920 && adb -s $D shell wm density 320
-SEED_DB=todo_database_big python3 tools/capture-screenshots.py $D out/tablet7 tablet7 \
-    lists items lists-dark
-
-adb -s $D shell wm size 1600x2560 && adb -s $D shell wm density 320
-SEED_DB=todo_database_big python3 tools/capture-screenshots.py $D out/tablet10 tablet10 \
-    lists items lists-dark
+./gradlew installDebug
+python3 store-assets/tools/reshoot-store.py emulator-5554
 ```
+
+`reshoot-store.py` writes the demo databases for each language, resizes the
+emulator to each form factor in turn, runs `capture-screenshots.py`, copies the
+captures to their final names under `screenshots/<language>/`, and puts the
+emulator's size and density back at the end. Look at every image before
+publishing: nothing in the run can tell a capture of the page from a capture of
+the splash screen.
+
+The French set is the same database with every list and item name translated
+(`make-demo-database.py --fr`), and the app switched to French on its own with
+`cmd locale set-app-locales` — the system language, and so the status bar, stays
+as it is. Dates, the 24-hour time and the Monday-first calendar follow from the
+app's locale. A new demo list or item needs its French in `FRENCH`, or the
+French run stops on a `KeyError`.
 
 The script pushes the demo database into the debug build's data directory with
 `run-as`. It also puts SystemUI into demo mode — 9:30, full battery, one wi-fi
@@ -95,6 +97,42 @@ in the screenshots will have drifted into the past.
 The demo database is written at the schema version the app is on — `IDENTITY` and
 `PRAGMA user_version` both have to match `app/schemas/…/<n>.json`, or Room throws
 on the first read and the capture run screenshots a crash.
+
+## Publishing to Google Play
+
+`tools/publish-play.py` talks to the Play Developer Publishing API: it uploads the
+bundle and its R8 mapping, releases it on a track with the notes in each language,
+and with `--screenshots` empties and refills the phone, 7-inch and 10-inch slots of
+every language under `screenshots/`. All of it goes into one edit committed once,
+and a failure deletes the edit, so the listing never shows half an update.
+`/release-store` runs it; `--dry-run` prints the calls without sending any, and
+`--validate-only` has Play check the edit and then throws it away.
+
+```bash
+python3 tools/publish-play.py --screenshots                # listing images alone
+python3 tools/publish-play.py --bundle … --mapping … --track production \
+    --release-name 2.2.0 --notes-dir notes/ [--screenshots]
+```
+
+It needs only `requests`, `PyJWT` and `cryptography`, which the system Python
+already has — no Google client library, no fastlane, no Ruby.
+
+### One-time setup
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), pick or create
+   a project and enable the **Google Play Android Developer API**.
+2. Under *IAM & Admin → Service accounts*, create a service account (no project
+   role needed), then *Keys → Add key → JSON*. Save the file as
+   `~/.config/todolist/play-service-account.json` and `chmod 600` it. Somewhere
+   else works too if `PLAY_SERVICE_ACCOUNT` points at it. Never in the repository —
+   `.gitignore` refuses `*service-account*.json` as a backstop.
+3. In the [Play Console](https://play.google.com/console/), *Users and permissions →
+   Invite new users*, invite the service account's e-mail address, and on the
+   app give it *Release to production…*, *Release apps to testing tracks* and
+   *Manage store presence*.
+4. Check it: `python3 tools/publish-play.py --screenshots --validate-only` signs in,
+   builds the edit, has Play validate it, and publishes nothing. A new invitation
+   can take a few minutes, occasionally longer, before the API accepts it.
 
 ## What the screenshots are chosen to show
 
