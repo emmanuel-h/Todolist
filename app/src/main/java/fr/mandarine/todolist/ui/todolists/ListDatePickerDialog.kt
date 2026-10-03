@@ -88,6 +88,7 @@ fun ListDatePickerDialog(
                 onKindChange = onKindChange,
                 onPickDate = onKindAsked,
                 onClearDate = { confirmClear = true },
+                ringsAskedKind = true,
                 trailing = { KindWords(kind = kind, modifier = Modifier.weight(1f)) }
             )
         }

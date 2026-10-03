@@ -63,7 +63,12 @@ internal fun kindPressOn(selection: DateSelection, pressed: DateKind): KindPress
  * way whether the list exists yet or not.
  *
  * With nothing written the rule is bare: neither glyph is ringed and nothing
- * trails them. A ring means a day, so a ring cannot appear before there is one.
+ * trails them. An ink ring means a day, so it cannot appear before there is one.
+ *
+ * The calendar sheet is the exception, through [ringsAskedKind]: it is open to
+ * write a day of one kind, and with both glyphs bare a reader could not tell which
+ * one they had pressed. There the asked-for kind is ringed in pencil — a ring
+ * that says which kind a press on the month will write, not that a day exists.
  *
  * What trails the glyphs is a slot, because the day is not always the useful thing
  * to write there. On a sheet that already shows the month, the day is written twice
@@ -76,6 +81,7 @@ fun RowScope.DateMarks(
     onKindChange: (DateKind) -> Unit,
     onPickDate: (DateKind) -> Unit,
     onClearDate: () -> Unit,
+    ringsAskedKind: Boolean = false,
     trailing: @Composable RowScope.() -> Unit = {
         WrittenDate(
             selection = selection,
@@ -95,7 +101,8 @@ fun RowScope.DateMarks(
         said = said,
         onKindChange = onKindChange,
         onPickDate = onPickDate,
-        onClearDate = onClearDate
+        onClearDate = onClearDate,
+        ringsAskedKind = ringsAskedKind
     )
     KindGlyph(
         iconRes = R.drawable.ic_alarm,
@@ -107,7 +114,8 @@ fun RowScope.DateMarks(
         said = said,
         onKindChange = onKindChange,
         onPickDate = onPickDate,
-        onClearDate = onClearDate
+        onClearDate = onClearDate,
+        ringsAskedKind = ringsAskedKind
     )
     trailing()
 }
@@ -123,17 +131,19 @@ private fun RowScope.KindGlyph(
     said: DateKindSaid,
     onKindChange: (DateKind) -> Unit,
     onPickDate: (DateKind) -> Unit,
-    onClearDate: () -> Unit
+    onClearDate: () -> Unit,
+    ringsAskedKind: Boolean
 ) {
     val palette = LocalPaperPalette.current
     val press = kindPressOn(selection, kind)
     val ringed = press == KindPress.RubItOut
+    val asked = ringsAskedKind && selection.date == null && selection.kind == kind
     Box(
         modifier = Modifier
             .align(Alignment.Bottom)
             .size(PaperDimens.iconButton)
             .selectable(
-                selected = ringed,
+                selected = ringed || asked,
                 role = Role.RadioButton,
                 onClick = {
                     when (press) {
@@ -156,7 +166,11 @@ private fun RowScope.KindGlyph(
         Box(
             modifier = Modifier
                 .size(RING_BOX)
-                .circledInInk(circled = ringed, seed = seed, color = palette.inked(InkTone.Acted)),
+                .circledInInk(
+                    circled = ringed || asked,
+                    seed = seed,
+                    color = palette.inked(if (ringed) InkTone.Acted else InkTone.Margin)
+                ),
             contentAlignment = Alignment.Center
         ) {
             InkIcon(
