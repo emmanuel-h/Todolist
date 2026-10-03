@@ -143,17 +143,6 @@ fun TodoRow(
             onEditDismissed = onEditDismissed
         )
         InkIconButton(
-            painter = painterResource(R.drawable.ic_edit),
-            contentDescription = stringResource(R.string.item_edit),
-            onClick = onEditRequested,
-            tint = palette.inked(InkTone.Margin),
-            pressedTint = palette.inked(InkTone.Words),
-            seat = IconSeat.OnRule,
-            foot = GlyphFoot.pencil,
-            glyphSize = PaperDimens.rowGlyph,
-            buttonWidth = PaperDimens.rowGlyphButton
-        )
-        InkIconButton(
             painter = painterResource(R.drawable.ic_delete),
             contentDescription = stringResource(R.string.item_delete),
             onClick = onDeleteRequested,
@@ -174,7 +163,7 @@ fun TodoRow(
  * `RowScope.` as a receiver is what makes `Modifier.weight(1f)` available — weight
  * only means something inside a `Row`, and declaring the receiver is how Compose
  * enforces that at compile time rather than at runtime. The weight is what makes
- * the words take all the space the ring and the two glyphs do not.
+ * the words take all the space the ring and the bin do not.
  *
  * `using null` disables the default size transform, so the swap does not also
  * animate the row's height; the two states are the same height and animating it

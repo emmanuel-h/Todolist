@@ -51,7 +51,7 @@ Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the 
 - A rule is smaller than a finger, so a control written on one is one rule tall to the layout and a whole 48dp target to the hand: `Modifier.pressableBelowTheRule` lets it reach down into the blank rule the row already carries. Flooring its height instead pushed the row onto a second rule of writing it did not have, and every row grew by half again.
 - Ruling is drawn both per page and per row: `RuledPage` rules the sheet, and `Modifier.paperRuling` rules a row that has grown past one pitch, so a hairline always meets the text baseline no matter how tall the row gets. Neither mirrors automatically — a `DrawScope` has no layout direction — so both read `layoutDirection` and place the bare gutter on the row's start edge.
 - **Both screens use the same row grammar.** List rows are not cards: they are ruled rows carrying `ring · name · dates · counts`, matching the item rows.
-- **The writing gets the line; the controls get what is left.** A row's marks are drawn tight to their glyphs (`PaperDimens.rowGlyph` in a `PaperDimens.rowGlyphButton` box) because three of them sit at the end of every row, and every dp of box around a mark is a dp the name does not get. That box is narrower than the 48dp square the guidance asks for and its **height is not** — on a row that is the axis a thumb misses on, and a near miss to either side lands on the row itself, which opens the list rather than doing nothing.
+- **The writing gets the line; the controls get what is left.** A row's marks are drawn tight to their glyphs (`PaperDimens.rowGlyph` in a `PaperDimens.rowGlyphButton` box) because three of them sit at the end of a list row, and every dp of box around a mark is a dp the name does not get. That box is 28dp wide, leaving 10dp of air between two glyphs. It is narrower than the 48dp square the guidance asks for and its **height is not** — on a row that is the axis a thumb misses on, and a near miss to either side lands on the row itself, which opens the list rather than doing nothing.
 - A fully-completed list is marked by strikethrough and 50% alpha on its name only. The former `colorSecondaryContainer` row fill is gone — a coloured block does not belong on paper.
 - The open count is a pencil numeral in the margin (`ui/listmeta/OpenCount.kt`), not a filled pill.
 - There is no toolbar. The page of items carries its list's name on its own head rule, which grows in whole pitches like any other row so a long name wraps rather than being clipped. The status bar is transparent and the sheet runs unbroken behind it.
@@ -271,22 +271,26 @@ the rule the moment there is something to commit.
 ```
 ┌─────────────────────────────────────┐
 │ ←  Groceries                        │
-│  ○  Milk               [✎] [🗑] ─── │
-│  ○  Bread              [✎] [🗑] ─── │
-│  ○  Eggs               [✎] [🗑] ─── │
+│  ○  Milk                   [🗑] ─── │
+│  ○  Bread                  [🗑] ─── │
+│  ○  Eggs                   [🗑] ─── │
 │     …                        ────── │   ← the add line
 │  ──── 2 ──────────────────────────  │   ← tally rule: only when both
-│  ●  ~~Coffee~~         [✎] [🗑] ─── │     sections have rows
-│  ●  ~~Butter~~         [✎] [🗑] ─── │   ← most recent first
+│  ●  ~~Coffee~~             [🗑] ─── │     sections have rows
+│  ●  ~~Butter~~             [🗑] ─── │   ← most recent first
 └─────────────────────────────────────┘
 ```
 
 ### Item row
 
-A row carries a completion ring at its **start**, its title, and at its **end** the two
-controls that act on it: a pencil and a bin, drawn on the rule the row is written on
+A row carries a completion ring at its **start**, its title, and at its **end** the one
+control that acts on it: a bin, drawn on the rule the row is written on
 (`ui/paper/InkIcon.kt`'s `InkIconButton` at `IconSeat.OnRule`). Reordering is still a
 gesture and so is still also a TalkBack custom action (`ui/paper/RowVerbs.kt`).
+
+**There is no pencil.** A tap on the words already opened the editor, so the pencil said the
+same thing a second time and cost the name its width. The words carry `Edit item` as their
+click label, which is what a screen reader announces in its place.
 
 **The ring hangs in the margin** ([#108](https://github.com/emmanuel-h/Todolist/issues/108)),
 left of where the rules start, the way a tick box is drawn on a real pad; the add line's ＋
@@ -298,7 +302,7 @@ List rows on Screen 1 have no ring and are unchanged.
 | Gesture | Active item | Completed item |
 |---------|-------------|----------------|
 | Tap the ring | Marks it done — the tick draws over 440ms, then the row crosses the divider | Restores it to the bottom of the active section |
-| Tap the title, or press the pencil | Opens an editor in place on the row | Opens an editor in place on the row |
+| Tap the title | Opens an editor in place on the row | Opens an editor in place on the row |
 | Press the bin | Asks first, then tears the row off | Same |
 | Long-press and drag | Reorders within the active section | Not reorderable |
 
