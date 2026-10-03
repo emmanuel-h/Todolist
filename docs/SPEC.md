@@ -288,6 +288,13 @@ controls that act on it: a pencil and a bin, drawn on the rule the row is writte
 (`ui/paper/InkIcon.kt`'s `InkIconButton` at `IconSeat.OnRule`). Reordering is still a
 gesture and so is still also a TalkBack custom action (`ui/paper/RowVerbs.kt`).
 
+**The ring hangs in the margin** ([#108](https://github.com/emmanuel-h/Todolist/issues/108)),
+left of where the rules start, the way a tick box is drawn on a real pad; the add line's ＋
+hangs in the same column, under the back arrow. The title then starts where the ring used to,
+which gives it the ring's width back — on a phone a medium-length name stopped wrapping onto a
+second line. `RuledRow(hanging = …)` does it, and never starts a row before the sheet's edge.
+List rows on Screen 1 have no ring and are unchanged.
+
 | Gesture | Active item | Completed item |
 |---------|-------------|----------------|
 | Tap the ring | Marks it done — the tick draws over 440ms, then the row crosses the divider | Restores it to the bottom of the active section |

@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 
 /**
  * A control written on a rule is one rule tall, and a rule is smaller than a
@@ -57,10 +58,18 @@ fun Modifier.paperRuling(
     }
 }
 
+/**
+ * One line of writing on the page, starting where the rules start.
+ *
+ * [hanging] lets a leading mark sit out in the margin, the way a tick box is drawn
+ * left of the ruling on a real pad, so the writing starts where the mark used to.
+ * The row starts that much earlier, but never before the edge of the sheet.
+ */
 @Composable
 fun RuledRow(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    hanging: Dp = 0.dp,
     content: @Composable RowScope.() -> Unit
 ) {
     val pitch = LocalPagePitch.current
@@ -70,7 +79,10 @@ fun RuledRow(
             .fillMaxWidth()
             .then(clickModifier)
             .pitchHeight(pitch, extraRules = 1)
-            .padding(start = LocalPaperGutter.current, end = PaperDimens.rowEndPadding),
+            .padding(
+                start = (LocalPaperGutter.current - hanging).coerceAtLeast(0.dp),
+                end = PaperDimens.rowEndPadding
+            ),
         verticalAlignment = Alignment.Top,
         content = content
     )
