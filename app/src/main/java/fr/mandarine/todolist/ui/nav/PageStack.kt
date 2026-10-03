@@ -110,8 +110,7 @@ fun PageStack(
                             stage = stage,
                             today = today,
                             onDueDateSet = written,
-                            reminderTime = reminderTime,
-                            onSetReminderTime = { reminderSettingsViewModel.setReminderTime(it) }
+                            reminderTime = reminderTime
                         )
                     }
                 }
@@ -200,8 +199,7 @@ private fun ListsPage(
     stage: NavStage,
     today: LocalDate,
     onDueDateSet: (ReminderNote) -> Unit,
-    reminderTime: java.time.LocalTime,
-    onSetReminderTime: (Int) -> Unit
+    reminderTime: java.time.LocalTime
 ) {
     screenState.animationsEnabled = stage.animationsEnabled
 
@@ -225,7 +223,6 @@ private fun ListsPage(
             viewModel.reorderLists(orderedActiveIds)
         },
         reminderTime = reminderTime,
-        onSetReminderTime = onSetReminderTime,
         onSetListReminderTime = { listId, minuteOfDay ->
             viewModel.setListReminderTime(listId, minuteOfDay)
         }

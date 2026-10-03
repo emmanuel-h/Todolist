@@ -29,7 +29,6 @@ import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
 import java.time.LocalDate
-import java.time.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -135,32 +134,9 @@ class IconOnlyUiTest {
         composeRule.setContent { PaperTheme { EmptyListsScreen() } }
 
         assertEquals(
-            setOf(CREATE_LIST_DESCRIPTION, SETTINGS_DESCRIPTION),
+            setOf(CREATE_LIST_DESCRIPTION),
             composeRule.onRoot().fetchSemanticsNode().contentDescriptions().toSet()
         )
-    }
-
-    /**
-     * The settings slip must not appear on the resting page — the title "Reminders"
-     * and the "Done" button are only present when the slip is raised.
-     */
-    @Test
-    fun `should draw no settings slip words on the resting lists page`() {
-        composeRule.setContent { PaperTheme { EmptyListsScreen() } }
-
-        val text = composeRule.onRoot().fetchSemanticsNode().staticText()
-        assert(REMINDERS_TITLE !in text) { "Reminders title must not appear at rest" }
-        assert(DONE_LABEL !in text) { "Done button must not appear at rest" }
-    }
-
-    /**
-     * Raising the settings slip puts "Reminders" and "Done" onto the page.
-     */
-    @Test
-    fun `should draw the settings slip words when the settings are open`() {
-        composeRule.setContent { PaperTheme { ListsScreenWithSettingsOpen() } }
-
-        composeRule.onNodeWithContentDescription(DONE_LABEL).assertIsDisplayed()
     }
 
     /**
@@ -170,9 +146,7 @@ class IconOnlyUiTest {
      */
     @Test
     fun `should draw Morning and Afternoon when the hour clock is open`() {
-        composeRule.setContent { PaperTheme { ListsScreenWithSettingsOpen() } }
-
-        composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
+        composeRule.setContent { PaperTheme { ClockWithoutOwnTime() } }
 
         composeRule.onNodeWithText(MORNING_LABEL).assertIsDisplayed()
         composeRule.onNodeWithText(AFTERNOON_LABEL).assertIsDisplayed()
@@ -386,15 +360,6 @@ class IconOnlyUiTest {
         composeRule.onNodeWithContentDescription(RUB_OUT_LABEL).assertDoesNotExist()
     }
 
-    @Test
-    fun `should not draw the rub out button on the app-wide reminder settings clock`() {
-        composeRule.setContent { PaperTheme { ListsScreenWithSettingsOpen() } }
-
-        composeRule.onNodeWithContentDescription(TIME_ROW_LABEL, substring = true).performClick()
-
-        composeRule.onNodeWithContentDescription(RUB_OUT_LABEL).assertDoesNotExist()
-    }
-
     private companion object {
         const val LIST_NAME = "Groceries"
         const val ITEM_TITLE = "Apples"
@@ -407,14 +372,10 @@ class IconOnlyUiTest {
         const val ADD_ITEM_LABEL = "Add an item"
         const val BACK_DESCRIPTION = "Navigate up"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
-        const val SETTINGS_DESCRIPTION = "Reminder time"
         const val APP_NAME = "To do list"
         const val DELETE_LABEL = "Delete"
         const val CANCEL_LABEL = "Cancel"
         const val DELETE_QUESTION = "Delete \"Groceries\"?"
-        const val REMINDERS_TITLE = "Reminders"
-        const val DONE_LABEL = "Done"
-        const val TIME_ROW_LABEL = "Every day at"
         const val MORNING_LABEL = "Morning"
         const val AFTERNOON_LABEL = "Afternoon"
         const val REMOVE_DATE_LABEL = "Remove"
@@ -467,23 +428,6 @@ private fun EmptyListsScreen() {
         onRenameList = { _, _, _, _, _ -> },
         onDeleteList = {},
         onReorder = {}
-    )
-}
-
-@Composable
-private fun ListsScreenWithSettingsOpen() {
-    val state = remember { TodoListsScreenState().also { it.settingsOpen = true } }
-    TodoListsScreen(
-        state = TodoListsState.Empty,
-        screenState = state,
-        today = TODAY,
-        onOpenList = {},
-        onCreateList = { _, _, _ -> },
-        onRenameList = { _, _, _, _, _ -> },
-        onDeleteList = {},
-        onReorder = {},
-        reminderTime = LocalTime.of(8, 0),
-        onSetReminderTime = {}
     )
 }
 
