@@ -3,7 +3,9 @@ package fr.mandarine.todolist.domain
 import java.time.LocalTime
 
 /**
- * The one setting the app has: what time of day the reminder check runs.
+ * The app-wide hour: what time of day the check runs for lists without a time of
+ * their own. Nothing in the app writes it any more (#106) — a reader who chose one
+ * on the bell keeps it, everyone else reads the default.
  *
  * Stored as a minute-of-day `Int` rather than a `LocalTime` because the backing
  * store is `SharedPreferences`, which holds primitives — see
@@ -12,7 +14,4 @@ import java.time.LocalTime
  */
 interface ReminderTimeRepository {
     fun getReminderTime(): LocalTime
-
-    /** [minuteOfDay] must be in `0..1439`; the implementation enforces it. */
-    fun setReminderTime(minuteOfDay: Int)
 }

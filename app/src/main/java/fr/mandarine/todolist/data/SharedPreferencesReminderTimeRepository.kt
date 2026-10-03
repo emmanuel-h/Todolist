@@ -16,9 +16,8 @@ import java.time.LocalTime
  * primitives. The conversion to and from [LocalTime] is confined to this class, so
  * nothing above it does `/ 60` arithmetic.
  *
- * `apply()` writes asynchronously and returns immediately; `commit()` would block
- * the caller for a fsync. A lost write here costs a reminder at the wrong hour once,
- * which does not justify a synchronous disk write on the main thread.
+ * Only read now: the bell that wrote it is gone (#106). The file name and key stay
+ * exactly as they were, so a reader who chose an hour before then keeps it.
  *
  * The default of 08:00 is repeated in
  * [fr.mandarine.todolist.domain.DailyCheckSchedule.DEFAULT_CHECK_TIME]; that one is
@@ -32,11 +31,6 @@ class SharedPreferencesReminderTimeRepository(context: Context) : ReminderTimeRe
     override fun getReminderTime(): LocalTime {
         val minuteOfDay = prefs.getInt(KEY_MINUTE_OF_DAY, DEFAULT_MINUTE_OF_DAY)
         return LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
-    }
-
-    override fun setReminderTime(minuteOfDay: Int) {
-        require(minuteOfDay in 0..1439)
-        prefs.edit().putInt(KEY_MINUTE_OF_DAY, minuteOfDay).apply()
     }
 
     companion object {
