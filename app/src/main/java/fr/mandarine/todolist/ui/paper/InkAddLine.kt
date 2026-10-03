@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import kotlinx.coroutines.delay
 
@@ -74,7 +75,8 @@ private const val PEN_SETTLE_MILLIS = 250L
  * so the affordance is visible even on a page full of rows — which is what it was
  * not: the line was an item inside the list and scrolled off the bottom of a page
  * that had filled up. The mark stays while writing; the label gives way to what is
- * being written.
+ * being written. The plus hangs in the margin where the items' rings hang, so
+ * the label starts where their names do.
  */
 @Composable
 fun InkAddLine(
@@ -113,7 +115,11 @@ fun InkAddLine(
         focusRequester.requestFocus()
     }
 
-    RuledRow(modifier = modifier, onClick = { focusRequester.requestFocus() }) {
+    RuledRow(
+        modifier = modifier,
+        onClick = { focusRequester.requestFocus() },
+        hanging = if (marked) PaperDimens.iconButton else 0.dp
+    ) {
         if (marked) {
             AddMark(palette = palette)
         }

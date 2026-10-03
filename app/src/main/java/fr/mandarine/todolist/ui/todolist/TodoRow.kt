@@ -116,7 +116,10 @@ fun TodoRow(
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
-    RuledRow(modifier = modifier.tearOff(tearing, animated, onTorn)) {
+    RuledRow(
+        modifier = modifier.tearOff(tearing, animated, onTorn),
+        hanging = PaperDimens.iconButton
+    ) {
         InkRing(
             checked = checked,
             onToggle = onToggle,
