@@ -1,9 +1,10 @@
 # Store assets
 
 Everything the Play Console listing needs, and the tooling that regenerates it.
-All of it was redrawn on 2026-09-06 for the row controls, the date slot and the
-per-list colours; the 2026-08-27 set shows the page before those, and anything
-older in the history shows the retired Material 3 build.
+The screenshots were reshot on 2026-10-03 for the tightened row controls and the
+per-list reminder time; the rest was redrawn on 2026-09-06 for the row controls,
+the date slot and the per-list colours. The 2026-08-27 set shows the page before
+those, and anything older in the history shows the retired Material 3 build.
 
 ```
 listing/
@@ -81,6 +82,11 @@ Snoozing once is not enough. The app posts its own daily reminder as soon as it
 has been seeded and launched, and that glyph lands in the status bar of every
 capture after it, so `POST_NOTIFICATIONS` is revoked up front and the snooze is
 run again after each launch.
+
+A launch waits until the first list is on the page and then a few seconds more,
+rather than sleeping a fixed time: a cold start after `wm size` can outlast any
+fixed sleep, and the list is in the UI tree while the splash is still fading out
+over it, so both halves of the wait are needed.
 
 `TODAY` in `make-demo-database.py` is an epoch day and is what makes the amber
 "due today" row amber. Move it forward before a fresh capture run, or the dates

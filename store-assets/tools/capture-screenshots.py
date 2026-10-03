@@ -98,6 +98,12 @@ def seed(dev):
 
 def launch(dev):
     shell(dev, f"am start -n {PKG}/.ui.TodoListsActivity")
+    for _ in range(30):
+        if find(dump(dev), text="Groceries") is not None:
+            break
+        time.sleep(1)
+    else:
+        raise RuntimeError("the page of lists never drew")
     time.sleep(4)
     hush(dev)
     time.sleep(1)

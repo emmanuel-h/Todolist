@@ -2,9 +2,9 @@ import sqlite3, os, sys
 
 OUT = sys.argv[1]
 if os.path.exists(OUT): os.remove(OUT)
-IDENTITY = "714f29a6c2859a9709de50688104e017"
+IDENTITY = "b729c140d99c9e64b7ff2c977a7fa1bd"
 
-TODAY = 20702  # 2026-09-06
+TODAY = 20729  # 2026-10-03
 
 # (id, name, targetDay, dueDay, colour, [(title, completed), ...])
 LISTS = [
@@ -71,7 +71,7 @@ if "--big" in sys.argv:
 
 db = sqlite3.connect(OUT)
 c = db.cursor()
-c.execute("CREATE TABLE IF NOT EXISTS `todo_lists` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `position` INTEGER NOT NULL, `targetDate` INTEGER, `dueDate` INTEGER, `colour` TEXT NOT NULL, PRIMARY KEY(`id`))")
+c.execute("CREATE TABLE IF NOT EXISTS `todo_lists` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `position` INTEGER NOT NULL, `targetDate` INTEGER, `dueDate` INTEGER, `reminderMinute` INTEGER, `colour` TEXT NOT NULL, PRIMARY KEY(`id`))")
 c.execute("CREATE TABLE IF NOT EXISTS `todo_items` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `listId` TEXT NOT NULL, `completed` INTEGER NOT NULL, `completedAt` INTEGER, `position` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`listId`) REFERENCES `todo_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
 c.execute("CREATE INDEX IF NOT EXISTS `index_todo_items_listId` ON `todo_items` (`listId`)")
 c.execute("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY, identity_hash TEXT)")
@@ -79,14 +79,14 @@ c.execute("INSERT OR REPLACE INTO room_master_table (id, identity_hash) VALUES (
 
 done_at = 1787000000000
 for pos, (lid, name, target, due, colour, items) in enumerate(LISTS):
-    c.execute("INSERT INTO todo_lists VALUES (?,?,?,?,?,?)", (lid, name, pos, target, due, colour))
+    c.execute("INSERT INTO todo_lists (id, name, position, targetDate, dueDate, colour) VALUES (?,?,?,?,?,?)", (lid, name, pos, target, due, colour))
     for i, (title, completed) in enumerate(items):
         done_at += 60000
         c.execute("INSERT INTO todo_items VALUES (?,?,?,?,?,?)",
                   (f"{lid}-i{i}", title, lid, completed, done_at if completed else None, i))
 
 db.commit()
-c.execute("PRAGMA user_version = 8")
+c.execute("PRAGMA user_version = 9")
 c.execute("PRAGMA journal_mode = TRUNCATE")
 db.commit()
 db.close()
