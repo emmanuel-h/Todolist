@@ -240,15 +240,11 @@ class WorkManagerNotificationSchedulerTest {
     private class FakeReminderTimeRepository : ReminderTimeRepository {
         var time: LocalTime = LocalTime.of(8, 0)
         override fun getReminderTime(): LocalTime = time
-        override fun setReminderTime(minuteOfDay: Int) {
-            time = LocalTime.of(minuteOfDay / MINUTES_IN_HOUR, minuteOfDay % MINUTES_IN_HOUR)
-        }
     }
 
     private companion object {
         val ZONE: ZoneId = ZoneId.of("Europe/Paris")
         val MARCH_15: LocalDate = LocalDate.of(2026, 3, 15)
         val MARCH_16: LocalDate = LocalDate.of(2026, 3, 16)
-        const val MINUTES_IN_HOUR = 60
     }
 }
