@@ -294,7 +294,8 @@ fun TodoListsScreen(
                                 onPenUp = { screenState.openAddRow() },
                                 onPenDown = { screenState.closeAddRow() },
                                 style = MaterialTheme.typography.titleMedium,
-                                animated = screenState.animationsEnabled
+                                animated = screenState.animationsEnabled,
+                                keepsPenAfterCommit = false
                             )
                             AnimatedVisibility(
                                 visible = dateMarksOwed(screenState),
@@ -707,9 +708,8 @@ internal fun padLiesOnPage(windowWidth: Dp, pageWidth: Dp, reach: Dp): Boolean =
     (windowWidth - minOf(windowWidth, pageWidth)) / 2f < reach
 
 /**
- * The line does not go away once a list is written on it: the sheet stays on the
- * page with a fresh caret waiting, so several lists can be written one after the
- * other. Putting the pen down is what ends the sheet.
+ * Writing a list puts the sheet down: nobody writes several lists in a row, so a
+ * sheet left waiting was only one more thing to dismiss.
  */
 internal fun submitAddRow(
     screenState: TodoListsScreenState,
@@ -721,7 +721,7 @@ internal fun submitAddRow(
     val selection = screenState.addRowSelection
     onCreateList(name, selection.targetDate, selection.dueDate)
     if (selection.date != null) onReminderWritten(ReminderNote(name, selection.date))
-    screenState.clearAddRow()
+    screenState.closeAddRow()
     return true
 }
 

@@ -168,7 +168,7 @@ the corner is the only affordance.
 - Tap the sticky pad → a sheet peels off and the add line unfolds under the head rule, hint `…`
 - The keyboard's own Done commits the line, and so does the sticky pad, which becomes a **tick** while the line is open. It used to become a minus that tore the line up — the same corner, the same shape, doing the opposite of what the items page's tick does ([#80](https://github.com/emmanuel-h/Todolist/issues/80))
 - Commit is a no-op if the line is blank
-- On commit: new list inserted at the top
+- On commit: new list inserted at the top, and the sheet is put down — the line folds away and the keyboard goes with it. Nobody writes several lists in a row ([#107](https://github.com/emmanuel-h/Todolist/issues/107))
 - Putting the pen down (back, a tap on bare paper, dismissing the keyboard) folds the line away **and discards what was written** — the pad always opens on blank paper. The reader tapping away is the reader throwing it away. Only a commit keeps what was written.
 
 **Open a list**
