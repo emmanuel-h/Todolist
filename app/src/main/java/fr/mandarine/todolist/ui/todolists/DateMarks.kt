@@ -64,6 +64,10 @@ internal fun kindPressOn(selection: DateSelection, pressed: DateKind): KindPress
  *
  * With nothing written the rule is bare: neither glyph is ringed and nothing
  * trails them. A ring means a day, so a ring cannot appear before there is one.
+ *
+ * What trails the glyphs is a slot, because the day is not always the useful thing
+ * to write there. On a sheet that already shows the month, the day is written twice
+ * and the rule is the weaker of the two places to read it.
  */
 @Composable
 fun RowScope.DateMarks(
@@ -71,9 +75,16 @@ fun RowScope.DateMarks(
     said: DateKindSaid,
     onKindChange: (DateKind) -> Unit,
     onPickDate: (DateKind) -> Unit,
-    onClearDate: () -> Unit
+    onClearDate: () -> Unit,
+    trailing: @Composable RowScope.() -> Unit = {
+        WrittenDate(
+            selection = selection,
+            locale = formatLocale,
+            onClick = { onPickDate(selection.kind) },
+            modifier = Modifier.weight(1f)
+        )
+    }
 ) {
-    val locale = formatLocale
     KindGlyph(
         iconRes = R.drawable.ic_event,
         setRes = R.string.set_target_date,
@@ -98,12 +109,7 @@ fun RowScope.DateMarks(
         onPickDate = onPickDate,
         onClearDate = onClearDate
     )
-    WrittenDate(
-        selection = selection,
-        locale = locale,
-        onClick = { onPickDate(selection.kind) },
-        modifier = Modifier.weight(1f)
-    )
+    trailing()
 }
 
 @Composable
