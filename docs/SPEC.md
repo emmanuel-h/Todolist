@@ -391,8 +391,9 @@ handwriting.
 Every day the app posts one Android notification per list that qualifies, at **that list's
 time**: its own, if the reader gave it one
 ([#93](https://github.com/emmanuel-h/Todolist/issues/93)), and otherwise the app-wide hour,
-which is 08:00 until they say otherwise
-([#74](https://github.com/emmanuel-h/Todolist/issues/74)):
+which is 08:00 — or whatever a reader chose on the bell before it was removed
+([#74](https://github.com/emmanuel-h/Todolist/issues/74),
+[#106](https://github.com/emmanuel-h/Todolist/issues/106)):
 
 | Condition | Notification body |
 |-----------|-------------------|
@@ -439,25 +440,23 @@ The body contains no words in any language — the emoji mirrors the in-app icon
 - **The permission ask belongs to the first reminder of either kind**, not to due dates alone — both fire, so gating on the alarm left a reader who only circles calendar days silently un-remindable.
 - The ask is owed when the reminder is *persisted*, not when a day is circled on a line that has not been committed; that line may never become a list.
 - The record of having asked is written when the answer comes back, not when the dialog is raised, so an unanswered dialog does not spend the one ask.
-- Writing another reminder while notifications are off opens the system's own notification page for the app — still the only route back from a refusal, and now the app does have a settings surface, but the system's switch is not the app's to flip.
+- Writing another reminder while notifications are off opens the system's own notification page for the app — still the only route back from a refusal; the system's switch is not the app's to flip.
 - Opening a list that has since been deleted (e.g. from a stale notification) finishes the screen
   immediately (`TodoListState.NotFound`).
 
-### The reminder hour — _[#74](https://github.com/emmanuel-h/Todolist/issues/74)_
+### The reminder hour — _[#74](https://github.com/emmanuel-h/Todolist/issues/74) · bell removed [#106](https://github.com/emmanuel-h/Todolist/issues/106)_
 
-The app's **first settings surface**, and it is one glyph and one slip.
+The app-wide hour is the fallback for every list without a time of its own. **Nothing on the
+page sets it any more.** It used to be the app's one settings surface: a bell at the end of
+the masthead strip on Screen 1, opening a slip with `Reminders` and the time as a pressable
+jot. Once each list could carry its own time ([#93](https://github.com/emmanuel-h/Todolist/issues/93))
+a second, global control only made the reader wonder which one applied, so the bell, the slip
+and their words went. The stored hour stays: a reader who had chosen one keeps it, everyone
+else follows 08:00. The masthead strip's top-end corner is empty again.
 
-- A **bell** sits at the end of the masthead strip on Screen 1 — the slot the tour's replay `?`
-  left empty. It was a gear first, which promises a drawer of options and delivers one time
-  ([#78](https://github.com/emmanuel-h/Todolist/issues/78)); a bell names what is behind it,
-  and `ic_alarm` could not be borrowed because it already means *due date* on a row. It leaves with the masthead when the pen comes out. The strip is one 28dp rule
-  tall, well under a finger, so the gear's touch target spans the whole head margin (the
-  status-bar inset plus the rule) and grows **upward**: reaching down would have taken taps
-  from the first list row.
-- Pressing it lays a paper slip carrying `Reminders` and the chosen time as a pressable jot.
-- The time carries a pencil, because a line of writing with nothing on it does not look like
-  something you press ([#79](https://github.com/emmanuel-h/Todolist/issues/79)).
-- Pressing it opens a **clock** drawn in the page's own hand: an ink circle with twelve
+The clock the bell opened is the one a list's own time is set on:
+
+- It is a **clock** drawn in the page's own hand: an ink circle with twelve
   numerals, 12 at the top, a hand reaching from the centre to whatever is chosen, and
   `Morning` / `Afternoon` above it saying which half of the day they mean. An hour is circled
   in ink, then the face becomes minutes at five-minute steps, and the time being built is

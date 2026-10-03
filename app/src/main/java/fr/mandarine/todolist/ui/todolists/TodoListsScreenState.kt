@@ -57,8 +57,6 @@ data class RenameState(
 
 class TodoListsScreenState {
 
-    var settingsOpen by mutableStateOf(false)
-
     var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)
 
     var tearingId by mutableStateOf<String?>(null)
@@ -154,7 +152,6 @@ class TodoListsScreenState {
         outState.putString(ADD_TEXT, addRowText)
         outState.putString(ADD_KIND, addRowSelection.kind.name)
         addRowSelection.date?.let { outState.putLong(ADD_DAY, it.toEpochDay()) }
-        outState.putBoolean(SETTINGS_OPEN, settingsOpen)
         tearingId?.let { outState.putString(TEARING, it) }
         confirmDelete?.let { confirm ->
             outState.putString(CONFIRM_ID, confirm.id)
@@ -186,7 +183,6 @@ class TodoListsScreenState {
             savedInstanceState.getString(ADD_KIND)?.let(DateKind::valueOf) ?: DateKind.TARGET,
             savedInstanceState.dayOrNull(ADD_DAY)
         )
-        settingsOpen = savedInstanceState.getBoolean(SETTINGS_OPEN)
         tearingId = savedInstanceState.getString(TEARING)
         savedInstanceState.getString(CONFIRM_ID)?.let { id ->
             confirmDelete = ConfirmDeleteRequest(
@@ -250,7 +246,6 @@ private fun restoredTarget(saved: String): DateTarget = when {
 private const val TARGET_ADD_ROW = "add-row"
 private const val TARGET_RENAME = "rename"
 private const val TARGET_ROW = "row:"
-private const val SETTINGS_OPEN = "lists-settings-open"
 private const val TEARING = "lists-tearing"
 private const val CONFIRM_ID = "lists-confirm-id"
 private const val CONFIRM_NAME = "lists-confirm-name"
