@@ -94,10 +94,16 @@ import fr.mandarine.todolist.ui.reorder.liftedSlip
 import fr.mandarine.todolist.ui.reorder.moved
 import fr.mandarine.todolist.ui.reorder.orderedBy
 import fr.mandarine.todolist.ui.reorder.rememberEdgeScroll
+import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.ui.paper.LocalRuledHand
+import fr.mandarine.todolist.ui.paper.ReminderClockPickerDialog
+import fr.mandarine.todolist.ui.paper.formatLocale
+import fr.mandarine.todolist.ui.paper.rememberFormattedTime
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
 import fr.mandarine.todolist.ui.todolists.ListDatePickerDialog
 import fr.mandarine.todolist.ui.todolists.dueTone
+import java.time.LocalTime
 import fr.mandarine.todolist.ui.todolists.targetTone
 import java.time.LocalDate
 import kotlinx.coroutines.delay
@@ -159,7 +165,9 @@ fun TodoListScreen(
     onSubmitInline: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
     onRenameList: (String) -> Unit = {},
-    onWriteDate: (DateSelection) -> Unit = {}
+    onWriteDate: (DateSelection) -> Unit = {},
+    appWideReminderTime: LocalTime = LocalTime.of(8, 0),
+    onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> }
 ) {
     val content = state as? TodoListState.Content
     val rawActiveItems = content?.activeItems.orEmpty()
@@ -310,7 +318,8 @@ fun TodoListScreen(
                         onRenameRequested = { screenState.renamingList = true },
                         onRenamed = onRenameList,
                         onRenameDismissed = { screenState.renamingList = false },
-                        onDateRequested = { selection -> screenState.dateSheet = selection }
+                        onDateRequested = { selection -> screenState.dateSheet = selection },
+                        appWideReminderTime = appWideReminderTime
                     )
                 }
                 itemsIndexed(
@@ -450,8 +459,14 @@ fun TodoListScreen(
             animated = screenState.animationsEnabled,
             onDismiss = { screenState.dateSheet = null },
             onPicked = { date ->
+                val list = summary?.list
                 screenState.dateSheet = null
                 onWriteDate(sheet.withDate(date))
+                if (list != null) {
+                    val initMinute = list.reminderTime?.let { t -> t.hour * 60 + t.minute }
+                        ?: (appWideReminderTime.hour * 60 + appWideReminderTime.minute)
+                    screenState.clockSheet = initMinute
+                }
             },
             onKindAsked = { kind -> screenState.dateSheet = sheet.withKind(kind) },
             onKindChange = { kind ->
@@ -462,6 +477,27 @@ fun TodoListScreen(
                 screenState.dateSheet = null
                 onWriteDate(sheet.cleared())
             }
+        )
+    }
+
+    val clockMinute = screenState.clockSheet
+    val clockListId = summary?.list?.id
+    if (clockMinute != null && clockListId != null) {
+        val hasOwnTime = summary?.list?.reminderTime != null
+        ReminderClockPickerDialog(
+            currentMinuteOfDay = clockMinute,
+            onMinuteOfDayPicked = { minuteOfDay ->
+                onSetListReminderTime(clockListId, minuteOfDay)
+                screenState.clockSheet = null
+            },
+            onDismiss = { screenState.clockSheet = null },
+            animated = screenState.animationsEnabled,
+            onRubOut = if (hasOwnTime) {
+                {
+                    onSetListReminderTime(clockListId, null)
+                    screenState.clockSheet = null
+                }
+            } else null
         )
     }
 }
@@ -590,7 +626,8 @@ private fun HeadLine(
     onRenameRequested: () -> Unit,
     onRenamed: (String) -> Unit,
     onRenameDismissed: () -> Unit,
-    onDateRequested: (DateSelection) -> Unit
+    onDateRequested: (DateSelection) -> Unit,
+    appWideReminderTime: LocalTime = LocalTime.of(8, 0)
 ) {
     val pitch = LocalPagePitch.current
     if (summary == null) {
@@ -631,7 +668,11 @@ private fun HeadLine(
                 )
             }
         }
-        HeadJots(summary = summary, onDateRequested = onDateRequested)
+        HeadJots(
+            summary = summary,
+            appWideReminderTime = appWideReminderTime,
+            onDateRequested = onDateRequested
+        )
     }
 }
 
@@ -667,11 +708,16 @@ private fun HeadName(
 }
 
 @Composable
-private fun HeadJots(summary: TodoListSummary, onDateRequested: (DateSelection) -> Unit) {
+private fun HeadJots(
+    summary: TodoListSummary,
+    appWideReminderTime: LocalTime,
+    onDateRequested: (DateSelection) -> Unit
+) {
     val palette = LocalPaperPalette.current
     val targetDate = summary.list.targetDate
     val dueDate = summary.list.dueDate
     val dueStatus = summary.dueDateStatus
+    val hasDate = targetDate != null || (dueDate != null && dueStatus != null)
     if (targetDate != null) {
         DateJot(
             date = targetDate,
@@ -691,6 +737,32 @@ private fun HeadJots(summary: TodoListSummary, onDateRequested: (DateSelection) 
             onRewrite = onDateRequested
         )
     }
+    if (hasDate) {
+        HeadTimeJot(list = summary.list, appWideReminderTime = appWideReminderTime)
+    }
+}
+
+/**
+ * The reminder time written after the date jot. Shown in full ink when the list
+ * has its own time, and in pencil (margin tone) when it follows the app-wide hour
+ * — the reader's own mark stands out, the default sits quietly in the margin.
+ */
+@Composable
+private fun HeadTimeJot(list: TodoList, appWideReminderTime: LocalTime) {
+    val locale = formatLocale
+    val ownTime = list.reminderTime
+    val time = ownTime ?: appWideReminderTime
+    val formatted = rememberFormattedTime(time, locale)
+    val tone = if (ownTime != null) InkTone.Words else InkTone.Margin
+    val palette = LocalPaperPalette.current
+    Text(
+        text = formatted,
+        modifier = Modifier.seatOnRule(),
+        style = LocalRuledHand.current.margin,
+        color = palette.inked(tone),
+        softWrap = false,
+        maxLines = 1
+    )
 }
 
 @Composable

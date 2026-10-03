@@ -4,7 +4,9 @@ import fr.mandarine.todolist.domain.TodoList
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -56,5 +58,34 @@ class RoomTodoListRepositoryUnitTest {
         every { dao.deleteWithItems("1") } returns Unit
         repository.delete("1")
         verify { dao.deleteWithItems("1") }
+    }
+
+    @Test
+    fun `should read a stored minute of day as the list's reminder time`() {
+        every { dao.getAll() } returns listOf(TodoListEntity("1", "Groceries", reminderMinute = 720))
+
+        val list = repository.getAll().first()
+
+        assertEquals(LocalTime.of(12, 0), list.reminderTime)
+        assertEquals(12, list.reminderTime?.hour)
+        assertEquals(0, list.reminderTime?.minute)
+    }
+
+    @Test
+    fun `should read no reminder time when none is stored`() {
+        every { dao.getAll() } returns listOf(TodoListEntity("1", "Groceries", reminderMinute = null))
+
+        val list = repository.getAll().first()
+
+        assertNull(list.reminderTime)
+    }
+
+    @Test
+    fun `should store the reminder time as a minute of day when adding a list`() {
+        every { dao.insert(any()) } returns Unit
+
+        repository.add(TodoList("1", "Groceries", reminderTime = LocalTime.of(7, 30)))
+
+        verify { dao.insert(TodoListEntity("1", "Groceries", reminderMinute = 450)) }
     }
 }

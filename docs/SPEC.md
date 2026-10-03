@@ -353,7 +353,7 @@ ticking a list faster than the stroke lands every tick rather than only the last
 
 ## Data & persistence
 
-- All data lives in SQLite via Room, schema version 8, `exportSchema = true`, with every migration 1→8 present and no destructive fallback
+- All data lives in SQLite via Room, schema version 9, `exportSchema = true`, with every migration 1→9 present and no destructive fallback
 - The database is opened `JournalMode.TRUNCATE`. Auto Backup copies the file and its sidecars independently, and under WAL a snapshot can catch a commit that lives only in the `-wal` half
 - Auto Backup is a whitelist naming the database alone (`backup_rules.xml`, `data_extraction_rules.xml`). That is what keeps `shared_prefs/` behind: a permission the old device already spent must not travel, or the restored one is silently reminder-less
 - Deleting a list cascades via a real `ForeignKey.CASCADE`, with `PRAGMA foreign_keys = ON` at every open
@@ -388,8 +388,10 @@ handwriting.
 
 ## Daily notifications — _implemented · [#12](https://github.com/emmanuel-h/Todolist/issues/12)_
 
-Every day at **the hour the reader chose** the app posts one Android notification per list
-that qualifies. It is 08:00 until they say otherwise
+Every day the app posts one Android notification per list that qualifies, at **that list's
+time**: its own, if the reader gave it one
+([#93](https://github.com/emmanuel-h/Todolist/issues/93)), and otherwise the app-wide hour,
+which is 08:00 until they say otherwise
 ([#74](https://github.com/emmanuel-h/Todolist/issues/74)):
 
 | Condition | Notification body |
@@ -406,9 +408,18 @@ The body contains no words in any language — the emoji mirrors the in-app icon
   beneath it on the nav back stack.
 - Notifications are posted on a dedicated channel ("Reminders"), tagged by list id so two lists
   never overwrite each other's notification.
-- The daily check runs as a WorkManager unique `PeriodicWorkRequest`
-  (`daily_notification_check`). WorkManager persists it across reboots and crashes — no
-  `BOOT_COMPLETED` receiver is needed.
+- The daily check runs as WorkManager unique `PeriodicWorkRequest`s. WorkManager persists
+  them across reboots and crashes — no `BOOT_COMPLETED` receiver is needed.
+  - `daily_notification_check` follows the app-wide hour and serves only the lists with no
+    time of their own. It carries no input data, so the work already armed on an install
+    from before #93 keeps meaning exactly this.
+  - Every distinct time that at least one list has gets its own check,
+    `daily_notification_check@<minute of day>`, carrying that minute in its input data and a
+    shared tag. Two lists at 07:00 share one check and still get a notification each.
+  - A list's time changing is a **reconcile**, not a reschedule: every own time is ensured
+    with `KEEP`, and a tagged check whose time no list has any more is cancelled. Launch
+    runs the same reconcile, off the main thread because it reads the lists.
+  - Each check re-aims only itself at the end of its run.
 - **The next run is an absolute moment, not a delay.** A twenty-four hour period repeats on
   elapsed time, which is not the same as "every day at eight": an hour lost to a
   daylight-saving change, or a run the device deferred while dozing, moves every following
@@ -462,10 +473,33 @@ The app's **first settings surface**, and it is one glyph and one slip.
   reader is shown `20:00` and an en-US one `8:00 PM`. `HH` would have forced twenty-four
   hours on everybody.
 
+### A list's own time — _[#93](https://github.com/emmanuel-h/Todolist/issues/93)_
+
+One hour cannot serve every list: things to grab before leaving want 07:00, things to do
+before the gym want 12:00. **A list's own time wins; the app-wide hour is only the fallback
+for lists without one**, so nothing changes for a reader who never sets one.
+
+- The time is written where the date is: circling a day on the calendar sheet — from a row on
+  Screen 1 or from the date jot on a list's page — opens the same ink clock straight after,
+  seeded with the list's time (its own, else the app-wide hour). Dismissing the clock keeps
+  whatever the list had. Switching the date's kind or removing the date does not open it,
+  and neither does a day circled on a line not yet committed: that list does not exist yet.
+- When the list already has a time of its own the clock carries a **rub-out** mark (the word
+  `Rub out` / `Effacer`), which gives the list back to the app-wide hour.
+- On the list's page the time is written after the date jot: in ink when it is the list's
+  own, faded when it is the app-wide hour it follows. Rows on Screen 1 do not show it.
+- The time belongs to the list, not the date: removing the date keeps it, and the check
+  simply finds nothing to post. So writing a date never touches the scheduler.
+- Stored as a nullable **minute of day** on the list row (`reminderMinute`); null means
+  "follows the app-wide hour".
+
 ### Must NOT happen
 - A notification fired for a list whose date does not qualify.
 - A chosen hour that the scheduler never hears about — persisting it without re-laying the
-  check is the same bug as `KEEP`.
+  check is the same bug as `KEEP`. This holds for a list's own time as much as the app-wide
+  one: the write and the reconcile go together.
+- A check left armed for a time no list has any more.
+- A pending run cancelled because a list's time changed, or because the app was opened.
 - The daily check lost permanently after device reboot.
 - The one permission ask spent on a question that was never answered, or on a list that was never created.
 - A reader left with a reminder date and no route to enable notifications.

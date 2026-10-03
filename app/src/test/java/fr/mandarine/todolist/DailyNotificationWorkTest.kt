@@ -3,13 +3,17 @@ package fr.mandarine.todolist
 import android.app.NotificationManager
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import fr.mandarine.todolist.data.TodoDatabase
 import fr.mandarine.todolist.data.TodoListEntity
 import fr.mandarine.todolist.domain.NotificationScheduler
+import fr.mandarine.todolist.domain.ReminderSlot
+import io.mockk.every
 import io.mockk.mockk
 import java.time.LocalDate
+import java.time.LocalTime
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -36,8 +40,8 @@ class DailyNotificationWorkTest {
             application,
             databaseFactory = { database },
             schedulerFactory = { _, _ -> object : NotificationScheduler {
-                override fun ensureDailyCheck() = Unit
-                override fun rescheduleDailyCheck() = Unit
+                override fun ensureDailyChecks(ownTimes: Set<LocalTime>) = Unit
+                override fun rescheduleDailyCheck(slot: ReminderSlot) = Unit
             } }
         )
     }
@@ -47,8 +51,11 @@ class DailyNotificationWorkTest {
         database.close()
     }
 
-    private fun runWorker(): ListenableWorker.Result =
-        DailyNotificationWork(application, mockk<WorkerParameters>(relaxed = true)).doWork()
+    private fun runWorker(): ListenableWorker.Result {
+        val params = mockk<WorkerParameters>(relaxed = true)
+        every { params.inputData } returns Data.EMPTY
+        return DailyNotificationWork(application, params).doWork()
+    }
 
     @Test
     fun `should post notification and succeed when a list is due today`() {

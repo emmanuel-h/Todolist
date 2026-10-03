@@ -43,6 +43,9 @@ interface TodoListDao {
     @Query("UPDATE todo_lists SET name = :name, targetDate = :targetDate, dueDate = :dueDate, colour = :colour WHERE id = :id")
     fun update(id: String, name: String, targetDate: Long?, dueDate: Long?, colour: String = "None")
 
+    @Query("UPDATE todo_lists SET reminderMinute = :minute WHERE id = :id")
+    fun setReminderMinute(id: String, minute: Int?)
+
     @Query("UPDATE todo_lists SET position = :position WHERE id = :id")
     fun updatePosition(id: String, position: Int)
 

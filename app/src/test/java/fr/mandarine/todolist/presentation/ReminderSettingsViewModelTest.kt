@@ -2,6 +2,7 @@ package fr.mandarine.todolist.presentation
 
 import fr.mandarine.todolist.domain.GetReminderTimeUseCase
 import fr.mandarine.todolist.domain.NotificationScheduler
+import fr.mandarine.todolist.domain.ReminderSlot
 import fr.mandarine.todolist.domain.ReminderTimeRepository
 import fr.mandarine.todolist.domain.SetReminderTimeUseCase
 import io.mockk.mockk
@@ -55,7 +56,7 @@ class ReminderSettingsViewModelTest {
     fun `should reschedule after persisting when setReminderTime is called`() {
         viewModel.setReminderTime(480)
 
-        verify { notificationScheduler.rescheduleDailyCheck() }
+        verify { notificationScheduler.rescheduleDailyCheck(ReminderSlot.AppWide) }
     }
 
     @Test
@@ -71,7 +72,7 @@ class ReminderSettingsViewModelTest {
 
         verifyOrder {
             repoMock.setReminderTime(600)
-            schedulerMock.rescheduleDailyCheck()
+            schedulerMock.rescheduleDailyCheck(ReminderSlot.AppWide)
         }
     }
 

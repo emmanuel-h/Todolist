@@ -124,7 +124,11 @@ fun PageStack(
                             stage = stage,
                             today = today,
                             itemsViewModelFactory = itemsViewModelFactory,
-                            onDueDateSet = written
+                            onDueDateSet = written,
+                            appWideReminderTime = reminderTime,
+                            onSetListReminderTime = { listId, minuteOfDay ->
+                                listsViewModel.setListReminderTime(listId, minuteOfDay)
+                            }
                         )
                     }
                 }
@@ -221,7 +225,10 @@ private fun ListsPage(
             viewModel.reorderLists(orderedActiveIds)
         },
         reminderTime = reminderTime,
-        onSetReminderTime = onSetReminderTime
+        onSetReminderTime = onSetReminderTime,
+        onSetListReminderTime = { listId, minuteOfDay ->
+            viewModel.setListReminderTime(listId, minuteOfDay)
+        }
     )
 }
 
@@ -233,7 +240,9 @@ private fun ItemsPage(
     stage: NavStage,
     today: LocalDate,
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
-    onDueDateSet: (ReminderNote) -> Unit
+    onDueDateSet: (ReminderNote) -> Unit,
+    appWideReminderTime: java.time.LocalTime,
+    onSetListReminderTime: (String, Int?) -> Unit
 ) {
     val viewModel: TodoListViewModel =
         viewModel(factory = remember(listId) { itemsViewModelFactory(listId) })
@@ -294,7 +303,9 @@ private fun ItemsPage(
                 if (reminderDateWritten(before, written)) {
                     onDueDateSet(ReminderNote(list.name, written.date))
                 }
-            }
+            },
+            appWideReminderTime = appWideReminderTime,
+            onSetListReminderTime = onSetListReminderTime
         )
     }
 }

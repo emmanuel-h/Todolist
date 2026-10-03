@@ -5,6 +5,8 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import fr.mandarine.todolist.domain.SetListReminderTimeUseCase
+import fr.mandarine.todolist.domain.SyncDailyChecksUseCase
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import io.mockk.every
@@ -32,7 +34,7 @@ class TodoListsViewModelTest {
         getTodoListsWithStatusUseCase = mockk()
         every { getTodoListsWithStatusUseCase() } returns emptyList()
         reorderTodoListsUseCase = mockk(relaxed = true)
-        viewModel = TodoListsViewModel(createTodoListUseCase, deleteTodoListUseCase, editTodoListUseCase, getTodoListsWithStatusUseCase, reorderTodoListsUseCase, Dispatchers.Unconfined)
+        viewModel = TodoListsViewModel(createTodoListUseCase, deleteTodoListUseCase, editTodoListUseCase, getTodoListsWithStatusUseCase, reorderTodoListsUseCase, Dispatchers.Unconfined, setListReminderTimeUseCase = mockk(relaxed = true), syncDailyChecksUseCase = mockk(relaxed = true))
     }
 
     @Test

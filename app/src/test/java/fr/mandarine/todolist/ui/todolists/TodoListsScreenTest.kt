@@ -35,9 +35,11 @@ import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -62,6 +64,7 @@ class TodoListsScreenTest {
     private val reordered = mutableListOf<List<String>>()
     private val opened = mutableListOf<String>()
     private var dueDatesSet = 0
+    private val listReminderTimes = mutableListOf<Pair<String, Int?>>()
 
     // ── The page at rest ──────────────────────────────────────────────────────
 
@@ -965,6 +968,80 @@ class TodoListsScreenTest {
         assertEquals(1, dueDatesSet)
     }
 
+    // ── Clock sheet ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `should open the clock after a date is picked on a row`() {
+        render(content(active = listOf(summary("1", "Groceries"))))
+        openDateSheet(DateKind.TARGET, DateTarget.Row("1"))
+
+        composeRule.onNodeWithText("20").performClick()
+        composeRule.waitForIdle()
+
+        assertNotNull(screenState.clockPickerRequest)
+        assertEquals("1", screenState.clockPickerRequest?.listId)
+    }
+
+    @Test
+    fun `should not open the clock after a date is picked on the add line`() {
+        armAddLine(text = "Work")
+        render(TodoListsState.Empty)
+        openDateSheet(DateKind.TARGET, DateTarget.AddRow)
+
+        composeRule.onNodeWithText("20").performClick()
+        composeRule.waitForIdle()
+
+        assertNull(screenState.clockPickerRequest)
+    }
+
+    @Test
+    fun `should not open the clock when the kind is changed on a row sheet`() {
+        render(content(active = listOf(summary("1", "Groceries", targetDate = DATE))))
+        openDateSheet(DateKind.TARGET, DateTarget.Row("1"), initial = DATE)
+
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+        composeRule.waitForIdle()
+
+        assertNull(screenState.clockPickerRequest)
+    }
+
+    @Test
+    fun `should write the list reminder time when the row clock sheet picks a time`() {
+        composeRule.runOnIdle {
+            screenState.animationsEnabled = false
+            screenState.clockPickerRequest = ClockPickerRequest("1", 8 * 60)
+        }
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithContentDescription(CLOCK_HOUR_10).performClick()
+        composeRule.onNodeWithContentDescription(CLOCK_MINUTE_0).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf("1" to 10 * 60), listReminderTimes)
+        assertNull(screenState.clockPickerRequest)
+    }
+
+    @Test
+    fun `should clear the list reminder time when the row clock sheet rub out is pressed`() {
+        composeRule.runOnIdle {
+            screenState.animationsEnabled = false
+            screenState.clockPickerRequest = ClockPickerRequest("1", 12 * 60)
+        }
+        render(
+            content(
+                active = listOf(
+                    summary("1", "Groceries", reminderTime = LocalTime.of(12, 0))
+                )
+            )
+        )
+
+        composeRule.onNodeWithContentDescription(RUB_OUT).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf<Pair<String, Int?>>("1" to null), listReminderTimes)
+        assertNull(screenState.clockPickerRequest)
+    }
+
     // ── The date on the line being written ────────────────────────────────────
 
     @Test
@@ -1145,7 +1222,8 @@ class TodoListsScreenTest {
             },
             onDeleteList = { deleted += it },
             onReorder = { orderedIds -> reordered += orderedIds },
-            onDueDateSet = { dueDatesSet += 1 }
+            onDueDateSet = { dueDatesSet += 1 },
+            onSetListReminderTime = { listId, minute -> listReminderTimes += listId to minute }
         )
     }
 
@@ -1179,9 +1257,16 @@ class TodoListsScreenTest {
         dueDate: LocalDate? = null,
         activeCount: Int = 0,
         completedCount: Int = 0,
-        colour: ListColour = ListColour.None
+        colour: ListColour = ListColour.None,
+        reminderTime: LocalTime? = null
     ) = TodoListSummary(
-        list = TodoList(id, name, targetDate = targetDate, dueDate = dueDate, colour = colour),
+        list = TodoList(
+            id, name,
+            targetDate = targetDate,
+            dueDate = dueDate,
+            colour = colour,
+            reminderTime = reminderTime
+        ),
         allDone = allDone,
         activeCount = activeCount,
         completedCount = completedCount,
@@ -1231,5 +1316,8 @@ class TodoListsScreenTest {
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"
         const val SAVE = "Save"
+        const val RUB_OUT = "Rub out"
+        const val CLOCK_HOUR_10 = "10"
+        const val CLOCK_MINUTE_0 = "0"
     }
 }

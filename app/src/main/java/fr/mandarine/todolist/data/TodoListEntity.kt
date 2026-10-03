@@ -28,5 +28,6 @@ data class TodoListEntity(
     val position: Int = 0,
     val targetDate: Long? = null,
     val dueDate: Long? = null,
+    val reminderMinute: Int? = null,
     val colour: String = "None"
 )

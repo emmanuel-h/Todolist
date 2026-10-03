@@ -34,12 +34,15 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import android.text.format.DateFormat as AndroidDateFormat
 import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.todolists.DateKind
@@ -48,6 +51,7 @@ import fr.mandarine.todolist.ui.todolists.formatListDate
 import fr.mandarine.todolist.ui.paper.PaperTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -72,6 +76,7 @@ class TodoListScreenTest {
     private val reordered = mutableListOf<List<String>>()
     private val renamed = mutableListOf<String>()
     private val datesWritten = mutableListOf<DateSelection>()
+    private val listReminderTimes = mutableListOf<Pair<String, Int?>>()
     private var backPressed = 0
     private var hostView: View? = null
 
@@ -666,6 +671,126 @@ class TodoListScreenTest {
         assertTrue(deleted.isEmpty())
     }
 
+    // ── Clock sheet ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `should open the clock after a date is picked from the head rule sheet`() {
+        screenState.animationsEnabled = false
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", targetDate = TODAY),
+                allDone = false
+            )
+        )
+
+        composeRule
+            .onNodeWithContentDescription("Target date ${formatListDate(TODAY, true, locale())}")
+            .performClick()
+        composeRule.onNodeWithText(TODAY.plusDays(1).dayOfMonth.toString()).performClick()
+        composeRule.waitForIdle()
+
+        assertNotNull(screenState.clockSheet)
+    }
+
+    @Test
+    fun `should not open the clock when the kind is changed on the head rule sheet`() {
+        screenState.animationsEnabled = false
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", targetDate = TODAY),
+                allDone = false
+            )
+        )
+
+        composeRule
+            .onNodeWithContentDescription("Target date ${formatListDate(TODAY, true, locale())}")
+            .performClick()
+        composeRule.onNodeWithContentDescription(SET_DUE_DATE).performClick()
+        composeRule.waitForIdle()
+
+        assertNull(screenState.clockSheet)
+    }
+
+    @Test
+    fun `should write the list reminder time when the clock sheet picks a time`() {
+        screenState.animationsEnabled = false
+        screenState.clockSheet = 8 * 60
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(list = TodoList(LIST_ID, "Groceries"), allDone = false)
+        )
+
+        composeRule.onNodeWithContentDescription(CLOCK_HOUR_10).performClick()
+        composeRule.onNodeWithContentDescription(CLOCK_MINUTE_0).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(LIST_ID to 10 * 60), listReminderTimes)
+        assertNull(screenState.clockSheet)
+    }
+
+    @Test
+    fun `should clear the list reminder time when the clock sheet rub out is pressed`() {
+        screenState.animationsEnabled = false
+        screenState.clockSheet = 12 * 60
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries",
+                    reminderTime = LocalTime.of(12, 0)),
+                allDone = false
+            )
+        )
+
+        composeRule.onNodeWithContentDescription(RUB_OUT).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf<Pair<String, Int?>>(LIST_ID to null), listReminderTimes)
+        assertNull(screenState.clockSheet)
+    }
+
+    @Test
+    fun `should not offer a rub out when the list has no own reminder time`() {
+        screenState.animationsEnabled = false
+        screenState.clockSheet = 8 * 60
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(list = TodoList(LIST_ID, "Groceries"), allDone = false)
+        )
+
+        composeRule.onNodeWithContentDescription(RUB_OUT).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should show the reminder time after the date jot when the list has its own time`() {
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", targetDate = TODAY,
+                    reminderTime = LocalTime.of(10, 30)),
+                allDone = false
+            )
+        )
+
+        composeRule.onNodeWithText(formattedTime(LocalTime.of(10, 30))).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should show the app wide reminder time after the date jot when the list has no own time`() {
+        val appWide = LocalTime.of(8, 0)
+        render(
+            content(active = listOf(item("1", "Apples"))),
+            TodoListSummary(
+                list = TodoList(LIST_ID, "Groceries", targetDate = TODAY),
+                allDone = false
+            ),
+            appWideReminderTime = appWide
+        )
+
+        composeRule.onNodeWithText(formattedTime(appWide)).assertIsDisplayed()
+    }
+
     // ── Reaching the gestures without one ─────────────────────────────────────
 
     @Test
@@ -806,8 +931,12 @@ class TodoListScreenTest {
         )
     }
 
-    private fun render(state: TodoListState, summary: TodoListSummary?) {
-        composeRule.setContent { PaperTheme { Screen(state, summary) } }
+    private fun render(
+        state: TodoListState,
+        summary: TodoListSummary?,
+        appWideReminderTime: java.time.LocalTime = java.time.LocalTime.of(8, 0)
+    ) {
+        composeRule.setContent { PaperTheme { Screen(state, summary, appWideReminderTime) } }
     }
 
     private fun renderChanging(initial: TodoListState): MutableState<TodoListState> {
@@ -817,7 +946,11 @@ class TodoListScreenTest {
     }
 
     @Composable
-    private fun Screen(state: TodoListState, summary: TodoListSummary?) {
+    private fun Screen(
+        state: TodoListState,
+        summary: TodoListSummary?,
+        appWideReminderTime: java.time.LocalTime = java.time.LocalTime.of(8, 0)
+    ) {
         hostView = LocalView.current
         TodoListScreen(
             summary = summary,
@@ -831,11 +964,18 @@ class TodoListScreenTest {
             onSubmitInline = { submitted += it },
             onReorder = { orderedIds -> reordered += orderedIds },
             onRenameList = { renamed += it },
-            onWriteDate = { datesWritten += it }
+            onWriteDate = { datesWritten += it },
+            appWideReminderTime = appWideReminderTime,
+            onSetListReminderTime = { listId, minute -> listReminderTimes += listId to minute }
         )
     }
 
     private fun locale(): Locale = Locale.getDefault(Locale.Category.FORMAT)
+
+    private fun formattedTime(time: LocalTime): String {
+        val pattern = AndroidDateFormat.getBestDateTimePattern(locale(), "jm")
+        return time.format(DateTimeFormatter.ofPattern(pattern, locale()))
+    }
 
     private fun lastFeedback(): Int {
         var view: View? = hostView
@@ -923,5 +1063,9 @@ class TodoListScreenTest {
         const val MOVE_DOWN = "Move down"
         const val NO_FEEDBACK = -1
         const val SETTLE_MILLIS = 100L
+        const val SET_DUE_DATE = "Set due date"
+        const val RUB_OUT = "Rub out"
+        const val CLOCK_HOUR_10 = "10"
+        const val CLOCK_MINUTE_0 = "0"
     }
 }

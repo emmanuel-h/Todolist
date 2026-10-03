@@ -5,6 +5,8 @@ import fr.mandarine.todolist.domain.DeleteTodoListUseCase
 import fr.mandarine.todolist.domain.EditTodoListUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import fr.mandarine.todolist.domain.SetListReminderTimeUseCase
+import fr.mandarine.todolist.domain.SyncDailyChecksUseCase
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +37,9 @@ class TodoListsViewModelTargetDateTest {
             editTodoListUseCase,
             getTodoListsWithStatusUseCase,
             reorderTodoListsUseCase,
-            Dispatchers.Unconfined
+            Dispatchers.Unconfined,
+            setListReminderTimeUseCase = mockk(relaxed = true),
+            syncDailyChecksUseCase = mockk(relaxed = true)
         )
     }
 

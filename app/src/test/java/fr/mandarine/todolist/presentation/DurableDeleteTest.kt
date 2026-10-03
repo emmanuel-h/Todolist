@@ -11,6 +11,8 @@ import fr.mandarine.todolist.domain.GetTodoListsUseCase
 import fr.mandarine.todolist.domain.GetTodoListsWithStatusUseCase
 import fr.mandarine.todolist.domain.GetTodosUseCase
 import fr.mandarine.todolist.domain.ReorderTodoListsUseCase
+import fr.mandarine.todolist.domain.SetListReminderTimeUseCase
+import fr.mandarine.todolist.domain.SyncDailyChecksUseCase
 import fr.mandarine.todolist.domain.ReorderTodosUseCase
 import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
@@ -153,6 +155,8 @@ class DurableDeleteTest {
         getTodoListsWithStatusUseCase,
         mockk<ReorderTodoListsUseCase>(relaxed = true),
         dispatcher = Dispatchers.Unconfined,
-        writeScope = writeScope
+        writeScope = writeScope,
+        setListReminderTimeUseCase = mockk(relaxed = true),
+        syncDailyChecksUseCase = mockk(relaxed = true)
     )
 }

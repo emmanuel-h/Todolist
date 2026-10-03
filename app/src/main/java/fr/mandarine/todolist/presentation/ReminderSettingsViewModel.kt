@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.mandarine.todolist.domain.GetReminderTimeUseCase
 import fr.mandarine.todolist.domain.NotificationScheduler
+import fr.mandarine.todolist.domain.ReminderSlot
 import fr.mandarine.todolist.domain.SetReminderTimeUseCase
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineDispatcher
@@ -46,7 +47,7 @@ class ReminderSettingsViewModel(
     fun setReminderTime(minuteOfDay: Int) {
         viewModelScope.launch(dispatcher) {
             setReminderTimeUseCase(minuteOfDay)
-            notificationScheduler.rescheduleDailyCheck()
+            notificationScheduler.rescheduleDailyCheck(ReminderSlot.AppWide)
             _reminderTime.value = getReminderTimeUseCase()
         }
     }
