@@ -310,7 +310,8 @@ storage shape can change without the rest of the app knowing.
 
 ### `presentation/` — the ViewModels
 
-Two screens, two ViewModels, plus `ReminderSettingsViewModel`. Both main ones follow
+Two screens, two ViewModels, plus `ReminderSettingsViewModel`, which only reads the
+app-wide hour lists fall back to. Both main ones follow
 one shape and it is worth internalising:
 
 > **write → re-read everything → publish a new state**

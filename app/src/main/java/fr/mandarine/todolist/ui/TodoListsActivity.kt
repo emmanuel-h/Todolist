@@ -111,12 +111,7 @@ class TodoListsActivity : ComponentActivity() {
         reminderSettingsViewModel = ViewModelProvider(
             this,
             viewModelFactory {
-                ReminderSettingsViewModel(
-                    container.getReminderTimeUseCase,
-                    container.setReminderTimeUseCase,
-                    container.notificationScheduler,
-                    container.databaseDispatcher
-                )
+                ReminderSettingsViewModel(container.getReminderTimeUseCase)
             }
         )[ReminderSettingsViewModel::class.java]
 

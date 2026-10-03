@@ -13,7 +13,6 @@ import fr.mandarine.todolist.domain.ListNotifier
 import fr.mandarine.todolist.domain.NotificationScheduler
 import fr.mandarine.todolist.domain.ReminderTimeRepository
 import fr.mandarine.todolist.domain.SetListReminderTimeUseCase
-import fr.mandarine.todolist.domain.SetReminderTimeUseCase
 import fr.mandarine.todolist.domain.SyncDailyChecksUseCase
 import fr.mandarine.todolist.domain.SystemClock
 import fr.mandarine.todolist.domain.TodoListRepository
@@ -82,7 +81,6 @@ class AppContainer(
     val reminderTimeRepository: ReminderTimeRepository by lazy { SharedPreferencesReminderTimeRepository(context) }
     val notificationScheduler: NotificationScheduler by lazy { schedulerFactory(context, reminderTimeRepository) }
     val getReminderTimeUseCase: GetReminderTimeUseCase by lazy { GetReminderTimeUseCase(reminderTimeRepository) }
-    val setReminderTimeUseCase: SetReminderTimeUseCase by lazy { SetReminderTimeUseCase(reminderTimeRepository) }
     val setListReminderTimeUseCase: SetListReminderTimeUseCase by lazy { SetListReminderTimeUseCase(todoListRepository) }
     val syncDailyChecksUseCase: SyncDailyChecksUseCase by lazy { SyncDailyChecksUseCase(todoListRepository, notificationScheduler) }
 }
