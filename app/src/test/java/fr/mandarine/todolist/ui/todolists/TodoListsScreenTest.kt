@@ -255,7 +255,7 @@ class TodoListsScreenTest {
     }
 
     @Test
-    fun `should leave a fresh caret waiting after a list is created`() {
+    fun `should put the sheet down after a list is created from the keyboard`() {
         screenState.addRowExpanded = true
         render(TodoListsState.Empty)
 
@@ -263,9 +263,9 @@ class TodoListsScreenTest {
         addLine().performImeAction()
         composeRule.waitForIdle()
 
-        assertTrue(screenState.addRowExpanded)
+        assertFalse(screenState.addRowExpanded)
         assertEquals("", screenState.addRowText)
-        addLine().assertIsFocused()
+        composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
     @Test

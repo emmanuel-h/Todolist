@@ -65,7 +65,8 @@ private const val PEN_SETTLE_MILLIS = 250L
  * — a tick at the end of the rule.
  *
  * The tick and the keyboard's own Done are the same act, and both leave a fresh
- * caret waiting. The line used to have only Done, which is a key a reader has to
+ * caret waiting — unless [keepsPenAfterCommit] is false, for a line whose owner
+ * puts the sheet down once something is written on it. The line used to have only Done, which is a key a reader has to
  * know is load-bearing before they will press it; nothing on the page said the
  * line could be finished at all, only that it could be abandoned. Back, a tap on
  * the paper or dismissing the keyboard still put the pen down.
@@ -90,7 +91,8 @@ fun InkAddLine(
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     breathing: Boolean = false,
     animated: Boolean = true,
-    marked: Boolean = false
+    marked: Boolean = false,
+    keepsPenAfterCommit: Boolean = true
 ) {
     val palette = LocalPaperPalette.current
     val haptics = rememberPaperHaptics()
@@ -110,7 +112,7 @@ fun InkAddLine(
             onCommit(text)
             haptics.submit()
         }
-        focusRequester.requestFocus()
+        if (keepsPenAfterCommit) focusRequester.requestFocus()
     }
 
     RuledRow(modifier = modifier, onClick = { focusRequester.requestFocus() }) {

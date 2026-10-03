@@ -124,7 +124,7 @@ class TodoListsScreenStateTest {
 
         assertTrue(submitted)
         assertEquals(Triple("Groceries", date, null), created)
-        assertTrue(state.addRowExpanded)
+        assertFalse(state.addRowExpanded)
         assertEquals("", state.addRowText)
         assertEquals(DateSelection.None, state.addRowSelection)
     }
