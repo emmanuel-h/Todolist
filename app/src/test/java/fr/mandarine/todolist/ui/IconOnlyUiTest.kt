@@ -199,7 +199,7 @@ class IconOnlyUiTest {
         composeRule.setContent { PaperTheme { ListActions() } }
 
         assertEquals(
-            listOf(LIST_NAME, "Rename or colour", "Give it a day", "Delete list"),
+            listOf(LIST_NAME, "Rename", "Give it a day", "Delete list"),
             composeRule.onNode(isDialog()).fetchSemanticsNode().staticText()
         )
     }

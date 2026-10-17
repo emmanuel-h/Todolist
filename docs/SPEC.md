@@ -66,7 +66,7 @@ A list's own page (Screen 2) is one continuous sheet of ruled loose-leaf paper, 
 - A rule is smaller than a finger, so a control written on one is one rule tall to the layout and a whole 48dp target to the hand: `Modifier.pressableBelowTheRule` lets it reach down past its own rule. On an item row that reach lies over the top of the next item, which is drawn later and so answers first where the two overlap. Flooring its height instead pushed the row onto a second rule of writing it did not have, and every row grew by half again.
 - Ruling is drawn both per page and per row: `RuledPage` rules the sheet, and `Modifier.paperRuling` rules a row that has grown past one pitch, so a hairline always meets the text baseline no matter how tall the row gets. Neither mirrors automatically — a `DrawScope` has no layout direction — so both read `layoutDirection` and place the bare gutter on the row's start edge.
 - **A list's page is ruled; the board is not.** An item row is its written lines; the add line keeps a blank rule under it. Lists themselves are cards on the board (see **List card**) since [#118](https://github.com/emmanuel-h/Todolist/issues/118); until then they were ruled rows on a page of their own.
-- **One control per list.** A list carries a single ⋯ — at the foot of its card. The pencil, calendar and bin that used to sit on a list row moved onto the sheet the ⋯ holds out, where they are named in words (see **List actions**). The ⋯ is a full 48dp target.
+- **One control per list.** A list carries a single ✎ — at the foot of its card. The calendar and bin that used to sit beside it on a list row moved onto the sheet the ✎ holds out, where they are named in words (see **List actions**). It was a ⋯ until 2026-10-17; a pencil says "change this list" where three dots only said "more". It is a full 48dp target.
 - A fully-completed list is marked by its pen strike and the crossed-out ink tone on its name, on a faded card.
 - Progress is an ink line laid over a pencil one with the printed fraction beside it (`ui/listmeta/ListProgress.kt`, `ui/paper/InkProgress.kt`), spoken as one phrase — "2 of 5 done". A list with nothing written on it draws none. It is spent in the reader's ink, never blue: at rest the page carries no blue.
 - There is no toolbar. A list's page is headed above its ruling by its name, and the head is always a whole number of rules tall, so the ruling under it stays on the writing whatever the name wraps to. The board is headed by its cover, on a sheet pinned across its top. The status bar is transparent and the cork and the sheet run unbroken behind it.
@@ -215,8 +215,8 @@ Bare cork under the cover, the bar at the foot, and the pad in the corner — no
 │ │Groceries│      │Reading  │      │
 │ │TODAY·2/5│      │0/4      │      │   ← status line
 │ │○ Milk   │      │○ Dune   │      │   ← the first things still to do
-│ │○ Bread  │      │+ 2 more⋯│      │
-│ │        ⋯│      └─────────┘      │   ← the one control
+│ │○ Bread  │      │+ 2 more✎│      │
+│ │        ✎│      └─────────┘      │   ← the one control
 │ └─────────┘                     ▤ │   ← sticky pad
 ├──────────────────────────────────┤
 │     ▦ Lists         📅 Calendar   │   ← the bar
@@ -240,22 +240,24 @@ Bare cork under the cover, the bar at the foot, and the pad in the corner — no
   month reversed out of a band in the day's ink, the numeral under it. It is described as the jot
   was (`Due date Sat, Oct 17, 2026`) and pressing it opens the calendar on that day — never the
   list. An undated card has none.
-- **The ⋯** sits at the card's foot, where the thumb finds it. Everything else about the card
+- **The ✎** sits at the card's foot, where the thumb finds it. Everything else about the card
   opens the list.
 
 ### List actions — _implemented · notebook redesign_
 
-A card's ⋯ holds out a paper slip at the foot of the page, under the thumb
+A card's ✎ holds out a paper slip at the foot of the page, under the thumb
 (`ui/todolists/ListActionsSheet.kt`, `PaperDialog(alignment = BottomCenter)`): the list's name
-and progress, a rule, and three lines in words, each with its glyph:
+and progress, the seven colour swatches (see **Colour a list**), a rule, and three lines in
+words, each with its glyph:
 
 | Line | Does |
 |---|---|
-| ✎ **Rename or colour** | Opens the edit sheet (name, date marks, colour) |
+| ✎ **Rename** | Opens the edit sheet (name, date marks) |
 | 📅 **Give it a day** / **Change its day** | Opens the paper calendar for the row |
 | 🗑 **Delete list** (in red) | Raises the delete question |
 
-Choosing a line puts the sheet down and hands over to the sheet that does the work. Back, a tap
+Pressing a swatch recolours the list there and then and leaves the sheet out, so the ink circle
+is seen moving to it. Choosing a line puts the sheet down and hands over to the sheet that does the work. Back, a tap
 on the veil, or a tap outside is nothing chosen.
 
 ### Behaviors
@@ -271,12 +273,12 @@ on the veil, or a tap outside is nothing chosen.
 - Tap anywhere on a card → navigates to Screen 2 for that list; a slip on the Calendar tab does the same
 
 **Edit a list name** — _implemented · [#4](https://github.com/emmanuel-h/Todolist/issues/4)_
-- Press the card's ⋯ → **Rename or colour** → the edit sheet opens, pre-filled with the current name and the list's date marks
+- Press the card's ✎ → **Rename** → the edit sheet opens, pre-filled with the current name and the list's date marks
 - Dismissing the sheet **commits** what is on it; there is no confirm row. A blank name is refused and leaves the original unchanged
 - The name updates immediately; items and position are unaffected
 
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
-- **A committed row carries a visible route to a day** ([#67](https://github.com/emmanuel-h/Todolist/issues/67)). With no date it is the ⋯ and the words **Give it a day** on the sheet it holds out; with a date it is also the jot itself, which is pressable and opens the same calendar. The jot is written on the row's second rule, after the progress, so the name's line never rearranges itself when a day is written on it ([#84](https://github.com/emmanuel-h/Todolist/issues/84)). Until the notebook redesign a bare `[📅]` sat in a slot between the pencil and the bin; it said "a list can have a day" no better than the sheet's words do, and cost every row a glyph
+- **A committed row carries a visible route to a day** ([#67](https://github.com/emmanuel-h/Todolist/issues/67)). With no date it is the ✎ and the words **Give it a day** on the sheet it holds out; with a date it is also the jot itself, which is pressable and opens the same calendar. The jot is written on the row's second rule, after the progress, so the name's line never rearranges itself when a day is written on it ([#84](https://github.com/emmanuel-h/Todolist/issues/84)). Until the notebook redesign a bare `[📅]` sat in a slot between the pencil and the bin; it said "a list can have a day" no better than the sheet's words do, and cost every row a glyph
 - **A ring means a day** ([#36](https://github.com/emmanuel-h/Todolist/issues/36), [#37](https://github.com/emmanuel-h/Todolist/issues/37)). A kind is something a date has, not something chosen before there is one, so with nothing written neither mark is ringed and nothing trails them. An *ink* ring, that is: the calendar sheet rings the kind it is asking for in pencil (see below). `DateSelection.kind` is still non-nullable; it is simply not read while `date` is null.
 - Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**
 - **Rubbing a day out asks first** ([#85](https://github.com/emmanuel-h/Todolist/issues/85)). Both routes — the ringed mark and the `Remove` control — raise a slip naming the list whose day is going, with Cancel and Remove, and nothing is cleared unless Remove is pressed. Taking a day off a list takes the reminder it scheduled with it, and it was the last destructive act that happened on a single press
@@ -304,14 +306,15 @@ on the veil, or a tap outside is nothing chosen.
 - The due date's jot is marked by the ⏰ glyph; the target date's by 📅. Neither appears on the other's row
 
 **Colour a list** — _[#71](https://github.com/emmanuel-h/Todolist/issues/71)_
-- Seven marks on the edit sheet: `None` and six highlighter hues — Butter, Mint, Rose, Sky, Peach, Lilac. The chosen one is **circled in ink**, the same mark the paper calendar rings a day with and the hour grid rings an hour with; `None` reads as bare paper
+- **Two routes, both where the colour is**: the seven swatches sit on the card's ✎ slip, under the list's name, and pressing the tape across the top of an opened list holds out a slip with the same seven (`ui/todolist/ListColourSlip.kt`; the tape is a 48dp-tall press read as *Change its colour*). On the ✎ slip a swatch recolours and the slip stays out; on the tape's slip, whose only question is the colour, a swatch recolours and puts it down. Until 2026-10-17 the swatches sat only at the foot of the rename sheet, behind a line that had to say "Rename or colour" for anyone to find them
+- Seven marks (`ui/listmeta/ListColourPicker.kt`): `None` and six highlighter hues — Butter, Mint, Rose, Sky, Peach, Lilac. The chosen one is **circled in ink**, the same mark the paper calendar rings a day with and the hour grid rings an hour with; `None` reads as bare paper
 - The colour is the **tape** the list's card is pinned up with, on the board, on its slip on the calendar, and across the top of its page when it is lifted off the board. Tape is paper, so it never tints the writing: the name's ink, its strikethrough when the list is finished, and every mark on the card keep their own tones. (Until [#118](https://github.com/emmanuel-h/Todolist/issues/118) it was a highlighter wash behind the list's name.)
 - It is a **closed set**, not a colour wheel, because `PaperPalette.night` is a second stock of paper rather than `light` inverted — every hue needs a lamplit twin, and a free ARGB value cannot have one. The night washes are authored separately to read as tonal paper shifts rather than coloured light
 - **Editing a name or a date leaves the colour alone.** Only the picker changes it. The edit path carries the colour through, because a default would have quietly stripped it on every rename
 - Colour is stored per list (`ListColour`, a TEXT column, schema 8); it does not affect sort order, and it means nothing to the app
 
 **Delete a list** — see **Delete an item**
-- Press the card's ⋯ → **Delete list** → a paper slip asks `Delete “<name>”?`, and under it, when the list
+- Press the card's ✎ → **Delete list** → a paper slip asks `Delete “<name>”?`, and under it, when the list
   holds any, `and the N items on it`. A list with nothing on it is asked about in one line
 - **Delete** writes it through at once and the card tears off the board. **Cancel** leaves the
   page exactly as it was, and so does back, and so does a tap on the veil

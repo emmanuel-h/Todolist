@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.pressableBelowTheRule
@@ -74,7 +75,6 @@ import fr.mandarine.todolist.ui.paper.LocalPaperGutter
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
-import fr.mandarine.todolist.ui.paper.CorkDimens
 import fr.mandarine.todolist.ui.paper.CorkSurface
 import fr.mandarine.todolist.ui.paper.PaperTape
 import fr.mandarine.todolist.ui.paper.pinnedPaper
@@ -201,6 +201,7 @@ fun TodoListScreen(
     onReorder: (List<String>) -> Unit,
     onRenameList: (String) -> Unit = {},
     onWriteDate: (DateSelection) -> Unit = {},
+    onRecolour: (ListColour) -> Unit = {},
     appWideReminderTime: LocalTime = LocalTime.of(8, 0),
     onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> },
     pagePosition: Int = 0,
@@ -490,13 +491,33 @@ fun TodoListScreen(
                     marked = true
                 )
             }
-            PaperTape(
-                colour = palette.tapeFor(summary?.list?.colour ?: ListColour.None),
-                width = LIFTED_TAPE,
+            val recolourSpoken = stringResource(R.string.list_colour)
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .graphicsLayer { translationY = -CorkDimens.tapeHeight.toPx() / 2 }
-            )
+                    .graphicsLayer { translationY = -PaperDimens.touchTarget.toPx() / 2 }
+                    .heightIn(min = PaperDimens.touchTarget)
+                    .then(
+                        if (summary == null) {
+                            Modifier
+                        } else {
+                            Modifier
+                                .semantics { contentDescription = recolourSpoken }
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = PaperFocusMark,
+                                    role = Role.Button,
+                                    onClick = { screenState.colourSheet = true }
+                                )
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                PaperTape(
+                    colour = palette.tapeFor(summary?.list?.colour ?: ListColour.None),
+                    width = LIFTED_TAPE
+                )
+            }
         }
     }
 
@@ -509,6 +530,20 @@ fun TodoListScreen(
             onDelete = {
                 screenState.confirmDelete = null
                 screenState.tearingId = confirm.id
+            }
+        )
+    }
+
+    val recolouring = summary?.list
+    if (screenState.colourSheet && recolouring != null) {
+        ListColourSlip(
+            listName = recolouring.name,
+            colour = recolouring.colour,
+            animated = screenState.animationsEnabled,
+            onDismiss = { screenState.colourSheet = false },
+            onRecolour = { colour ->
+                screenState.colourSheet = false
+                onRecolour(colour)
             }
         )
     }

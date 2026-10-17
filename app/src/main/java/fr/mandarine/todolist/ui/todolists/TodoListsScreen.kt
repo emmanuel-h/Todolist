@@ -291,7 +291,11 @@ fun TodoListsScreen(
             onDelete = {
                 screenState.actionsFor = null
                 requestDelete(actionsSummary)
-            }
+            },
+            onRecolour = { colour ->
+                onRenameList(list.id, list.name, list.targetDate, list.dueDate, colour)
+            },
+            animated = screenState.animationsEnabled
         )
     }
 
@@ -325,9 +329,6 @@ fun TodoListsScreen(
             },
             onClearDate = {
                 screenState.rename = rename.copy(selection = rename.selection.cleared())
-            },
-            onColourChange = { colour ->
-                screenState.rename = rename.copy(colour = colour)
             },
             animated = screenState.animationsEnabled,
             onDismiss = { screenState.rename = null },

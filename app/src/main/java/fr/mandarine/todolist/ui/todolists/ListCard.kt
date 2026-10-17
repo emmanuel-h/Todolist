@@ -314,12 +314,12 @@ private fun CardFoot(summary: TodoListSummary, onActionsRequested: (() -> Unit)?
         }
         if (onActionsRequested != null) {
             InkIconButton(
-                painter = painterResource(R.drawable.ic_more),
+                painter = painterResource(R.drawable.ic_edit),
                 contentDescription = stringResource(R.string.list_actions),
                 onClick = onActionsRequested,
                 tint = palette.inked(InkTone.Margin),
                 pressedTint = palette.inked(InkTone.Words),
-                foot = GlyphFoot.dots,
+                foot = GlyphFoot.pencil,
                 glyphSize = PaperDimens.rowGlyph,
                 buttonWidth = PaperDimens.touchTarget
             )

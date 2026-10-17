@@ -521,7 +521,7 @@ class ListCardTest {
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         val OPENS_THE_LIST: String? = null
-        const val LIST_ACTIONS = "More for this list"
+        const val LIST_ACTIONS = "Edit this list"
         const val GIVE_A_DAY = "Give this list a day"
         const val ONE_LINE = 1
     }

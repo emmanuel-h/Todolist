@@ -595,7 +595,7 @@ class TodoListsScreenTest {
 
         assertEquals("1", screenState.actionsFor)
         assertTrue(opened.isEmpty())
-        composeRule.onNodeWithContentDescription(RENAME_OR_COLOUR).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(RENAME).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(DELETE_LIST).assertIsDisplayed()
     }
 
@@ -698,6 +698,27 @@ class TodoListsScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf(ListColour.Mint), renamedColours)
+    }
+
+    @Test
+    fun `should colour a list straight from its sheet keeping its name and day`() {
+        screenState.animationsEnabled = false
+        render(
+            content(
+                active = listOf(summary("1", "Groceries", targetDate = DATE, colour = ListColour.Mint))
+            )
+        )
+
+        composeRule
+            .onNode(hasContentDescription(LIST_ACTIONS) and hasAnyAncestor(hasText("Groceries")))
+            .performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Pink").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf("Groceries"), renamed)
+        assertEquals(listOf<Pair<LocalDate?, LocalDate?>>(DATE to null), renamedDates)
+        assertEquals(listOf(ListColour.Rose), renamedColours)
     }
 
     // ── Reaching the gestures without one ─────────────────────────────────────
@@ -832,7 +853,7 @@ class TodoListsScreenTest {
     }
 
     private fun editCorner(text: String) {
-        act(text, RENAME_OR_COLOUR)
+        act(text, RENAME)
     }
 
     /**
@@ -1514,8 +1535,8 @@ class TodoListsScreenTest {
         const val CLEAR_DUE_DATE = "Clear due date"
         const val EDIT_NAME = "Edit list name"
         const val DELETE_LIST = "Delete list"
-        const val LIST_ACTIONS = "More for this list"
-        const val RENAME_OR_COLOUR = "Rename or colour"
+        const val LIST_ACTIONS = "Edit this list"
+        const val RENAME = "Rename"
         const val COVER_DAY = "SATURDAY, MARCH 14"
         const val MOVE_UP = "Move up"
         const val MOVE_DOWN = "Move down"

@@ -27,6 +27,7 @@ private const val TICKING = "ticking"
 private const val UNTICKING = "unticking"
 private const val ISSUED = "issued-toggles"
 private const val DONE_FOLDED = "done-folded"
+private const val COLOUR_SHEET = "colour-sheet"
 
 @Suppress("UNCHECKED_CAST")
 private fun savedIds(saved: Any?): List<String> = (saved as? List<String>).orEmpty()
@@ -74,6 +75,9 @@ class TodoListScreenState {
     var doneFolded by mutableStateOf(false)
 
     var dateSheet by mutableStateOf<DateSelection?>(null)
+
+    /** Whether the tape's colour slip is held out. */
+    var colourSheet by mutableStateOf(false)
 
     /**
      * The minute-of-day the clock opened on for the current list. Non-null while
@@ -208,7 +212,8 @@ class TodoListScreenState {
                     TICKING to ArrayList(state.pendingToggles.filterValues { it }.keys),
                     UNTICKING to ArrayList(state.pendingToggles.filterValues { !it }.keys),
                     ISSUED to ArrayList(state.issuedToggles),
-                    DONE_FOLDED to state.doneFolded
+                    DONE_FOLDED to state.doneFolded,
+                    COLOUR_SHEET to state.colourSheet
                 )
             },
             restore = { saved ->
@@ -236,6 +241,7 @@ class TodoListScreenState {
                         savedIds(saved[UNTICKING]).associateWith { false }
                     issuedToggles = savedIds(saved[ISSUED]).toSet()
                     doneFolded = saved[DONE_FOLDED] as Boolean? ?: false
+                    colourSheet = saved[COLOUR_SHEET] as Boolean? ?: false
                 }
             }
         )

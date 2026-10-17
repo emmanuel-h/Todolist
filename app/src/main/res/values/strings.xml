@@ -96,8 +96,9 @@
     </plurals>
     <string name="summary_all_finished">Everything is ticked off.</string>
     <string name="summary_separator">" · "</string>
-    <string name="list_actions">More for this list</string>
-    <string name="action_rename_list">Rename or colour</string>
+    <string name="list_actions">Edit this list</string>
+    <string name="action_rename_list">Rename</string>
+    <string name="list_colour">Change its colour</string>
     <string name="action_give_day">Give it a day</string>
     <string name="action_change_day">Change its day</string>
     <string name="page_of">List %1$d of %2$d</string>

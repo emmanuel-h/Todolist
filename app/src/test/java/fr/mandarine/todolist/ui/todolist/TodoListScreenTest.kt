@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onLast
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.TextStyle
 import android.text.format.DateFormat as AndroidDateFormat
 import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoItem
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.presentation.TodoListState
@@ -76,6 +78,7 @@ class TodoListScreenTest {
     private val reordered = mutableListOf<List<String>>()
     private val renamed = mutableListOf<String>()
     private val datesWritten = mutableListOf<DateSelection>()
+    private val recoloured = mutableListOf<ListColour>()
     private val listReminderTimes = mutableListOf<Pair<String, Int?>>()
     private var backPressed = 0
     private var hostView: View? = null
@@ -973,6 +976,42 @@ class TodoListScreenTest {
         composeRule.onNodeWithText("Add a date").assertHasClickAction()
     }
 
+    @Test
+    fun `should hold out the swatches when the list's tape is pressed`() {
+        render(TodoListState.Empty, "Groceries")
+
+        composeRule.onNodeWithContentDescription(CHANGE_COLOUR).performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(COLOUR_NONE).assertIsSelected()
+        composeRule.onNodeWithContentDescription(COLOUR_LILAC).assertIsDisplayed()
+    }
+
+    @Test
+    fun `should recolour the list and put the slip down when a swatch is pressed`() {
+        render(
+            TodoListState.Empty,
+            TodoListSummary(TodoList(LIST_ID, "Groceries", colour = ListColour.Mint), allDone = false)
+        )
+
+        composeRule.onNodeWithContentDescription(CHANGE_COLOUR).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(COLOUR_MINT).assertIsSelected()
+        composeRule.onNodeWithContentDescription(COLOUR_PEACH).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ListColour.Peach), recoloured)
+        assertFalse(screenState.colourSheet)
+        composeRule.onNodeWithContentDescription(COLOUR_PEACH).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should not offer the tape as a press before the list has loaded`() {
+        render(TodoListState.Empty, null)
+
+        composeRule.onNodeWithContentDescription(CHANGE_COLOUR).assertDoesNotExist()
+    }
+
     private fun render(state: TodoListState, listName: String = "") {
         render(
             state,
@@ -1015,6 +1054,7 @@ class TodoListScreenTest {
             onReorder = { orderedIds -> reordered += orderedIds },
             onRenameList = { renamed += it },
             onWriteDate = { datesWritten += it },
+            onRecolour = { recoloured += it },
             appWideReminderTime = appWideReminderTime,
             onSetListReminderTime = { listId, minute -> listReminderTimes += listId to minute }
         )
@@ -1092,6 +1132,11 @@ class TodoListScreenTest {
     private companion object {
         val TODAY: LocalDate = LocalDate.of(2026, 1, 1)
         const val LIST_ID = "list-1"
+        const val CHANGE_COLOUR = "Change its colour"
+        const val COLOUR_NONE = "No colour"
+        const val COLOUR_MINT = "Green"
+        const val COLOUR_PEACH = "Orange"
+        const val COLOUR_LILAC = "Violet"
         /**
          * The pinned add line draws its label in ink at rest — "Add an item" in
          * margin tone — so the affordance is visible on a populated page. This

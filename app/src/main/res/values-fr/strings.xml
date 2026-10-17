@@ -106,8 +106,9 @@
     </plurals>
     <string name="summary_all_finished">Tout est coché.</string>
     <string name="summary_separator">" · "</string>
-    <string name="list_actions">Plus pour cette liste</string>
-    <string name="action_rename_list">Renommer ou colorier</string>
+    <string name="list_actions">Modifier cette liste</string>
+    <string name="action_rename_list">Renommer</string>
+    <string name="list_colour">Changer sa couleur</string>
     <string name="action_give_day">Lui donner un jour</string>
     <string name="action_change_day">Changer son jour</string>
     <string name="page_of">Liste %1$d sur %2$d</string>
