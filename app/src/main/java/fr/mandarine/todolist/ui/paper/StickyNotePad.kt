@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -58,6 +59,12 @@ private const val BECKON_DEGREES = -12f
 private const val PERSPECTIVE = 12f
 private const val AMBIENT_ALPHA = 0.26f
 private const val CONTACT_ALPHA = 0.3f
+private const val HALO_ALPHA = 0.32f
+private const val RING_REACH = 0.58f
+private const val RING_START_DEGREES = -55f
+private const val RING_SWEEP_DEGREES = 340f
+private const val RING_TAIL_DEGREES = 40f
+private const val RING_TAIL_REACH = 1.07f
 private const val PEN_TILT_DEGREES = -35f
 private const val PEN_SHADOW_ALPHA = 0.18f
 private const val PEN_SHADE_ALPHA = 0.55f
@@ -78,6 +85,7 @@ private val AMBIENT_SIDEWAYS = 1.dp
 private val AMBIENT_DROP = 4.dp
 private val CONTACT_RADIUS = 1.dp
 private val CONTACT_DROP = 1.dp
+private val HALO_RADIUS = 12.dp
 private val DENT_RADIUS = 2.dp
 private val DENT_DROP = 1.dp
 private val SHEET_STEP = 1.dp
@@ -85,9 +93,9 @@ private val SHEET_INSET = (PaperDimens.stickyPad - PaperDimens.stickySheet) / 2
 private val CARD_HEAD = 14.dp
 private val CARD_RULE_STEP = 11.dp
 private val CARD_RULE_WIDTH = 1.dp
-private val GLYPH_INSET = PaddingValues(start = 7.dp, top = 5.dp)
-private val PEN_NIB_AT = DpOffset(37.dp, 38.dp)
-private val PEN_LENGTH = 48.dp
+private val GLYPH_INSET = PaddingValues(start = 8.dp, top = 7.dp)
+private val PEN_NIB_AT = DpOffset(45.dp, 42.dp)
+private val PEN_LENGTH = 42.dp
 private val RING_STROKE = 1.6.dp
 private val PEN_BARREL = 7.dp
 private val PEN_NIB = 9.dp
@@ -140,18 +148,25 @@ private fun StickyNoteSheetSurface(
 /**
  * The circle a reader draws round something on a page so it is not missed: one
  * stroke of red ink that starts at the top right, goes all the way round and runs
- * a little past where it began without closing. Drawn on the glyph's own box,
- * reaching a fifth of a glyph out on every side.
+ * a little past where it began, drifting just outside itself rather than closing.
+ * It is centred on the glyph, so the cross sits in the middle of it.
  */
 private fun DrawScope.drawInkedRing(ink: Color) {
-    val w = size.width
-    val h = size.height
+    val reach = size.minDimension * RING_REACH
     val ring = Path().apply {
-        moveTo(w * 0.93f, h * 0.12f)
-        cubicTo(w * 0.73f, -h * 0.13f, w * 0.23f, -h * 0.13f, w * 0.08f, h * 0.18f)
-        cubicTo(-w * 0.08f, h * 0.49f, w * 0.12f, h * 0.92f, w * 0.54f, h * 0.92f)
-        cubicTo(w * 0.93f, h * 0.92f, w * 1.12f, h * 0.61f, w * 1.04f, h * 0.30f)
-        cubicTo(w * 1.0f, h * 0.14f, w * 0.89f, h * 0.03f, w * 0.69f, -h * 0.01f)
+        arcTo(
+            rect = Rect(center, reach),
+            startAngleDegrees = RING_START_DEGREES,
+            sweepAngleDegrees = RING_SWEEP_DEGREES,
+            forceMoveTo = true
+        )
+        val tail = Rect(center, reach * RING_TAIL_REACH)
+        arcTo(
+            rect = tail,
+            startAngleDegrees = RING_START_DEGREES + RING_SWEEP_DEGREES,
+            sweepAngleDegrees = RING_TAIL_DEGREES,
+            forceMoveTo = false
+        )
     }
     drawPath(ring, ink, style = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round))
 }
@@ -232,8 +247,17 @@ private fun DrawScope.drawPen(palette: PaperPalette) {
     }
 }
 
+/**
+ * Cream cards over cream cards: the stack would sink into a list it overlaps if
+ * its shadow only fell below it, so each card also carries an even halo on every
+ * side that marks its edge against whatever is under it.
+ */
 private fun Modifier.padShadow(palette: PaperPalette): Modifier = raised(SHEET_SHAPE, palette) {
     dropShadow(SHEET_SHAPE) {
+        radius = HALO_RADIUS.toPx()
+        color = palette.shadow
+        alpha = HALO_ALPHA
+    }.dropShadow(SHEET_SHAPE) {
         radius = AMBIENT_RADIUS.toPx()
         offset = Offset(AMBIENT_SIDEWAYS.toPx(), AMBIENT_DROP.toPx())
         color = palette.shadow
@@ -397,6 +421,7 @@ fun StickyNotePad(
                         )
                     }
                 ),
+            shadowed = true,
             dent = { if (showing == null) NO_DENT else dent.value }
         ) {
             if (showing != null) {
@@ -428,6 +453,7 @@ fun StickyNotePad(
                         role = Role.Button,
                         onClick = onTake
                     ),
+                shadowed = true,
                 dent = { dent.value }
             ) {
                 InkIcon(
