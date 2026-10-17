@@ -113,7 +113,7 @@ private val DAY_CELL = 48.dp
 private val TODAY_DISC = 32.dp
 private val SELECTED_RING = 2.dp
 private val DAY_MARK = 6.dp
-private val MARK_GAP = 1.dp
+private val MARK_GAP = 3.dp
 private val VIEW_TAB_HEIGHT = 48.dp
 private val UNDERLINE_STROKE = 2.dp
 private val UNDERLINE_HEIGHT = 6.dp
@@ -662,7 +662,9 @@ private fun DayNumeral(date: LocalDate, today: LocalDate, mark: InkTone?, select
                         drawCircle(
                             dot,
                             radius = markRadius,
-                            center = center.copy(y = size.height + markRadius + MARK_GAP.toPx())
+                            center = center.copy(
+                                y = size.height + (if (selected) ring * 3 else 0f) + markRadius + MARK_GAP.toPx()
+                            )
                         )
                     }
                 }

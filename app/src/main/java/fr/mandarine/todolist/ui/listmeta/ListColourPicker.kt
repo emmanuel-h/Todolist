@@ -3,8 +3,10 @@ package fr.mandarine.todolist.ui.listmeta
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,6 +32,8 @@ private val SWATCH_STROKE = 1.dp
 
 /**
  * Seven swatches in a row — the six named hues and [ListColour.None] (bare paper).
+ * On a sheet too narrow for seven full swatches they shrink together rather than
+ * pushing the last one off the edge.
  * The chosen one is circled in ink. None draws a hairline border so it reads as a
  * real choice on the sheet rather than an empty slot.
  *
@@ -55,7 +59,8 @@ fun ListColourPicker(
                 colour = colour,
                 selected = colour == selected,
                 onSelect = { onSelect(colour) },
-                animated = animated
+                animated = animated,
+                modifier = Modifier.weight(1f, fill = false)
             )
         }
     }
@@ -66,7 +71,8 @@ private fun ColourSwatch(
     colour: ListColour,
     selected: Boolean,
     onSelect: () -> Unit,
-    animated: Boolean
+    animated: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val palette = LocalPaperPalette.current
     val label = stringResource(colourStringRes(colour))
@@ -76,8 +82,9 @@ private fun ColourSwatch(
     val isNone = colour == ListColour.None
 
     Box(
-        modifier = Modifier
-            .size(SWATCH_TOUCH)
+        modifier = modifier
+            .widthIn(max = SWATCH_TOUCH)
+            .aspectRatio(1f)
             .selectable(
                 selected = selected,
                 role = Role.RadioButton,
@@ -88,7 +95,7 @@ private fun ColourSwatch(
     ) {
         Box(
             modifier = Modifier
-                .size(SWATCH_RING)
+                .fillMaxSize(SWATCH_RING / SWATCH_TOUCH)
                 .drawWithCache {
                     val strokeWidth = SWATCH_STROKE.toPx()
                     onDrawBehind {

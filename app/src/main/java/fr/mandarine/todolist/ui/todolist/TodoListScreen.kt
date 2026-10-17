@@ -16,6 +16,8 @@ import fr.mandarine.todolist.ui.paper.pressableBelowTheRule
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -721,6 +723,7 @@ private fun LazyItemScope.animatedRow(
  * the date jot opens the calendar. Its height is always a whole number of rules,
  * so the ruling under it stays on the writing whatever the name wraps to.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HeadLine(
     summary: TodoListSummary?,
@@ -778,28 +781,30 @@ private fun HeadLine(
                 )
             }
         }
-        Row(
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(pitch)
-                .padding(start = gutter, end = PaperDimens.rowEndPadding),
-            verticalAlignment = Alignment.Top
+                .padding(start = gutter, end = PaperDimens.rowEndPadding)
         ) {
             if (total > 0) {
-                ListProgress(
-                    done = done,
-                    total = total,
-                    modifier = Modifier.seatOnRule().padding(end = HEAD_PROGRESS_TO_JOT),
-                    animated = animated,
-                    strokeWidth = HEAD_PROGRESS,
-                    countText = pluralStringResource(R.plurals.progress_done, total, done, total)
+                Box(modifier = Modifier.height(pitch)) {
+                    ListProgress(
+                        done = done,
+                        total = total,
+                        modifier = Modifier.seatOnRule().padding(end = HEAD_PROGRESS_TO_JOT),
+                        animated = animated,
+                        strokeWidth = HEAD_PROGRESS,
+                        countText = pluralStringResource(R.plurals.progress_done, total, done, total)
+                    )
+                }
+            }
+            Row(modifier = Modifier.height(pitch), verticalAlignment = Alignment.Top) {
+                HeadJots(
+                    summary = summary,
+                    appWideReminderTime = appWideReminderTime,
+                    onDateRequested = onDateRequested
                 )
             }
-            HeadJots(
-                summary = summary,
-                appWideReminderTime = appWideReminderTime,
-                onDateRequested = onDateRequested
-            )
         }
     }
 }

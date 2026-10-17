@@ -662,7 +662,8 @@ private fun FinishedHeading(count: Int, screenState: TodoListsScreenState, modif
                 folded = screenState.finishedFolded,
                 onFold = { screenState.finishedFolded = !screenState.finishedFolded },
                 foldedSpoken = stringResource(R.string.section_folded),
-                openSpoken = stringResource(R.string.section_open)
+                openSpoken = stringResource(R.string.section_open),
+                ruled = false
             )
         }
     }
