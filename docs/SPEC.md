@@ -39,6 +39,21 @@ This principle overrides any contradictory suggestion from a UI agent or the wir
 - There is no `res/layout/`, no `dimens.xml`, and no `attrs.xml`. Dimensions are `PaperDimens`, motion is `PaperMotion`, and the typographic hand is `PaperType`.
 - The launcher icon is `@color/paper` plus the `stickyNote*` tones, and flips with `values-night`.
 
+### Two hands: print and handwriting — _implemented · notebook redesign, 2026-10_
+
+The page is a notebook somebody made, not a draft. Two typefaces share it, and which one a word
+is set in says who is speaking:
+
+- **Handwriting (`PaperType.hand`, Patrick Hand) is the reader's.** List names, item titles,
+  the dates and times they wrote, and anything being typed.
+- **Print (`PaperType.print`, Spectral) is the notebook's own.** The cover, the section
+  headings, the progress counts, every question a slip asks and every button on it, the
+  calendar's month, weekdays and numerals, and the action sheet's words. A question about
+  something the reader wrote keeps the reader's words in their hand inside the printed
+  sentence (`printedAround`).
+- Spectral is bundled under the SIL Open Font License (`docs/fonts-OFL-spectral.txt`),
+  subset to Latin and Latin-1 so French is covered and the three weights cost about 210KB.
+
 ### Paper page — _implemented_
 
 Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the content area is a flat tonal plane, and nothing floats above the page except the ＋ chip.
@@ -50,12 +65,12 @@ Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the 
 - **The line and the row are two measures, not one** ([#68](https://github.com/emmanuel-h/Todolist/issues/68)). The *line pitch* is 28dp — the leading, and the spacing of the ruling. A *row* is its written lines plus one blank rule, so a one-line row is two pitches (56dp) and a wrapped one is three. That is what tells a wrapped item from two items: an item's own lines sit on consecutive rules and the next item starts a rule further down, the way a paragraph is written on ruled paper with a line skipped before the next. While the two were one number, the spacing inside an item and the spacing between items were identical and a wrapped item read as two.
 - A rule is smaller than a finger, so a control written on one is one rule tall to the layout and a whole 48dp target to the hand: `Modifier.pressableBelowTheRule` lets it reach down into the blank rule the row already carries. Flooring its height instead pushed the row onto a second rule of writing it did not have, and every row grew by half again.
 - Ruling is drawn both per page and per row: `RuledPage` rules the sheet, and `Modifier.paperRuling` rules a row that has grown past one pitch, so a hairline always meets the text baseline no matter how tall the row gets. Neither mirrors automatically — a `DrawScope` has no layout direction — so both read `layoutDirection` and place the bare gutter on the row's start edge.
-- **Both screens use the same row grammar.** List rows are not cards: they are ruled rows carrying `ring · name · dates · counts`, matching the item rows.
-- **The writing gets the line; the controls get what is left.** A row's marks are drawn tight to their glyphs (`PaperDimens.rowGlyph` in a `PaperDimens.rowGlyphButton` box) because three of them sit at the end of a list row, and every dp of box around a mark is a dp the name does not get. That box is 28dp wide, leaving 10dp of air between two glyphs. It is narrower than the 48dp square the guidance asks for and its **height is not** — on a row that is the axis a thumb misses on, and a near miss to either side lands on the row itself, which opens the list rather than doing nothing.
-- A fully-completed list is marked by strikethrough and 50% alpha on its name only. The former `colorSecondaryContainer` row fill is gone — a coloured block does not belong on paper.
-- The open count is a pencil numeral in the margin (`ui/listmeta/OpenCount.kt`), not a filled pill.
-- There is no toolbar. The page of items carries its list's name on its own head rule, which grows in whole pitches like any other row so a long name wraps rather than being clipped. The status bar is transparent and the sheet runs unbroken behind it.
-- **There are no background watermark illustrations.** Both screens show a bare page when empty. `IconOnlyUiTest` asserts this: no static text drawn on either page.
+- **Both screens use the same row grammar.** List rows are not cards: they are ruled rows. A row is its written lines plus one rule under them; on the page of lists that rule carries the row's marginalia (see **List row**), on the page of items it stays blank.
+- **The writing gets the line; one control gets the end of it.** A list row carries a single ⋯ at the end of its name. The pencil, calendar and bin that used to sit there — three tight 28dp glyph boxes and a tally, louder than the name they belonged to and silent about what each did — moved onto the sheet the ⋯ holds out, where they are named in words (see **List actions**). The ⋯ is a full 48dp target.
+- A fully-completed list is marked by its pen strike and the crossed-out ink tone on its name. The former `colorSecondaryContainer` row fill is gone — a coloured block does not belong on paper.
+- Progress is an ink line laid over a pencil one with the printed fraction beside it (`ui/listmeta/ListProgress.kt`, `ui/paper/InkProgress.kt`), spoken as one phrase — "2 of 5 done". A list with nothing written on it draws none. It is spent in the reader's ink, never blue: at rest the page carries no blue.
+- There is no toolbar. Both pages are headed above their ruling — the page of lists by its cover, a list's page by its name — and the head is always a whole number of rules tall, so the ruling under it stays on the writing whatever the name wraps to. The status bar is transparent and the sheet runs unbroken behind it.
+- **There are no background watermark illustrations.** Both screens show a bare page when empty. `IconOnlyUiTest` pins exactly which words each page draws; on an empty page of lists that is the cover's day and name.
   The rule governs **ink, not speech**. Every control still carries a `contentDescription`, including the three text fields that create and rename everything — a field that draws only a ghost `…` is otherwise the one affordance on an empty page a screen reader cannot find at all.
 - Dialogs are paper slips (`ui/paper/PaperDialog.kt`): a `paperSheet` surface laid over a veil, ruled like the page under it.
 - Grain, ruling and the gutter are fixed palette values — paper texture does not take a device hue. The grain tile is baked once per screen density and held in a concurrent map, so a composition that arrives before `preparePaperSheet()` has finished waits for that bake rather than repeating it.
@@ -78,6 +93,25 @@ Both screens are one continuous sheet of ruled loose-leaf paper. Nothing in the 
 ---
 
 ## Navigation
+
+### Turning between lists — _implemented · notebook redesign_
+
+The lists are bound one after another like the pages of the notebook they are. On a list's
+page, a swipe sideways turns to the next or previous list without going back to the page of
+lists first (`ItemsPager` in `ui/nav/PageStack.kt`, a `HorizontalPager` inside the one
+`ItemsRoute` entry).
+
+- They are bound in the order the page of lists shows them, finished lists last.
+- **The binding is fixed while the reader is turning pages** (`rebind`). Finishing a list moves
+  it to the foot of the page of lists, and giving it a day moves it to its horizon; re-binding
+  on every such change would turn the page out from under the finger. Lists that go are taken
+  out, lists that arrive are bound at the back.
+- Each page keeps its own `TodoListViewModel` (keyed by list id in the entry's store) and its
+  own saved screen state, so a half-typed item survives a turn.
+- The page dots at the top of the head show where the open list sits — up to nine, centred on
+  the open one — and read "List 2 of 4" to a screen reader.
+- Back still lands on the page of lists, from whichever list was turned to. The route keeps the
+  id the reader opened; only a page that is showing may leave because its list is gone.
 
 The app is **one window**. `TodoListsActivity` is the only activity; the two screens are two
 entries on a Navigation 3 back stack inside it, so the tapped row can travel into the head rule of
@@ -118,32 +152,34 @@ one window — TodoListsActivity
 
 ## Screen 1 — My Lists
 
-### Masthead — _implemented · [#43](https://github.com/emmanuel-h/Todolist/issues/43)_
+### Cover — _implemented · [#43](https://github.com/emmanuel-h/Todolist/issues/43) · notebook redesign_
 
-The app's name is written in the strip above the head rule — in the page's own hand,
-at margin ink, not as a Material app bar. It takes no rule away from the lists, and it
-leaves when the pen comes out, because while a line is being written the page belongs to
-what is being written on it. It is now the only thing in that strip: the `?` that replayed
-the first-launch tour came off it with the tour
-([#75](https://github.com/emmanuel-h/Todolist/issues/75)).
+The page of lists is headed the way the front of a good notebook is, in print and above the
+ruling (`ui/todolists/ListsCover.kt`, four rules tall):
 
-This is a deliberate use of the **wordless by default** principle rather than an
-exception to it: a pad with nothing written at the top of it reads as unfinished
-rather than calm. `IconOnlyUiTest` names it, so it stays the only word the empty
-page draws.
+- the day, in small capitals (ICU skeleton `EEEEdMMMM`, so `SATURDAY, OCTOBER 17` /
+  `SAMEDI 17 OCTOBRE`);
+- the app's name, as the page's title;
+- one standing line in italic: how many lists are on the go, how many are for today and how
+  many are overdue — `6 lists on the go · 1 for today · 1 overdue`. With every list finished it
+  says `Everything is ticked off.` On a blank page it is left off: there is nothing to report,
+  and the pad in the corner is the invitation.
+
+It scrolls away with the page and stays while the pen is out — it is above the ruling, not in
+the strip a line is written under. It replaced the faint masthead, which read as unfinished
+rather than calm. `IconOnlyUiTest` names its words.
 
 ### Empty state
 
-A bare sheet. No illustration, no words — the icon-only rule governs here, and the pad in
-the corner is the only affordance.
+A bare sheet under its cover. No illustration — the pad in the corner is the only affordance.
 
 ```
 ┌─────────────────────────────────┐
-│                                 │
+│  THURSDAY, JANUARY 1            │   ← cover: day and name, no standing line
+│  To do list                     │
+│  ═════════════════════════════  │   ← head rule
 │  ─────────────────────────────  │   ← ruling, nothing on it
 │  ─────────────────────────────  │
-│  ─────────────────────────────  │
-│                                 │
 │                          ▤      │   ← sticky pad
 └─────────────────────────────────┘
 ```
@@ -152,15 +188,70 @@ the corner is the only affordance.
 
 ```
 ┌─────────────────────────────────┐
-│  To do list                     │   ← masthead, and nothing opposite it
-│  ○  Groceries      3 [✎] [🗑]  │
-│  ○  Work tasks ⏰ 4 Mar 1 [✎][🗑]│
-│  ○  Weekend    📅 6 May  [✎][🗑]│
-│  ──── 2 ──────────────────────  │   ← tally rule, done below
-│  ○  ~~Holiday~~      [✎] [🗑]  │
+│  SATURDAY, OCTOBER 17           │
+│  To do list                     │   ← cover
+│  6 lists on the go · 1 overdue  │
+│  ═════════════════════════════  │
+│                                 │
+│  OVERDUE  1                     │   ← horizon heading, in red
+│  Birthday party              ⋯  │
+│  ▬▬▬── 3/5   ⏰ Oct 15          │   ← progress and jot, on the row's own rule
+│                                 │
+│  NO DATE  2                     │
+│  Reading list                ⋯  │
+│  ───── 0/4                      │
+│  Guitar practice             ⋯  │
+│  ▬▬▬── 2/3                      │
+│                                 │
+│  FINISHED  1                 ⌄  │   ← folds away
+│  ~~Bike service~~            ⋯  │
 │                          ▤      │
 └─────────────────────────────────┘
 ```
+
+### Sections by horizon — _implemented · notebook redesign_
+
+Unfinished lists are filed like an agenda, under printed headings
+(`ui/paper/SectionHeading.kt`): **Overdue**, **Today**, **Next 7 days**, **Later**, **No date**,
+and the finished lists last under **Finished**.
+
+- The horizon is worked out in the domain, never in a composable: `ListHorizon.of(day, today)`
+  reads whichever date the list carries (a list holds at most one), and
+  `GetTodoListsWithStatusUseCase` stamps it on every `TodoListSummary`. *Next 7 days* is
+  tomorrow through the sixth day ahead; the seventh is *Later*.
+- `TodoListsViewModel` orders unfinished lists by horizon and then by day. The sort is stable,
+  so lists on the same day — and every undated list — keep the order the reader left them in.
+  `TodoListsState.Content.sections` is that run cut at each change of horizon.
+- A heading is drawn only for a horizon that has lists. *No date* is headed only when a dated
+  section is on the page too: a reader who never dates a list sees no headings at all.
+- *Overdue* is headed in the red a missed day is written in, *Today* in the amber today is
+  written in, everything else in pencil — the heading and the jots under it agree.
+- Each heading carries its count and is one phrase to a screen reader ("Overdue, 1 list").
+  *Finished* folds its lists away and back with a tap anywhere along its rule; the chevron at
+  its end turns to say which.
+
+### List row
+
+The name on the first rule, in the reader's hand with its highlighter wash, and the ⋯ at the end
+of that rule. Under it, on the rule a row leaves blank, its marginalia in print: the progress
+line and fraction, then the date jot. A list with nothing in it and no day leaves that rule
+blank, which is the page's old grammar. The jot is still pressable on its own and opens the
+calendar on the day it carries.
+
+### List actions — _implemented · notebook redesign_
+
+The ⋯ holds out a paper slip at the foot of the page, under the thumb
+(`ui/todolists/ListActionsSheet.kt`, `PaperDialog(alignment = BottomCenter)`): the list's name
+and progress, a rule, and three lines in words, each with its glyph:
+
+| Line | Does |
+|---|---|
+| ✎ **Rename or colour** | Opens the edit sheet (name, date marks, colour) |
+| 📅 **Give it a day** / **Change its day** | Opens the paper calendar for the row |
+| 🗑 **Delete list** (in red) | Raises the delete question |
+
+Choosing a line puts the sheet down and hands over to the sheet that does the work. Back, a tap
+on the veil, or a tap outside is nothing chosen.
 
 ### Behaviors
 
@@ -175,12 +266,12 @@ the corner is the only affordance.
 - Tap anywhere on a list row → navigates to Screen 2 for that list
 
 **Edit a list name** — _implemented · [#4](https://github.com/emmanuel-h/Todolist/issues/4)_
-- Press the row's pencil → the edit sheet opens, pre-filled with the current name and the list's date marks
+- Press the row's ⋯ → **Rename or colour** → the edit sheet opens, pre-filled with the current name and the list's date marks
 - Dismissing the sheet **commits** what is on it; there is no confirm row. A blank name is refused and leaves the original unchanged
 - The name updates immediately; items and position are unaffected
 
 **Set a target date on a list** — _implemented · [#9](https://github.com/emmanuel-h/Todolist/issues/9)_
-- **A committed row carries a visible route to a day** ([#67](https://github.com/emmanuel-h/Todolist/issues/67)). The date slot on a list row holds *either* the calendar button *or* the date itself: with no date, a `[📅]` button that opens the paper calendar; with a date, the jot, which was already pressable and opens the same calendar. **It is one slot in one place** — between the pencil and the bin, in the trailing group ([#84](https://github.com/emmanuel-h/Todolist/issues/84)). The jot used to appear in the marginalia instead, so the row rearranged itself the moment a day was written on it. No row ever carries four controls, because a list holds a target date **or** a due date and never both. Before this there was no mark on a committed row saying a list could have a day at all — the only route was the edit sheet, and the reporter could not find it
+- **A committed row carries a visible route to a day** ([#67](https://github.com/emmanuel-h/Todolist/issues/67)). With no date it is the ⋯ and the words **Give it a day** on the sheet it holds out; with a date it is also the jot itself, which is pressable and opens the same calendar. The jot is written on the row's second rule, after the progress, so the name's line never rearranges itself when a day is written on it ([#84](https://github.com/emmanuel-h/Todolist/issues/84)). Until the notebook redesign a bare `[📅]` sat in a slot between the pencil and the bin; it said "a list can have a day" no better than the sheet's words do, and cost every row a glyph
 - **A ring means a day** ([#36](https://github.com/emmanuel-h/Todolist/issues/36), [#37](https://github.com/emmanuel-h/Todolist/issues/37)). A kind is something a date has, not something chosen before there is one, so with nothing written neither mark is ringed and nothing trails them. An *ink* ring, that is: the calendar sheet rings the kind it is asking for in pencil (see below). `DateSelection.kind` is still non-nullable; it is simply not read while `date` is null.
 - Pressing a mark does one of three things, decided by what is already written beside it (`kindPressOn`): on a bare rule it **asks for a day** (the paper calendar, `ui/paper/PaperCalendar.kt`); with a day on the other mark it **moves the day across**; with a day on this mark it **rubs the day out**
 - **Rubbing a day out asks first** ([#85](https://github.com/emmanuel-h/Todolist/issues/85)). Both routes — the ringed mark and the `Remove` control — raise a slip naming the list whose day is going, with Cancel and Remove, and nothing is cleared unless Remove is pressed. Taking a day off a list takes the reminder it scheduled with it, and it was the last destructive act that happened on a single press
@@ -214,16 +305,18 @@ the corner is the only affordance.
 - **Editing a name or a date leaves the colour alone.** Only the picker changes it. The edit path carries the colour through, because a default would have quietly stripped it on every rename
 - Colour is stored per list (`ListColour`, a TEXT column, schema 8); it does not affect sort order, and it means nothing to the app
 
-**Delete a list** — see **Delete an item**; both pages carry the same bin
-- Press the row's bin → a paper slip asks `Delete "<name>"?`, and under it, when the list
+**Delete a list** — see **Delete an item**
+- Press the row's ⋯ → **Delete list** → a paper slip asks `Delete “<name>”?`, and under it, when the list
   holds any, `and the N items on it`. A list with nothing on it is asked about in one line
 - **Delete** writes it through at once and the row tears off the page. **Cancel** leaves the
   page exactly as it was, and so does back, and so does a tap on the veil
 - Deletes cascade: the list and all its items go
 
 **Reorder lists** — _implemented · [#6](https://github.com/emmanuel-h/Todolist/issues/6)_
-- Long-press-and-drag a row to reorder; TalkBack reaches the same move through the
-  `Move up` / `Move down` custom actions on the row
+- Long-press-and-drag a row in the **No date** section to reorder; TalkBack reaches the same
+  move through the `Move up` / `Move down` custom actions on the row. Dated sections are
+  ordered by their day and cannot be dragged — an agenda that let a later day sit above an
+  earlier one would not be an agenda
 - The page hands the repository **the ids of the rows it is showing, in the order it is
   showing them** — never a pair of indices. The page and the repository used to disagree,
   because a torn-off row stayed hidden for the length of its undo slip while the repository
@@ -242,12 +335,22 @@ the corner is the only affordance.
 
 ## Screen 2 — Todo List
 
+### Head
+
+A list's page is headed above its ruling, the way a page is headed before anything is written
+on its lines: the back arrow in the margin and, opposite it, the page dots (see **Turning
+between lists**); the list's name in a large hand (`PaperType.headline`) — the same words as
+the row that was tapped, travelling out of it and growing into this — and under the name, the
+progress line with `N of M done` in print, then the date jot and the reminder time. A tap on
+the name rewrites it in place; a tap on the jot opens the calendar.
+
 ### Empty state
 
 ```
 ┌─────────────────────────────────┐
-│ ←  Groceries                    │   ← head rule, the list's own name
-│  ─────────────────────────────  │
+│ ←                               │
+│    Groceries                    │   ← head: the list's own name
+│  ═════════════════════════════  │
 │                                 │
 │  ─────────────────────────────  │
 │  ＋  Add an item                │   ← pinned at the foot of the page
@@ -270,14 +373,18 @@ the rule the moment there is something to commit.
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Groceries                        │
+│ ←                         ○ ● ○ ○   │   ← page dots: list 2 of 4
+│    Groceries                        │
+│    ▬▬▬▬──── 2 of 5 done  ⏰ Oct 17  │
+│  ═════════════════════════════════  │
 │  ○  Milk                   [🗑] ─── │
 │  ○  Bread                  [🗑] ─── │
 │  ○  Eggs                   [🗑] ─── │
-│     …                        ────── │   ← the add line
-│  ──── 2 ──────────────────────────  │   ← tally rule: only when both
-│  ●  ~~Coffee~~             [🗑] ─── │     sections have rows
+│                                     │
+│  DONE  2                        ⌄   │   ← only when both sections have
+│  ●  ~~Coffee~~             [🗑] ─── │     rows; folds away
 │  ●  ~~Butter~~             [🗑] ─── │   ← most recent first
+│  ＋  Add an item                    │
 └─────────────────────────────────────┘
 ```
 
@@ -321,6 +428,10 @@ ticking a list faster than the stroke lands every tick rather than only the last
 - Once the pen is on the paper the drawn label gives way to what is being written, and the
   `…` ghost hint takes over as it always did
 
+**The Done section**
+- Headed `DONE  N` in print where both sections have rows. A tap anywhere along the heading
+  folds the ticked items away and back (`TodoListScreenState.doneFolded`, saved with the page)
+
 **Complete an item** — _behavior change needed · [#1](https://github.com/emmanuel-h/Todolist/issues/1) · [#2](https://github.com/emmanuel-h/Todolist/issues/2)_
 - Tap [✓] or double-tap anywhere on the row → item moves immediately to the completed section
 - Completed items are ordered by completion time, **most recently completed first** — the
@@ -341,7 +452,7 @@ ticking a list faster than the stroke lands every tick rather than only the last
 
 - **A row wears its two controls at rest** ([#72](https://github.com/emmanuel-h/Todolist/issues/72)): a pencil and a bin, at the row's end, on the rule it is written on. They are drawn at full ink in `InkTone.Margin`; pressed, they take `InkTone.Words`, raise the `PaperFocusMark` the title already uses, and buzz `PaperHaptics.pickUp()`
 - **The swipe is gone.** Every act on a row was a horizontal drag, hinted at by a mark and a chevron at each end drawn at 0.6 ink. On a list of nine rows that was eighteen faint half-glyphs that read as smudges rather than as controls, and three iterations on the hint never made the gesture findable. `SwipeRow.kt` and `CornerMark.kt` are deleted; there is one way to do each thing and it is visible
-- **Press the bin → the page asks before anything is written** ([#66](https://github.com/emmanuel-h/Todolist/issues/66)). The prompt names the row: `Delete "<title>"?`. An item takes nothing with it, so it is asked about in one line
+- **Press the bin → the page asks before anything is written** ([#66](https://github.com/emmanuel-h/Todolist/issues/66)). The prompt names the row: `Delete “<title>”?`. An item takes nothing with it, so it is asked about in one line
 - **Nothing commits behind the reader's back.** A delete happens when, and only when, Delete is pressed. Cancel, back and a tap on the veil are all the same answer: nothing happened
 - This replaced a nine-second undo slip that committed on expiry, on the next tear, **and on leaving the page**. Leaving-commits is the surprise the report hit: tear a row off, walk out within nine seconds, and it was gone with nothing having asked. One decision point replaces the grace period
 - The tear-off animation survives the gesture that used to start it: a confirmed delete still tears the row off the page

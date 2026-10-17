@@ -99,8 +99,8 @@ internal fun ReminderClockPickerDialog(
 
     PaperDialog(onDismissRequest = onDismiss) {
         Text(
-            text = handwritten(stringResource(R.string.reminder_hour_picker_title)),
-            style = PaperType.field,
+            text = stringResource(R.string.reminder_hour_picker_title),
+            style = PaperType.question,
             color = palette.inked(InkTone.Words),
             modifier = Modifier
                 .fillMaxWidth()

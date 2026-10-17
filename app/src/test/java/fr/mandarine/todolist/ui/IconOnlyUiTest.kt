@@ -2,10 +2,16 @@ package fr.mandarine.todolist.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
+import fr.mandarine.todolist.ui.todolists.ListActionsSheet
+import fr.mandarine.todolist.domain.ListHorizon
+import fr.mandarine.todolist.domain.DueDateStatus
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -23,7 +29,7 @@ import fr.mandarine.todolist.ui.paper.PaperTheme
 import fr.mandarine.todolist.ui.paper.ReminderClockPickerDialog
 import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.ListDatePickerDialog
-import fr.mandarine.todolist.ui.paper.SectionSkip
+import fr.mandarine.todolist.ui.paper.SectionHeading
 import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
@@ -54,28 +60,33 @@ class IconOnlyUiTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    /**
+     * The bare numeral between the two sections taught nothing on its own — a lone
+     * "2" on a rule — so the section is headed in print: its name in small capitals
+     * and the count beside it. These pin exactly those words.
+     */
     @Test
-    fun `should show only numeric count in the section skip without the word Completed`() {
-        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 2, spoken = "2 items done") } }
+    fun `should print the section's name and its count in the section heading`() {
+        composeRule.setContent { PaperTheme { DoneHeading(2) } }
 
-        assertEquals(listOf("2"), composeRule.onRoot().fetchSemanticsNode().staticText())
+        assertEquals(listOf("DONE", "2"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
-    fun `should show count of one in the section skip when exactly one completed item exists`() {
-        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 1, spoken = "1 item done") } }
+    fun `should print a count of one in the section heading when exactly one item is done`() {
+        composeRule.setContent { PaperTheme { DoneHeading(1) } }
 
-        assertEquals(listOf("1"), composeRule.onRoot().fetchSemanticsNode().staticText())
+        assertEquals(listOf("DONE", "1"), composeRule.onRoot().fetchSemanticsNode().staticText())
     }
 
     @Test
-    fun `should not contain the word Completed in the section skip text`() {
-        composeRule.setContent { PaperTheme { SectionSkip(completedCount = 12, spoken = "12 items done") } }
+    fun `should not contain the word Completed in the section heading`() {
+        composeRule.setContent { PaperTheme { DoneHeading(12) } }
 
         val labels = composeRule.onRoot().fetchSemanticsNode().staticText().map { it.lowercase() }
 
         assert(labels.none { it.contains("completed") }) {
-            "Expected the section skip to not contain 'completed' but was: $labels"
+            "Expected the section heading to not contain 'completed' but was: $labels"
         }
     }
 
@@ -111,16 +122,20 @@ class IconOnlyUiTest {
     }
 
     /**
-     * The masthead is the one word the empty page draws, and it is deliberate
+     * The cover is the only print the empty page carries, and it is deliberate
      * ([#43]): a pad with nothing written at the top of it reads as unfinished
-     * rather than calm. Anything else appearing here has to justify itself in this
-     * list first.
+     * rather than calm, and a notebook's cover carries its name and the day. The
+     * standing line under them is left off a blank page — there is nothing to
+     * report. Anything else appearing here has to justify itself in this list first.
      */
     @Test
-    fun `should draw nothing on the empty lists page but its own name`() {
+    fun `should draw nothing on the empty lists page but its cover`() {
         composeRule.setContent { PaperTheme { EmptyListsScreen() } }
 
-        assertEquals(listOf(APP_NAME), composeRule.onRoot().fetchSemanticsNode().staticText())
+        assertEquals(
+            listOf(EMPTY_PAGE_DAY, APP_NAME),
+            composeRule.onRoot().fetchSemanticsNode().staticText()
+        )
     }
 
     /**
@@ -162,7 +177,37 @@ class IconOnlyUiTest {
         composeRule.setContent { PaperTheme { OneItemScreen() } }
 
         assertEquals(
-            listOf(LIST_NAME, ITEM_TITLE, ADD_ITEM_LABEL),
+            listOf(LIST_NAME, ONE_ITEM_PROGRESS, ITEM_TITLE, ADD_ITEM_LABEL),
+            composeRule.onRoot().fetchSemanticsNode().staticText()
+        )
+    }
+
+    /**
+     * The sheet a list's ⋯ holds out says what each mark does in words. The bare
+     * pencil, calendar and bin it replaced were the three glyphs the 2026-10 review
+     * found readers could not tell apart at a glance; this pins the words chosen
+     * for them.
+     */
+    @Test
+    fun `should name every action on a list's sheet in words`() {
+        composeRule.setContent { PaperTheme { ListActions() } }
+
+        assertEquals(
+            listOf(LIST_NAME, "Rename or colour", "Give it a day", "Delete list"),
+            composeRule.onNode(isDialog()).fetchSemanticsNode().staticText()
+        )
+    }
+
+    /**
+     * A page of lists with days on them is filed under printed headings. Their
+     * words are pinned here, with the count each one carries.
+     */
+    @Test
+    fun `should head the dated lists with the horizon they fall on`() {
+        composeRule.setContent { PaperTheme { DatedListsScreen() } }
+
+        assertEquals(
+            listOf(EMPTY_PAGE_DAY, APP_NAME, "1 list on the go · 1 for today", "TODAY", "1", LIST_NAME, "Jan 1"),
             composeRule.onRoot().fetchSemanticsNode().staticText()
         )
     }
@@ -373,9 +418,11 @@ class IconOnlyUiTest {
         const val BACK_DESCRIPTION = "Navigate up"
         const val CREATE_LIST_DESCRIPTION = "Create new list"
         const val APP_NAME = "To do list"
+        const val ONE_ITEM_PROGRESS = "0 of 1 done"
+        const val EMPTY_PAGE_DAY = "THURSDAY, JANUARY 1"
         const val DELETE_LABEL = "Delete"
         const val CANCEL_LABEL = "Cancel"
-        const val DELETE_QUESTION = "Delete \"Groceries\"?"
+        const val DELETE_QUESTION = "Delete “Groceries”?"
         const val MORNING_LABEL = "Morning"
         const val AFTERNOON_LABEL = "Afternoon"
         const val REMOVE_DATE_LABEL = "Remove"
@@ -413,6 +460,50 @@ private fun OneItemScreen() {
         onEdit = { _, _ -> },
         onDelete = {},
         onSubmitInline = {},
+        onReorder = {}
+    )
+}
+
+@Composable
+private fun DoneHeading(count: Int) {
+    SectionHeading(
+        title = stringResource(R.string.section_ticked_items),
+        count = count,
+        spoken = pluralStringResource(R.plurals.done_items, count, count)
+    )
+}
+
+@Composable
+private fun ListActions() {
+    ListActionsSheet(
+        summary = TodoListSummary(TodoList("list-1", "Groceries"), allDone = false),
+        onDismiss = {},
+        onRename = {},
+        onPickDate = {},
+        onDelete = {}
+    )
+}
+
+@Composable
+private fun DatedListsScreen() {
+    TodoListsScreen(
+        state = TodoListsState.Content(
+            listOf(
+                TodoListSummary(
+                    TodoList("list-1", "Groceries", dueDate = TODAY),
+                    allDone = false,
+                    dueDateStatus = DueDateStatus.TODAY,
+                    horizon = ListHorizon.TODAY
+                )
+            ),
+            emptyList()
+        ),
+        screenState = remember { TodoListsScreenState() },
+        today = TODAY,
+        onOpenList = {},
+        onCreateList = { _, _, _ -> },
+        onRenameList = { _, _, _, _, _ -> },
+        onDeleteList = {},
         onReorder = {}
     )
 }

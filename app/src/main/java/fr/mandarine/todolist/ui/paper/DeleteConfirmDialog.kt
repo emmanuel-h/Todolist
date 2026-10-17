@@ -20,10 +20,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import fr.mandarine.todolist.R
 
 private val QUESTION_BOTTOM = 8.dp
+private val HAND_IN_PRINT = 1.1.em
 private val BUTTONS_TOP = 4.dp
 private val BUTTON_GAP = 16.dp
 
@@ -44,8 +49,8 @@ fun DeleteConfirmDialog(
     val palette = LocalPaperPalette.current
     PaperDialog(onDismissRequest = onCancel) {
         Text(
-            text = handwritten(stringResource(R.string.delete_prompt, name)),
-            style = PaperType.field,
+            text = printedAround(stringResource(R.string.delete_prompt, name), name),
+            style = PaperType.question,
             color = palette.inked(InkTone.Words),
             modifier = Modifier
                 .fillMaxWidth()
@@ -58,7 +63,7 @@ fun DeleteConfirmDialog(
                     cascadeCount,
                     cascadeCount
                 ),
-                style = PaperType.prose,
+                style = PaperType.note,
                 color = palette.inked(InkTone.Margin),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -77,7 +82,7 @@ fun DeleteConfirmDialog(
             Spacer(Modifier.width(BUTTON_GAP))
             DialogButton(
                 label = stringResource(R.string.delete),
-                tint = palette.inked(InkTone.Words),
+                tint = palette.inked(InkTone.Lost),
                 onClick = onDelete
             )
         }
@@ -97,8 +102,8 @@ fun RemoveDateConfirmDialog(
     val palette = LocalPaperPalette.current
     PaperDialog(onDismissRequest = onCancel) {
         Text(
-            text = handwritten(stringResource(R.string.remove_date_prompt, listName)),
-            style = PaperType.field,
+            text = printedAround(stringResource(R.string.remove_date_prompt, listName), listName),
+            style = PaperType.question,
             color = palette.inked(InkTone.Words),
             modifier = Modifier
                 .fillMaxWidth()
@@ -142,9 +147,21 @@ internal fun DialogButton(label: String, tint: Color, onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = handwritten(label),
-            style = PaperType.field,
+            text = label,
+            style = PaperType.label,
             color = tint
         )
+    }
+}
+
+/**
+ * A question the page puts about something the reader wrote: the question is
+ * printed, and the reader's own words inside it stay in their hand.
+ */
+internal fun printedAround(question: String, written: String): AnnotatedString = buildAnnotatedString {
+    append(question)
+    val at = if (written.isEmpty()) -1 else question.indexOf(written)
+    if (at >= 0) {
+        addStyle(SpanStyle(fontFamily = PaperType.hand, fontSize = HAND_IN_PRINT), at, at + written.length)
     }
 }

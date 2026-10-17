@@ -63,7 +63,7 @@ fun PaperSlipCaption(painter: Painter, text: String, modifier: Modifier = Modifi
             text = text,
             modifier = Modifier.padding(start = CAPTION_GLYPH_GAP),
             color = palette.inked(InkTone.Words),
-            style = PaperType.prose
+            style = PaperType.label
         )
     }
 }

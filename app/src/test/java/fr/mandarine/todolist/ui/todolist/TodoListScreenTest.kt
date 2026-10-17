@@ -227,7 +227,7 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun `should show the divider with a count when both sections have items`() {
+    fun `should head the ticked items with a worded heading when both sections have items`() {
         render(
             content(
                 active = listOf(item("1", "Apples")),
@@ -235,7 +235,28 @@ class TodoListScreenTest {
             )
         )
 
-        composeRule.onNodeWithText("2").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("2 items done").assertIsDisplayed()
+    }
+
+    @Test
+    fun `should fold the ticked items away under their heading and back`() {
+        render(
+            content(
+                active = listOf(item("1", "Apples")),
+                completed = listOf(completed("2", "Milk"))
+            )
+        )
+
+        composeRule.onNodeWithContentDescription("1 item done").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Milk").assertDoesNotExist()
+        composeRule.onNodeWithText("Apples").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("1 item done").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Milk").assertIsDisplayed()
     }
 
     @Test
@@ -261,7 +282,7 @@ class TodoListScreenTest {
             )
         )
 
-        assertEquals(listOf("Apples", "1", "Milk", ADD_ITEM_LABEL), texts())
+        assertEquals(listOf("Apples", "DONE", "1", "Milk", ADD_ITEM_LABEL), texts())
     }
 
     @Test
@@ -638,7 +659,7 @@ class TodoListScreenTest {
         composeRule.onNodeWithContentDescription(DELETE).performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Delete \"Apples\"?").assertIsDisplayed()
+        composeRule.onNodeWithText("Delete “Apples”?").assertIsDisplayed()
     }
 
     @Test

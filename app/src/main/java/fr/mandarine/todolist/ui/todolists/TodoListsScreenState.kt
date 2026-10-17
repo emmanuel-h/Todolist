@@ -73,6 +73,12 @@ class TodoListsScreenState {
 
     var rename by mutableStateOf<RenameState?>(null)
 
+    /** The list whose ⋯ was pressed, while its sheet of actions is held out. */
+    var actionsFor by mutableStateOf<String?>(null)
+
+    /** Whether the finished lists are folded away under their heading. */
+    var finishedFolded by mutableStateOf(false)
+
     var previewOrder by mutableStateOf<List<String>?>(null)
 
     /**
@@ -148,6 +154,8 @@ class TodoListsScreenState {
      * dropped, so the delete simply did not happen and the row came back.
      */
     fun saveTo(outState: Bundle) {
+        outState.putBoolean(FINISHED_FOLDED, finishedFolded)
+        actionsFor?.let { outState.putString(ACTIONS_FOR, it) }
         outState.putBoolean(ADD_OPEN, addRowExpanded)
         outState.putString(ADD_TEXT, addRowText)
         outState.putString(ADD_KIND, addRowSelection.kind.name)
@@ -177,6 +185,8 @@ class TodoListsScreenState {
     }
 
     fun restoreFrom(savedInstanceState: Bundle) {
+        finishedFolded = savedInstanceState.getBoolean(FINISHED_FOLDED)
+        actionsFor = savedInstanceState.getString(ACTIONS_FOR)
         addRowExpanded = savedInstanceState.getBoolean(ADD_OPEN)
         addRowText = savedInstanceState.getString(ADD_TEXT).orEmpty()
         addRowSelection = DateSelection(
@@ -264,4 +274,6 @@ private const val RENAME_NAME = "lists-rename-name"
 private const val RENAME_KIND = "lists-rename-kind"
 private const val RENAME_DAY = "lists-rename-day"
 private const val RENAME_COLOUR = "lists-rename-colour"
+private const val ACTIONS_FOR = "lists-actions-for"
+private const val FINISHED_FOLDED = "lists-finished-folded"
 

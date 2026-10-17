@@ -66,7 +66,16 @@ import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
 import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.DeleteConfirmDialog
-import fr.mandarine.todolist.ui.paper.SectionSkip
+import fr.mandarine.todolist.ui.paper.SectionHeading
+import fr.mandarine.todolist.ui.paper.PageDots
+import fr.mandarine.todolist.ui.paper.PaperType
+import fr.mandarine.todolist.ui.listmeta.ListProgress
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.ui.paper.fillingTheLine
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.headMarginFade
@@ -119,7 +128,11 @@ internal const val INK_STRIKE_MILLIS = 220L
  */
 private const val TOGGLE_SETTLE_MILLIS = 2_000L
 
-private val NAME_END_GAP = 8.dp
+private const val HEAD_PITCHES = 4
+private val HEAD_NAME_TOP = 4.dp
+private val HEAD_PROGRESS = 88.dp
+private val HEAD_PROGRESS_TO_JOT = 16.dp
+private val PAGE_DOTS_END = 12.dp
 
 private const val HEAD_KEY = "head"
 private const val SKIP_KEY = "completed-skip"
@@ -167,7 +180,9 @@ fun TodoListScreen(
     onRenameList: (String) -> Unit = {},
     onWriteDate: (DateSelection) -> Unit = {},
     appWideReminderTime: LocalTime = LocalTime.of(8, 0),
-    onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> }
+    onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> },
+    pagePosition: Int = 0,
+    pageCount: Int = 1
 ) {
     val content = state as? TodoListState.Content
     val rawActiveItems = content?.activeItems.orEmpty()
@@ -252,7 +267,9 @@ fun TodoListScreen(
     AutoScrollWhileDragging(listState, session, edgeScroll)
 
     val insets = pageVerticalInsets()
-    val headMargin = insets.calculateTopPadding() + pitch
+    val density = LocalDensity.current
+    var headHeight by remember { mutableStateOf(pitch * HEAD_PITCHES) }
+    val headMargin = insets.calculateTopPadding() + headHeight
     val palette = LocalPaperPalette.current
     val gutter = LocalPaperGutter.current
     val seam = keyboardSeam(screenState.confirmDelete == null)
@@ -301,7 +318,7 @@ fun TodoListScreen(
                         seam = seam,
                         gutter = gutter
                     )
-                    .headMarginFade(listState, headMargin)
+                    .headMarginFade(listState, insets.calculateTopPadding() + pitch)
                     .consumeWindowInsets(WindowInsets.safeDrawing),
                 contentPadding = PaddingValues(
                     top = insets.calculateTopPadding(),
@@ -312,6 +329,13 @@ fun TodoListScreen(
                 item(key = HEAD_KEY, contentType = HEAD_TYPE) {
                     HeadLine(
                         summary = summary,
+                        done = completedItems.size,
+                        total = activeItems.size + completedItems.size,
+                        pagePosition = pagePosition,
+                        pageCount = pageCount,
+                        modifier = Modifier.onSizeChanged { measured ->
+                            headHeight = with(density) { measured.height.toDp() }
+                        },
                         allDone = allDone,
                         renaming = screenState.renamingList,
                         animated = screenState.animationsEnabled,
@@ -344,20 +368,25 @@ fun TodoListScreen(
                 }
                 if (showSkip) {
                     item(key = SKIP_KEY, contentType = SKIP_TYPE) {
-                        SectionSkip(
-                            completedCount = completedItems.size,
+                        SectionHeading(
+                            title = stringResource(R.string.section_ticked_items),
+                            count = completedItems.size,
                             spoken = pluralStringResource(
                                 R.plurals.done_items,
                                 completedItems.size,
                                 completedItems.size
                             ),
                             modifier = animatedRow(screenState),
-                            animated = screenState.animationsEnabled
+                            animated = screenState.animationsEnabled,
+                            folded = screenState.doneFolded,
+                            onFold = { screenState.doneFolded = !screenState.doneFolded },
+                            foldedSpoken = stringResource(R.string.section_folded),
+                            openSpoken = stringResource(R.string.section_open)
                         )
                     }
                 }
                 itemsIndexed(
-                    items = completedItems,
+                    items = if (showSkip && screenState.doneFolded) emptyList() else completedItems,
                     key = { _, item -> item.id },
                     contentType = { _, _ -> COMPLETED_TYPE }
                 ) { position, item ->
@@ -612,14 +641,23 @@ private fun LazyItemScope.animatedRow(
 }
 
 /**
- * The name of the list, written on the first rule of its own page. It is the same
- * mark as the row that was tapped to get here — it travels out of that row and
- * grows into this one — and it answers to the same two gestures a row does: a tap
- * on the words rewrites them, a tap on the date jot opens the calendar.
+ * The head of a list's own page. Above the ruling, the way a page is headed before
+ * anything is written on its lines: the list's name in a large hand — the same
+ * words as the row that was tapped, travelling out of it and growing into this —
+ * and under it, how far through the list the reader is and the day it is about.
+ * The page's place among the others is marked in the top corner.
+ *
+ * It answers the gestures the row does: a tap on the words rewrites them, a tap on
+ * the date jot opens the calendar. Its height is always a whole number of rules,
+ * so the ruling under it stays on the writing whatever the name wraps to.
  */
 @Composable
 private fun HeadLine(
     summary: TodoListSummary?,
+    done: Int,
+    total: Int,
+    pagePosition: Int,
+    pageCount: Int,
     allDone: Boolean,
     renaming: Boolean,
     animated: Boolean,
@@ -627,34 +665,36 @@ private fun HeadLine(
     onRenamed: (String) -> Unit,
     onRenameDismissed: () -> Unit,
     onDateRequested: (DateSelection) -> Unit,
+    modifier: Modifier = Modifier,
     appWideReminderTime: LocalTime = LocalTime.of(8, 0)
 ) {
     val pitch = LocalPagePitch.current
-    if (summary == null) {
-        Spacer(Modifier.height(pitch * 2))
-        return
-    }
-    val style = MaterialTheme.typography.titleLarge.fillingTheLine()
-    /**
-     * The head rule grows in whole pitches the way every other row does. Pinned to
-     * one, a name long enough to wrap had its second line cut off with nothing to
-     * say so — and the name is the only thing identifying the open page.
-     */
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .pitchHeight(pitch, extraRules = 1)
-            .padding(
-                start = LocalPaperGutter.current + PaperDimens.iconButton,
-                end = PaperDimens.rowEndPadding
-            ),
-        verticalAlignment = Alignment.Top
-    ) {
-        Box(modifier = Modifier.weight(1f).padding(end = NAME_END_GAP)) {
+    val gutter = LocalPaperGutter.current
+    Column(modifier = modifier.fillMaxWidth().pitchHeight(pitch)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(pitch)
+                .padding(end = PaperDimens.rowEndPadding + PAGE_DOTS_END),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(Modifier.weight(1f))
+            PageDots(
+                current = pagePosition,
+                count = pageCount,
+                spoken = stringResource(R.string.page_of, pagePosition + 1, pageCount)
+            )
+        }
+        if (summary == null) return@Column
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = gutter, end = PaperDimens.rowEndPadding, top = HEAD_NAME_TOP)
+        ) {
             if (renaming) {
                 RowTitleEditor(
                     title = summary.list.name,
-                    style = style,
+                    style = PaperType.headline,
                     onCommit = onRenamed,
                     onDismiss = onRenameDismissed
                 )
@@ -663,16 +703,34 @@ private fun HeadLine(
                     summary = summary,
                     allDone = allDone,
                     animated = animated,
-                    style = style,
+                    style = PaperType.headline.fillingTheLine(),
                     onRenameRequested = onRenameRequested
                 )
             }
         }
-        HeadJots(
-            summary = summary,
-            appWideReminderTime = appWideReminderTime,
-            onDateRequested = onDateRequested
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(pitch)
+                .padding(start = gutter, end = PaperDimens.rowEndPadding),
+            verticalAlignment = Alignment.Top
+        ) {
+            if (total > 0) {
+                ListProgress(
+                    done = done,
+                    total = total,
+                    modifier = Modifier.seatOnRule().padding(end = HEAD_PROGRESS_TO_JOT),
+                    animated = animated,
+                    strokeWidth = HEAD_PROGRESS,
+                    countText = pluralStringResource(R.plurals.progress_done, total, done, total)
+                )
+            }
+            HeadJots(
+                summary = summary,
+                appWideReminderTime = appWideReminderTime,
+                onDateRequested = onDateRequested
+            )
+        }
     }
 }
 
@@ -692,7 +750,6 @@ private fun HeadName(
         text = remember(name) { handwritten(name) },
         modifier = Modifier
             .fillMaxWidth()
-            .seatOnRule()
             .penStrike(strike, ink)
             .travellingName(summary.list.id)
             .clickable(

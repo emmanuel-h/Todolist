@@ -201,12 +201,14 @@ class RuledPageTest {
     }
 
     @Test
-    fun `should skip exactly one line where the completed section starts`() {
+    fun `should head a section on a rule with one blank rule above it`() {
         composeRule.setContent {
-            PaperTheme { SectionSkip(completedCount = 3, spoken = "3 done", modifier = Modifier.testTag(SKIP)) }
+            PaperTheme {
+                SectionHeading(title = "Done", count = 3, spoken = "3 done", modifier = Modifier.testTag(SKIP))
+            }
         }
 
-        composeRule.onNodeWithTag(SKIP).assertHeightIsEqualTo(28.dp)
+        composeRule.onNodeWithTag(SKIP).assertHeightIsEqualTo(56.dp)
     }
 
     @Test

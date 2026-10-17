@@ -341,6 +341,9 @@ The rest are primitives: `RuledPage` and `RuledRow` (the ground and the line),
 `InkRing` (the checkbox), `PenStrike` (the strike-through), `InkIcon`, `TearOff`,
 `StickyNotePad`, `PaperCalendar`, `PaperDialog`, and so on.
 
+Two typefaces: `PaperType.hand` for whatever the reader wrote, `PaperType.print`
+for whatever the app says — headings, counts, questions, buttons. Pick by who is speaking.
+
 Two conventions to know:
 - **`InkTone`** — code asks for a *role* (`palette.inked(InkTone.Margin)`), not a
   colour, so light and dark stay coherent.
@@ -351,7 +354,9 @@ Two conventions to know:
 
 Navigation 3, not Fragments and not the older Navigation component. `PaperRoutes.kt`
 declares the two keys; `TodoListsActivity` owns a `NavBackStack`; `PageStack.kt` maps
-each key to a screen and defines the two transitions. `PageTravel.kt` is what makes a
+each key to a screen and defines the two transitions. The `ItemsRoute` entry holds a
+`HorizontalPager` (`ItemsPager`) rather than a single page, so a swipe turns from one
+list to the next; each page gets its own `TodoListViewModel`, keyed by list id. `PageTravel.kt` is what makes a
 list's name physically travel from a row into the next page's header.
 
 ### Outside `java/`

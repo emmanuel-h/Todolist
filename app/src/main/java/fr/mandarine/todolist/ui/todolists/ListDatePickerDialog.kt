@@ -153,7 +153,7 @@ private fun RowScope.KindWords(kind: DateKind, modifier: Modifier) {
                     DateKind.DUE -> R.string.date_kind_due_caption
                 }
             ),
-            style = PaperType.prose,
+            style = PaperType.label,
             color = palette.inked(InkTone.Words),
             maxLines = KIND_WORDS_LINES,
             overflow = TextOverflow.Ellipsis

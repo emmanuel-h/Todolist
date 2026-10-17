@@ -1,7 +1,13 @@
 package fr.mandarine.todolist.ui.todolists
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +24,7 @@ import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.listmeta.DateJot
-import fr.mandarine.todolist.ui.listmeta.OpenCount
+import fr.mandarine.todolist.ui.listmeta.ListProgress
 import fr.mandarine.todolist.ui.nav.travellingName
 import fr.mandarine.todolist.ui.paper.GlyphFoot
 import fr.mandarine.todolist.ui.paper.IconSeat
@@ -26,10 +32,12 @@ import fr.mandarine.todolist.ui.paper.InkBudget
 import fr.mandarine.todolist.ui.paper.InkIconButton
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.InkTone
+import fr.mandarine.todolist.ui.paper.LocalPagePitch
+import fr.mandarine.todolist.ui.paper.LocalPaperGutter
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PenStrikeState
 import fr.mandarine.todolist.ui.paper.RowVerb
-import fr.mandarine.todolist.ui.paper.RuledRow
+import fr.mandarine.todolist.ui.paper.pitchHeight
 import fr.mandarine.todolist.ui.paper.fillingTheLine
 import fr.mandarine.todolist.ui.paper.handwritten
 import fr.mandarine.todolist.ui.paper.highlightWash
@@ -42,95 +50,110 @@ import fr.mandarine.todolist.ui.paper.spokenVerbs
 import fr.mandarine.todolist.ui.paper.tearOff
 
 private val NAME_END_GAP = 4.dp
+private val PROGRESS_TO_JOT = 16.dp
 
+/**
+ * One list on the page of lists, written on two rules: the name on the first, with
+ * the one mark that opens everything else that can be done to it at the end of the
+ * line, and under it, printed small in the rule a row leaves blank, how far through
+ * the list the reader is and the day it is about.
+ *
+ * The second rule is the row's own blank one. A list with nothing in it and no day
+ * leaves it blank, which is the page's old grammar: a row is its writing and one
+ * empty rule.
+ */
 @Composable
 fun TodoListRow(
     summary: TodoListSummary,
     animated: Boolean,
     onOpen: () -> Unit,
-    onDeleteRequested: () -> Unit,
     modifier: Modifier = Modifier,
     tearing: Boolean = false,
     onTorn: () -> Unit = {},
-    onRenameRequested: (() -> Unit)? = null,
+    onActionsRequested: (() -> Unit)? = null,
     onRewriteDate: ((DateSelection) -> Unit)? = null,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null
 ) {
     val palette = LocalPaperPalette.current
+    val pitch = LocalPagePitch.current
     val verbs = rowVerbs(
         onMoveUp?.let { RowVerb(stringResource(R.string.move_up), it) },
         onMoveDown?.let { RowVerb(stringResource(R.string.move_down), it) }
     )
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .tearOff(tearing, animated, onTorn)
+            .spokenVerbs(verbs)
+            .clickable(onClick = onOpen)
+            .padding(start = LocalPaperGutter.current, end = PaperDimens.rowEndPadding)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().pitchHeight(pitch),
+            verticalAlignment = Alignment.Top
+        ) {
+            RowName(summary = summary, animated = animated)
+            if (onActionsRequested != null) {
+                InkIconButton(
+                    painter = painterResource(R.drawable.ic_more),
+                    contentDescription = stringResource(R.string.list_actions),
+                    onClick = onActionsRequested,
+                    tint = palette.inked(InkTone.Margin),
+                    pressedTint = palette.inked(InkTone.Words),
+                    seat = IconSeat.OnRule,
+                    foot = GlyphFoot.dots,
+                    glyphSize = PaperDimens.rowGlyph,
+                    buttonWidth = PaperDimens.touchTarget
+                )
+            }
+        }
+        RowMarginalia(summary = summary, animated = animated, onRewriteDate = onRewriteDate)
+    }
+}
+
+@Composable
+private fun RowMarginalia(
+    summary: TodoListSummary,
+    animated: Boolean,
+    onRewriteDate: ((DateSelection) -> Unit)?
+) {
+    val palette = LocalPaperPalette.current
     val targetDate = summary.list.targetDate
     val dueDate = summary.list.dueDate
     val dueDateStatus = summary.dueDateStatus
-    val hasDate = targetDate != null || (dueDate != null && dueDateStatus != null)
-    RuledRow(
-        modifier = modifier.tearOff(tearing, animated, onTorn).spokenVerbs(verbs),
-        onClick = onOpen
+    val total = summary.activeCount + summary.completedCount
+    Row(
+        modifier = Modifier.fillMaxWidth().height(LocalPagePitch.current),
+        verticalAlignment = Alignment.Top
     ) {
-        RowName(summary = summary, animated = animated)
-        OpenCount(count = summary.activeCount, animated = animated)
-        if (onRenameRequested != null) {
-            InkIconButton(
-                painter = painterResource(R.drawable.ic_edit),
-                contentDescription = stringResource(R.string.edit_list),
-                onClick = onRenameRequested,
-                tint = palette.inked(InkTone.Margin),
-                pressedTint = palette.inked(InkTone.Words),
-                seat = IconSeat.OnRule,
-                foot = GlyphFoot.pencil,
-                glyphSize = PaperDimens.rowGlyph,
-                buttonWidth = PaperDimens.rowGlyphButton
+        if (total > 0) {
+            ListProgress(
+                done = summary.completedCount,
+                total = total,
+                modifier = Modifier.seatOnRule().padding(end = PROGRESS_TO_JOT),
+                animated = animated
             )
         }
-        // Date slot: the calendar button when no date is set, the date jot(s) when one is.
-        // One slot, two things that can be in it — the row never rearranges itself.
-        if (hasDate) {
-            if (targetDate != null) {
-                DateJot(
-                    date = targetDate,
-                    kind = DateKind.TARGET,
-                    showYear = summary.showTargetYear,
-                    tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
-                    struck = summary.isTargetDateElapsed,
-                    onRewrite = onRewriteDate
-                )
-            }
-            if (dueDate != null && dueDateStatus != null) {
-                DateJot(
-                    date = dueDate,
-                    kind = DateKind.DUE,
-                    showYear = summary.showDueDateYear,
-                    tint = palette.inked(dueTone(dueDateStatus)),
-                    onRewrite = onRewriteDate
-                )
-            }
-        } else if (onRewriteDate != null) {
-            InkIconButton(
-                painter = painterResource(R.drawable.ic_event),
-                contentDescription = stringResource(R.string.give_list_a_day),
-                onClick = { onRewriteDate(DateSelection(DateKind.TARGET, null)) },
-                tint = palette.inked(InkTone.Margin),
-                pressedTint = palette.inked(InkTone.Words),
-                seat = IconSeat.OnRule,
-                foot = GlyphFoot.calendar,
-                glyphSize = PaperDimens.rowGlyph,
-                buttonWidth = PaperDimens.rowGlyphButton
+        if (targetDate != null) {
+            DateJot(
+                date = targetDate,
+                kind = DateKind.TARGET,
+                showYear = summary.showTargetYear,
+                tint = palette.inked(targetTone(summary.isTargetDateElapsed)),
+                struck = summary.isTargetDateElapsed,
+                onRewrite = onRewriteDate
             )
         }
-        InkIconButton(
-            painter = painterResource(R.drawable.ic_delete),
-            contentDescription = stringResource(R.string.delete_list),
-            onClick = onDeleteRequested,
-            tint = palette.inked(InkTone.Margin),
-            pressedTint = palette.inked(InkTone.Words),
-            seat = IconSeat.OnRule,
-            foot = GlyphFoot.trash,
-            glyphSize = PaperDimens.rowGlyph,
-            buttonWidth = PaperDimens.rowGlyphButton
-        )
+        if (dueDate != null && dueDateStatus != null) {
+            DateJot(
+                date = dueDate,
+                kind = DateKind.DUE,
+                showYear = summary.showDueDateYear,
+                tint = palette.inked(dueTone(dueDateStatus)),
+                onRewrite = onRewriteDate
+            )
+        }
     }
 }
 
