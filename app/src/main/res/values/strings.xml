@@ -123,6 +123,15 @@
         <item quantity="other">+ %d more</item>
     </plurals>
     <string name="agenda_late">LATE · %1$s</string>
+    <string name="calendar_view_day">Day</string>
+    <string name="calendar_view_week">Week</string>
+    <string name="calendar_view_month">Month</string>
+    <string name="previous_week">Previous week</string>
+    <string name="next_week">Next week</string>
+    <string name="previous_day">Previous day</string>
+    <string name="next_day">Next day</string>
+    <string name="calendar_still_late">Still late</string>
+    <string name="calendar_nothing_on_day">Nothing on this day.</string>
     <string name="calendar_nothing_dated">No list has a day yet.</string>
     <plurals name="calendar_undated_stay">
         <item quantity="one">%d list has no date. It stays in Lists.</item>

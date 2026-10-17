@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.ConfirmDeleteRequest
+import fr.mandarine.todolist.ui.calendar.CalendarView
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -66,6 +67,35 @@ class TodoListsScreenState {
 
     /** The month the Calendar tab is turned to; null until the reader turns it. */
     var calendarMonth by mutableStateOf<YearMonth?>(null)
+
+    /** Day, week or month: how much of the calendar is open. It opens on the month. */
+    var calendarView by mutableStateOf(CalendarView.Month)
+
+    /** The day the Day and Week views are turned to; null until the reader picks one. */
+    var calendarDay by mutableStateOf<LocalDate?>(null)
+
+    /**
+     * Changing view keeps the reader where they were. Leaving the month for a day or
+     * a week lands on the day they last opened if it is in the month on show, else on
+     * today in this month or the first of any other; going back to the month turns it
+     * to the one that day is in.
+     */
+    fun chooseCalendarView(view: CalendarView, today: LocalDate) {
+        if (view == CalendarView.Month) {
+            calendarMonth = YearMonth.from(calendarDay ?: today)
+        } else if (calendarView == CalendarView.Month) {
+            val shown = calendarMonth ?: YearMonth.from(today)
+            calendarDay = calendarDay?.takeIf { YearMonth.from(it) == shown }
+                ?: if (shown == YearMonth.from(today)) today else shown.atDay(1)
+        }
+        calendarView = view
+    }
+
+    /** A day pressed on the month or the week opens on its own. */
+    fun openCalendarDay(day: LocalDate) {
+        calendarDay = day
+        calendarView = CalendarView.Day
+    }
 
     var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)
 
@@ -167,6 +197,8 @@ class TodoListsScreenState {
         outState.putBoolean(FINISHED_FOLDED, finishedFolded)
         outState.putString(TAB, tab.name)
         calendarMonth?.let { outState.putLong(CALENDAR_MONTH, it.atDay(1).toEpochDay()) }
+        outState.putString(CALENDAR_VIEW, calendarView.name)
+        calendarDay?.let { outState.putLong(CALENDAR_DAY, it.toEpochDay()) }
         actionsFor?.let { outState.putString(ACTIONS_FOR, it) }
         outState.putBoolean(ADD_OPEN, addRowExpanded)
         outState.putString(ADD_TEXT, addRowText)
@@ -200,6 +232,8 @@ class TodoListsScreenState {
         finishedFolded = savedInstanceState.getBoolean(FINISHED_FOLDED)
         tab = savedInstanceState.getString(TAB)?.let(BoardTab::valueOf) ?: BoardTab.Lists
         calendarMonth = savedInstanceState.dayOrNull(CALENDAR_MONTH)?.let(YearMonth::from)
+        calendarView = savedInstanceState.getString(CALENDAR_VIEW)?.let(CalendarView::valueOf) ?: CalendarView.Month
+        calendarDay = savedInstanceState.dayOrNull(CALENDAR_DAY)
         actionsFor = savedInstanceState.getString(ACTIONS_FOR)
         addRowExpanded = savedInstanceState.getBoolean(ADD_OPEN)
         addRowText = savedInstanceState.getString(ADD_TEXT).orEmpty()
@@ -292,4 +326,6 @@ private const val ACTIONS_FOR = "lists-actions-for"
 private const val FINISHED_FOLDED = "lists-finished-folded"
 private const val TAB = "lists-tab"
 private const val CALENDAR_MONTH = "lists-calendar-month"
+private const val CALENDAR_VIEW = "lists-calendar-view"
+private const val CALENDAR_DAY = "lists-calendar-day"
 

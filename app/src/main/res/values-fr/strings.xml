@@ -136,6 +136,15 @@
         <item quantity="other">+ %d autres</item>
     </plurals>
     <string name="agenda_late">EN RETARD · %1$s</string>
+    <string name="calendar_view_day">Jour</string>
+    <string name="calendar_view_week">Semaine</string>
+    <string name="calendar_view_month">Mois</string>
+    <string name="previous_week">Semaine précédente</string>
+    <string name="next_week">Semaine suivante</string>
+    <string name="previous_day">Jour précédent</string>
+    <string name="next_day">Jour suivant</string>
+    <string name="calendar_still_late">Toujours en retard</string>
+    <string name="calendar_nothing_on_day">Rien ce jour-là.</string>
     <string name="calendar_nothing_dated">Aucune liste n’a encore de jour.</string>
     <plurals name="calendar_undated_stay">
         <item quantity="one">%d liste n’a pas de date. Elle reste dans Listes.</item>
