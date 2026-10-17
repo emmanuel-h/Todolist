@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
@@ -56,7 +58,7 @@ private const val BECKON_DEGREES = -12f
 private const val PERSPECTIVE = 12f
 private const val AMBIENT_ALPHA = 0.26f
 private const val CONTACT_ALPHA = 0.3f
-private const val PEN_TILT_DEGREES = -22f
+private const val PEN_TILT_DEGREES = -35f
 private const val PEN_SHADOW_ALPHA = 0.18f
 private const val PEN_SHADE_ALPHA = 0.55f
 private const val PEN_SHINE_ALPHA = 0.45f
@@ -83,9 +85,10 @@ private val SHEET_INSET = (PaperDimens.stickyPad - PaperDimens.stickySheet) / 2
 private val CARD_HEAD = 14.dp
 private val CARD_RULE_STEP = 11.dp
 private val CARD_RULE_WIDTH = 1.dp
-private val GLYPH_INSET = 3.dp
-private val PEN_NIB_AT = DpOffset(2.dp, 56.dp)
-private val PEN_LENGTH = 78.dp
+private val GLYPH_INSET = PaddingValues(start = 7.dp, top = 5.dp)
+private val PEN_NIB_AT = DpOffset(37.dp, 38.dp)
+private val PEN_LENGTH = 48.dp
+private val RING_STROKE = 1.6.dp
 private val PEN_BARREL = 7.dp
 private val PEN_NIB = 9.dp
 private val PEN_NIB_WIDTH = 5.dp
@@ -132,6 +135,25 @@ private fun StickyNoteSheetSurface(
         contentAlignment = Alignment.TopStart,
         content = content
     )
+}
+
+/**
+ * The circle a reader draws round something on a page so it is not missed: one
+ * stroke of red ink that starts at the top right, goes all the way round and runs
+ * a little past where it began without closing. Drawn on the glyph's own box,
+ * reaching a fifth of a glyph out on every side.
+ */
+private fun DrawScope.drawInkedRing(ink: Color) {
+    val w = size.width
+    val h = size.height
+    val ring = Path().apply {
+        moveTo(w * 0.93f, h * 0.12f)
+        cubicTo(w * 0.73f, -h * 0.13f, w * 0.23f, -h * 0.13f, w * 0.08f, h * 0.18f)
+        cubicTo(-w * 0.08f, h * 0.49f, w * 0.12f, h * 0.92f, w * 0.54f, h * 0.92f)
+        cubicTo(w * 0.93f, h * 0.92f, w * 1.12f, h * 0.61f, w * 1.04f, h * 0.30f)
+        cubicTo(w * 1.0f, h * 0.14f, w * 0.89f, h * 0.03f, w * 0.69f, -h * 0.01f)
+    }
+    drawPath(ring, ink, style = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round))
 }
 
 private fun DrawScope.drawCardRules(ink: Color) {
@@ -411,8 +433,10 @@ fun StickyNotePad(
                 InkIcon(
                     painter = painter,
                     contentDescription = contentDescription,
-                    modifier = Modifier.padding(GLYPH_INSET),
-                    tint = palette.ink
+                    modifier = Modifier
+                        .padding(GLYPH_INSET)
+                        .drawBehind { drawInkedRing(palette.inkRed) },
+                    tint = palette.inkRed
                 )
             }
         }
@@ -461,8 +485,10 @@ fun StickyNotePad(
                 InkIcon(
                     painter = painter,
                     contentDescription = null,
-                    modifier = Modifier.padding(GLYPH_INSET),
-                    tint = palette.ink
+                    modifier = Modifier
+                        .padding(GLYPH_INSET)
+                        .drawBehind { drawInkedRing(palette.inkRed) },
+                    tint = palette.inkRed
                 )
             }
         }

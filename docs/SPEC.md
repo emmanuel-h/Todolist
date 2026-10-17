@@ -74,7 +74,7 @@ A list's own page (Screen 2) is one continuous sheet of ruled loose-leaf paper, 
   The rule governs **ink, not speech**. Every control still carries a `contentDescription`, including the three text fields that create and rename everything — a field that draws only a ghost `…` is otherwise the one affordance on an empty page a screen reader cannot find at all.
 - Dialogs are paper slips (`ui/paper/PaperDialog.kt`): a `paperSheet` surface laid over a veil, ruled like the page under it.
 - Grain, ruling and the gutter are fixed palette values — paper texture does not take a device hue. The grain tile is baked once per screen density and held in a concurrent map, so a composition that arrives before `preparePaperSheet()` has finished waits for that bake rather than repeating it.
-- The ＋ affordance is a small stack of blank cream index cards with a ＋ in the corner and a blue fountain pen lying across them (`ui/paper/StickyNotePad.kt`); tapping it lifts the pen, peels the top card and opens the line a new list is written on. The pen is put back when the card is.
+- The ＋ affordance is a small stack of blank cream index cards with a red-ink ＋ circled in red in the corner and a blue fountain pen beside it (`ui/paper/StickyNotePad.kt`); tapping it lifts the pen, peels the top card and opens the line a new list is written on. The pen is put back when the card is.
 
 ### Cork board — _implemented · [#118](https://github.com/emmanuel-h/Todolist/issues/118) · direction 4 of the 2026-10 canvas_
 
