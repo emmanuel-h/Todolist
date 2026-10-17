@@ -349,21 +349,42 @@ on the veil, or a tap outside is nothing chosen.
 The dated lists, and only those, laid out the way a wall calendar and the slips pinned under it
 would be (`ui/calendar/CalendarPage.kt`).
 
-- **The month**, on a sheet pinned at the top: the year in small capitals, the month's name as
-  the heading, the two arrows that turn it (`Previous month` / `Next month`), the weekday
-  initials and the days. Days before today are in pencil; today is filled with an ink disc; a
-  day one or more unfinished lists are about carries a dot in the loudest of their inks — red for
-  a missed due day, amber for today, pencil otherwise. The days are for reading, not pressing.
-  It opens on today's month.
-- **The agenda** under it: `TodoListsState.Content.agenda` — the dated unfinished lists, late
-  first, then today, then what is coming, by day. Each is a slip taped in its list's colour,
-  carrying its day (`LATE · THU, OCT 15`, `TODAY`, `TUE, OCT 20`), its name in the reader's hand,
-  the kind of day it is in words (`To do on this day` / `Finish before this day`) and the fraction
-  done. A tap opens the list.
+- **Three views: Day, Week, Month**.
+  The sheet pinned at the top carries the three in words between two rules, under its heading;
+  the open one is in ink, a little heavier and underlined by hand, the way the bar marks its
+  open tab. It opens on **Month**. The view and the day it is turned to are saved with the
+  window. Changing view keeps the reader where they were: leaving the month lands on the day
+  last opened if it is in the month on show, else on today in this month or the first of any
+  other; going back to the month turns it to that day's month.
+- **Every day on the sheet can be pressed**, and is read out as its whole date
+  (`Saturday, October 24, 2026`). Days before today are in pencil; today is filled with an ink
+  disc; a day one or more unfinished lists are about carries a dot in the loudest of their
+  inks — red for a missed due day, amber for today, pencil otherwise.
+- **Month**: the year in small capitals, the month's name as the heading, the two arrows that
+  turn it (`Previous month` / `Next month`), the weekday initials and the days. Pressing a day
+  opens it in the Day view. Under the sheet, the slips of the lists dated in that month and of
+  anything still outstanding from before today, late first.
+- **Week**: the week's span as the heading (`11 – 17` under `October 2026`, or `Sep 27 – Oct 3`
+  when it runs across two months), arrows that turn a week at a time, and the seven days written
+  down the sheet a ruled line each. On a day's line every list it is about is a scrap of that
+  list's tape with its name in the reader's hand, after a dot in its day's ink. Pressing the day
+  opens it; pressing a scrap opens the list. The week starts on the locale's first weekday.
+- **Day**: the weekday in small print (`Saturday · TODAY` on today), the date as the heading,
+  with the year only outside this one, and arrows that step a day at a time. A strip of that
+  week sits on the sheet with the open day ringed in ink; pressing another day moves to it.
+  Under the sheet, the day's lists as slips. On today only, everything dated before today
+  follows under **Still late**, so nothing missed drops out of sight. A day with nothing on it
+  says `Nothing on this day.`
+- **The slips**: `TodoListsState.Content.agenda` — the dated unfinished lists, late first, then
+  today, then what is coming, by day. Each is a slip taped in its list's colour, carrying its day
+  (`LATE · THU, OCT 15`, `TODAY`, `TUE, OCT 20`), its name in the reader's hand, the kind of day
+  it is in words (`To do on this day` / `Finish before this day`) and the fraction done. A tap
+  opens the list.
 - **The closing label**: `3 lists have no date. They stay in Lists.` — so the calendar is never
   taken for the place everything lives. With nothing dated at all it says `No list has a day yet.`
-- No date arithmetic happens here: the agenda, the week's slip and `undatedCount` are worked out
-  in `TodoListsState.Content` from the horizons the domain stamped.
+- The agenda, the week's slip and `undatedCount` are worked out in `TodoListsState.Content`
+  from the horizons the domain stamped. The calendar only sorts that agenda onto days
+  (`weekOf`, `listsOn`, `agendaFor`, `marksOn` in `ui/calendar/CalendarPage.kt`).
 
 ---
 

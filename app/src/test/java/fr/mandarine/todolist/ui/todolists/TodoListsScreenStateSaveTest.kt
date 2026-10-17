@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.ui.todolists
 
 import android.os.Bundle
+import fr.mandarine.todolist.ui.calendar.CalendarView
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -108,5 +109,89 @@ class TodoListsScreenStateSaveTest {
 
         assertEquals(BoardTab.Lists, restored.tab)
         assertNull(restored.calendarMonth)
+        assertEquals(CalendarView.Month, restored.calendarView)
+        assertNull(restored.calendarDay)
+    }
+
+    @Test
+    fun `should carry the calendar's view and the day it is turned to across`() {
+        val saved = Bundle()
+        TodoListsScreenState().apply {
+            calendarView = CalendarView.Week
+            calendarDay = LocalDate.of(2026, 11, 3)
+        }.saveTo(saved)
+
+        val restored = TodoListsScreenState().apply { restoreFrom(saved) }
+
+        assertEquals(CalendarView.Week, restored.calendarView)
+        assertEquals(LocalDate.of(2026, 11, 3), restored.calendarDay)
+    }
+
+    @Test
+    fun `should open a day on today when leaving this month for the day view`() {
+        val state = TodoListsScreenState()
+
+        state.chooseCalendarView(CalendarView.Day, TODAY)
+
+        assertEquals(CalendarView.Day, state.calendarView)
+        assertEquals(TODAY, state.calendarDay)
+    }
+
+    @Test
+    fun `should open a week on the first of the month the reader turned to`() {
+        val state = TodoListsScreenState().apply { calendarMonth = YearMonth.of(2026, 12) }
+
+        state.chooseCalendarView(CalendarView.Week, TODAY)
+
+        assertEquals(LocalDate.of(2026, 12, 1), state.calendarDay)
+    }
+
+    @Test
+    fun `should keep the day last opened when it is in the month on show`() {
+        val state = TodoListsScreenState().apply { calendarDay = LocalDate.of(2026, 10, 24) }
+
+        state.chooseCalendarView(CalendarView.Day, TODAY)
+
+        assertEquals(LocalDate.of(2026, 10, 24), state.calendarDay)
+    }
+
+    @Test
+    fun `should keep the day when moving between the day and the week`() {
+        val state = TodoListsScreenState().apply {
+            calendarView = CalendarView.Day
+            calendarDay = LocalDate.of(2027, 1, 5)
+        }
+
+        state.chooseCalendarView(CalendarView.Week, TODAY)
+
+        assertEquals(CalendarView.Week, state.calendarView)
+        assertEquals(LocalDate.of(2027, 1, 5), state.calendarDay)
+    }
+
+    @Test
+    fun `should turn the month to the day on show when going back to it`() {
+        val state = TodoListsScreenState().apply {
+            calendarView = CalendarView.Day
+            calendarDay = LocalDate.of(2027, 1, 5)
+        }
+
+        state.chooseCalendarView(CalendarView.Month, TODAY)
+
+        assertEquals(CalendarView.Month, state.calendarView)
+        assertEquals(YearMonth.of(2027, 1), state.calendarMonth)
+    }
+
+    @Test
+    fun `should open a pressed day in the day view`() {
+        val state = TodoListsScreenState()
+
+        state.openCalendarDay(LocalDate.of(2026, 10, 24))
+
+        assertEquals(CalendarView.Day, state.calendarView)
+        assertEquals(LocalDate.of(2026, 10, 24), state.calendarDay)
+    }
+
+    private companion object {
+        val TODAY: LocalDate = LocalDate.of(2026, 10, 17)
     }
 }

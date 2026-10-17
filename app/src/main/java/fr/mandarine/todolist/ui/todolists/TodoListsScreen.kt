@@ -227,8 +227,13 @@ fun TodoListsScreen(
             BoardTab.Calendar -> CalendarPage(
                 state = state,
                 today = today,
+                view = screenState.calendarView,
                 month = screenState.calendarMonth,
+                day = screenState.calendarDay,
+                onViewChosen = { screenState.chooseCalendarView(it, today) },
                 onMonthTurned = { screenState.calendarMonth = it },
+                onDayTurned = { screenState.calendarDay = it },
+                onDayOpened = screenState::openCalendarDay,
                 onOpenList = openList,
                 animated = screenState.animationsEnabled
             )
