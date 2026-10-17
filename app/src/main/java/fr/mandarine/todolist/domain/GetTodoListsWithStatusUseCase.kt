@@ -22,6 +22,8 @@ package fr.mandarine.todolist.domain
  *   would immediately drop into the finished section.
  * - `showYear` / `showDueDateYear` are true only when the date is in another
  *   calendar year, which keeps the common case short (`12 Mar`, not `12 Mar 26`).
+ * - `horizon` reads whichever date the list carries — it holds at most one — so a
+ *   list is filed by its day without the page asking which kind of day it is.
  * - `isElapsed` applies to the soft date only; an elapsed target is drawn struck
  *   through rather than removed. A passed hard date is [DueDateStatus.OVERDUE]
  *   instead, which is a louder signal.
@@ -52,7 +54,8 @@ class GetTodoListsWithStatusUseCase(
                 }
             }
             val showDueDateYear = list.dueDate != null && list.dueDate.year != today.year
-            TodoListSummary(list, allDone, activeCount, completedCount, isElapsed, showYear, dueDateStatus, showDueDateYear)
+            val horizon = ListHorizon.of(list.targetDate ?: list.dueDate, today)
+            TodoListSummary(list, allDone, activeCount, completedCount, isElapsed, showYear, dueDateStatus, showDueDateYear, horizon)
         }
     }
 }
