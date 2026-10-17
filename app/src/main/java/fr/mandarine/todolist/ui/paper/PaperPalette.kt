@@ -12,10 +12,10 @@ private const val LAMPLIT = 0.18f
  * Every colour in the app, as one value.
  *
  * There is no `colors.xml` driving this and no `if (isDark)` anywhere downstream:
- * the room's light is read once, in `paperUnderTheLight`, and from then on every
- * mark, rule and shadow is a *field of this object*. That is what makes the light
- * and dark versions impossible to drift apart — a new colour has to be added to
- * both `light` and `night` or the code will not compile.
+ * every mark, rule and shadow is a *field of this object*. The app writes on
+ * `light` alone and ignores the system's dark setting; `night` is parked rather
+ * than drawn, and still has to gain every new colour or the code will not compile,
+ * so it can come back without drifting apart from `light`.
  *
  * The names describe the material rather than the role: `paper`, `rule`, `ink`,
  * `pencil`. Where a role is wanted, the `InkTone` enum and `palette.inked(tone)`
@@ -88,13 +88,13 @@ data class PaperPalette(
 ) {
     companion object {
         val light = PaperPalette(
-            paper = Color(0xFFFAF5EA),
-            paperSheet = Color(0xFFFFFCF4),
-            paperShade = Color(0xFFF5EFE1),
-            paperShadeDeep = Color(0xFFEFE7D5),
-            paperSunken = Color(0xFFE7DEC8),
-            desk = Color(0xFFEFE7D5),
-            deskLit = Color(0xFFF3ECDC),
+            paper = Color(0xFFF3ECDD),
+            paperSheet = Color(0xFFF7F1E4),
+            paperShade = Color(0xFFEEE6D5),
+            paperShadeDeep = Color(0xFFE8DFCB),
+            paperSunken = Color(0xFFE0D6BF),
+            desk = Color(0xFFE8DFCB),
+            deskLit = Color(0xFFEDE5D3),
             ink = Color(0xFF2B2420),
             inkDone = Color(0xFF6B6E75),
             inkSoft = Color(0xFF5C6068),
@@ -109,10 +109,10 @@ data class PaperPalette(
             inkRedWash = Color(0xFFEFD7CD),
             inkRedWashLit = Color(0xFFFAE7DF),
             inkAmber = Color(0xFF8F5D12),
-            stickyNote = Color(0xFFE0D3B6),
-            stickyNoteMid = Color(0xFFD3C5A4),
-            stickyNoteBack = Color(0xFFC3B48F),
-            stickyNoteEdge = Color(0xFFA99872),
+            stickyNote = Color(0xFFF6E27E),
+            stickyNoteMid = Color(0xFFEBD46A),
+            stickyNoteBack = Color(0xFFDCC257),
+            stickyNoteEdge = Color(0xFFBFA43F),
             stickyNoteInk = Color(0xFF2B2420),
             rule = Color(0xFFD5CCB6),
             vignette = Color(0x063A2A10),
@@ -133,7 +133,7 @@ data class PaperPalette(
             corkFleckDark = Color(0xFF7A5434),
             corkFleckLight = Color(0xFFE6C9A0),
             corkDim = Color(0xFF8A6C4C),
-            tape = Color(0xFFEFE6CF)
+            tape = Color(0xFFE9DFC6)
         )
 
         /**

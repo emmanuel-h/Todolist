@@ -518,14 +518,14 @@ class PaperPrimitivesTest {
 
     @Test
     @Config(qualifiers = "night")
-    fun `should hand the night sheet to everything drawn after dark`() {
+    fun `should keep the one sheet when the phone is set to dark`() {
         val captured = mutableListOf<PaperPalette>()
         composeRule.setContent {
             PaperTheme { captured += LocalPaperPalette.current }
         }
         composeRule.waitForIdle()
 
-        assertEquals(PaperPalette.night, captured.single())
+        assertEquals(PaperPalette.light, captured.single())
     }
 
     @Test

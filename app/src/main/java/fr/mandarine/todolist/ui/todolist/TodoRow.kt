@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -118,7 +119,8 @@ fun TodoRow(
     )
     RuledRow(
         modifier = modifier.tearOff(tearing, animated, onTorn),
-        hanging = PaperDimens.iconButton
+        hanging = PaperDimens.iconButton,
+        blankRulesBelow = 0
     ) {
         InkRing(
             checked = checked,
@@ -300,6 +302,7 @@ internal fun RowTitleEditor(
             onValueChange = { value = it },
             modifier = Modifier
                 .fillMaxWidth()
+                .wrapContentHeight(Alignment.Top, unbounded = true)
                 .seatOnRule()
                 .semantics { contentDescription = editing }
                 .focusRequester(focusRequester)
