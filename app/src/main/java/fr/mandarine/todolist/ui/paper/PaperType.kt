@@ -17,6 +17,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Density
@@ -39,10 +41,23 @@ private const val EMOJI_VARIATION = 0xFE0F
 private const val EMOJI_KEYCAP = 0x20E3
 private const val EMOJI_JOINER = 0x200D
 
+/**
+ * Two hands on one page. [hand] is the reader's: every list name, item title and
+ * date they wrote. [print] is the notebook's own: the masthead, the section
+ * headings, the counts and every word the app says to the reader. A page in one
+ * hand only read as a draft; the printed stationery around the writing is what makes
+ * it read as a notebook somebody made.
+ */
 @Immutable
 object PaperType {
 
     val hand = FontFamily(Font(R.font.patrick_hand))
+
+    val print = FontFamily(
+        Font(R.font.spectral_regular, FontWeight.Normal),
+        Font(R.font.spectral_italic, FontWeight.Normal, FontStyle.Italic),
+        Font(R.font.spectral_semibold, FontWeight.SemiBold)
+    )
 
     val base = TextStyle(
         fontFamily = hand,
@@ -67,6 +82,31 @@ object PaperType {
     val caption = margin.offRule(20.sp)
     val prose = itemLine.offRule(26.sp)
     val field = listLine.offRule(28.sp)
+    val headline = base.copy(fontSize = 30.sp).offRule(38.sp)
+
+    private val printed = base.copy(fontFamily = print, lineBreak = LineBreak.Simple)
+
+    val meta = printed.copy(fontSize = 13.sp).offRule(18.sp)
+
+    val kicker = printed.copy(
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.4.sp
+    ).offRule(16.sp)
+    val masthead = printed.copy(fontSize = 30.sp, fontWeight = FontWeight.SemiBold).offRule(36.sp)
+    val note = printed.copy(fontSize = 15.sp, fontStyle = FontStyle.Italic).offRule(20.sp)
+    val label = printed.copy(fontSize = 17.sp).offRule(24.sp)
+    val question = printed.copy(fontSize = 19.sp).offRule(26.sp)
+    val printedLine = printed.copy(fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+    val numeral = printed.copy(fontSize = 17.sp)
+    val cardLine = base.copy(fontSize = 17.sp).offRule(22.sp)
+    val tabLabel = printed.copy(fontSize = 13.sp).offRule(16.sp)
+    val tearOffMonth = printed.copy(
+        fontSize = 9.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.sp
+    ).offRule(11.sp)
+    val tearOffDay = printed.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold).offRule(20.sp)
 }
 
 /**

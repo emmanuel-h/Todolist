@@ -151,6 +151,10 @@ class TodoListsViewModel(
      * The single definition of what the page of lists is: read every list with its
      * status, and split finished from unfinished. Both halves are computed here so
      * no composable ever filters while drawing.
+     *
+     * Unfinished lists are kept in **repository position order** — the order the
+     * reader left them in — so the board is always stable. Agenda ordering is
+     * handled by [TodoListsState.Content.agenda], not here.
      */
     private fun buildState(): TodoListsState {
         val summaries = getTodoListsWithStatusUseCase()

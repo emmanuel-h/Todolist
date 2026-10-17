@@ -25,6 +25,7 @@ class GetTodoListsWithStatusUseCaseElapsedTest {
         todoListRepository = mockk()
         todoRepository = mockk()
         every { todoRepository.countsByList() } returns emptyList()
+        every { todoRepository.previewsByList(GetTodoListsWithStatusUseCase.PREVIEW_ITEMS) } returns emptyList()
         useCase = GetTodoListsWithStatusUseCase(todoListRepository, todoRepository, FakeClock(todayDate = LocalDate.ofEpochDay(todayEpochDay)))
     }
 

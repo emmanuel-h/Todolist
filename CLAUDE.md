@@ -94,9 +94,10 @@ app/src/main/java/fr/mandarine/todolist/
 ├── presentation/ # ViewModels + UI state sealed classes — depends on domain only
 └── ui/           # Jetpack Compose. Activities call setContent and own no views.
     ├── paper/       # The design system: PaperInk, PaperDimens, PaperMotion, primitives
-    ├── todolist/    # Screen 2 — the items on one list
-    ├── todolists/   # Screen 1 — the page of lists
-    └── reorder/     # Drag reorder, shared by both screens
+    ├── todolist/    # Screen 2 — the items on one list, lifted off the board
+    ├── todolists/   # Screen 1 — the corkboard of lists and the Lists | Calendar bar
+    ├── calendar/    # The Calendar tab
+    └── reorder/     # Drag reorder: rows on a list, cards on the board
 ```
 
 **The app is entirely Compose.** There is no `res/layout/`, no View-system dependency in the graph (`appcompat`, `recyclerview` and Views `material` were dropped in the Compose migration), and no `AppCompatActivity`. The palette, dimensions and motion specs are Kotlin objects, not resources — `res/values/` holds the window themes, `colors.xml`, `strings.xml` and `integers.xml`, and nothing else. There is no `dimens.xml` and no `attrs.xml`.

@@ -44,7 +44,7 @@
     <string name="notification_channel_name">Reminders</string>
     <string name="date_kind_target_caption">To do on this day</string>
     <string name="date_kind_due_caption">Finish before this day</string>
-    <string name="delete_prompt">Delete \"%1$s\"?</string>
+    <string name="delete_prompt">Delete “%1$s”?</string>
     <string name="delete">Delete</string>
     <plurals name="delete_list_cascade">
         <item quantity="one">and the %d item on it</item>
@@ -53,7 +53,7 @@
     <string name="give_list_a_day">Give this list a day</string>
     <string name="reminder_hour_picker_title">When shall I remind you?</string>
     <string name="remove_date">Remove</string>
-    <string name="remove_date_prompt">Remove the date for \"%1$s\"?</string>
+    <string name="remove_date_prompt">Remove the date for “%1$s”?</string>
     <string name="colour_none">No colour</string>
     <string name="colour_butter">Yellow</string>
     <string name="colour_mint">Green</string>
@@ -64,4 +64,69 @@
     <string name="reminder_morning">Morning</string>
     <string name="reminder_afternoon">Afternoon</string>
     <string name="rub_out_time">Rub out</string>
+    <string name="horizon_overdue">Overdue</string>
+    <string name="horizon_today">Today</string>
+    <string name="horizon_this_week">Next 7 days</string>
+    <string name="horizon_later">Later</string>
+    <string name="horizon_undated">No date</string>
+    <string name="section_finished_lists">Finished</string>
+    <string name="section_ticked_items">Done</string>
+    <plurals name="section_lists_spoken">
+        <item quantity="one">%1$s, %2$d list</item>
+        <item quantity="other">%1$s, %2$d lists</item>
+    </plurals>
+    <string name="section_folded">Folded away</string>
+    <string name="section_open">Shown</string>
+    <string name="progress_fraction">%1$d/%2$d</string>
+    <plurals name="progress_done">
+        <item quantity="one">%1$d of %2$d done</item>
+        <item quantity="other">%1$d of %2$d done</item>
+    </plurals>
+    <plurals name="summary_open_lists">
+        <item quantity="one">%d list on the go</item>
+        <item quantity="other">%d lists on the go</item>
+    </plurals>
+    <plurals name="summary_today">
+        <item quantity="one">%d for today</item>
+        <item quantity="other">%d for today</item>
+    </plurals>
+    <plurals name="summary_overdue">
+        <item quantity="one">%d overdue</item>
+        <item quantity="other">%d overdue</item>
+    </plurals>
+    <string name="summary_all_finished">Everything is ticked off.</string>
+    <string name="summary_separator">" · "</string>
+    <string name="list_actions">Edit this list</string>
+    <string name="action_rename_list">Rename</string>
+    <string name="list_colour">Change its colour</string>
+    <string name="action_give_day">Give it a day</string>
+    <string name="action_change_day">Change its day</string>
+    <string name="page_of">List %1$d of %2$d</string>
+    <string name="tab_lists">Lists</string>
+    <string name="tab_calendar">Calendar</string>
+    <string name="this_week_kicker">THIS WEEK</string>
+    <string name="this_week_spoken">This week: %1$s</string>
+    <plurals name="this_week_spoken_more">
+        <item quantity="one">This week: %1$s and %2$d more</item>
+        <item quantity="other">This week: %1$s and %2$d more</item>
+    </plurals>
+    <string name="open_calendar">Open the calendar</string>
+    <string name="list_separator">", "</string>
+    <string name="more_count">+%1$d</string>
+    <plurals name="card_days_late">
+        <item quantity="one">%d DAY LATE</item>
+        <item quantity="other">%d DAYS LATE</item>
+    </plurals>
+    <string name="card_today">TODAY</string>
+    <plurals name="card_more_items">
+        <item quantity="one">+ %d more</item>
+        <item quantity="other">+ %d more</item>
+    </plurals>
+    <string name="agenda_late">LATE · %1$s</string>
+    <string name="calendar_nothing_dated">No list has a day yet.</string>
+    <plurals name="calendar_undated_stay">
+        <item quantity="one">%d list has no date. It stays in Lists.</item>
+        <item quantity="other">%d lists have no date. They stay in Lists.</item>
+    </plurals>
+    <string name="add_a_date">Add a date</string>
 </resources>

@@ -6,7 +6,7 @@
         on before Compose draws, the splash it hands over to, and the sheet the
         launcher icon is a corner of. See docs/paper-design-system.md.
     -->
-    <color name="paper">#FAF5EA</color>
+    <color name="paper">#F3ECDD</color>
 
     <!--
         The launcher's sheet, and the one paper that never turns the lamp down.

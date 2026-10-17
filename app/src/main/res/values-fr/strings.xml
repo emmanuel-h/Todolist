@@ -69,4 +69,78 @@
     <string name="reminder_morning">Matin</string>
     <string name="reminder_afternoon">Après-midi</string>
     <string name="rub_out_time">Effacer</string>
+    <string name="horizon_overdue">En retard</string>
+    <string name="horizon_today">Aujourd’hui</string>
+    <string name="horizon_this_week">7 prochains jours</string>
+    <string name="horizon_later">Plus tard</string>
+    <string name="horizon_undated">Sans date</string>
+    <string name="section_finished_lists">Terminées</string>
+    <string name="section_ticked_items">Cochées</string>
+    <plurals name="section_lists_spoken">
+        <item quantity="one">%1$s, %2$d liste</item>
+        <item quantity="other">%1$s, %2$d listes</item>
+        <item quantity="many">%1$s, %2$d listes</item>
+    </plurals>
+    <string name="section_folded">Repliée</string>
+    <string name="section_open">Dépliée</string>
+    <string name="progress_fraction">%1$d/%2$d</string>
+    <plurals name="progress_done">
+        <item quantity="one">%1$d sur %2$d faite</item>
+        <item quantity="other">%1$d sur %2$d faites</item>
+        <item quantity="many">%1$d sur %2$d faites</item>
+    </plurals>
+    <plurals name="summary_open_lists">
+        <item quantity="one">%d liste en cours</item>
+        <item quantity="other">%d listes en cours</item>
+        <item quantity="many">%d listes en cours</item>
+    </plurals>
+    <plurals name="summary_today">
+        <item quantity="one">%d pour aujourd’hui</item>
+        <item quantity="other">%d pour aujourd’hui</item>
+        <item quantity="many">%d pour aujourd’hui</item>
+    </plurals>
+    <plurals name="summary_overdue">
+        <item quantity="one">%d en retard</item>
+        <item quantity="other">%d en retard</item>
+        <item quantity="many">%d en retard</item>
+    </plurals>
+    <string name="summary_all_finished">Tout est coché.</string>
+    <string name="summary_separator">" · "</string>
+    <string name="list_actions">Modifier cette liste</string>
+    <string name="action_rename_list">Renommer</string>
+    <string name="list_colour">Changer sa couleur</string>
+    <string name="action_give_day">Lui donner un jour</string>
+    <string name="action_change_day">Changer son jour</string>
+    <string name="page_of">Liste %1$d sur %2$d</string>
+    <string name="tab_lists">Listes</string>
+    <string name="tab_calendar">Calendrier</string>
+    <string name="this_week_kicker">CETTE SEMAINE</string>
+    <string name="this_week_spoken">Cette semaine : %1$s</string>
+    <plurals name="this_week_spoken_more">
+        <item quantity="one">Cette semaine : %1$s et %2$d autre</item>
+        <item quantity="many">Cette semaine : %1$s et %2$d autres</item>
+        <item quantity="other">Cette semaine : %1$s et %2$d autres</item>
+    </plurals>
+    <string name="open_calendar">Ouvrir le calendrier</string>
+    <string name="list_separator">", "</string>
+    <string name="more_count">+%1$d</string>
+    <plurals name="card_days_late">
+        <item quantity="one">%d JOUR DE RETARD</item>
+        <item quantity="many">%d JOURS DE RETARD</item>
+        <item quantity="other">%d JOURS DE RETARD</item>
+    </plurals>
+    <string name="card_today">AUJOURD’HUI</string>
+    <plurals name="card_more_items">
+        <item quantity="one">+ %d autre</item>
+        <item quantity="many">+ %d autres</item>
+        <item quantity="other">+ %d autres</item>
+    </plurals>
+    <string name="agenda_late">EN RETARD · %1$s</string>
+    <string name="calendar_nothing_dated">Aucune liste n’a encore de jour.</string>
+    <plurals name="calendar_undated_stay">
+        <item quantity="one">%d liste n’a pas de date. Elle reste dans Listes.</item>
+        <item quantity="many">%d listes n’ont pas de date. Elles restent dans Listes.</item>
+        <item quantity="other">%d listes n’ont pas de date. Elles restent dans Listes.</item>
+    </plurals>
+    <string name="add_a_date">Ajouter une date</string>
 </resources>

@@ -53,6 +53,13 @@ object GlyphFoot {
      * height as the check, which reads as the same gesture family.
      */
     const val add = 18f / 24f
+    /**
+     * Three dots written on the line, the way an ellipsis sits on a baseline: each
+     * is a ring of radius one round y=12 drawn with the two-unit nib, so the ink
+     * reaches y=14 and the row of dots rests on the rule itself.
+     */
+    const val dots = 14f / 24f
+    const val chevronDown = 16f / 24f
 
 }
 

@@ -265,11 +265,12 @@ app/src/main/java/fr/mandarine/todolist/
 ├── data/                    ← Room, SharedPreferences, WorkManager, notifications
 ├── presentation/            ← ViewModels + UI state sealed classes
 └── ui/                      ← all Compose
-    ├── paper/               ← the design system
-    ├── todolists/           ← screen 1, the page of lists
+    ├── paper/               ← the design system (paper and cork)
+    ├── todolists/           ← screen 1, the board of lists and the bar at its foot
+    ├── calendar/            ← the Calendar tab
     ├── todolist/            ← screen 2, the items on one list
     ├── nav/                 ← the back stack and the transition between the two
-    ├── reorder/             ← drag-to-reorder, shared by both screens
+    ├── reorder/             ← drag-to-reorder: rows on a list, cards on the board
     └── listmeta/            ← the tally and the date jot, shared by both screens
 ```
 
@@ -341,6 +342,9 @@ The rest are primitives: `RuledPage` and `RuledRow` (the ground and the line),
 `InkRing` (the checkbox), `PenStrike` (the strike-through), `InkIcon`, `TearOff`,
 `StickyNotePad`, `PaperCalendar`, `PaperDialog`, and so on.
 
+Two typefaces: `PaperType.hand` for whatever the reader wrote, `PaperType.print`
+for whatever the app says — headings, counts, questions, buttons. Pick by who is speaking.
+
 Two conventions to know:
 - **`InkTone`** — code asks for a *role* (`palette.inked(InkTone.Margin)`), not a
   colour, so light and dark stay coherent.
@@ -351,7 +355,9 @@ Two conventions to know:
 
 Navigation 3, not Fragments and not the older Navigation component. `PaperRoutes.kt`
 declares the two keys; `TodoListsActivity` owns a `NavBackStack`; `PageStack.kt` maps
-each key to a screen and defines the two transitions. `PageTravel.kt` is what makes a
+each key to a screen and defines the two transitions. The `ItemsRoute` entry holds a
+`HorizontalPager` (`ItemsPager`) rather than a single page, so a swipe turns from one
+list to the next; each page gets its own `TodoListViewModel`, keyed by list id. `PageTravel.kt` is what makes a
 list's name physically travel from a row into the next page's header.
 
 ### Outside `java/`
@@ -370,7 +376,7 @@ list's name physically travel from a row into the next page's header.
 
 ### Tapping a row to open a list
 
-1. `TodoListRow` calls its `onOpen` lambda.
+1. `ListCard` calls its `onOpen` lambda.
 2. `TodoListsScreen` forwards it as `onOpenList(summary.list)`; `ListsPage` in
    `PageStack.kt` receives it and calls `stage.open(list)`.
 3. `NavStage.open` pushes `ItemsRoute(list.id)` onto the `NavBackStack`.
@@ -381,7 +387,7 @@ list's name physically travel from a row into the next page's header.
    activity supplied) and a `TodoListScreenState` remembered against the id.
 6. `LaunchedEffect(viewModel) { viewModel.refresh() }` triggers the first read.
 7. The list's name, marked `Modifier.travellingName(listId)` on both pages, animates
-   from the row into the new page's head rule.
+   from the card into the new page's head rule.
 
 Back reverses it: `stage.leave()` pops the stack and `pagePeels()` slides the sheet
 off sideways.

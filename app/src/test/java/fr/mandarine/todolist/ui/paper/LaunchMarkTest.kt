@@ -32,6 +32,7 @@ private const val MOST_INK = 0.20f
 private const val NO_REFERENCE = 0
 private const val ALPHA_SHIFT = 24
 private const val TRANSPARENT = 0
+private const val LAUNCHER_CREAM = 0xFFFAF5EA.toInt()
 
 /**
  * The launcher tile and the window the app opens on are the same sheet of paper as
@@ -53,12 +54,17 @@ class LaunchMarkTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val palette = PaperPalette.light
 
+    /**
+     * The launcher's cream is the one its rasters were drawn on, and it stayed when
+     * the page was toned down to a softer cream: re-rasterising the icon is its own
+     * piece of work.
+     */
     @Test
-    fun `should stand the launcher icon on the same paper the page is written on`() {
+    fun `should stand the launcher icon on the cream its rasters were drawn on`() {
         val ground = icon().background.pixelAt(54f, 54f)
 
         assertEquals(context.getColor(R.color.launcher_paper), ground)
-        assertEquals(palette.paper.toArgb(), ground)
+        assertEquals(LAUNCHER_CREAM, ground)
     }
 
     @Test
@@ -66,25 +72,24 @@ class LaunchMarkTest {
     fun `should leave the launcher paper alone when the room turns down`() {
         val ground = icon().background.pixelAt(54f, 54f)
 
-        assertEquals(palette.paper.toArgb(), ground)
-        assertTrue("$ground", ground != PaperPalette.night.paper.toArgb())
+        assertEquals(LAUNCHER_CREAM, ground)
     }
 
     @Test
     @Config(qualifiers = "night")
     fun `should give the launcher paper the same colour by night as by day`() {
-        assertEquals(palette.paper.toArgb(), context.getColor(R.color.launcher_paper))
+        assertEquals(LAUNCHER_CREAM, context.getColor(R.color.launcher_paper))
     }
 
-    /**
-     * The window is the half of the pair that *does* read the room, and the reason
-     * the launcher's sheet needed a colour of its own rather than a night override
-     * being deleted.
-     */
+    @Test
+    fun `should paint the window in the page's own paper`() {
+        assertEquals(palette.paper.toArgb(), context.getColor(R.color.paper))
+    }
+
     @Test
     @Config(qualifiers = "night")
-    fun `should turn the window's paper down with the room`() {
-        assertEquals(PaperPalette.night.paper.toArgb(), context.getColor(R.color.paper))
+    fun `should keep the window's paper when the phone is set to dark`() {
+        assertEquals(palette.paper.toArgb(), context.getColor(R.color.paper))
     }
 
     /**

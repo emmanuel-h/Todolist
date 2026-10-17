@@ -19,7 +19,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -55,6 +60,7 @@ import fr.mandarine.todolist.ui.todolists.reminderDateWritten
 import java.time.LocalDate
 
 private const val PAGE_RISE = 8
+private const val ITEMS_VIEW_MODEL = "items-"
 private const val FLAT_ON_THE_PAD = 0f
 private const val LAID_OVER_THE_PAD = 1f
 
@@ -116,18 +122,15 @@ fun PageStack(
                 }
                 entry<ItemsRoute> { route ->
                     Travelling {
-                        ItemsPage(
-                            listId = route.listId,
+                        ItemsPager(
+                            openedId = route.listId,
                             listsState = listsState,
                             listsViewModel = listsViewModel,
                             stage = stage,
                             today = today,
                             itemsViewModelFactory = itemsViewModelFactory,
                             onDueDateSet = written,
-                            appWideReminderTime = reminderTime,
-                            onSetListReminderTime = { listId, minuteOfDay ->
-                                listsViewModel.setListReminderTime(listId, minuteOfDay)
-                            }
+                            appWideReminderTime = reminderTime
                         )
                     }
                 }
@@ -229,6 +232,81 @@ private fun ListsPage(
     )
 }
 
+/**
+ * The lists, bound one after another like the pages of the notebook they are: a
+ * swipe sideways turns to the next list without going back to the page of lists
+ * first. They are bound in the order the page of lists shows them.
+ *
+ * The binding is fixed while the reader is turning pages. A list that the reader
+ * finishes moves to the foot of the page of lists, and a list given a day moves to
+ * its horizon; re-binding on every such change would turn the page out from under
+ * the finger. Lists that go are taken out, lists that arrive are bound at the back.
+ */
+@Composable
+private fun ItemsPager(
+    openedId: String,
+    listsState: TodoListsState,
+    listsViewModel: TodoListsViewModel,
+    stage: NavStage,
+    today: LocalDate,
+    itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
+    onDueDateSet: (ReminderNote) -> Unit,
+    appWideReminderTime: java.time.LocalTime
+) {
+    var bound by remember { mutableStateOf(rebind(emptyList(), pageOrder(listsState), openedId)) }
+    LaunchedEffect(listsState) { bound = rebind(bound, pageOrder(listsState), openedId) }
+    val pager = rememberPagerState(initialPage = bound.indexOf(openedId).coerceAtLeast(0)) { bound.size }
+    var showing by remember { mutableStateOf(openedId) }
+    LaunchedEffect(pager) {
+        snapshotFlow { pager.settledPage }.collect { page -> bound.getOrNull(page)?.let { showing = it } }
+    }
+    LaunchedEffect(bound) {
+        val page = bound.indexOf(showing)
+        if (page >= 0 && page != pager.currentPage) pager.scrollToPage(page)
+    }
+    HorizontalPager(
+        state = pager,
+        modifier = Modifier.fillMaxSize().peelingEdge(),
+        key = { page -> bound[page] }
+    ) { page ->
+        val listId = bound[page]
+        ItemsPage(
+            listId = listId,
+            listsState = listsState,
+            listsViewModel = listsViewModel,
+            stage = stage,
+            today = today,
+            itemsViewModelFactory = itemsViewModelFactory,
+            onDueDateSet = onDueDateSet,
+            appWideReminderTime = appWideReminderTime,
+            onSetListReminderTime = { id, minuteOfDay ->
+                listsViewModel.setListReminderTime(id, minuteOfDay)
+            },
+            showing = page == pager.settledPage,
+            pagePosition = page,
+            pageCount = bound.size
+        )
+    }
+}
+
+internal fun pageOrder(state: TodoListsState): List<String> =
+    (state as? TodoListsState.Content)
+        ?.let { it.activeSummaries + it.doneSummaries }
+        ?.map { it.list.id }
+        .orEmpty()
+
+/**
+ * The binding after the page of lists changed under it: what was bound stays in its
+ * place unless it is gone, and what is new is bound at the back. Until the page of
+ * lists has been read there is nothing to bind but the list that was opened.
+ */
+internal fun rebind(bound: List<String>, published: List<String>, openedId: String): List<String> {
+    if (published.isEmpty()) return bound.ifEmpty { listOf(openedId) }
+    if (bound.size <= 1) return published.takeIf { openedId in it } ?: listOf(openedId)
+    val kept = bound.filter { it in published }
+    return kept + published.filterNot { it in kept }
+}
+
 @Composable
 private fun ItemsPage(
     listId: String,
@@ -239,10 +317,15 @@ private fun ItemsPage(
     itemsViewModelFactory: (String) -> ViewModelProvider.Factory,
     onDueDateSet: (ReminderNote) -> Unit,
     appWideReminderTime: java.time.LocalTime,
-    onSetListReminderTime: (String, Int?) -> Unit
+    onSetListReminderTime: (String, Int?) -> Unit,
+    showing: Boolean = true,
+    pagePosition: Int = 0,
+    pageCount: Int = 1
 ) {
-    val viewModel: TodoListViewModel =
-        viewModel(factory = remember(listId) { itemsViewModelFactory(listId) })
+    val viewModel: TodoListViewModel = viewModel(
+        key = ITEMS_VIEW_MODEL + listId,
+        factory = remember(listId) { itemsViewModelFactory(listId) }
+    )
     val screenState = rememberSaveable(listId, saver = TodoListScreenState.Saver) {
         TodoListScreenState()
     }
@@ -253,8 +336,8 @@ private fun ItemsPage(
 
     LaunchedEffect(viewModel) { viewModel.refresh() }
 
-    LaunchedEffect(state) {
-        if (state is TodoListState.NotFound) stage.leave()
+    LaunchedEffect(state, showing) {
+        if (showing && state is TodoListState.NotFound) stage.leave()
     }
 
     /**
@@ -268,7 +351,7 @@ private fun ItemsPage(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().peelingEdge()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         TodoListScreen(
             summary = summary,
             today = today,
@@ -301,8 +384,14 @@ private fun ItemsPage(
                     onDueDateSet(ReminderNote(list.name, written.date))
                 }
             },
+            onRecolour = { colour ->
+                val list = summary?.list ?: return@TodoListScreen
+                listsViewModel.editList(listId, list.name, list.targetDate, list.dueDate, colour)
+            },
             appWideReminderTime = appWideReminderTime,
-            onSetListReminderTime = onSetListReminderTime
+            onSetListReminderTime = onSetListReminderTime,
+            pagePosition = pagePosition,
+            pageCount = pageCount
         )
     }
 }

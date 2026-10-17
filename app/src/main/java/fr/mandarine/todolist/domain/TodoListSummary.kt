@@ -17,6 +17,12 @@ package fr.mandarine.todolist.domain
  *   the current one, so `12 Mar` stays short in the common case.
  * - [dueDateStatus] — null when the list has no hard date; otherwise which side of
  *   today it falls on, which picks the ink colour.
+ * - [horizon] — how far off the list's day is, whichever kind it is. Decides which
+ *   section of the page of lists the row is drawn in.
+ * - [preview] — titles of the first few open items, for a card preview on the board.
+ *   Empty when the list has no open items or when previews were not requested.
+ * - [daysLate] — number of whole days the list's day is behind today, or 0 when the
+ *   day is today, in the future, or absent. Uses `ChronoUnit.DAYS.between`.
  */
 data class TodoListSummary(
     val list: TodoList,
@@ -26,5 +32,8 @@ data class TodoListSummary(
     val isTargetDateElapsed: Boolean = false,
     val showTargetYear: Boolean = false,
     val dueDateStatus: DueDateStatus? = null,
-    val showDueDateYear: Boolean = false
+    val showDueDateYear: Boolean = false,
+    val horizon: ListHorizon = ListHorizon.UNDATED,
+    val preview: List<String> = emptyList(),
+    val daysLate: Int = 0
 )

@@ -1,6 +1,7 @@
 package fr.mandarine.todolist.data
 
 import fr.mandarine.todolist.domain.Clock
+import fr.mandarine.todolist.domain.ListPreview
 import fr.mandarine.todolist.domain.SystemClock
 import fr.mandarine.todolist.domain.TodoCounts
 import fr.mandarine.todolist.domain.TodoItem
@@ -67,6 +68,13 @@ class RoomTodoRepository(
 
     override fun updateTitle(todoId: String, title: String) {
         dao.updateTitle(todoId, title)
+    }
+
+    override fun previewsByList(limit: Int): List<ListPreview> {
+        require(limit > 0)
+        return dao.previewsQuery(limit)
+            .groupBy { it.listId }
+            .map { (listId, items) -> ListPreview(listId, items.take(limit).map { it.title }) }
     }
 
     /**

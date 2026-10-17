@@ -1,7 +1,6 @@
 package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -53,15 +52,6 @@ private fun paperBaseline(palette: PaperPalette): ColorScheme =
     if (palette.byLamplight) darkColorScheme() else lightColorScheme()
 
 /**
- * The pad is one pad; the light in the room is what changes. Which sheet the app
- * writes on is read here once, so every mark, rule and shadow downstream is a
- * value taken from the palette rather than a branch taken on the theme.
- */
-@Composable
-fun paperUnderTheLight(): PaperPalette =
-    if (isSystemInDarkTheme()) PaperPalette.night else PaperPalette.light
-
-/**
  * Wraps the whole app and establishes the paper it is drawn on. Called once, in
  * `TodoListsActivity.setContent`.
  *
@@ -92,7 +82,7 @@ fun paperUnderTheLight(): PaperPalette =
  */
 @Composable
 fun PaperTheme(
-    palette: PaperPalette = paperUnderTheLight(),
+    palette: PaperPalette = PaperPalette.light,
     content: @Composable () -> Unit
 ) {
     val colorScheme = remember(palette) { paperColorScheme(palette) }

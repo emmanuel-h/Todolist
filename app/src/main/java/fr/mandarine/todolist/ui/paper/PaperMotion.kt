@@ -10,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -52,6 +53,12 @@ object PaperMotion {
         dampingRatio = SPATIAL_DAMPING,
         stiffness = SPATIAL_STIFFNESS,
         visibilityThreshold = Rect.VisibilityThreshold
+    )
+
+    val cardSettle: SpringSpec<Offset> = spring(
+        dampingRatio = SPATIAL_DAMPING,
+        stiffness = SPATIAL_STIFFNESS,
+        visibilityThreshold = Offset.VisibilityThreshold
     )
 
     val rowPlacement: SpringSpec<IntOffset> = spring(

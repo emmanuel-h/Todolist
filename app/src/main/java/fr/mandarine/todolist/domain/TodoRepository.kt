@@ -35,4 +35,13 @@ interface TodoRepository {
      * named where it was. See the implementation for why that matters.
      */
     fun reorder(listId: String, orderedActiveIds: List<String>)
+
+    /**
+     * For every list that has at least one open (not completed) item, the titles
+     * of its first [limit] open items in ascending position order, ties broken by
+     * id. Lists with no open items are omitted.
+     *
+     * The implementation uses a single query — no N+1. [limit] must be positive.
+     */
+    fun previewsByList(limit: Int): List<ListPreview>
 }
