@@ -6,6 +6,7 @@ import fr.mandarine.todolist.ui.todolists.DateKind
 import fr.mandarine.todolist.ui.todolists.DateSelection
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,6 +48,13 @@ class TodoListScreenStateSaveTest {
     }
 
     @Test
+    fun `should carry an open colour slip across`() {
+        val restored = roundTrip(TodoListScreenState().apply { colourSheet = true })
+
+        assertTrue(restored.colourSheet)
+    }
+
+    @Test
     fun `should carry an open date sheet across`() {
         val restored = roundTrip(
             TodoListScreenState().apply {
@@ -75,6 +83,7 @@ class TodoListScreenStateSaveTest {
         assertNull(restored.dateSheet)
         assertNull(restored.editingItemId)
         assertEquals("", restored.addRowText)
+        assertFalse(restored.colourSheet)
     }
 
     /**

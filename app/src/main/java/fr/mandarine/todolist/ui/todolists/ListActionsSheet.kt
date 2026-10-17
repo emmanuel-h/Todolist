@@ -25,7 +25,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoListSummary
+import fr.mandarine.todolist.ui.listmeta.ListColourPicker
 import fr.mandarine.todolist.ui.listmeta.ListProgress
 import fr.mandarine.todolist.ui.paper.InkIcon
 import fr.mandarine.todolist.ui.paper.InkTone
@@ -40,6 +42,7 @@ import fr.mandarine.todolist.ui.paper.inked
 private const val TWO_LINES = 2
 private val NAME_TO_PROGRESS = 6.dp
 private val HEAD_TO_RULE = 14.dp
+private val PROGRESS_TO_SWATCHES = 10.dp
 private val ACTION_GLYPH = 20.dp
 private val GLYPH_TO_LABEL = 16.dp
 
@@ -50,8 +53,11 @@ private val GLYPH_TO_LABEL = 16.dp
  * glyphs louder than the names they belonged to, and still said nothing about what
  * each did. One mark on the row, and the words here, say it once.
  *
- * Every choice puts this sheet down and hands over to the sheet that does the work:
- * the edit sheet, the calendar, or the question before a delete.
+ * The list's colour is chosen right here, on the seven swatches under its name: a
+ * tap retapes the card and moves the ink circle, and the sheet stays out so the
+ * reader sees it take. Every line below the rule puts this sheet down and hands
+ * over to the sheet that does the work: the rename sheet, the calendar, or the
+ * question before a delete.
  */
 @Composable
 fun ListActionsSheet(
@@ -59,7 +65,9 @@ fun ListActionsSheet(
     onDismiss: () -> Unit,
     onRename: () -> Unit,
     onPickDate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRecolour: (ListColour) -> Unit = {},
+    animated: Boolean = true
 ) {
     val palette = LocalPaperPalette.current
     val list = summary.list
@@ -76,6 +84,12 @@ fun ListActionsSheet(
             done = summary.completedCount,
             total = summary.activeCount + summary.completedCount,
             modifier = Modifier.padding(top = NAME_TO_PROGRESS)
+        )
+        ListColourPicker(
+            selected = list.colour,
+            onSelect = onRecolour,
+            animated = animated,
+            modifier = Modifier.padding(top = PROGRESS_TO_SWATCHES)
         )
         Spacer(Modifier.height(HEAD_TO_RULE))
         HorizontalDivider(thickness = PaperDimens.rule, color = palette.rule)

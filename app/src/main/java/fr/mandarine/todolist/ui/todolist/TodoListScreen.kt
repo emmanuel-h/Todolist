@@ -2,6 +2,17 @@ package fr.mandarine.todolist.ui.todolist
 
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import fr.mandarine.todolist.ui.paper.InkIcon
+import fr.mandarine.todolist.ui.paper.pressableBelowTheRule
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -64,7 +75,11 @@ import fr.mandarine.todolist.ui.paper.LocalPaperGutter
 import fr.mandarine.todolist.ui.paper.LocalPaperPalette
 import fr.mandarine.todolist.ui.paper.PaperDimens
 import fr.mandarine.todolist.ui.paper.PaperMotion
-import fr.mandarine.todolist.ui.paper.PaperSurface
+import fr.mandarine.todolist.ui.paper.CorkSurface
+import fr.mandarine.todolist.ui.paper.PaperTape
+import fr.mandarine.todolist.ui.paper.pinnedPaper
+import fr.mandarine.todolist.ui.paper.tapeFor
+import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.ui.paper.DeleteConfirmDialog
 import fr.mandarine.todolist.ui.paper.SectionHeading
 import fr.mandarine.todolist.ui.paper.PageDots
@@ -133,6 +148,13 @@ private val HEAD_NAME_TOP = 4.dp
 private val HEAD_PROGRESS = 88.dp
 private val HEAD_PROGRESS_TO_JOT = 16.dp
 private val PAGE_DOTS_END = 12.dp
+private val LIFTED_TOP = 22.dp
+private val LIFTED_SIDE = 10.dp
+private val LIFTED_TAPE = 120.dp
+private val CHIP_HEIGHT = 24.dp
+private val CHIP_PADDING = 8.dp
+private val CHIP_GAP = 6.dp
+private val CHIP_STROKE = 1.dp
 
 private const val HEAD_KEY = "head"
 private const val SKIP_KEY = "completed-skip"
@@ -179,6 +201,7 @@ fun TodoListScreen(
     onReorder: (List<String>) -> Unit,
     onRenameList: (String) -> Unit = {},
     onWriteDate: (DateSelection) -> Unit = {},
+    onRecolour: (ListColour) -> Unit = {},
     appWideReminderTime: LocalTime = LocalTime.of(8, 0),
     onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> },
     pagePosition: Int = 0,
@@ -266,7 +289,9 @@ fun TodoListScreen(
 
     AutoScrollWhileDragging(listState, session, edgeScroll)
 
-    val insets = pageVerticalInsets()
+    val windowBars = pageVerticalInsets()
+    val liftedTop = windowBars.calculateTopPadding() + LIFTED_TOP
+    val insets = PaddingValues(bottom = windowBars.calculateBottomPadding())
     val density = LocalDensity.current
     var headHeight by remember { mutableStateOf(pitch * HEAD_PITCHES) }
     val headMargin = insets.calculateTopPadding() + headHeight
@@ -289,21 +314,25 @@ fun TodoListScreen(
         screenState.finishedOn = null
     }
 
-    PaperSurface(
+    CorkSurface(
         modifier = Modifier
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
             }
-            .noteWhereTheHandWent { screenState.lastTouch = it }
+            .noteWhereTheHandWent { screenState.lastTouch = it },
+        dimmed = true
     ) {
         Box(
             modifier = Modifier
+                .padding(top = liftedTop, start = LIFTED_SIDE, end = LIFTED_SIDE)
+                .consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
                 .pageFrame(bend)
                 .align(Alignment.TopCenter)
                 .graphicsLayer {
                     scaleX = flourish.settle.value
                     scaleY = flourish.settle.value
                 }
+                .pinnedPaper(lifted = true)
         ) {
             LazyColumn(
                 state = listState,
@@ -462,6 +491,33 @@ fun TodoListScreen(
                     marked = true
                 )
             }
+            val recolourSpoken = stringResource(R.string.list_colour)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer { translationY = -PaperDimens.touchTarget.toPx() / 2 }
+                    .heightIn(min = PaperDimens.touchTarget)
+                    .then(
+                        if (summary == null) {
+                            Modifier
+                        } else {
+                            Modifier
+                                .semantics { contentDescription = recolourSpoken }
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = PaperFocusMark,
+                                    role = Role.Button,
+                                    onClick = { screenState.colourSheet = true }
+                                )
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                PaperTape(
+                    colour = palette.tapeFor(summary?.list?.colour ?: ListColour.None),
+                    width = LIFTED_TAPE
+                )
+            }
         }
     }
 
@@ -474,6 +530,20 @@ fun TodoListScreen(
             onDelete = {
                 screenState.confirmDelete = null
                 screenState.tearingId = confirm.id
+            }
+        )
+    }
+
+    val recolouring = summary?.list
+    if (screenState.colourSheet && recolouring != null) {
+        ListColourSlip(
+            listName = recolouring.name,
+            colour = recolouring.colour,
+            animated = screenState.animationsEnabled,
+            onDismiss = { screenState.colourSheet = false },
+            onRecolour = { colour ->
+                screenState.colourSheet = false
+                onRecolour(colour)
             }
         )
     }
@@ -796,6 +866,59 @@ private fun HeadJots(
     }
     if (hasDate) {
         HeadTimeJot(list = summary.list, appWideReminderTime = appWideReminderTime)
+    } else {
+        AddDateChip(onPress = { onDateRequested(DateSelection(DateKind.TARGET, null)) })
+    }
+}
+
+/**
+ * Most lists have no day, and a day is something the reader adds when they want
+ * one — so a list without one carries an offer of one where its jot would be: a
+ * small pencilled tab saying so in words, one tap from the same calendar the jot
+ * opens. It is drawn a rule tall, and reaches down into the blank rule under it
+ * for the rest of a finger.
+ */
+@Composable
+private fun AddDateChip(onPress: () -> Unit) {
+    val palette = LocalPaperPalette.current
+    val pencil = palette.inked(InkTone.Margin)
+    val label = stringResource(R.string.add_a_date)
+    Box(
+        modifier = Modifier
+            .height(LocalPagePitch.current)
+            .pressableBelowTheRule(onRule = true)
+            .clickable(role = Role.Button, onClick = onPress)
+            .semantics(mergeDescendants = true) { },
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier
+                .height(CHIP_HEIGHT)
+                .drawWithCache {
+                    val stroke = Stroke(width = CHIP_STROKE.toPx())
+                    val corner = CornerRadius(size.height / 2)
+                    onDrawBehind {
+                        drawRoundRect(
+                            pencil,
+                            topLeft = Offset(stroke.width / 2, stroke.width / 2),
+                            size = Size(size.width - stroke.width, size.height - stroke.width),
+                            cornerRadius = corner,
+                            style = stroke
+                        )
+                    }
+                }
+                .padding(horizontal = CHIP_PADDING),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(CHIP_GAP)
+        ) {
+            InkIcon(
+                painter = painterResource(R.drawable.ic_event),
+                contentDescription = null,
+                tint = pencil,
+                size = PaperDimens.jotGlyph
+            )
+            Text(text = label, style = PaperType.meta, color = pencil, maxLines = 1)
+        }
     }
 }
 

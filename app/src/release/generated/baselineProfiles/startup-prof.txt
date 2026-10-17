@@ -19936,7 +19936,6 @@ PLfr/mandarine/todolist/ui/paper/PaperThemeKt;->PaperTheme$lambda$4(Lfr/mandarin
 SPLfr/mandarine/todolist/ui/paper/PaperThemeKt;->PaperTheme(Lfr/mandarine/todolist/ui/paper/PaperPalette;Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;II)V
 SPLfr/mandarine/todolist/ui/paper/PaperThemeKt;->paperBaseline(Lfr/mandarine/todolist/ui/paper/PaperPalette;)Landroidx/compose/material3/ColorScheme;
 SPLfr/mandarine/todolist/ui/paper/PaperThemeKt;->paperColorScheme(Lfr/mandarine/todolist/ui/paper/PaperPalette;)Landroidx/compose/material3/ColorScheme;
-SPLfr/mandarine/todolist/ui/paper/PaperThemeKt;->paperUnderTheLight(Landroidx/compose/runtime/Composer;I)Lfr/mandarine/todolist/ui/paper/PaperPalette;
 Lfr/mandarine/todolist/ui/paper/PaperThemeKt$$ExternalSyntheticLambda0;
 SPLfr/mandarine/todolist/ui/paper/PaperThemeKt$$ExternalSyntheticLambda0;-><init>(Lkotlin/jvm/functions/Function2;)V
 SPLfr/mandarine/todolist/ui/paper/PaperThemeKt$$ExternalSyntheticLambda0;->invoke(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;

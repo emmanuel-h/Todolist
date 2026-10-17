@@ -1,5 +1,7 @@
 package fr.mandarine.todolist.domain
 
+import java.time.temporal.ChronoUnit
+
 /**
  * The read behind the page of lists: every list, decorated with the counts and the
  * date judgements its row needs.
@@ -11,9 +13,10 @@ package fr.mandarine.todolist.domain
  * testable on any day.
  *
  * ### Cost
- * Two queries, not N+1. [TodoRepository.countsByList] returns one grouped `COUNT`
- * row per list, and `associateBy` turns that list into a `Map<listId, TodoCounts>`
- * for O(1) lookup while walking the lists. Loading each list's items to count them
+ * Three queries, not N+1. [TodoRepository.countsByList] returns one grouped `COUNT`
+ * row per list, [TodoRepository.previewsByList] returns the first [PREVIEW_ITEMS]
+ * open items per list in one query, and `associateBy` turns both results into maps
+ * for O(1) lookup while walking the lists. Loading each list's items individually
  * would make opening the app cost the whole database.
  *
  * ### The derived fields
@@ -27,6 +30,9 @@ package fr.mandarine.todolist.domain
  * - `isElapsed` applies to the soft date only; an elapsed target is drawn struck
  *   through rather than removed. A passed hard date is [DueDateStatus.OVERDUE]
  *   instead, which is a louder signal.
+ * - `preview` holds the titles of the first [PREVIEW_ITEMS] open items for display
+ *   on the board card.
+ * - `daysLate` is the number of whole days the list's day is behind today, or 0.
  *
  * Note `list.targetDate` is smart-cast inside the `!= null` check — Kotlin knows
  * a `val` on an immutable `data class` cannot change between the check and the use.
@@ -36,9 +42,14 @@ class GetTodoListsWithStatusUseCase(
     private val todoRepository: TodoRepository,
     private val clock: Clock
 ) {
+    companion object {
+        const val PREVIEW_ITEMS = 3
+    }
+
     operator fun invoke(): List<TodoListSummary> {
         val today = clock.today()
         val countsByList = todoRepository.countsByList().associateBy { it.listId }
+        val previewsByList = todoRepository.previewsByList(PREVIEW_ITEMS).associateBy { it.listId }
         return todoListRepository.getAll().map { list ->
             val counts = countsByList[list.id]
             val activeCount = counts?.activeCount ?: 0
@@ -55,7 +66,14 @@ class GetTodoListsWithStatusUseCase(
             }
             val showDueDateYear = list.dueDate != null && list.dueDate.year != today.year
             val horizon = ListHorizon.of(list.targetDate ?: list.dueDate, today)
-            TodoListSummary(list, allDone, activeCount, completedCount, isElapsed, showYear, dueDateStatus, showDueDateYear, horizon)
+            val preview = previewsByList[list.id]?.titles ?: emptyList()
+            val day = list.targetDate ?: list.dueDate
+            val daysLate = if (day != null && day.isBefore(today)) {
+                ChronoUnit.DAYS.between(day, today).toInt()
+            } else {
+                0
+            }
+            TodoListSummary(list, allDone, activeCount, completedCount, isElapsed, showYear, dueDateStatus, showDueDateYear, horizon, preview, daysLate)
         }
     }
 }

@@ -309,21 +309,6 @@ class TodoListsScreenStateTest {
         assertTrue(dateMarksOwed(state))
     }
 
-    @Test
-    fun `should lay the pad on the page when the page fills the window`() {
-        assertTrue(padLiesOnPage(windowWidth = 411.dp, pageWidth = 640.dp, reach = 80.dp))
-    }
-
-    @Test
-    fun `should lay the pad on the page when the margin beside it is too narrow`() {
-        assertTrue(padLiesOnPage(windowWidth = 700.dp, pageWidth = 640.dp, reach = 80.dp))
-    }
-
-    @Test
-    fun `should leave the pad off the page when the desk beside it is wide enough`() {
-        assertFalse(padLiesOnPage(windowWidth = 914.dp, pageWidth = 640.dp, reach = 80.dp))
-    }
-
     // ── A date jotted against a row already on the page ───────────────────────
 
     @Test

@@ -384,6 +384,10 @@ private fun ItemsPage(
                     onDueDateSet(ReminderNote(list.name, written.date))
                 }
             },
+            onRecolour = { colour ->
+                val list = summary?.list ?: return@TodoListScreen
+                listsViewModel.editList(listId, list.name, list.targetDate, list.dueDate, colour)
+            },
             appWideReminderTime = appWideReminderTime,
             onSetListReminderTime = onSetListReminderTime,
             pagePosition = pagePosition,

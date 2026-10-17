@@ -3,8 +3,6 @@ package fr.mandarine.todolist.ui.todolists
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -21,12 +19,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.semantics.SemanticsActions
 import fr.mandarine.todolist.domain.DueDateStatus
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
-import fr.mandarine.todolist.ui.listmeta.formatJotDate
-import fr.mandarine.todolist.ui.paper.LocalPagePitch
 import fr.mandarine.todolist.ui.paper.InkTone
 import fr.mandarine.todolist.ui.paper.PaperPalette
 import fr.mandarine.todolist.ui.paper.inked
@@ -36,25 +33,18 @@ import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-class TodoListRowTest {
+class ListCardTest {
 
     @get:Rule
     val composeRule = createComposeRule()
-
-    @After
-    fun restoreFontScale() {
-        RuntimeEnvironment.setFontScale(1f)
-    }
 
     private var opened = 0
     private var actionsRequested = 0
@@ -170,64 +160,14 @@ class TodoListRowTest {
 
     @Test
     /**
-     * Delete is a mark on the row now rather than a verb spoken about it, so it is
-     * named once, on the tab, and not twice.
+     * A dated card adds the page torn off a calendar in its corner, read out as the
+     * date it carries, and nothing else.
      */
-    /**
-     * Neither tearing nor editing is spoken about the row any more. Both are marks
-     * on it, named once each, where they can also be pressed.
-     */
-    fun `should leave the row no verb it does not also wear as a mark`() {
-        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
-
-        assertEquals(emptyList<String>(), verbs())
-    }
-
-    @Test
-    fun `should print how far through the list the reader is under its name`() {
-        render(summary(activeCount = 3, completedCount = 12))
-
-        composeRule.onNodeWithContentDescription("12 of 15 done").assertIsDisplayed()
-        assertTrue(baselineOf("Groceries") < topOf("12 of 15 done"))
-    }
-
-    @Test
-    fun `should print a finished list as wholly done`() {
-        render(summary(activeCount = 0, completedCount = 4))
-
-        composeRule.onNodeWithContentDescription("4 of 4 done").assertIsDisplayed()
-    }
-
-    @Test
-    fun `should print no progress on a list with nothing written on it`() {
-        render(summary())
-
-        assertEquals(listOf("Groceries"), texts())
-        assertEquals(listOf(LIST_ACTIONS), descriptions())
-    }
-
-    @Test
-    /**
-     * A row carries one control: the mark that holds out everything else that can
-     * be done to the list. The pencil, the calendar and the bin moved onto the
-     * sheet it opens, where they are named in words.
-     */
-    fun `should carry nothing at rest but the name, its progress and its one control on a dateless row`() {
-        render(summary(activeCount = 2))
-
-        assertEquals(listOf(LIST_ACTIONS, "0 of 2 done"), descriptions())
-    }
-
-    @Test
-    /**
-     * A dated row adds its jot after the progress, on the rule under the name. The
-     * name's line does not change when a day is written on the list.
-     */
-    fun `should carry nothing at rest but the name, its marginalia and its one control on a dated row`() {
+    fun `should carry nothing at rest but the name, its status and its one control on a dated card`() {
         render(summary(activeCount = 2, targetDate = DATE))
 
         assertEquals(
-            listOf(LIST_ACTIONS, "0 of 2 done", "Target date ${spelled(DATE)}"),
+            listOf("0 of 2 done", LIST_ACTIONS, "Target date ${spelled(DATE)}"),
             descriptions()
         )
     }
@@ -238,11 +178,10 @@ class TodoListRowTest {
      * letter a line, which is what a tally that fills its box does.
      */
     @Test
-    fun `should leave the name the room the marginalia does not need`() {
+    fun `should keep a short name to one line beside the day's page`() {
         render(summary(name = "Groceries", activeCount = 3, targetDate = DATE))
 
         assertEquals(ONE_LINE, layoutOf("Groceries")?.lineCount)
-        assertTrue(widthOf("Groceries") > widthOf(jotted(DATE)))
     }
 
     @Test
@@ -354,10 +293,10 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should write the date jot on the rule under the name`() {
+    fun `should print the day under the name`() {
         render(summary(targetDate = DATE))
 
-        assertTrue(baselineOf("Groceries") < baselineOf(jotted(DATE)))
+        assertTrue(baselineOf("Groceries") < baselineOf(printed(DATE)))
     }
 
     @Test
@@ -375,17 +314,17 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should jot the target date in the margin without its weekday`() {
+    fun `should print the target day on the card's status line`() {
         render(summary(targetDate = DATE))
 
-        composeRule.onNodeWithText(jotted(DATE)).assertIsDisplayed()
+        composeRule.onNodeWithText(printed(DATE), useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
     fun `should append the year to the jot when the year is not obvious`() {
         render(summary(targetDate = DATE, showTargetYear = true))
 
-        assertTrue("Expected the year in ${texts()}", texts().any { it.contains("26") })
+        assertTrue("Expected the year in ${texts()}", texts().any { it.contains("2026") })
     }
 
     @Test
@@ -398,10 +337,10 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should jot the due date when the list has one`() {
+    fun `should print the due day and read it out in full when the list has one`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        composeRule.onNodeWithText(jotted(DATE)).assertIsDisplayed()
+        composeRule.onNodeWithText(printed(DATE), useUnmergedTree = true).assertIsDisplayed()
         composeRule
             .onNodeWithContentDescription("Due date ${spelled(DATE)}")
             .assertIsDisplayed()
@@ -415,10 +354,42 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should alarm on an overdue jot and stay in pencil on a future one`() {
-        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.OVERDUE))
+    fun `should count the days a missed due day is late in red`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.OVERDUE, daysLate = 2))
 
-        assertEquals(PaperPalette.light.inked(InkTone.Lost), textStyleOf(jotted(DATE))?.color)
+        assertEquals(PaperPalette.light.inked(InkTone.Lost), textStyleOf("2 DAYS LATE")?.color)
+    }
+
+    @Test
+    fun `should print a future due day in pencil`() {
+        render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
+
+        assertEquals(PaperPalette.light.inked(InkTone.Margin), textStyleOf(printed(DATE))?.color)
+    }
+
+    @Test
+    fun `should cross out a target day that has gone by rather than redden it`() {
+        render(summary(targetDate = DATE, isTargetDateElapsed = true))
+
+        val style = textStyleOf(printed(DATE))
+        assertEquals(PaperPalette.light.inked(InkTone.Crossed), style?.color)
+        assertEquals(TextDecoration.LineThrough, style?.textDecoration)
+    }
+
+    @Test
+    fun `should preview the first things still to do and count the rest`() {
+        render(summary(activeCount = 5, preview = listOf("Milk", "Eggs", "Bread")))
+
+        listOf("Milk", "Eggs", "Bread", "+ 2 more").forEach {
+            composeRule.onNodeWithText(it, useUnmergedTree = true).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun `should preview nothing on a finished list`() {
+        render(summary(allDone = true, completedCount = 2, preview = listOf("Milk")))
+
+        composeRule.onNodeWithText("Milk", useUnmergedTree = true).assertDoesNotExist()
     }
 
     /**
@@ -426,30 +397,6 @@ class TodoListRowTest {
      * the 14sp marginalia used to write a taller line than the 20sp name it
      * annotates and pushed the row onto a second rule half a line below it.
      */
-    @Test
-    fun `should hold a name its jot and its tally to one rule when the font scale bends`() {
-        RuntimeEnvironment.setFontScale(BENT_SCALE)
-        var pitch = 0
-        composeRule.setContent {
-            PaperTheme {
-                pitch = with(LocalDensity.current) { LocalPagePitch.current.roundToPx() }
-                Box(Modifier.testTag(ROW)) {
-                    Row(
-                        summary(
-                            activeCount = 4,
-                            dueDate = DATE,
-                            dueDateStatus = DueDateStatus.FUTURE
-                        ),
-                        tearing = false,
-                        editable = true
-                    )
-                }
-            }
-        }
-
-        assertEquals(pitch * 2, composeRule.onNodeWithTag(ROW).fetchSemanticsNode().size.height)
-        assertEquals(baselineOf("Groceries") + pitch, baselineOf(jotted(DATE)), ONE_PIXEL)
-    }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -498,7 +445,7 @@ class TodoListRowTest {
         editable: Boolean,
         rewritable: Boolean = true
     ) {
-        TodoListRow(
+        ListCard(
             summary = summary,
             animated = false,
             onOpen = { opened += 1 },
@@ -519,7 +466,9 @@ class TodoListRowTest {
         isTargetDateElapsed: Boolean = false,
         showTargetYear: Boolean = false,
         dueDateStatus: DueDateStatus? = null,
-        showDueDateYear: Boolean = false
+        showDueDateYear: Boolean = false,
+        preview: List<String> = emptyList(),
+        daysLate: Int = 0
     ) = TodoListSummary(
         list = TodoList("list-1", name, targetDate = targetDate, dueDate = dueDate),
         allDone = allDone,
@@ -528,11 +477,13 @@ class TodoListRowTest {
         isTargetDateElapsed = isTargetDateElapsed,
         showTargetYear = showTargetYear,
         dueDateStatus = dueDateStatus,
-        showDueDateYear = showDueDateYear
+        showDueDateYear = showDueDateYear,
+        preview = preview,
+        daysLate = daysLate
     )
 
-    private fun jotted(date: LocalDate): String =
-        formatJotDate(date, showYear = false, locale = locale())
+    private fun printed(date: LocalDate): String =
+        cardDate(date, showYear = false, locale = locale()).uppercase(locale())
 
     private fun spelled(date: LocalDate): String =
         formatListDate(date, showYear = true, locale = locale())
@@ -570,11 +521,8 @@ class TodoListRowTest {
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         val OPENS_THE_LIST: String? = null
-        const val LIST_ACTIONS = "More for this list"
+        const val LIST_ACTIONS = "Edit this list"
         const val GIVE_A_DAY = "Give this list a day"
-        const val ROW = "row"
         const val ONE_LINE = 1
-        const val ONE_PIXEL = 1f
-        const val BENT_SCALE = 1.3f
     }
 }

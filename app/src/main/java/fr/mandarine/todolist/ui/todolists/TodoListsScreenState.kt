@@ -8,6 +8,7 @@ import fr.mandarine.todolist.domain.ListColour
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * Whose date the open calendar is going to write. The line being written and the
@@ -55,7 +56,16 @@ data class RenameState(
     }
 }
 
+/** The two sides of the one window's foot: the board, and the calendar. */
+enum class BoardTab { Lists, Calendar }
+
 class TodoListsScreenState {
+
+    /** Which tab the bar at the foot of the window has open. */
+    var tab by mutableStateOf(BoardTab.Lists)
+
+    /** The month the Calendar tab is turned to; null until the reader turns it. */
+    var calendarMonth by mutableStateOf<YearMonth?>(null)
 
     var confirmDelete by mutableStateOf<ConfirmDeleteRequest?>(null)
 
@@ -155,6 +165,8 @@ class TodoListsScreenState {
      */
     fun saveTo(outState: Bundle) {
         outState.putBoolean(FINISHED_FOLDED, finishedFolded)
+        outState.putString(TAB, tab.name)
+        calendarMonth?.let { outState.putLong(CALENDAR_MONTH, it.atDay(1).toEpochDay()) }
         actionsFor?.let { outState.putString(ACTIONS_FOR, it) }
         outState.putBoolean(ADD_OPEN, addRowExpanded)
         outState.putString(ADD_TEXT, addRowText)
@@ -186,6 +198,8 @@ class TodoListsScreenState {
 
     fun restoreFrom(savedInstanceState: Bundle) {
         finishedFolded = savedInstanceState.getBoolean(FINISHED_FOLDED)
+        tab = savedInstanceState.getString(TAB)?.let(BoardTab::valueOf) ?: BoardTab.Lists
+        calendarMonth = savedInstanceState.dayOrNull(CALENDAR_MONTH)?.let(YearMonth::from)
         actionsFor = savedInstanceState.getString(ACTIONS_FOR)
         addRowExpanded = savedInstanceState.getBoolean(ADD_OPEN)
         addRowText = savedInstanceState.getString(ADD_TEXT).orEmpty()
@@ -276,4 +290,6 @@ private const val RENAME_DAY = "lists-rename-day"
 private const val RENAME_COLOUR = "lists-rename-colour"
 private const val ACTIONS_FOR = "lists-actions-for"
 private const val FINISHED_FOLDED = "lists-finished-folded"
+private const val TAB = "lists-tab"
+private const val CALENDAR_MONTH = "lists-calendar-month"
 

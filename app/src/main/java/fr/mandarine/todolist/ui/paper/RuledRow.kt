@@ -70,6 +70,7 @@ fun RuledRow(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     hanging: Dp = 0.dp,
+    blankRulesBelow: Int = 1,
     content: @Composable RowScope.() -> Unit
 ) {
     val pitch = LocalPagePitch.current
@@ -78,7 +79,7 @@ fun RuledRow(
         modifier = modifier
             .fillMaxWidth()
             .then(clickModifier)
-            .pitchHeight(pitch, extraRules = 1)
+            .pitchHeight(pitch, extraRules = blankRulesBelow)
             .padding(
                 start = (LocalPaperGutter.current - hanging).coerceAtLeast(0.dp),
                 end = PaperDimens.rowEndPadding

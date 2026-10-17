@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -63,6 +64,7 @@ private val DENT_RADIUS = 2.dp
 private val DENT_DROP = 1.dp
 private val SHEET_STEP = 1.dp
 private val SHEET_INSET = (PaperDimens.stickyPad - PaperDimens.stickySheet) / 2
+private val PAD_TAPE_WIDTH = 36.dp
 
 /**
  * One shadow lies under the whole stack, so the pad reads as a single block of
@@ -301,6 +303,14 @@ fun StickyNotePad(
                 )
             }
         }
+
+        PaperTape(
+            colour = palette.tape,
+            width = PAD_TAPE_WIDTH,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = SHEET_INSET - CorkDimens.tapeHeight / 2)
+        )
 
         if (peeling || returning) {
             StickyNoteSheetSurface(

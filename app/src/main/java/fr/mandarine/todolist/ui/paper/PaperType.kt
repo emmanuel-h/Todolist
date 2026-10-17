@@ -99,6 +99,14 @@ object PaperType {
     val question = printed.copy(fontSize = 19.sp).offRule(26.sp)
     val printedLine = printed.copy(fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
     val numeral = printed.copy(fontSize = 17.sp)
+    val cardLine = base.copy(fontSize = 17.sp).offRule(22.sp)
+    val tabLabel = printed.copy(fontSize = 13.sp).offRule(16.sp)
+    val tearOffMonth = printed.copy(
+        fontSize = 9.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.sp
+    ).offRule(11.sp)
+    val tearOffDay = printed.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold).offRule(20.sp)
 }
 
 /**

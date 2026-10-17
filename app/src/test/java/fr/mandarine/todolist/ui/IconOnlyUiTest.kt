@@ -34,8 +34,10 @@ import fr.mandarine.todolist.ui.todolist.TodoListScreen
 import fr.mandarine.todolist.ui.todolist.TodoListScreenState
 import fr.mandarine.todolist.ui.todolists.TodoListsScreen
 import fr.mandarine.todolist.ui.todolists.TodoListsScreenState
+import fr.mandarine.todolist.ui.todolists.BoardTab
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -126,14 +128,16 @@ class IconOnlyUiTest {
      * ([#43]): a pad with nothing written at the top of it reads as unfinished
      * rather than calm, and a notebook's cover carries its name and the day. The
      * standing line under them is left off a blank page — there is nothing to
-     * report. Anything else appearing here has to justify itself in this list first.
+     * report. The bar at the foot names the two places the notebook has — Lists
+     * and Calendar — in words, because two glyphs alone did not say which was
+     * which. Anything else appearing here has to justify itself in this list first.
      */
     @Test
     fun `should draw nothing on the empty lists page but its cover`() {
         composeRule.setContent { PaperTheme { EmptyListsScreen() } }
 
         assertEquals(
-            listOf(EMPTY_PAGE_DAY, APP_NAME),
+            listOf(EMPTY_PAGE_DAY, APP_NAME, LISTS_TAB_LABEL, CALENDAR_TAB_LABEL),
             composeRule.onRoot().fetchSemanticsNode().staticText()
         )
     }
@@ -171,13 +175,15 @@ class IconOnlyUiTest {
      * The gesture map is spoken to a screen reader as a list of named verbs. None
      * of those names may leak onto the page as a label, which is what would happen
      * if a verb were ever wired to a `Text` instead of to `customActions`.
+     * A list with no day carries the words "Add a date" where its jot would be:
+     * a day is opt-in, and the offer says what it is.
      */
     @Test
     fun `should keep the spoken verbs of a row out of the drawn page`() {
         composeRule.setContent { PaperTheme { OneItemScreen() } }
 
         assertEquals(
-            listOf(LIST_NAME, ONE_ITEM_PROGRESS, ITEM_TITLE, ADD_ITEM_LABEL),
+            listOf(LIST_NAME, ONE_ITEM_PROGRESS, ADD_DATE_CHIP_LABEL, ITEM_TITLE, ADD_ITEM_LABEL),
             composeRule.onRoot().fetchSemanticsNode().staticText()
         )
     }
@@ -193,23 +199,54 @@ class IconOnlyUiTest {
         composeRule.setContent { PaperTheme { ListActions() } }
 
         assertEquals(
-            listOf(LIST_NAME, "Rename or colour", "Give it a day", "Delete list"),
+            listOf(LIST_NAME, "Rename", "Give it a day", "Delete list"),
             composeRule.onNode(isDialog()).fetchSemanticsNode().staticText()
         )
     }
 
     /**
-     * A page of lists with days on them is filed under printed headings. Their
-     * words are pinned here, with the count each one carries.
+     * Days do not head the board any more: a dated list is a card like any other,
+     * with its day printed on its status line, and the board's only other word
+     * about days is the slip naming what is due this week — which is one press,
+     * read out as one phrase rather than drawn word by word. The bar at the foot
+     * adds the two places the notebook has. These are the words, pinned.
      */
     @Test
-    fun `should head the dated lists with the horizon they fall on`() {
+    fun `should print a dated list's day on its card and nowhere else on the board`() {
         composeRule.setContent { PaperTheme { DatedListsScreen() } }
 
         assertEquals(
-            listOf(EMPTY_PAGE_DAY, APP_NAME, "1 list on the go · 1 for today", "TODAY", "1", LIST_NAME, "Jan 1"),
+            listOf(
+                EMPTY_PAGE_DAY, APP_NAME,
+                "1 list on the go · 1 for today",
+                LIST_NAME, "TODAY",
+                LISTS_TAB_LABEL, CALENDAR_TAB_LABEL
+            ),
             composeRule.onRoot().fetchSemanticsNode().staticText()
         )
+    }
+
+    @Test
+    fun `should read the week's slip out as one phrase`() {
+        composeRule.setContent { PaperTheme { DatedListsScreen() } }
+
+        composeRule.onNodeWithContentDescription("This week: Groceries").assertIsDisplayed()
+    }
+
+    /**
+     * The calendar is the one place that talks about days, and it does it in
+     * words: the kind of day each list carries, and — so nobody takes the calendar
+     * for the whole notebook — that the lists with no day stay in Lists.
+     */
+    @Test
+    @Config(sdk = [34], qualifiers = "w411dp-h1200dp")
+    fun `should say on the calendar what kind of day a list has and where the rest are`() {
+        composeRule.setContent { PaperTheme { DatedListsScreen(BoardTab.Calendar, undated = true) } }
+
+        val words = composeRule.onRoot().fetchSemanticsNode().staticText()
+
+        assertTrue(words.toString(), words.containsAll(listOf("January", "TODAY", LIST_NAME, "Finish before this day")))
+        assertTrue(words.toString(), "1 list has no date. It stays in Lists." in words)
     }
 
     /**
@@ -427,6 +464,9 @@ class IconOnlyUiTest {
         const val AFTERNOON_LABEL = "Afternoon"
         const val REMOVE_DATE_LABEL = "Remove"
         const val RUB_OUT_LABEL = "Rub out"
+        const val LISTS_TAB_LABEL = "Lists"
+        const val CALENDAR_TAB_LABEL = "Calendar"
+        const val ADD_DATE_CHIP_LABEL = "Add a date"
     }
 }
 
@@ -485,20 +525,21 @@ private fun ListActions() {
 }
 
 @Composable
-private fun DatedListsScreen() {
+private fun DatedListsScreen(tab: BoardTab = BoardTab.Lists, undated: Boolean = false) {
     TodoListsScreen(
         state = TodoListsState.Content(
-            listOf(
+            listOfNotNull(
                 TodoListSummary(
                     TodoList("list-1", "Groceries", dueDate = TODAY),
                     allDone = false,
                     dueDateStatus = DueDateStatus.TODAY,
                     horizon = ListHorizon.TODAY
-                )
+                ),
+                TodoListSummary(TodoList("list-2", "Reading list"), allDone = false).takeIf { undated }
             ),
             emptyList()
         ),
-        screenState = remember { TodoListsScreenState() },
+        screenState = remember { TodoListsScreenState().also { it.tab = tab } },
         today = TODAY,
         onOpenList = {},
         onCreateList = { _, _, _ -> },
