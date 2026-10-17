@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -35,6 +37,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.domain.ListColour
 import java.util.concurrent.ConcurrentHashMap
@@ -220,6 +223,10 @@ fun PaperPalette.tapeFor(colour: ListColour): Color =
  * The band is the day's [tone] — red once missed, amber today, pencil otherwise —
  * and a target day already behind us is [struck] rather than reddened, the way the
  * date jot is. Pressing it is pressing the jot: it asks for the calendar on that day.
+ *
+ * The page is a fixed size, so its print does not grow with the reader's font
+ * scale: a larger month cut itself off at the band's edge ("OC" for October). The
+ * date is read out whole, and printed in full on the card's status line.
  */
 @Composable
 fun TearOffDay(
@@ -234,6 +241,26 @@ fun TearOffDay(
 ) {
     val palette = LocalPaperPalette.current
     val band = palette.inked(tone)
+    val density = LocalDensity.current
+    val unscaled = remember(density) { Density(density.density, fontScale = 1f) }
+    CompositionLocalProvider(LocalDensity provides unscaled) {
+        TearOffPage(month, day, tone = band, struck, spoken, pressLabel, onPress, modifier)
+    }
+}
+
+@Composable
+private fun TearOffPage(
+    month: String,
+    day: String,
+    tone: Color,
+    struck: Boolean,
+    spoken: String,
+    pressLabel: String?,
+    onPress: (() -> Unit)?,
+    modifier: Modifier
+) {
+    val palette = LocalPaperPalette.current
+    val band = tone
     Box(
         modifier = modifier
             .size(PaperDimens.touchTarget)

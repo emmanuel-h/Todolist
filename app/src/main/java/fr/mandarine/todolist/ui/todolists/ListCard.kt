@@ -219,7 +219,7 @@ private fun CardStatus(summary: TodoListSummary, day: CardDay?) {
     if (dayPhrase == null && fraction == null) return
     Row(
         modifier = Modifier.padding(top = STATUS_GAP),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Bottom
     ) {
         if (dayPhrase != null) {
             Text(
@@ -227,8 +227,6 @@ private fun CardStatus(summary: TodoListSummary, day: CardDay?) {
                 style = PaperType.kicker,
                 color = palette.inked(day?.tone ?: InkTone.Margin),
                 textDecoration = if (day == CardDay.Spent) TextDecoration.LineThrough else null,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false)
             )
         }

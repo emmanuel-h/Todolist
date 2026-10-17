@@ -6,10 +6,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +44,10 @@ private val COUNT_GAP = 8.dp
  * a tap anywhere along it. [spoken] is what a screen reader hears in place of the
  * printed name and numeral, which on their own read as a word and a stray digit.
  * The printed words stay in the tree under it, so the page's word guard sees them.
+ *
+ * Off the ruled page — on a label pinned to the cork — there is no rule to sit on,
+ * so a heading that is not [ruled] drops the blank rule above it and centres its
+ * words on the label instead.
  */
 @Composable
 fun SectionHeading(
@@ -54,7 +60,8 @@ fun SectionHeading(
     folded: Boolean = false,
     onFold: (() -> Unit)? = null,
     foldedSpoken: String = "",
-    openSpoken: String = ""
+    openSpoken: String = "",
+    ruled: Boolean = true
 ) {
     val palette = LocalPaperPalette.current
     val pitch = LocalPagePitch.current
@@ -88,17 +95,18 @@ fun SectionHeading(
                 }
             }
     ) {
-        Spacer(Modifier.height(pitch))
+        if (ruled) Spacer(Modifier.height(pitch))
+        val seat = if (ruled) Modifier.seatOnRule() else Modifier
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(pitch)
+                .height(if (ruled) pitch else PaperDimens.touchTarget)
                 .padding(start = LocalPaperGutter.current, end = PaperDimens.rowEndPadding),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = if (ruled) Alignment.Top else Alignment.CenterVertically
         ) {
             Text(
                 text = printed,
-                modifier = Modifier.seatOnRule(),
+                modifier = seat,
                 style = PaperType.kicker,
                 color = ink,
                 softWrap = false,
@@ -108,7 +116,7 @@ fun SectionHeading(
             TallyRoll(count = count, animated = animated) { tally ->
                 Text(
                     text = tally.toString(),
-                    modifier = Modifier.seatOnRule(),
+                    modifier = if (ruled) seat else Modifier.fillMaxHeight().wrapContentHeight(),
                     style = PaperType.kicker,
                     color = palette.inked(InkTone.Margin),
                     softWrap = false,
@@ -122,7 +130,7 @@ fun SectionHeading(
                     contentDescription = null,
                     modifier = Modifier
                         .padding(end = COUNT_GAP)
-                        .seatGlyphOnRule(GlyphFoot.chevronDown)
+                        .then(if (ruled) Modifier.seatGlyphOnRule(GlyphFoot.chevronDown) else Modifier)
                         .graphicsLayer { rotationZ = turn },
                     tint = palette.inked(InkTone.Margin),
                     size = PaperDimens.rowGlyph
