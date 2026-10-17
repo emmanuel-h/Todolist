@@ -35,6 +35,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
+import fr.mandarine.todolist.domain.DueDateStatus
+import fr.mandarine.todolist.domain.ListColour
+import fr.mandarine.todolist.domain.ListHorizon
+import fr.mandarine.todolist.domain.TodoList
+import fr.mandarine.todolist.domain.TodoListSummary
+import fr.mandarine.todolist.ui.todolists.BoardTab
+import fr.mandarine.todolist.ui.todolists.BoardTabBar
+import fr.mandarine.todolist.ui.todolists.ListCard
 import kotlinx.coroutines.delay
 
 private const val PREVIEW_PAPER = 0xFFFAF5EA
@@ -262,6 +270,57 @@ internal fun StickyNotePadPreview() {
                 contentDescription = stringResource(R.string.add_list_fab_description),
                 taken = true
             )
+        }
+    }
+}
+
+private val PREVIEW_TODAY = java.time.LocalDate.of(2026, 10, 17)
+
+private val PREVIEW_GROCERIES_CARD = TodoListSummary(
+    list = TodoList("preview-groceries", "Groceries", dueDate = PREVIEW_TODAY, colour = ListColour.Butter),
+    allDone = false,
+    activeCount = 3,
+    completedCount = 2,
+    dueDateStatus = DueDateStatus.TODAY,
+    horizon = ListHorizon.TODAY,
+    preview = listOf("Milk", "Sourdough", "Olive oil")
+)
+
+private val PREVIEW_READING_CARD = TodoListSummary(
+    list = TodoList("preview-reading", "Reading list", colour = ListColour.Mint),
+    allDone = false,
+    activeCount = 4,
+    preview = listOf("Dune", "Piranesi", "Klara and the Sun")
+)
+
+@Preview(widthDp = 360, heightDp = 300)
+@Composable
+internal fun ListCardsPreview() {
+    PaperTheme {
+        CorkSurface {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(CorkDimens.cardGap)
+            ) {
+                ListCard(PREVIEW_GROCERIES_CARD, animated = false, onOpen = {}, modifier = Modifier.weight(1f), onActionsRequested = {})
+                ListCard(PREVIEW_READING_CARD, animated = false, onOpen = {}, modifier = Modifier.weight(1f), onActionsRequested = {})
+            }
+        }
+    }
+}
+
+@Preview(widthDp = 360, heightDp = 300, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+internal fun ListCardsByLamplightPreview() {
+    ListCardsPreview()
+}
+
+@Preview(widthDp = 360, heightDp = 96)
+@Composable
+internal fun BoardTabBarPreview() {
+    PaperTheme {
+        CorkSurface {
+            BoardTabBar(selected = BoardTab.Lists, onSelect = {})
         }
     }
 }

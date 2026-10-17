@@ -72,7 +72,19 @@ data class PaperPalette(
     val roseWash: Color,
     val skyWash: Color,
     val peachWash: Color,
-    val lilacWash: Color
+    val lilacWash: Color,
+    /**
+     * The board the lists are pinned to. [cork] is its ground and [corkDim] the same
+     * cork with the light turned down, left behind a list lifted off it; the granules
+     * pressed into it are mixed towards [corkFleckDark] and [corkFleckLight]. [tape]
+     * is the plain tape an uncoloured list is pinned up with — a coloured one is
+     * taped in its own wash.
+     */
+    val cork: Color,
+    val corkFleckDark: Color,
+    val corkFleckLight: Color,
+    val corkDim: Color,
+    val tape: Color
 ) {
     companion object {
         val light = PaperPalette(
@@ -116,7 +128,12 @@ data class PaperPalette(
             roseWash = Color(0xFFFFCAD0),
             skyWash = Color(0xFFBDD8F5),
             peachWash = Color(0xFFFFD9A8),
-            lilacWash = Color(0xFFDCC8F5)
+            lilacWash = Color(0xFFDCC8F5),
+            cork = Color(0xFFC49A6C),
+            corkFleckDark = Color(0xFF7A5434),
+            corkFleckLight = Color(0xFFE6C9A0),
+            corkDim = Color(0xFF8A6C4C),
+            tape = Color(0xFFEFE6CF)
         )
 
         /**
@@ -168,7 +185,12 @@ data class PaperPalette(
             roseWash = Color(0xFF3E1C22),
             skyWash = Color(0xFF18203E),
             peachWash = Color(0xFF3E2418),
-            lilacWash = Color(0xFF241838)
+            lilacWash = Color(0xFF241838),
+            cork = Color(0xFF3B2E22),
+            corkFleckDark = Color(0xFF1F1812),
+            corkFleckLight = Color(0xFF5A4733),
+            corkDim = Color(0xFF221B14),
+            tape = Color(0xFF574C3E)
         )
     }
 }
@@ -192,5 +214,6 @@ fun PaperPalette.highlightWash(colour: ListColour): Color = when (colour) {
     ListColour.Peach -> peachWash
     ListColour.Lilac -> lilacWash
 }
+
 
 val LocalPaperPalette = staticCompositionLocalOf { PaperPalette.light }

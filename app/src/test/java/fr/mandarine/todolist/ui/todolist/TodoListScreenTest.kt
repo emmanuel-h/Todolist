@@ -944,6 +944,35 @@ class TodoListScreenTest {
     private fun addLine(): SemanticsNodeInteraction =
         composeRule.onAllNodes(hasSetTextAction()).onLast()
 
+    // ── A day, on offer ───────────────────────────────────────────────────────
+
+    @Test
+    fun `should offer a day to a list that has none`() {
+        render(TodoListState.Empty, "Groceries")
+
+        composeRule.onNodeWithText("Add a date").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(DateSelection(DateKind.TARGET, null), screenState.dateSheet)
+    }
+
+    @Test
+    fun `should not offer a day to a list that already has one`() {
+        render(
+            TodoListState.Empty,
+            TodoListSummary(TodoList(LIST_ID, "Groceries", targetDate = TODAY), allDone = false)
+        )
+
+        composeRule.onNodeWithText("Add a date").assertDoesNotExist()
+    }
+
+    @Test
+    fun `should offer the day as a press a screen reader can make`() {
+        render(TodoListState.Empty, "Groceries")
+
+        composeRule.onNodeWithText("Add a date").assertHasClickAction()
+    }
+
     private fun render(state: TodoListState, listName: String = "") {
         render(
             state,

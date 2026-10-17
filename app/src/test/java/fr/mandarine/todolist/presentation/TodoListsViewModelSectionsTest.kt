@@ -111,40 +111,27 @@ class TodoListsViewModelSectionsTest {
     }
 
     @Test
-    fun `should group active lists into one section per horizon that has any`() {
-        val overdue = summary("overdue", ListHorizon.OVERDUE, dueDate = day.minusDays(1))
-        val undatedA = summary("a", ListHorizon.UNDATED)
-        val undatedB = summary("b", ListHorizon.UNDATED)
-        every { getTodoListsWithStatusUseCase() } returns listOf(undatedA, overdue, undatedB)
-
-        val state = currentState() as TodoListsState.Content
-
-        assertEquals(listOf(ListHorizon.OVERDUE, ListHorizon.UNDATED), state.sections.map { it.horizon })
-        assertEquals(listOf("overdue"), state.sections[0].summaries.map { it.list.id })
-        assertEquals(listOf("a", "b"), state.sections[1].summaries.map { it.list.id })
-    }
-
-    @Test
-    fun `should leave finished lists out of the dated sections`() {
+    fun `should leave finished lists out of the agenda`() {
         val done = summary("done", ListHorizon.TODAY, targetDate = day, allDone = true)
         val open = summary("open", ListHorizon.TODAY, targetDate = day)
         every { getTodoListsWithStatusUseCase() } returns listOf(done, open)
 
         val state = currentState() as TodoListsState.Content
 
-        assertEquals(listOf("open"), state.sections.single().summaries.map { it.list.id })
+        assertEquals(listOf("open"), state.agenda.map { it.list.id })
         assertEquals(listOf("done"), state.doneSummaries.map { it.list.id })
     }
 
     @Test
-    fun `should draw no section when every list is finished`() {
+    fun `should leave the agenda and the undated count empty when every list is finished`() {
         every { getTodoListsWithStatusUseCase() } returns listOf(
             summary("done", ListHorizon.UNDATED, allDone = true)
         )
 
         val state = currentState() as TodoListsState.Content
 
-        assertEquals(emptyList<ListSection>(), state.sections)
+        assertEquals(emptyList<TodoListSummary>(), state.agenda)
+        assertEquals(0, state.undatedCount)
     }
 
     @Test

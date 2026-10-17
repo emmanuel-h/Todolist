@@ -111,4 +111,35 @@
     <string name="action_give_day">Lui donner un jour</string>
     <string name="action_change_day">Changer son jour</string>
     <string name="page_of">Liste %1$d sur %2$d</string>
+    <string name="tab_lists">Listes</string>
+    <string name="tab_calendar">Calendrier</string>
+    <string name="this_week_kicker">CETTE SEMAINE</string>
+    <string name="this_week_spoken">Cette semaine : %1$s</string>
+    <plurals name="this_week_spoken_more">
+        <item quantity="one">Cette semaine : %1$s et %2$d autre</item>
+        <item quantity="many">Cette semaine : %1$s et %2$d autres</item>
+        <item quantity="other">Cette semaine : %1$s et %2$d autres</item>
+    </plurals>
+    <string name="open_calendar">Ouvrir le calendrier</string>
+    <string name="list_separator">", "</string>
+    <string name="more_count">+%1$d</string>
+    <plurals name="card_days_late">
+        <item quantity="one">%d JOUR DE RETARD</item>
+        <item quantity="many">%d JOURS DE RETARD</item>
+        <item quantity="other">%d JOURS DE RETARD</item>
+    </plurals>
+    <string name="card_today">AUJOURD’HUI</string>
+    <plurals name="card_more_items">
+        <item quantity="one">+ %d autre</item>
+        <item quantity="many">+ %d autres</item>
+        <item quantity="other">+ %d autres</item>
+    </plurals>
+    <string name="agenda_late">EN RETARD · %1$s</string>
+    <string name="calendar_nothing_dated">Aucune liste n’a encore de jour.</string>
+    <plurals name="calendar_undated_stay">
+        <item quantity="one">%d liste n’a pas de date. Elle reste dans Listes.</item>
+        <item quantity="many">%d listes n’ont pas de date. Elles restent dans Listes.</item>
+        <item quantity="other">%d listes n’ont pas de date. Elles restent dans Listes.</item>
+    </plurals>
+    <string name="add_a_date">Ajouter une date</string>
 </resources>

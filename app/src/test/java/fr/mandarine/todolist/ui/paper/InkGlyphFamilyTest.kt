@@ -37,6 +37,7 @@ class InkGlyphFamilyTest {
         "pencil" to R.drawable.ic_edit,
         "list-checks" to R.drawable.ic_checklist,
         "more" to R.drawable.ic_more,
+        "board" to R.drawable.ic_board,
         "chevron-down" to R.drawable.ic_chevron_down
     )
 

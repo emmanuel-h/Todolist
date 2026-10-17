@@ -50,7 +50,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w411dp-h891dp")
 class TodoListsScreenTest {
 
     @get:Rule
@@ -86,7 +86,7 @@ class TodoListsScreenTest {
             )
         )
 
-        assertEquals(listOf(COVER_DAY, APP_NAME, "1 list on the go", "Groceries", "FINISHED", "1", "Old"), texts())
+        assertEquals(listOf(COVER_DAY, APP_NAME, "1 list on the go", "Groceries", "FINISHED", "1", "Old", LISTS_TAB, CALENDAR_TAB), texts())
         assertTrue("Finished, 1 list" in descriptions())
     }
 
@@ -94,7 +94,7 @@ class TodoListsScreenTest {
     fun `should draw no heading when every list is still active and undated`() {
         render(content(active = listOf(summary("1", "Groceries"))))
 
-        assertEquals(listOf(COVER_DAY, APP_NAME, "1 list on the go", "Groceries"), texts())
+        assertEquals(listOf(COVER_DAY, APP_NAME, "1 list on the go", "Groceries", LISTS_TAB, CALENDAR_TAB), texts())
         assertTrue(descriptions().none { it.startsWith("No date") || it.startsWith("Finished") })
     }
 
@@ -102,7 +102,7 @@ class TodoListsScreenTest {
     fun `should say everything is ticked off when every list is done`() {
         render(content(done = listOf(summary("1", "Old", allDone = true))))
 
-        assertEquals(listOf(COVER_DAY, APP_NAME, "Everything is ticked off.", "FINISHED", "1", "Old"), texts())
+        assertEquals(listOf(COVER_DAY, APP_NAME, "Everything is ticked off.", "FINISHED", "1", "Old", LISTS_TAB, CALENDAR_TAB), texts())
         assertTrue("Finished, 1 list" in descriptions())
     }
 
@@ -117,11 +117,12 @@ class TodoListsScreenTest {
             )
         )
 
-        assertEquals(
-            listOf("Overdue, 1 list", "No date, 1 list"),
-            descriptions().filter { Regex(", \\d+ lists?$").containsMatchIn(it) }
+        // Both cards appear on the board regardless of their horizon
+        assertTrue(names().containsAll(listOf("Party", "Books")))
+        // The this-week strip calls out the overdue / upcoming list by name
+        assertTrue(
+            descriptions().any { it.contains("Party") && it.contains("THIS WEEK", ignoreCase = true) }
         )
-        assertEquals(listOf("Party", "Books"), names().filter { it == "Party" || it == "Books" })
     }
 
     @Test
@@ -1293,6 +1294,103 @@ class TodoListsScreenTest {
         screenState.addRowSelection = selection
     }
 
+    // ── The board ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `should pin the lists in the reader's own order whatever their days`() {
+        render(
+            content(
+                active = listOf(
+                    summary("1", "Reading list"),
+                    summary("2", "Groceries", dueDate = DATE, horizon = ListHorizon.TODAY)
+                )
+            )
+        )
+
+        assertTrue(leftOf("Reading list") < leftOf("Groceries"))
+    }
+
+    @Test
+    fun `should preview what is still to do on a card`() {
+        render(content(active = listOf(summary("1", "Groceries", activeCount = 4).copy(preview = listOf("Milk", "Eggs", "Bread")))))
+
+        listOf("Milk", "Eggs", "Bread", "+ 1 more").forEach {
+            composeRule.onNodeWithText(it, useUnmergedTree = true).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun `should name the lists due this week on a slip that opens the calendar`() {
+        render(
+            content(
+                active = listOf(
+                    summary("1", "Reading list"),
+                    summary("2", "Groceries", dueDate = DATE, horizon = ListHorizon.TODAY)
+                )
+            )
+        )
+
+        composeRule.onNodeWithContentDescription("This week: Groceries").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(BoardTab.Calendar, screenState.tab)
+    }
+
+    @Test
+    fun `should draw no week's slip when nothing is due this week`() {
+        render(content(active = listOf(summary("1", "Reading list"))))
+
+        composeRule.onNode(hasContentDescription("This week", substring = true)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `should turn between the board and the calendar from the bar at the foot`() {
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE, horizon = ListHorizon.TODAY))))
+
+        composeRule.onNodeWithText("Calendar").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Finish before this day", substring = true).assertIsDisplayed()
+
+        composeRule.onNodeWithText("Lists").performClick()
+        composeRule.waitForIdle()
+        assertEquals(BoardTab.Lists, screenState.tab)
+    }
+
+    @Test
+    fun `should say which tab is open to a screen reader`() {
+        screenState.tab = BoardTab.Calendar
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithText("Calendar").assertIsSelected()
+        composeRule.onNodeWithText("Lists").assertIsNotSelected()
+    }
+
+    @Test
+    fun `should open a list from its slip on the calendar`() {
+        screenState.tab = BoardTab.Calendar
+        render(content(active = listOf(summary("1", "Groceries", dueDate = DATE, horizon = ListHorizon.TODAY))))
+
+        composeRule.onNodeWithText("Groceries").performClick()
+
+        assertEquals(listOf("Groceries"), opened)
+    }
+
+    @Test
+    fun `should put the pen down when the reader turns to the calendar`() {
+        screenState.addRowExpanded = true
+        screenState.addRowText = "Work"
+        render(content(active = listOf(summary("1", "Groceries"))))
+
+        composeRule.onNodeWithText("Calendar").performClick()
+        composeRule.waitForIdle()
+
+        assertFalse(screenState.addRowExpanded)
+        assertTrue(created.isEmpty())
+    }
+
+    private fun leftOf(text: String): Float =
+        composeRule.onNodeWithText(text).fetchSemanticsNode().positionInRoot.x
+
     private fun render(state: TodoListsState) {
         composeRule.setContent { PaperTheme { Screen(state) } }
     }
@@ -1384,6 +1482,7 @@ class TodoListsScreenTest {
         texts().filter { it.toIntOrNull() == null }
             .filterNot { it == APP_NAME || "on the go" in it || "/" in it }
             .filterNot { it == it.uppercase() }
+            .filterNot { it == LISTS_TAB || it == CALENDAR_TAB }
 
     private fun collectText(node: SemanticsNode): List<String> =
         node.config.getOrNull(SemanticsProperties.Text).orEmpty()
@@ -1401,6 +1500,8 @@ class TodoListsScreenTest {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         const val ADD_LIST = "Add a list"
         const val APP_NAME = "To do list"
+        const val LISTS_TAB = "Lists"
+        const val CALENDAR_TAB = "Calendar"
         const val CREATE_LIST = "Create new list"
         const val COMMIT_LIST = "Add this list"
         const val DELETE_CONFIRM = "Delete"

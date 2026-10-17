@@ -14,7 +14,7 @@ import fr.mandarine.todolist.domain.TodoItem
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
 import fr.mandarine.todolist.ui.todolist.TodoRow
-import fr.mandarine.todolist.ui.todolists.TodoListRow
+import fr.mandarine.todolist.ui.todolists.ListCard
 import fr.mandarine.todolist.ui.todolists.dueTone
 import fr.mandarine.todolist.ui.todolists.targetTone
 import java.time.LocalDate
@@ -153,7 +153,7 @@ class InkBudgetTest {
 
     @Composable
     private fun RestingListRow(dueStatus: DueDateStatus?) {
-        TodoListRow(
+        ListCard(
             summary = TodoListSummary(
                 list = TodoList(
                     id = "list-1",
@@ -167,7 +167,8 @@ class InkBudgetTest {
                 isTargetDateElapsed = false,
                 showTargetYear = false,
                 dueDateStatus = dueStatus,
-                showDueDateYear = false
+                showDueDateYear = false,
+                daysLate = if (dueStatus == DueDateStatus.OVERDUE) 2 else 0
             ),
             animated = false,
             onOpen = {},
@@ -190,13 +191,17 @@ class InkBudgetTest {
         )
     }
 
-    private fun drawnInks(): List<Color> = inksOf(composeRule.onRoot().fetchSemanticsNode())
+    /**
+     * Words reversed out of a band of ink — the month on a page torn off a calendar
+     * — are the paper showing through, not ink spent on it.
+     */
+    private fun drawnInks(): List<Color> = inksOf(composeRule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
 
     private fun inksOf(node: SemanticsNode): List<Color> {
         val laid = mutableListOf<TextLayoutResult>()
         node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(laid)
         val own = laid.mapNotNull { result ->
-            result.layoutInput.style.color.takeIf { it != Color.Unspecified }
+            result.layoutInput.style.color.takeIf { it != Color.Unspecified && it != palette.paper }
         }
         return own + node.children.flatMap { inksOf(it) }
     }

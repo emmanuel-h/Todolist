@@ -24,9 +24,8 @@ import fr.mandarine.todolist.domain.TodoListSummary
  * [Content.activeSummaries] arrive in the **reader's own order** — the position
  * order the repository returns them in — so the board preserves whatever the reader
  * has dragged into place. [Content.agenda] is that same set of dated unfinished
- * lists re-sorted by horizon then day for the Calendar tab. [Content.sections] is
- * derived from [Content.agenda] (for dated horizons) and [Content.activeSummaries]
- * (for the undated horizon), so the UI can head each section without regrouping.
+ * lists re-sorted by horizon then day for the Calendar tab, and [Content.thisWeek]
+ * and [Content.undatedCount] are what the board and the calendar say about days.
  */
 sealed class TodoListsState {
     /** No lists at all. Draws the invitation to write the first one. */
@@ -58,25 +57,6 @@ sealed class TodoListsState {
 
         /** How many unfinished lists carry no date. */
         val undatedCount: Int = activeSummaries.filter { it.horizon == ListHorizon.UNDATED }.size
-
-        /**
-         * Active lists cut at each change of horizon, with dated horizons drawn
-         * from [agenda] (in date order) and the undated horizon drawn from
-         * [activeSummaries] (in reader order). The UI draws one heading per section.
-         */
-        val sections: List<ListSection> = ListHorizon.entries.mapNotNull { horizon ->
-            val items = if (horizon == ListHorizon.UNDATED) {
-                activeSummaries.filter { it.horizon == ListHorizon.UNDATED }
-            } else {
-                agenda.filter { it.horizon == horizon }
-            }
-            items.takeIf { it.isNotEmpty() }?.let { ListSection(horizon, it) }
-        }
     }
 }
 
-/** One heading's worth of the page of lists: every unfinished list on one horizon. */
-data class ListSection(
-    val horizon: ListHorizon,
-    val summaries: List<TodoListSummary>
-)

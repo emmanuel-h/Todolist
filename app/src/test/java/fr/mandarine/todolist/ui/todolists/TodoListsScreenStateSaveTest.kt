@@ -2,6 +2,7 @@ package fr.mandarine.todolist.ui.todolists
 
 import android.os.Bundle
 import java.time.LocalDate
+import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -85,5 +86,27 @@ class TodoListsScreenStateSaveTest {
 
         assertNull(restored.rename)
         assertFalse(restored.addRowExpanded)
+    }
+
+    @Test
+    fun `should carry the open tab and the month the calendar is turned to across`() {
+        val saved = Bundle()
+        TodoListsScreenState().apply {
+            tab = BoardTab.Calendar
+            calendarMonth = YearMonth.of(2026, 12)
+        }.saveTo(saved)
+
+        val restored = TodoListsScreenState().apply { restoreFrom(saved) }
+
+        assertEquals(BoardTab.Calendar, restored.tab)
+        assertEquals(YearMonth.of(2026, 12), restored.calendarMonth)
+    }
+
+    @Test
+    fun `should open on the board with the calendar on this month when nothing was saved`() {
+        val restored = TodoListsScreenState().apply { restoreFrom(Bundle()) }
+
+        assertEquals(BoardTab.Lists, restored.tab)
+        assertNull(restored.calendarMonth)
     }
 }
