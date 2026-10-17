@@ -59,7 +59,7 @@ class TallyRollTest {
         composeRule.setContent {
             PaperTheme {
                 val tally by remember { count }
-                SectionSkip(completedCount = tally, spoken = "$tally done", animated = animated)
+                SectionHeading(title = "Done", count = tally, spoken = "$tally done", animated = animated)
             }
         }
     }

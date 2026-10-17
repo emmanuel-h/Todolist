@@ -60,11 +60,16 @@ private val WRITING_MARGIN = 20.dp
  * sheet asks the page for its warm veil instead, so the screen stays one material
  * and a sheet laid on a sheet costs the page nothing further. The sheet settles
  * onto the page instead of popping.
+ *
+ * [alignment] lays the sheet where the hand will reach for it: a question is put
+ * in the middle of the page, a set of things to do with a row is held out at the
+ * foot of it, under the thumb.
  */
 @Composable
 fun PaperDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    alignment: Alignment = Alignment.Center,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val palette = LocalPaperPalette.current
@@ -111,7 +116,7 @@ fun PaperDialog(
                     .fillMaxSize()
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(SHEET_MARGIN),
-                contentAlignment = Alignment.Center
+                contentAlignment = alignment
             ) {
                 Column(
                     modifier = modifier

@@ -1,5 +1,6 @@
 package fr.mandarine.todolist.presentation
 
+import fr.mandarine.todolist.domain.ListHorizon
 import fr.mandarine.todolist.domain.TodoListSummary
 
 /**
@@ -19,6 +20,10 @@ import fr.mandarine.todolist.domain.TodoListSummary
  * The split into [Content.activeSummaries] and [Content.doneSummaries] is done once
  * in the ViewModel, not in the composable, so the screen never filters a list while
  * drawing.
+ *
+ * [Content.activeSummaries] arrive in the order the page draws them — by
+ * [ListHorizon], then by day — and [Content.sections] is that same run cut at each
+ * change of horizon, so the page can head every section without regrouping.
  */
 sealed class TodoListsState {
     /** No lists at all. Draws the invitation to write the first one. */
@@ -27,5 +32,18 @@ sealed class TodoListsState {
     data class Content(
         val activeSummaries: List<TodoListSummary>,
         val doneSummaries: List<TodoListSummary>
-    ) : TodoListsState()
+    ) : TodoListsState() {
+        val sections: List<ListSection> = ListHorizon.entries.mapNotNull { horizon ->
+            activeSummaries
+                .filter { it.horizon == horizon }
+                .takeIf { it.isNotEmpty() }
+                ?.let { ListSection(horizon, it) }
+        }
+    }
 }
+
+/** One heading's worth of the page of lists: every unfinished list on one horizon. */
+data class ListSection(
+    val horizon: ListHorizon,
+    val summaries: List<TodoListSummary>
+)

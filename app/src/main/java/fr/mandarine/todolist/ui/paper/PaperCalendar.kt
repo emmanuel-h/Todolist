@@ -250,7 +250,7 @@ private fun CalendarHeader(
             Text(
                 text = written,
                 modifier = Modifier.seatOnRule(),
-                style = LocalRuledHand.current.listLine,
+                style = PaperType.printedLine,
                 color = palette.inked(InkTone.Words),
                 maxLines = ONE_LINE
             )
@@ -311,7 +311,7 @@ private fun WeekdayInitials(initials: List<String>, band: Dp) {
                 modifier = Modifier
                     .weight(1f)
                     .padding(bottom = WEEKDAY_LIFT),
-                style = PaperType.caption,
+                style = PaperType.kicker,
                 color = palette.inked(InkTone.Margin),
                 textAlign = TextAlign.Center,
                 maxLines = ONE_LINE
@@ -414,7 +414,7 @@ private fun RowScope.DayCell(
         Text(
             text = date.dayOfMonth.toString(),
             modifier = Modifier.seatOnRule(),
-            style = LocalRuledHand.current.itemLine,
+            style = PaperType.numeral,
             color = palette.inked(if (past) InkTone.Margin else InkTone.Words),
             maxLines = ONE_LINE
         )
@@ -465,7 +465,7 @@ private fun YearGrid(
                 Text(
                     text = year.toString(),
                     modifier = Modifier.seatOnRule(),
-                    style = LocalRuledHand.current.itemLine,
+                    style = PaperType.numeral,
                     color = when {
                         year == shown.year -> palette.inked(InkTone.Acted)
                         year < today.year -> palette.inked(InkTone.Margin)

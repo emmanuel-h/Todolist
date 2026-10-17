@@ -35,7 +35,9 @@ class InkGlyphFamilyTest {
         "calendar" to R.drawable.ic_event,
         "alarm-clock" to R.drawable.ic_alarm,
         "pencil" to R.drawable.ic_edit,
-        "list-checks" to R.drawable.ic_checklist
+        "list-checks" to R.drawable.ic_checklist,
+        "more" to R.drawable.ic_more,
+        "chevron-down" to R.drawable.ic_chevron_down
     )
 
     @Test

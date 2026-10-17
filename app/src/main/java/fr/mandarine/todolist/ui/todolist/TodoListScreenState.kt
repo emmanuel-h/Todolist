@@ -26,6 +26,7 @@ private const val CONFIRM_CASCADE = "confirm-cascade"
 private const val TICKING = "ticking"
 private const val UNTICKING = "unticking"
 private const val ISSUED = "issued-toggles"
+private const val DONE_FOLDED = "done-folded"
 
 @Suppress("UNCHECKED_CAST")
 private fun savedIds(saved: Any?): List<String> = (saved as? List<String>).orEmpty()
@@ -68,6 +69,9 @@ class TodoListScreenState {
     var editingItemId by mutableStateOf<String?>(null)
 
     var renamingList by mutableStateOf(false)
+
+    /** Whether the ticked items are folded away under their heading. */
+    var doneFolded by mutableStateOf(false)
 
     var dateSheet by mutableStateOf<DateSelection?>(null)
 
@@ -203,7 +207,8 @@ class TodoListScreenState {
                     CONFIRM_CASCADE to state.confirmDelete?.cascadeCount,
                     TICKING to ArrayList(state.pendingToggles.filterValues { it }.keys),
                     UNTICKING to ArrayList(state.pendingToggles.filterValues { !it }.keys),
-                    ISSUED to ArrayList(state.issuedToggles)
+                    ISSUED to ArrayList(state.issuedToggles),
+                    DONE_FOLDED to state.doneFolded
                 )
             },
             restore = { saved ->
@@ -230,6 +235,7 @@ class TodoListScreenState {
                     pendingToggles = savedIds(saved[TICKING]).associateWith { true } +
                         savedIds(saved[UNTICKING]).associateWith { false }
                     issuedToggles = savedIds(saved[ISSUED]).toSet()
+                    doneFolded = saved[DONE_FOLDED] as Boolean? ?: false
                 }
             }
         )

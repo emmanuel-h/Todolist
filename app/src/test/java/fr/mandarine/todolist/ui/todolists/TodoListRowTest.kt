@@ -57,8 +57,7 @@ class TodoListRowTest {
     }
 
     private var opened = 0
-    private var deleteRequested = 0
-    private var renameRequested = 0
+    private var actionsRequested = 0
     private var torn = 0
     private val rewritten = mutableListOf<DateSelection>()
 
@@ -110,13 +109,13 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should still uncover the edit surface when a row carrying a jot has its edit button pressed`() {
+    fun `should still hold out the actions when a row carrying a jot has its more mark pressed`() {
         render(summary(dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        composeRule.onNodeWithContentDescription(EDIT_NAME).performClick()
+        composeRule.onNodeWithContentDescription(LIST_ACTIONS).performClick()
         composeRule.waitForIdle()
 
-        assertEquals(1, renameRequested)
+        assertEquals(1, actionsRequested)
         assertEquals(emptyList<DateSelection>(), rewritten)
     }
 
@@ -159,14 +158,14 @@ class TodoListRowTest {
     fun `should leave the tally a mark to be read and not one to be pressed`() {
         render(summary(activeCount = 3))
 
-        assertEquals(listOf(OPENS_THE_LIST, EDIT_NAME, GIVE_A_DAY, DELETE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, LIST_ACTIONS), presses())
     }
 
     @Test
     fun `should add the jot to what a row can be pressed for and nothing else`() {
         render(summary(activeCount = 3, dueDate = DATE, dueDateStatus = DueDateStatus.FUTURE))
 
-        assertEquals(listOf(OPENS_THE_LIST, EDIT_NAME, "Set due date", DELETE_LIST), presses())
+        assertEquals(listOf(OPENS_THE_LIST, LIST_ACTIONS, "Set due date"), presses())
     }
 
     @Test
@@ -185,49 +184,50 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should write the open count as a bare numeral in the margin`() {
+    fun `should print how far through the list the reader is under its name`() {
         render(summary(activeCount = 3, completedCount = 12))
 
-        assertEquals(listOf("Groceries", "3"), texts())
+        composeRule.onNodeWithContentDescription("12 of 15 done").assertIsDisplayed()
+        assertTrue(baselineOf("Groceries") < topOf("12 of 15 done"))
     }
 
     @Test
-    fun `should leave the margin empty when nothing is left to do`() {
+    fun `should print a finished list as wholly done`() {
         render(summary(activeCount = 0, completedCount = 4))
 
-        assertEquals(listOf("Groceries"), texts())
+        composeRule.onNodeWithContentDescription("4 of 4 done").assertIsDisplayed()
     }
 
     @Test
-    fun `should say how many items are left for a reader who cannot see the numeral`() {
-        render(summary(activeCount = 3))
+    fun `should print no progress on a list with nothing written on it`() {
+        render(summary())
 
-        composeRule.onNodeWithContentDescription("3 items left").assertIsDisplayed()
+        assertEquals(listOf("Groceries"), texts())
+        assertEquals(listOf(LIST_ACTIONS), descriptions())
     }
 
     @Test
     /**
-     * A dateless row carries three controls: edit, calendar, and delete. The calendar
-     * button occupies the slot that the date jot takes when there is a date — no row
-     * ever carries four controls.
+     * A row carries one control: the mark that holds out everything else that can
+     * be done to the list. The pencil, the calendar and the bin moved onto the
+     * sheet it opens, where they are named in words.
      */
-    fun `should carry nothing at rest but the name, its marginalia and its three controls on a dateless row`() {
+    fun `should carry nothing at rest but the name, its progress and its one control on a dateless row`() {
         render(summary(activeCount = 2))
 
-        assertEquals(listOf("2 items left", EDIT_NAME, GIVE_A_DAY, DELETE_LIST), descriptions())
+        assertEquals(listOf(LIST_ACTIONS, "0 of 2 done"), descriptions())
     }
 
     @Test
     /**
-     * A dated row carries edit and delete. The date jot is in the slot between them,
-     * taking the calendar button's place — the row does not rearrange itself when a
-     * day is written on it, only that one slot changes its contents.
+     * A dated row adds its jot after the progress, on the rule under the name. The
+     * name's line does not change when a day is written on the list.
      */
-    fun `should carry nothing at rest but the name, its marginalia and its two controls on a dated row`() {
+    fun `should carry nothing at rest but the name, its marginalia and its one control on a dated row`() {
         render(summary(activeCount = 2, targetDate = DATE))
 
         assertEquals(
-            listOf("2 items left", EDIT_NAME, "Target date ${spelled(DATE)}", DELETE_LIST),
+            listOf(LIST_ACTIONS, "0 of 2 done", "Target date ${spelled(DATE)}"),
             descriptions()
         )
     }
@@ -239,20 +239,10 @@ class TodoListRowTest {
      */
     @Test
     fun `should leave the name the room the marginalia does not need`() {
-        render(summary(name = "Groceries", activeCount = 3))
-
-        val name = widthOf("Groceries")
-        val tally = widthOf("3")
+        render(summary(name = "Groceries", activeCount = 3, targetDate = DATE))
 
         assertEquals(ONE_LINE, layoutOf("Groceries")?.lineCount)
-        assertTrue("name $name against a tally of $tally", name > tally)
-    }
-
-    @Test
-    fun `should write the open count in pencil`() {
-        render(summary(activeCount = 3))
-
-        assertEquals(PaperPalette.light.inked(InkTone.Margin), textStyleOf("3")?.color)
+        assertTrue(widthOf("Groceries") > widthOf(jotted(DATE)))
     }
 
     @Test
@@ -275,44 +265,33 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should ask to tear the list off when its delete button is pressed`() {
+    fun `should ask for the actions and not open the list when its more mark is pressed`() {
         render(summary())
 
-        composeRule.onNodeWithContentDescription(DELETE_LIST).performClick()
+        composeRule.onNodeWithContentDescription(LIST_ACTIONS).performClick()
         composeRule.waitForIdle()
 
-        assertEquals(1, deleteRequested)
-    }
-
-    @Test
-    fun `should ask to edit the list when its edit button is pressed`() {
-        render(summary())
-
-        composeRule.onNodeWithContentDescription(EDIT_NAME).performClick()
-        composeRule.waitForIdle()
-
-        assertEquals(1, renameRequested)
-        assertEquals(0, deleteRequested)
+        assertEquals(1, actionsRequested)
         assertEquals(0, opened)
     }
 
     @Test
-    fun `should leave the row in place when its edit button is pressed`() {
+    fun `should leave the row in place when its more mark is pressed`() {
         render(summary())
         val resting = nameX()
 
-        composeRule.onNodeWithContentDescription(EDIT_NAME).performClick()
+        composeRule.onNodeWithContentDescription(LIST_ACTIONS).performClick()
         composeRule.waitForIdle()
 
         assertEquals(resting, nameX(), 0.5f)
     }
 
     @Test
-    fun `should not show an edit button when the row offers no edit surface`() {
+    fun `should not show the more mark when the row offers no actions`() {
         render(summary(), editable = false)
 
-        composeRule.onNodeWithContentDescription(EDIT_NAME).assertDoesNotExist()
-        assertEquals(0, renameRequested)
+        composeRule.onNodeWithContentDescription(LIST_ACTIONS).assertDoesNotExist()
+        assertEquals(0, actionsRequested)
     }
 
     @Test
@@ -324,26 +303,18 @@ class TodoListRowTest {
         assertEquals(1, torn)
     }
 
-    // ── Calendar button (#67) ─────────────────────────────────────────────────
+    // ── The day ───────────────────────────────────────────────────────────────
 
+    /**
+     * A dateless row's route to a day is its sheet of actions, which says so in
+     * words; the bare calendar glyph on every row is gone with the other controls.
+     */
     @Test
-    fun `should draw the calendar button when the list has no date`() {
+    fun `should leave a dateless row's day to its sheet of actions`() {
         render(summary())
 
-        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertIsDisplayed()
-    }
-
-    @Test
-    fun `should open the calendar when the calendar button is pressed on a dateless row`() {
-        render(summary())
-
-        composeRule.onNodeWithContentDescription(GIVE_A_DAY).performClick()
-        composeRule.waitForIdle()
-
-        assertEquals(1, rewritten.size)
-        assertEquals(DateKind.TARGET, rewritten.first().kind)
-        assertEquals(null, rewritten.first().date)
-        assertEquals(0, opened)
+        composeRule.onNodeWithContentDescription(GIVE_A_DAY).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(LIST_ACTIONS).assertIsDisplayed()
     }
 
     @Test
@@ -383,16 +354,10 @@ class TodoListRowTest {
     }
 
     @Test
-    fun `should draw the date jot in the control group when the list has a date`() {
+    fun `should write the date jot on the rule under the name`() {
         render(summary(targetDate = DATE))
 
-        val descriptions = descriptions()
-        val jotIndex = descriptions.indexOf("Target date ${spelled(DATE)}")
-        val editIndex = descriptions.indexOf(EDIT_NAME)
-        val deleteIndex = descriptions.indexOf(DELETE_LIST)
-
-        assert(jotIndex > editIndex) { "Jot must appear after the pencil, not before it" }
-        assert(jotIndex < deleteIndex) { "Jot must appear before the bin" }
+        assertTrue(baselineOf("Groceries") < baselineOf(jotted(DATE)))
     }
 
     @Test
@@ -483,8 +448,7 @@ class TodoListRowTest {
         }
 
         assertEquals(pitch * 2, composeRule.onNodeWithTag(ROW).fetchSemanticsNode().size.height)
-        assertEquals(baselineOf("Groceries"), baselineOf(jotted(DATE)), ONE_PIXEL)
-        assertEquals(baselineOf("Groceries"), baselineOf("4"), ONE_PIXEL)
+        assertEquals(baselineOf("Groceries") + pitch, baselineOf(jotted(DATE)), ONE_PIXEL)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -514,6 +478,9 @@ class TodoListRowTest {
             if (press == null) emptyList() else listOf(press.label)
         } + node.children.flatMap { collectPresses(it) }
 
+    private fun topOf(description: String): Float =
+        composeRule.onNodeWithContentDescription(description).fetchSemanticsNode().positionInRoot.y
+
     private fun nameX(): Float =
         composeRule.onNodeWithText("Groceries").fetchSemanticsNode().positionInRoot.x
 
@@ -535,10 +502,9 @@ class TodoListRowTest {
             summary = summary,
             animated = false,
             onOpen = { opened += 1 },
-            onDeleteRequested = { deleteRequested += 1 },
             tearing = tearing,
             onTorn = { torn += 1 },
-            onRenameRequested = if (editable) ({ renameRequested += 1 }) else null,
+            onActionsRequested = if (editable) ({ actionsRequested += 1 }) else null,
             onRewriteDate = if (rewritable) ({ rewritten += it }) else null
         )
     }
@@ -604,8 +570,7 @@ class TodoListRowTest {
     private companion object {
         val DATE: LocalDate = LocalDate.of(2026, 3, 14)
         val OPENS_THE_LIST: String? = null
-        const val DELETE_LIST = "Delete list"
-        const val EDIT_NAME = "Edit list name"
+        const val LIST_ACTIONS = "More for this list"
         const val GIVE_A_DAY = "Give this list a day"
         const val ROW = "row"
         const val ONE_LINE = 1

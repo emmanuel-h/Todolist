@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
@@ -58,8 +59,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import fr.mandarine.todolist.domain.ListColour
+import fr.mandarine.todolist.domain.ListHorizon
 import fr.mandarine.todolist.domain.TodoList
 import fr.mandarine.todolist.domain.TodoListSummary
+import fr.mandarine.todolist.presentation.ListSection
 import fr.mandarine.todolist.presentation.TodoListsState
 import fr.mandarine.todolist.ui.ConfirmDeleteRequest
 import fr.mandarine.todolist.ui.paper.DeleteConfirmDialog
@@ -75,7 +78,7 @@ import fr.mandarine.todolist.ui.paper.PaperSurface
 import fr.mandarine.todolist.ui.paper.PaperType
 import fr.mandarine.todolist.ui.paper.ReminderNote
 import fr.mandarine.todolist.ui.paper.RuledRow
-import fr.mandarine.todolist.ui.paper.SectionSkip
+import fr.mandarine.todolist.ui.paper.SectionHeading
 import fr.mandarine.todolist.ui.paper.StickyNotePad
 import fr.mandarine.todolist.ui.paper.StickyNotePutBack
 import fr.mandarine.todolist.ui.paper.headMarginFade
@@ -110,10 +113,9 @@ private const val SKIP_KEY = "done-skip"
 private const val HEAD_TYPE = "head"
 private const val ADD_TYPE = "list-add"
 private const val ACTIVE_TYPE = "active"
-private const val SKIP_TYPE = "skip"
+private const val HEADING_KEY = "heading-"
+private const val HEADING_TYPE = "heading"
 private const val DONE_TYPE = "done"
-private const val MASTHEAD_ALPHA = 0.8f
-private const val ONE_LINE = 1
 private val CORNER_MARGIN = 8.dp
 private val DROP_IN_TRAVEL = 16.dp
 
@@ -127,9 +129,10 @@ private val DROP_IN_TRAVEL = 16.dp
  *
  * ### What it puts on the page
  * A `LazyColumn` — the Compose equivalent of a `RecyclerView`, composing only the
- * rows currently on screen — carrying, in order: the head, the inline "write a new
- * list" line, the active lists, a section skip, and the finished lists. The
- * sticky-note pad sits *outside* the column, laid over the page.
+ * rows currently on screen — carrying, in order: the cover, the inline "write a new
+ * list" line, the dated lists under a heading per horizon, the undated lists (the
+ * only ones a drag can reorder), and the finished lists under a heading that folds
+ * them away. The sticky-note pad sits *outside* the column, laid over the page.
  *
  * ### Keys
  * Every `items(...)` call passes a stable key (the list id). Without one, Compose
@@ -156,11 +159,15 @@ fun TodoListsScreen(
     onSetListReminderTime: (String, Int?) -> Unit = { _, _ -> }
 ) {
     val content = state as? TodoListsState.Content
-    val rawActiveSummaries = content?.activeSummaries.orEmpty()
-    val activeSummaries = orderedBy(rawActiveSummaries, screenState.previewOrder) { it.list.id }
+    val sections = content?.sections.orEmpty()
+    val datedSections = sections.filter { it.horizon != ListHorizon.UNDATED }
+    val rawUndated = sections.firstOrNull { it.horizon == ListHorizon.UNDATED }?.summaries.orEmpty()
+    val undated = orderedBy(rawUndated, screenState.previewOrder) { it.list.id }
+    val activeSummaries = datedSections.flatMap { it.summaries } + undated
     val doneSummaries = content?.doneSummaries.orEmpty()
     val activeIds = activeSummaries.map { it.list.id }
-    val publishedIds = rawActiveSummaries.map { it.list.id }
+    val undatedIds = undated.map { it.list.id }
+    val publishedIds = rawUndated.map { it.list.id }
     LaunchedEffect(publishedIds) { screenState.releaseOrder(publishedIds) }
     val dropInListId = remember(activeIds) { screenState.dropInFor(activeIds) }
 
@@ -176,7 +183,7 @@ fun TodoListsScreen(
     val insets = pageVerticalInsets()
     val topInset = insets.calculateTopPadding()
     val bottomInset = insets.calculateBottomPadding()
-    val headMargin = topInset + pitch
+    val headMargin = topInset + coverHeight(pitch)
     val palette = LocalPaperPalette.current
     val gutter = LocalPaperGutter.current
     val headRuleSeat = headRuleSeat(headMargin, gutter)
@@ -191,6 +198,9 @@ fun TodoListsScreen(
     val padFootprint = padFootMargin(if (screenState.addRowExpanded) 0.dp else bottomInset)
     val restingSpace = (bottomInset - padFootprint).coerceAtLeast(0.dp)
 
+    val requestActions: (TodoListSummary) -> Unit = { summary ->
+        if (!session.dragging) screenState.actionsFor = summary.list.id
+    }
     val requestDelete: (TodoListSummary) -> Unit = { summary ->
         if (!session.dragging) {
             val cascade = summary.activeCount + summary.completedCount
@@ -260,7 +270,7 @@ fun TodoListsScreen(
                         seam = seam,
                         gutter = gutter
                     )
-                    .headMarginFade(listState, headMargin)
+                    .headMarginFade(listState, topInset + pitch)
                     .consumeWindowInsets(WindowInsets.safeDrawing)
                     .padding(bottom = padFootprint),
                 contentPadding = PaddingValues(
@@ -270,7 +280,7 @@ fun TodoListsScreen(
                 overscrollEffect = bend
             ) {
                 item(key = HEAD_KEY, contentType = HEAD_TYPE) {
-                    Spacer(Modifier.height(pitch))
+                    ListsCover(state = state, today = today)
                 }
                 item(key = ADD_KEY, contentType = ADD_TYPE) {
                     AnimatedVisibility(
@@ -304,87 +314,104 @@ fun TodoListsScreen(
                         }
                     }
                 }
+                datedSections.forEach { section ->
+                    item(key = HEADING_KEY + section.horizon.name, contentType = HEADING_TYPE) {
+                        HorizonHeading(
+                            section = section,
+                            animated = screenState.animationsEnabled,
+                            modifier = animatedRow(screenState)
+                        )
+                    }
+                    items(
+                        items = section.summaries,
+                        key = { it.list.id },
+                        contentType = { ACTIVE_TYPE }
+                    ) { summary ->
+                        TodoListRow(
+                            summary = summary,
+                            animated = screenState.animationsEnabled,
+                            onOpen = { openList(summary.list) },
+                            modifier = animatedRow(screenState)
+                                .dropIn(dropInListId == summary.list.id && screenState.animationsEnabled),
+                            tearing = screenState.tearingId == summary.list.id,
+                            onTorn = { holdTorn(summary.list.id) },
+                            onActionsRequested = { requestActions(summary) },
+                            onRewriteDate = rewriteDate(summary.list.id)
+                        )
+                    }
+                }
+                if (undated.isNotEmpty() && datedSections.isNotEmpty()) {
+                    item(key = HEADING_KEY + ListHorizon.UNDATED.name, contentType = HEADING_TYPE) {
+                        HorizonHeading(
+                            section = ListSection(ListHorizon.UNDATED, undated),
+                            animated = screenState.animationsEnabled,
+                            modifier = animatedRow(screenState)
+                        )
+                    }
+                }
                 itemsIndexed(
-                    items = activeSummaries,
+                    items = undated,
                     key = { _, it -> it.list.id },
                     contentType = { _, _ -> ACTIVE_TYPE }
                 ) { position, summary ->
                     ActiveListRow(
                         summary = summary,
                         position = position,
-                        rowIds = activeIds,
+                        rowIds = undatedIds,
                         dropIn = dropInListId == summary.list.id,
                         listState = listState,
                         session = session,
                         edgeScroll = edgeScroll,
                         screenState = screenState,
                         onOpenList = openList,
-                        onDeleteRequested = { requestDelete(summary) },
+                        onActionsRequested = { requestActions(summary) },
                         onTorn = holdTorn,
                         onReorder = onReorder,
                         onRewriteDate = rewriteDate(summary.list.id)
                     )
                 }
-                if (activeSummaries.isNotEmpty() && doneSummaries.isNotEmpty()) {
-                    item(key = SKIP_KEY, contentType = SKIP_TYPE) {
-                        SectionSkip(
-                            completedCount = doneSummaries.size,
+                if (doneSummaries.isNotEmpty()) {
+                    item(key = SKIP_KEY, contentType = HEADING_TYPE) {
+                        val title = stringResource(R.string.section_finished_lists)
+                        SectionHeading(
+                            title = title,
+                            count = doneSummaries.size,
                             spoken = pluralStringResource(
-                                R.plurals.done_lists,
+                                R.plurals.section_lists_spoken,
                                 doneSummaries.size,
+                                title,
                                 doneSummaries.size
                             ),
                             modifier = animatedRow(screenState),
-                            animated = screenState.animationsEnabled
+                            animated = screenState.animationsEnabled,
+                            folded = screenState.finishedFolded,
+                            onFold = { screenState.finishedFolded = !screenState.finishedFolded },
+                            foldedSpoken = stringResource(R.string.section_folded),
+                            openSpoken = stringResource(R.string.section_open)
                         )
                     }
                 }
-                itemsIndexed(
-                    items = doneSummaries,
-                    key = { _, it -> it.list.id },
-                    contentType = { _, _ -> DONE_TYPE }
-                ) { _, summary ->
-                    TodoListRow(
-                        summary = summary,
-                        animated = screenState.animationsEnabled,
-                        onOpen = { openList(summary.list) },
-                        onDeleteRequested = { requestDelete(summary) },
-                        modifier = animatedRow(screenState),
-                        tearing = screenState.tearingId == summary.list.id,
-                        onTorn = { holdTorn(summary.list.id) },
-                        onRenameRequested = {
-                            screenState.rename = RenameState.of(summary.list)
-                        },
-                        onRewriteDate = rewriteDate(summary.list.id)
-                    )
+                if (!screenState.finishedFolded) {
+                    items(
+                        items = doneSummaries,
+                        key = { it.list.id },
+                        contentType = { DONE_TYPE }
+                    ) { summary ->
+                        TodoListRow(
+                            summary = summary,
+                            animated = screenState.animationsEnabled,
+                            onOpen = { openList(summary.list) },
+                            modifier = animatedRow(screenState),
+                            tearing = screenState.tearingId == summary.list.id,
+                            onTorn = { holdTorn(summary.list.id) },
+                            onActionsRequested = { requestActions(summary) },
+                            onRewriteDate = rewriteDate(summary.list.id)
+                        )
+                    }
                 }
             }
         }
 
-        /**
-         * The head strip: the page's own name written at the margin the lists are
-         * written at. It occupies one rule's worth of height above the head rule,
-         * clear of the writing, and leaves when the pen comes out.
-         */
-        AnimatedVisibility(
-            visible = !screenState.addRowExpanded,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                    )
-                )
-                .widthIn(max = PaperDimens.pageWidth)
-                .fillMaxWidth()
-                .height(pitch),
-            enter = fadeIn(PaperMotion.rowEnter),
-            exit = fadeOut(PaperMotion.rowExit)
-        ) {
-            Box(modifier = Modifier.fillMaxSize().padding(horizontal = CORNER_MARGIN)) {
-                Masthead(Modifier.align(Alignment.Center))
-            }
-        }
         StickyNotePad(
             onTake = { screenState.openAddRow() },
             contentDescription = stringResource(R.string.add_list_fab_description),
@@ -405,6 +432,32 @@ fun TodoListsScreen(
                     screenState.closeAddRow()
                 }
             )
+        )
+    }
+
+    val actionsSummary = screenState.actionsFor?.let { summaryOnPage(state, it) }
+    if (actionsSummary != null) {
+        val list = actionsSummary.list
+        ListActionsSheet(
+            summary = actionsSummary,
+            onDismiss = { screenState.actionsFor = null },
+            onRename = {
+                screenState.actionsFor = null
+                screenState.rename = RenameState.of(list)
+            },
+            onPickDate = {
+                screenState.actionsFor = null
+                val written = DateSelection.of(list.targetDate, list.dueDate)
+                screenState.datePickerRequest = DatePickerRequest(
+                    target = DateTarget.Row(list.id),
+                    kind = written.kind,
+                    initial = written.date
+                )
+            },
+            onDelete = {
+                screenState.actionsFor = null
+                requestDelete(actionsSummary)
+            }
         )
     }
 
@@ -546,34 +599,6 @@ fun TodoListsScreen(
 }
 
 /**
- * The app's name written where a name goes on a real pad: the top of the page, in
- * the same hand as everything on it, above the head rule and clear of the writing.
- * It leaves when the pen comes out.
- *
- * It is one of the few places this app says anything in words rather than showing
- * it — the page is wordless by default, not by law, and a pad with nothing written
- * at the top of it is the one page that reads as unfinished rather than calm.
- */
-@Composable
-private fun Masthead(modifier: Modifier = Modifier) {
-    val palette = LocalPaperPalette.current
-    /**
-     * The hands the rows are written in seat their words on the rule beneath them,
-     * which is what a rule is for. The name is not written on a rule — it is
-     * written above the first one — so it takes the hand that sits in the middle of
-     * its own line instead, or the head rule is drawn straight through it.
-     */
-    Text(
-        text = handwritten(stringResource(R.string.app_name)),
-        modifier = modifier.alpha(MASTHEAD_ALPHA),
-        style = PaperType.field,
-        color = palette.inked(InkTone.Margin),
-        maxLines = ONE_LINE,
-        overflow = TextOverflow.Ellipsis
-    )
-}
-
-/**
  * The line being written wears its date marks on the rule beneath it, the way the
  * edit sheet does — but only once there are words for the date to belong to, so
  * the sheet taken off the pad still reads as one bare rule until it is written on.
@@ -618,6 +643,39 @@ private fun AddLineDateRule(screenState: TodoListsScreenState) {
             }
         )
     }
+}
+
+/**
+ * The printed heading over one horizon's lists. A missed day is headed in the red a
+ * missed day is written in, and today's in the amber today is written in, so the
+ * heading and the jots under it agree; every other horizon is headed in pencil.
+ */
+@Composable
+private fun HorizonHeading(section: ListSection, animated: Boolean, modifier: Modifier = Modifier) {
+    val title = stringResource(horizonTitle(section.horizon))
+    val count = section.summaries.size
+    SectionHeading(
+        title = title,
+        count = count,
+        spoken = pluralStringResource(R.plurals.section_lists_spoken, count, title, count),
+        modifier = modifier,
+        tone = horizonTone(section.horizon),
+        animated = animated
+    )
+}
+
+internal fun horizonTitle(horizon: ListHorizon): Int = when (horizon) {
+    ListHorizon.OVERDUE -> R.string.horizon_overdue
+    ListHorizon.TODAY -> R.string.horizon_today
+    ListHorizon.THIS_WEEK -> R.string.horizon_this_week
+    ListHorizon.LATER -> R.string.horizon_later
+    ListHorizon.UNDATED -> R.string.horizon_undated
+}
+
+internal fun horizonTone(horizon: ListHorizon): InkTone = when (horizon) {
+    ListHorizon.OVERDUE -> InkTone.Lost
+    ListHorizon.TODAY -> InkTone.Today
+    else -> InkTone.Margin
 }
 
 internal fun dateMarksOwed(screenState: TodoListsScreenState): Boolean =
@@ -751,10 +809,12 @@ internal fun reminderNoteFor(
 }
 
 internal fun listOnPage(state: TodoListsState, listId: String): TodoList? =
+    summaryOnPage(state, listId)?.list
+
+internal fun summaryOnPage(state: TodoListsState, listId: String): TodoListSummary? =
     (state as? TodoListsState.Content)
         ?.let { it.activeSummaries + it.doneSummaries }
         ?.firstOrNull { it.list.id == listId }
-        ?.list
 
 internal fun writeAddRowSelection(
     screenState: TodoListsScreenState,
@@ -791,7 +851,7 @@ private fun LazyItemScope.ActiveListRow(
     edgeScroll: EdgeScroll,
     screenState: TodoListsScreenState,
     onOpenList: (TodoList) -> Unit,
-    onDeleteRequested: () -> Unit,
+    onActionsRequested: () -> Unit,
     onTorn: (String) -> Unit,
     onReorder: (List<String>) -> Unit,
     onRewriteDate: (DateSelection) -> Unit
@@ -819,7 +879,6 @@ private fun LazyItemScope.ActiveListRow(
             summary = summary,
             animated = screenState.animationsEnabled,
             onOpen = { onOpenList(summary.list) },
-            onDeleteRequested = { onDeleteRequested() },
             modifier = resting
                 .liftedSlip(session, lifted, screenState.animationsEnabled)
                 .liftToReorder(
@@ -839,7 +898,7 @@ private fun LazyItemScope.ActiveListRow(
                 ),
             tearing = screenState.tearingId == summary.list.id,
             onTorn = { onTorn(summary.list.id) },
-            onRenameRequested = { screenState.rename = RenameState.of(summary.list) },
+            onActionsRequested = onActionsRequested,
             onRewriteDate = onRewriteDate,
             onMoveUp = move(-1),
             onMoveDown = move(+1)

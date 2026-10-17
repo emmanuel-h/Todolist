@@ -171,7 +171,7 @@ class InkBudgetTest {
             ),
             animated = false,
             onOpen = {},
-            onDeleteRequested = {}
+            onActionsRequested = {}
         )
     }
 

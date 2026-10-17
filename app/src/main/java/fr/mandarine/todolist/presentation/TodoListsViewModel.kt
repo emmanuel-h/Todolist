@@ -151,12 +151,18 @@ class TodoListsViewModel(
      * The single definition of what the page of lists is: read every list with its
      * status, and split finished from unfinished. Both halves are computed here so
      * no composable ever filters while drawing.
+     *
+     * Unfinished lists are filed like an agenda: by horizon, then by day. The sort
+     * is stable, so lists on the same day — and every undated list — keep the order
+     * the reader dragged them into.
      */
     private fun buildState(): TodoListsState {
         val summaries = getTodoListsWithStatusUseCase()
         if (summaries.isEmpty()) return TodoListsState.Empty
         return TodoListsState.Content(
-            activeSummaries = summaries.filter { !it.allDone },
+            activeSummaries = summaries
+                .filter { !it.allDone }
+                .sortedWith(compareBy({ it.horizon }, { it.list.targetDate ?: it.list.dueDate })),
             doneSummaries = summaries.filter { it.allDone }
         )
     }
