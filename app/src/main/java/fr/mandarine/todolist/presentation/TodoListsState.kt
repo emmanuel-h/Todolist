@@ -21,9 +21,12 @@ import fr.mandarine.todolist.domain.TodoListSummary
  * in the ViewModel, not in the composable, so the screen never filters a list while
  * drawing.
  *
- * [Content.activeSummaries] arrive in the order the page draws them — by
- * [ListHorizon], then by day — and [Content.sections] is that same run cut at each
- * change of horizon, so the page can head every section without regrouping.
+ * [Content.activeSummaries] arrive in the **reader's own order** — the position
+ * order the repository returns them in — so the board preserves whatever the reader
+ * has dragged into place. [Content.agenda] is that same set of dated unfinished
+ * lists re-sorted by horizon then day for the Calendar tab. [Content.sections] is
+ * derived from [Content.agenda] (for dated horizons) and [Content.activeSummaries]
+ * (for the undated horizon), so the UI can head each section without regrouping.
  */
 sealed class TodoListsState {
     /** No lists at all. Draws the invitation to write the first one. */
@@ -33,11 +36,41 @@ sealed class TodoListsState {
         val activeSummaries: List<TodoListSummary>,
         val doneSummaries: List<TodoListSummary>
     ) : TodoListsState() {
+
+        /**
+         * Dated unfinished lists sorted by horizon, then by day (`targetDate ?: dueDate`),
+         * stable so same-day lists keep the reader's own order. Undated lists are excluded.
+         */
+        val agenda: List<TodoListSummary> = activeSummaries
+            .filter { it.horizon != ListHorizon.UNDATED }
+            .sortedWith(compareBy({ it.horizon }, { it.list.targetDate ?: it.list.dueDate }))
+
+        /**
+         * The subset of [agenda] whose horizon is [ListHorizon.OVERDUE],
+         * [ListHorizon.TODAY], or [ListHorizon.THIS_WEEK] — the lists that are
+         * relevant this week.
+         */
+        val thisWeek: List<TodoListSummary> = agenda.filter {
+            it.horizon == ListHorizon.OVERDUE ||
+                it.horizon == ListHorizon.TODAY ||
+                it.horizon == ListHorizon.THIS_WEEK
+        }
+
+        /** How many unfinished lists carry no date. */
+        val undatedCount: Int = activeSummaries.filter { it.horizon == ListHorizon.UNDATED }.size
+
+        /**
+         * Active lists cut at each change of horizon, with dated horizons drawn
+         * from [agenda] (in date order) and the undated horizon drawn from
+         * [activeSummaries] (in reader order). The UI draws one heading per section.
+         */
         val sections: List<ListSection> = ListHorizon.entries.mapNotNull { horizon ->
-            activeSummaries
-                .filter { it.horizon == horizon }
-                .takeIf { it.isNotEmpty() }
-                ?.let { ListSection(horizon, it) }
+            val items = if (horizon == ListHorizon.UNDATED) {
+                activeSummaries.filter { it.horizon == ListHorizon.UNDATED }
+            } else {
+                agenda.filter { it.horizon == horizon }
+            }
+            items.takeIf { it.isNotEmpty() }?.let { ListSection(horizon, it) }
         }
     }
 }

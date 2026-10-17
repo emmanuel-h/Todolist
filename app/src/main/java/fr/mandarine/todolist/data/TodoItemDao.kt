@@ -83,4 +83,22 @@ interface TodoItemDao {
     fun updatePositions(orderedIds: List<String>) {
         orderedIds.forEachIndexed { index, id -> updatePosition(id, index) }
     }
+
+    /**
+     * Returns the first [limit] open items per list in ascending position order,
+     * ties broken by id, using a correlated subquery compatible with SQLite 3.9
+     * (no window functions). The caller groups by [TodoItemEntity.listId] and takes
+     * at most [limit] titles per group as a defensive measure.
+     *
+     * A row is included when fewer than [limit] open rows in the same list come
+     * before it in (position, id) order. Completed items are excluded from both
+     * the outer query and the inner count.
+     */
+    @Query(
+        "SELECT * FROM todo_items i WHERE i.completed = 0 AND " +
+            "(SELECT COUNT(*) FROM todo_items j WHERE j.listId = i.listId AND j.completed = 0 AND " +
+            "(j.position < i.position OR (j.position = i.position AND j.id < i.id))) < :limit " +
+            "ORDER BY i.listId, i.position, i.id"
+    )
+    fun previewsQuery(limit: Int): List<TodoItemEntity>
 }
