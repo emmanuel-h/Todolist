@@ -2,12 +2,14 @@ package fr.mandarine.todolist.ui.paper
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -21,30 +23,46 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.innerShadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import fr.mandarine.todolist.R
 import kotlinx.coroutines.delay
 
-private const val BACK_SHEET_ROTATION = -0.7f
-private const val MID_SHEET_ROTATION = 0.6f
+private const val BACK_SHEET_ROTATION = 6f
+private const val MID_SHEET_ROTATION = -3f
+private const val TOP_SHEET_ROTATION = -3f
 private const val FOLD_DEGREES = -75f
 private const val BECKON_DEGREES = -12f
 private const val PERSPECTIVE = 12f
 private const val AMBIENT_ALPHA = 0.16f
 private const val CONTACT_ALPHA = 0.22f
-private const val GLUE_ALPHA = 0.55f
+private const val PEN_TILT_DEGREES = -22f
+private const val PEN_SHADOW_ALPHA = 0.18f
+private const val PEN_SHADE_ALPHA = 0.55f
+private const val PEN_SHINE_ALPHA = 0.45f
+private const val PEN_LIFTED = 1f
+private const val PEN_RESTING = 0f
+private const val PEN_LABEL = "penLift"
 private const val DENT_PRESSED = 1f
 private const val NO_DENT = 0f
 private const val STRAIGHT_DOWN = 0f
@@ -58,20 +76,33 @@ private val AMBIENT_SIDEWAYS = 1.dp
 private val AMBIENT_DROP = 4.dp
 private val CONTACT_RADIUS = 1.dp
 private val CONTACT_DROP = 1.dp
-private val GLUE_RADIUS = 2.dp
-private val GLUE_DROP = 1.dp
 private val DENT_RADIUS = 2.dp
 private val DENT_DROP = 1.dp
 private val SHEET_STEP = 1.dp
 private val SHEET_INSET = (PaperDimens.stickyPad - PaperDimens.stickySheet) / 2
-private val PAD_TAPE_WIDTH = 36.dp
+private val CARD_HEAD = 14.dp
+private val CARD_RULE_STEP = 11.dp
+private val CARD_RULE_WIDTH = 1.dp
+private val GLYPH_INSET = 3.dp
+private val PEN_NIB_AT = DpOffset(2.dp, 56.dp)
+private val PEN_LENGTH = 78.dp
+private val PEN_BARREL = 7.dp
+private val PEN_NIB = 9.dp
+private val PEN_NIB_WIDTH = 5.dp
+private val PEN_GRIP = 8.dp
+private val PEN_GRIP_HEIGHT = 6.dp
+private val PEN_BAND_FROM_END = 26.dp
+private val PEN_BAND = 2.dp
+private val PEN_CLIP_FROM_END = 22.dp
+private val PEN_CLIP_STROKE = 1.6.dp
+private val PEN_SHADOW_DROP = DpOffset(2.dp, 4.dp)
+private val PEN_LIFT_RISE = 10.dp
 
 /**
- * One shadow lies under the whole stack, so the pad reads as a single block of
- * paper rather than as three outlined cards: the sheet at the bottom carries a
- * wide warm ambient blur and a tight contact blur, and the sheets above it are
- * offset by a hair. Every sheet takes the page's own grain in its own colour and
- * a darker band along the glued top edge.
+ * Blank index cards, cut from the same stock as the lists on the board, so the pad
+ * reads as "one more of these". The card at the bottom carries the shadow for the
+ * stack; every card takes the page's grain and the ruled lines a list is written
+ * on, under a plain head where its name will go.
  */
 @Composable
 private fun StickyNoteSheetSurface(
@@ -82,8 +113,8 @@ private fun StickyNoteSheetSurface(
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val palette = LocalPaperPalette.current
-    val glueInk = palette.stickyNoteBack
     val sunkenInk = palette.paperSunken
+    val ruleInk = palette.rule
     Box(
         modifier = Modifier
             .size(PaperDimens.stickySheet)
@@ -91,21 +122,92 @@ private fun StickyNoteSheetSurface(
             .then(if (shadowed) Modifier.padShadow(palette) else Modifier)
             .clip(SHEET_SHAPE)
             .paperSheet(tone = color, lit = color)
-            .innerShadow(SHEET_SHAPE) {
-                radius = GLUE_RADIUS.toPx()
-                offset = Offset(STRAIGHT_DOWN, GLUE_DROP.toPx())
-                this.color = glueInk
-                alpha = GLUE_ALPHA
-            }
+            .drawBehind { drawCardRules(ruleInk) }
             .innerShadow(SHEET_SHAPE) {
                 radius = DENT_RADIUS.toPx()
                 offset = Offset(STRAIGHT_DOWN, DENT_DROP.toPx())
                 this.color = sunkenInk
                 alpha = dent()
             },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.TopStart,
         content = content
     )
+}
+
+private fun DrawScope.drawCardRules(ink: Color) {
+    val step = CARD_RULE_STEP.toPx()
+    val width = CARD_RULE_WIDTH.toPx()
+    var y = CARD_HEAD.toPx() + step
+    while (y < size.height) {
+        drawLine(ink, Offset(0f, y), Offset(size.width, y), width)
+        y += step
+    }
+}
+
+/**
+ * A fountain pen put down across the cards, nib towards the board: the pad is
+ * something to write on, and the pen says so before anything is tapped. It is drawn
+ * along a level line from the nib and turned as a whole, so every part of it stays
+ * a plain rectangle.
+ */
+private fun DrawScope.drawPen(palette: PaperPalette) {
+    val nib = Offset(PEN_NIB_AT.x.toPx(), PEN_NIB_AT.y.toPx())
+    val length = PEN_LENGTH.toPx()
+    val barrel = PEN_BARREL.toPx()
+    val half = barrel / 2
+    val nibEnd = PEN_NIB.toPx()
+    val gripEnd = nibEnd + PEN_GRIP.toPx()
+    rotate(PEN_TILT_DEGREES, pivot = nib) {
+        translate(nib.x, nib.y) {
+            translate(PEN_SHADOW_DROP.x.toPx(), PEN_SHADOW_DROP.y.toPx()) {
+                drawRoundRect(
+                    color = palette.shadow,
+                    topLeft = Offset(nibEnd, -half),
+                    size = Size(length - nibEnd, barrel),
+                    cornerRadius = CornerRadius(half),
+                    alpha = PEN_SHADOW_ALPHA
+                )
+            }
+            val tip = Path().apply {
+                moveTo(0f, 0f)
+                lineTo(nibEnd, -PEN_NIB_WIDTH.toPx() / 2)
+                lineTo(nibEnd, PEN_NIB_WIDTH.toPx() / 2)
+                close()
+            }
+            drawPath(tip, palette.pencil)
+            val grip = PEN_GRIP_HEIGHT.toPx()
+            drawRect(palette.inkAmber, Offset(nibEnd, -grip / 2), Size(gripEnd - nibEnd, grip))
+            drawRoundRect(
+                color = palette.inkBlue,
+                topLeft = Offset(gripEnd, -half),
+                size = Size(length - gripEnd, barrel),
+                cornerRadius = CornerRadius(half)
+            )
+            drawRoundRect(
+                color = palette.inkBlueDeep,
+                topLeft = Offset(gripEnd, 0f),
+                size = Size(length - gripEnd, half),
+                cornerRadius = CornerRadius(half),
+                alpha = PEN_SHADE_ALPHA
+            )
+            drawLine(
+                color = palette.inkBluePale,
+                start = Offset(gripEnd + half, -half / 2),
+                end = Offset(length - half, -half / 2),
+                strokeWidth = CARD_RULE_WIDTH.toPx(),
+                alpha = PEN_SHINE_ALPHA
+            )
+            val band = length - PEN_BAND_FROM_END.toPx()
+            drawRect(palette.inkAmber, Offset(band, -half), Size(PEN_BAND.toPx(), barrel))
+            drawLine(
+                color = palette.inkAmber,
+                start = Offset(length - PEN_CLIP_FROM_END.toPx(), -half),
+                end = Offset(length - half, -half),
+                strokeWidth = PEN_CLIP_STROKE.toPx(),
+                cap = StrokeCap.Round
+            )
+        }
+    }
 }
 
 private fun Modifier.padShadow(palette: PaperPalette): Modifier = raised(SHEET_SHAPE, palette) {
@@ -176,6 +278,15 @@ fun StickyNotePad(
         animationSpec = PaperMotion.rowEnter,
         label = DENT_LABEL
     )
+    /**
+     * Taking a card takes the pen with it, to write on the card; it is put back
+     * down when the card is.
+     */
+    val penLift = animateFloatAsState(
+        targetValue = if (taken) PEN_LIFTED else PEN_RESTING,
+        animationSpec = if (reducedMotion) snap() else PaperMotion.pickUp,
+        label = PEN_LABEL
+    )
 
     LaunchedEffect(taken) {
         val was = previouslyTaken.value
@@ -236,7 +347,7 @@ fun StickyNotePad(
         contentAlignment = Alignment.Center
     ) {
         StickyNoteSheetSurface(
-            color = palette.stickyNoteBack,
+            color = palette.paperShade,
             modifier = Modifier.graphicsLayer {
                 rotationZ = BACK_SHEET_ROTATION
                 translationX = SHEET_STEP.toPx()
@@ -246,7 +357,7 @@ fun StickyNotePad(
         )
         val showing = putBack.takeIf { taken }
         StickyNoteSheetSurface(
-            color = palette.stickyNoteMid,
+            color = palette.paperSheet,
             modifier = Modifier
                 .graphicsLayer {
                     rotationZ = MID_SHEET_ROTATION
@@ -270,20 +381,21 @@ fun StickyNotePad(
                 InkIcon(
                     painter = showing.painter,
                     contentDescription = showing.contentDescription,
-                    tint = palette.stickyNoteInk
+                    modifier = Modifier.padding(GLYPH_INSET),
+                    tint = palette.ink
                 )
             }
         }
         if (!taken && !returning) {
             StickyNoteSheetSurface(
-                color = palette.stickyNote,
+                color = palette.paperSheet,
                 modifier = Modifier
                     .graphicsLayer {
                         val resting = stickyNoteSettleAt(settle.value)
                         transformOrigin = GLUED_EDGE
                         cameraDistance = PERSPECTIVE * density
                         rotationX = BECKON_DEGREES * beckon.value
-                        rotationZ = resting.rotationDegrees
+                        rotationZ = TOP_SHEET_ROTATION + resting.rotationDegrees
                         scaleX = resting.scale
                         scaleY = resting.scale
                         alpha = resting.alpha
@@ -299,22 +411,25 @@ fun StickyNotePad(
                 InkIcon(
                     painter = painter,
                     contentDescription = contentDescription,
-                    tint = palette.stickyNoteInk
+                    modifier = Modifier.padding(GLYPH_INSET),
+                    tint = palette.ink
                 )
             }
         }
 
-        PaperTape(
-            colour = palette.tape,
-            width = PAD_TAPE_WIDTH,
+        Spacer(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = SHEET_INSET - CorkDimens.tapeHeight / 2)
+                .matchParentSize()
+                .graphicsLayer {
+                    alpha = PEN_LIFTED - penLift.value
+                    translationY = -PEN_LIFT_RISE.toPx() * penLift.value
+                }
+                .drawBehind { drawPen(palette) }
         )
 
         if (peeling || returning) {
             StickyNoteSheetSurface(
-                color = palette.stickyNote,
+                color = palette.paperSheet,
                 modifier = Modifier.graphicsLayer {
                     val flying = stickyNotePeelAt(peel.value)
                     val carried = stickyNoteCarryTo(
@@ -329,7 +444,7 @@ fun StickyNotePad(
                     transformOrigin = GLUED_EDGE
                     cameraDistance = PERSPECTIVE * density
                     rotationX = FOLD_DEGREES * flying.foldFraction
-                    rotationZ = flying.rotationDegrees
+                    rotationZ = TOP_SHEET_ROTATION + flying.rotationDegrees
                     scaleX = flying.scale
                     scaleY = flying.scale
                     alpha = flying.alpha
@@ -346,7 +461,8 @@ fun StickyNotePad(
                 InkIcon(
                     painter = painter,
                     contentDescription = null,
-                    tint = palette.stickyNoteInk
+                    modifier = Modifier.padding(GLYPH_INSET),
+                    tint = palette.ink
                 )
             }
         }
