@@ -3,7 +3,7 @@
 
     python3 reshoot-store.py [serial]
 
-Writes store-assets/screenshots/<locale>/ for en-US and fr-FR: five phone shots
+Writes store-assets/screenshots/<locale>/ for en-US and fr-FR: four phone shots
 and three shots at each tablet size. The debug build has to be installed on the
 emulator first (./gradlew installDebug). The emulator is resized for each form
 factor and put back as it was at the end — see store-assets/README.md.
@@ -20,14 +20,13 @@ LOCALES = {"en-US": [], "fr-FR": ["--fr"]}
 FORM_FACTORS = [
     ("phone", "1080x1920", "420", "todo_database", "", [
         ("lists", "phone-01-lists"), ("items", "phone-02-items"),
-        ("date", "phone-03-calendar"), ("lists-dark", "phone-04-lists-dark"),
-        ("items-dark", "phone-05-items-dark")]),
+        ("calendar", "phone-03-calendar"), ("date", "phone-04-date")]),
     ("tablet7", "1200x1920", "320", "todo_database_big", "tablet-7", [
         ("lists", "tablet7-01-lists"), ("items", "tablet7-02-items"),
-        ("lists-dark", "tablet7-03-lists-dark")]),
+        ("calendar", "tablet7-03-calendar")]),
     ("tablet10", "1600x2560", "320", "todo_database_big", "tablet-10", [
         ("lists", "tablet10-01-lists"), ("items", "tablet10-02-items"),
-        ("lists-dark", "tablet10-03-lists-dark")]),
+        ("calendar", "tablet10-03-calendar")]),
 ]
 
 

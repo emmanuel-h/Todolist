@@ -3,7 +3,7 @@
 
     python3 capture-screenshots.py <serial> <outdir> <prefix> <shot>...
 
-A shot is one of: lists, items, date, and the -dark variant of each. The demo
+A shot is one of: lists, items, date, calendar, and the -dark variant of each. The demo
 database comes from SEED_DIR (default: this directory) and is named by SEED_DB
 (default: todo_database) — see make-demo-database.py. LOCALE (default: en-US)
 picks the app's language and the names the script looks for; the database has
@@ -18,9 +18,9 @@ SEED = os.environ.get("SEED_DIR", os.path.dirname(os.path.abspath(__file__)))
 LOCALE = os.environ.get("LOCALE", "en-US")
 WORDS = {
     "en-US": {"first": "Groceries", "open": "Apartment move", "undated": "Reading list",
-              "give_a_day": "Give this list a day"},
+              "actions": "Edit this list", "calendar": "Calendar", "give_a_day": "Give it a day"},
     "fr-FR": {"first": "Courses", "open": "Déménagement", "undated": "À lire",
-              "give_a_day": "Donner un jour à cette liste"},
+              "actions": "Modifier cette liste", "calendar": "Calendrier", "give_a_day": "Lui donner un jour"},
 }[LOCALE]
 
 
@@ -64,7 +64,8 @@ def find(xml, *, text=None, desc=None, near=None):
         return None
     if near is None:
         return hits[0]
-    return min(hits, key=lambda p: abs(p[1] - near[1]))
+    below = [p for p in hits if p[1] >= near[1]] or hits
+    return min(below, key=lambda p: abs(p[0] - near[0]) + abs(p[1] - near[1]))
 
 
 def need(xml, **kw):
@@ -148,7 +149,11 @@ def main():
         if f"date{tag}" in want:
             xml = dump(dev)
             row = need(xml, text=WORDS["undated"])
-            cx, cy = need(xml, desc=WORDS["give_a_day"], near=row)
+            px, py = need(xml, desc=WORDS["actions"], near=row)
+            shell(dev, f"input tap {px} {py}")
+            time.sleep(2)
+            xml = dump(dev)
+            cx, cy = find(xml, text=WORDS["give_a_day"]) or need(xml, desc=WORDS["give_a_day"])
             shell(dev, f"input tap {cx} {cy}")
             time.sleep(3)
             screencap(dev, f"{outdir}/{prefix}-date{tag}.png")
@@ -156,6 +161,13 @@ def main():
             time.sleep(1)
             shell(dev, "input keyevent KEYCODE_BACK")
             time.sleep(1)
+
+        if f"calendar{tag}" in want:
+            launch(dev)
+            x, y = need(dump(dev), text=WORDS["calendar"])
+            shell(dev, f"input tap {x} {y}")
+            time.sleep(3)
+            screencap(dev, f"{outdir}/{prefix}-calendar{tag}.png")
 
     shell(dev, "cmd uimode night no")
     shell(dev, f"cmd locale set-app-locales {PKG} --locales ''")

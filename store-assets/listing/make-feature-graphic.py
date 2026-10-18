@@ -45,7 +45,7 @@ BEZEL = (28, 27, 31)
 ICON = (56, 175, 156)          # x, y, size
 TILT = -8
 PHONE = (682, 0, 270, 500)     # x, y, width, height, before the tilt
-CROP = (101, 0, 979, 1560)     # the screenshot without its empty tail
+CROP = (40, 0, 1040, 1920)     # the whole board, trimmed to the screen's aspect
 BEZEL_R, SCREEN_R, SCREEN_INSET = 38, 28, 10
 PIVOT = (840, 250)
 

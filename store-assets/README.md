@@ -1,8 +1,10 @@
 # Store assets
 
 Everything the Play Console listing needs, and the tooling that regenerates it.
-The screenshots were reshot on 2026-10-03 for the tightened row controls and the
-per-list reminder time, and in French as well as English for the first time; the rest was redrawn on 2026-09-06 for the row controls,
+The screenshots were reshot on 2026-10-18 for the corkboard and the Calendar tab;
+the dark shots were dropped then, because the paper has one theme and they had
+become copies of the light ones. The 2026-10-03 set was the first in French as well
+as English; the rest was redrawn on 2026-09-06 for the row controls,
 the date slot and the per-list colours. The 2026-08-27 set shows the page before
 those, and anything older in the history shows the retired Material 3 build.
 
@@ -47,7 +49,9 @@ cd listing && python3 make-feature-graphic.py
 ```
 
 It reads `app/src/main/res/font/patrick_hand.ttf` — the hand the app writes in —
-and hard-codes the `PaperPalette.light` tones. Re-run it when the palette moves.
+and hard-codes the `PaperPalette.light` tones. Re-run it when the palette moves, and
+after every reshoot: the phone in it is `screenshots/en-US/phone-01-lists.png`.
+`publish-play.py --feature-graphic` uploads it to every listing language.
 
 ## The screenshots
 

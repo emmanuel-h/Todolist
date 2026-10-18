@@ -83,10 +83,11 @@ option).
    `internal` (internal testers only; promote it in the console later). Preview: who
    receives the build.
 3. **Screenshots** — "Update the store screenshots?" Options: "Yes — reshoot in English
-   and French" and "No — keep the current listing images". Preview: for yes, the 22
+   and French" and "No — keep the current listing images". Preview: for yes, the 20
    files under `store-assets/screenshots/{en-US,fr-FR}/` that get regenerated and
-   replace the Play listing's phone, 7-inch and 10-inch slots in both languages; for
-   no, "listing images unchanged".
+   replace the Play listing's phone, 7-inch and 10-inch slots in both languages, plus
+   the feature graphic redrawn around the new board shot; for no, "listing images
+   unchanged".
 
 If the user picks "Don't release", stop. If they pick a different release type,
 recompute Step 3 with it.
@@ -147,7 +148,7 @@ If the demo database fails with a Room crash on screen, the schema moved: update
 `make-demo-database.py` from the newest `app/schemas/…/<n>.json`, and run 7c again.
 
 **7d. Look at every screenshot before going further.** `reshoot-store.py` cannot tell
-a good capture from a bad one. Read all five phone shots per language, and a contact
+a good capture from a bad one. Read all four phone shots per language, and a contact
 sheet of the tablet shots, and check each one for:
 - the app's page, not the splash screen (the logo alone, or the logo fading over the list)
 - no crash dialog, no notification glyph in the status bar
@@ -156,10 +157,18 @@ sheet of the tablet shots, and check each one for:
 
 If any shot fails, fix the cause and run 7c again. Never publish a set you have not seen.
 
-**7e. Commit the screenshots** (and the moved `TODAY`):
+**7e. Redraw the feature graphic.** Its phone shows `en-US/phone-01-lists.png`, so a
+reshoot leaves it stale. Look at it: the board's cards must not be cut at the screen's
+edges, and nothing may collide with the catchphrase.
 
 ```bash
-git add store-assets/screenshots store-assets/tools/make-demo-database.py
+(cd store-assets/listing && python3 make-feature-graphic.py)
+```
+
+**7f. Commit the screenshots** (and the moved `TODAY`):
+
+```bash
+git add store-assets/screenshots store-assets/listing/feature-graphic.png store-assets/tools/make-demo-database.py
 git commit -m "chore: reshoot the store for ${NEW_NAME}"
 ```
 
@@ -258,7 +267,8 @@ refuses over-long notes too, but catch it here.)
 ## Step 12 — Publish to Google Play
 
 One edit, one commit: the bundle, its mapping, the release on the chosen track with both
-languages' notes, and — only if the user said yes in Step 5 — the screenshots.
+languages' notes, and — only if the user said yes in Step 5 — the screenshots and the
+feature graphic.
 
 ```bash
 python3 store-assets/tools/publish-play.py \
@@ -267,7 +277,7 @@ python3 store-assets/tools/publish-play.py \
   --track "$TRACK" \
   --release-name "$NEW_NAME" \
   --notes-dir "$NOTES" \
-  $([ "$SCREENSHOTS" = yes ] && echo --screenshots)
+  $([ "$SCREENSHOTS" = yes ] && echo --screenshots --feature-graphic)
 ```
 
 On failure the script deletes the edit, so nothing half-done reaches the listing. Read
@@ -290,7 +300,7 @@ that is needed once the cause is fixed.
 
 ```
 ✓ Version bumped  : $CURRENT_NAME (code $CURRENT_CODE) → $NEW_NAME (code $NEW_CODE)
-✓ Screenshots     : reshot in en-US and fr-FR (22) | unchanged
+✓ Screenshots     : reshot in en-US and fr-FR (20) + feature graphic | unchanged
 ✓ AAB built       : app/build/outputs/bundle/release/app-release.aab
 ✓ GitHub release  : https://github.com/emmanuel-h/Todolist/releases/tag/$TAG
 ✓ Google Play     : $NEW_NAME on the $TRACK track, sent for review

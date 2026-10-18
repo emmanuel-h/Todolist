@@ -4,7 +4,7 @@ OUT = sys.argv[1]
 if os.path.exists(OUT): os.remove(OUT)
 IDENTITY = "b729c140d99c9e64b7ff2c977a7fa1bd"
 
-TODAY = 20729  # 2026-10-03
+TODAY = 20744  # 2026-10-18
 
 # (id, name, targetDay, dueDay, colour, [(title, completed), ...])
 LISTS = [

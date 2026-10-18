@@ -3,7 +3,7 @@
 
     python3 publish-play.py [--bundle AAB --mapping TXT --track TRACK
                              --release-name NAME --notes-dir DIR]
-                            [--screenshots]
+                            [--screenshots] [--feature-graphic]
                             [--validate-only] [--changes-not-sent-for-review]
                             [--dry-run]
 
@@ -11,7 +11,9 @@ Everything goes into one edit, and the edit is committed once at the end, so the
 listing never shows half an update. With --bundle, the bundle and its R8 mapping
 are uploaded and released on TRACK with the notes in DIR/<language>.txt. With
 --screenshots, every screenshot slot of every language under
-store-assets/screenshots/<language>/ is emptied and refilled.
+store-assets/screenshots/<language>/ is emptied and refilled. With
+--feature-graphic, store-assets/listing/feature-graphic.png replaces the
+feature graphic of every language that has a screenshots directory.
 
 The service account key is read from $PLAY_SERVICE_ACCOUNT, or
 ~/.config/todolist/play-service-account.json — see store-assets/README.md.
@@ -25,6 +27,7 @@ SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 API = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{PKG}"
 UPLOAD = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PKG}"
 SCREENSHOTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "screenshots")
+FEATURE_GRAPHIC = os.path.join(os.path.dirname(SCREENSHOTS), "listing", "feature-graphic.png")
 DEFAULT_KEY = os.path.expanduser("~/.config/todolist/play-service-account.json")
 
 SLOTS = [
@@ -103,12 +106,23 @@ def publish_bundle(play, edit, args):
                       "status": "completed", "releaseNotes": notes}]})
 
 
-def publish_screenshots(play, edit):
+def listing_languages():
     languages = sorted(d for d in os.listdir(SCREENSHOTS)
                        if os.path.isdir(os.path.join(SCREENSHOTS, d)))
     if not languages:
         raise PlayError(f"no <language>/ directories in {SCREENSHOTS}")
-    for language in languages:
+    return languages
+
+
+def publish_feature_graphic(play, edit):
+    for language in listing_languages():
+        play.call("DELETE", f"{API}/edits/{edit}/listings/{language}/featureGraphic")
+        play.upload(f"{UPLOAD}/edits/{edit}/listings/{language}/featureGraphic",
+                    FEATURE_GRAPHIC, "image/png")
+
+
+def publish_screenshots(play, edit):
+    for language in listing_languages():
         for slot, pattern in SLOTS:
             shots = sorted(glob.glob(os.path.join(SCREENSHOTS, language, pattern)))
             if not 2 <= len(shots) <= 8:
@@ -126,6 +140,7 @@ def main():
     p.add_argument("--release-name")
     p.add_argument("--notes-dir")
     p.add_argument("--screenshots", action="store_true")
+    p.add_argument("--feature-graphic", action="store_true")
     p.add_argument("--validate-only", action="store_true")
     p.add_argument("--changes-not-sent-for-review", action="store_true")
     p.add_argument("--dry-run", action="store_true")
@@ -134,8 +149,8 @@ def main():
     release = [args.bundle, args.mapping, args.track, args.release_name, args.notes_dir]
     if any(release) and not all(release):
         p.error("--bundle needs --mapping, --track, --release-name and --notes-dir")
-    if not args.bundle and not args.screenshots:
-        p.error("nothing to publish: pass --bundle, --screenshots, or both")
+    if not args.bundle and not args.screenshots and not args.feature_graphic:
+        p.error("nothing to publish: pass --bundle, --screenshots, --feature-graphic, or any mix")
 
     key = os.environ.get("PLAY_SERVICE_ACCOUNT", DEFAULT_KEY)
     play = Play("dry-run" if args.dry_run else access_token(key), args.dry_run)
@@ -145,6 +160,8 @@ def main():
             publish_bundle(play, edit, args)
         if args.screenshots:
             publish_screenshots(play, edit)
+        if args.feature_graphic:
+            publish_feature_graphic(play, edit)
         if args.validate_only:
             play.call("POST", f"{API}/edits/{edit}:validate")
             play.call("DELETE", f"{API}/edits/{edit}")
