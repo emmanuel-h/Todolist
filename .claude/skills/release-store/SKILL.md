@@ -84,9 +84,10 @@ option).
    receives the build.
 3. **Screenshots** — "Update the store screenshots?" Options: "Yes — reshoot in English
    and French" and "No — keep the current listing images". Preview: for yes, the 20
-   files under `store-assets/screenshots/{en-US,fr-FR}/` that get regenerated and
+   files under `store-assets/screenshots/{en-US,fr-FR}/` (captioned from
+   `store-assets/captures/`) that get regenerated and
    replace the Play listing's phone, 7-inch and 10-inch slots in both languages, plus
-   the feature graphic redrawn around the new board shot; for no, "listing images
+   the feature graphics redrawn around the new board shot; for no, "listing images
    unchanged".
 
 If the user picks "Don't release", stop. If they pick a different release type,
@@ -149,16 +150,17 @@ If the demo database fails with a Room crash on screen, the schema moved: update
 
 **7d. Look at every screenshot before going further.** `reshoot-store.py` cannot tell
 a good capture from a bad one. Read all four phone shots per language, and a contact
-sheet of the tablet shots, and check each one for:
+sheet of the tablet shots, in `store-assets/screenshots/` (captioned), and check each one for:
 - the app's page, not the splash screen (the logo alone, or the logo fading over the list)
 - no crash dialog, no notification glyph in the status bar
 - the right language: English names and "Oct 5" dates under `en-US/`, French names and
-  "5 oct." dates under `fr-FR/`
+  "5 oct." dates under `fr-FR/`, and a caption in the same language
+- no caption colliding with the capture, and no word alone on a caption's last line
 
 If any shot fails, fix the cause and run 7c again. Never publish a set you have not seen.
 
-**7e. Redraw the feature graphic.** Its phone shows `en-US/phone-01-lists.png`, so a
-reshoot leaves it stale. Look at it: the board's cards must not be cut at the screen's
+**7e. Redraw the feature graphics.** Each one's phone shows its language's
+`captures/<language>/phone-01-lists.png`, so a reshoot leaves them stale. Look at it: the board's cards must not be cut at the screen's
 edges, and nothing may collide with the catchphrase.
 
 ```bash
@@ -168,7 +170,7 @@ edges, and nothing may collide with the catchphrase.
 **7f. Commit the screenshots** (and the moved `TODAY`):
 
 ```bash
-git add store-assets/screenshots store-assets/listing/feature-graphic.png store-assets/tools/make-demo-database.py
+git add store-assets/captures store-assets/screenshots store-assets/listing/feature-graphic-*.png store-assets/tools/make-demo-database.py
 git commit -m "chore: reshoot the store for ${NEW_NAME}"
 ```
 
@@ -267,8 +269,9 @@ refuses over-long notes too, but catch it here.)
 ## Step 12 — Publish to Google Play
 
 One edit, one commit: the bundle, its mapping, the release on the chosen track with both
-languages' notes, and — only if the user said yes in Step 5 — the screenshots and the
-feature graphic.
+languages' notes, the listing text (title and descriptions from
+`store-assets/listing/`), and — only if the user said yes in Step 5 — the screenshots
+and the feature graphics.
 
 ```bash
 python3 store-assets/tools/publish-play.py \
@@ -277,6 +280,7 @@ python3 store-assets/tools/publish-play.py \
   --track "$TRACK" \
   --release-name "$NEW_NAME" \
   --notes-dir "$NOTES" \
+  --listing \
   $([ "$SCREENSHOTS" = yes ] && echo --screenshots --feature-graphic)
 ```
 

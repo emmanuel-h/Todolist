@@ -1,6 +1,8 @@
+A simple to-do list and checklist that works entirely offline. No account, no ads, no internet: your lists never leave your phone.
+
 Other to-do apps want to run your life. This is a sheet of paper.
 
-Open it and that is all there is: a ruled page, a few lines in your own hand, and room for more. No projects. No tags. No inbox to get to zero. No streak to keep alive. You write a list, you open it, you cross things off. Nothing asks anything more of you.
+Open it and that is all there is: a ruled page, a few lines in your own hand, and room for more. No projects. No tags. No inbox to get to zero. No streak to keep alive. You write a list — the groceries, a packing checklist, the jobs for Saturday — you open it, you cross things off. Nothing asks anything more of you.
 
 Everything a line can do is on the line — a ring to tick it, a pencil to rewrite it, a bin to tear it off. Nothing hides behind a swipe you were supposed to discover, and nothing is thrown away without asking first. Tick something and the pen strikes it through, the row slides under the divider, and the page keeps the count so you don't have to. Hold a line and drag it if the order is wrong. Finish a whole list and it steps aside on its own, so what is on the page is only ever what is left to do.
 
@@ -12,15 +14,15 @@ The colour goes on the paper and never on the ink. That is the whole trick: ambe
 
 A DAY, NOT A SCHEDULE
 
-A list carries one day, and only one — the day you mean to get to it, or the day it has to be finished. Circle it on the paper calendar and it appears in the margin of the row. That is the entire planning system. A deadline that lands today is written in amber, one that has slipped is written in red, and you will know which is which from across the room.
+A list carries one day, and only one — the day you mean to get to it, or its due date, the day it has to be finished. Circle it on the paper calendar and it appears in the margin of the row. That is the entire planning system. A deadline that lands today is written in amber, one that has slipped is written in red, and you will know which is which from across the room.
 
-Once a day, and only if there is genuinely something to say, the page mentions the lists due today and the ones you set for tomorrow. Once. At eight in the morning, or whatever hour you tell the bell in the corner of the page. Turn notifications down altogether and nothing else changes.
+Once a day, and only if there is genuinely something to say, a single reminder mentions the lists due today and the ones you set for tomorrow. Once. At eight in the morning, or whatever hour you tell the bell in the corner of the page. Turn notifications down altogether and nothing else changes.
 
-WHAT ISN'T HERE
+OFFLINE, AND PRIVATE
 
 No account. No sign-up. No email address. No ads, no trackers, no analytics.
 
-And no internet permission — not a promise that we won't look, but no way to reach the network at all. Your lists sit in a private database on your phone. They cannot go anywhere, and we have never seen one.
+And no internet permission — not a promise that we won't look, but no way to reach the network at all. The app works fully offline, on a plane or in a basement, because it never needed the internet in the first place. Your lists sit in a private database on your phone. They cannot go anywhere, and we have never seen one.
 
 Ink on cream by day, chalk on charcoal by lamplight. Spoken properly to TalkBack. English and French. On a tablet you get a wider sheet, not a wider column of text.
 

@@ -9,6 +9,9 @@ is ruled paper, so the field is what has to carry the contrast.
 The field is the pen the app ticks with, not the Material purple the listing
 was born in: every colour here is one the pad itself could draw.
 
+The wordmark is the store title, on two lines so it clears the phone, and there
+is one graphic per listing language: feature-graphic-<language>.png.
+
     python3 make-feature-graphic.py [ink|shadow|desk|red]
 """
 import os
@@ -17,11 +20,18 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SHOT = os.path.join(HERE, "..", "screenshots", "en-US", "phone-01-lists.png")
+CAPTURES = os.path.join(HERE, "..", "captures")
 SANS = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"
 SANS_TEXT = "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"
 
 W, H = 1024, 500
+TEXT_X, TEXT_RIGHT = 252, 615
+
+WORDS = {
+    # The store title over two lines, and the catchphrase under it.
+    "en-US": ("Paper", "To-Do List", "Offline · No account · No ads"),
+    "fr-FR": ("To-do list", "papier", "Hors ligne · Sans compte · Sans pub"),
+}
 S = 4  # supersampling
 
 FIELDS = {
@@ -87,7 +97,7 @@ def launcher_icon(d, x, y, size):
               outline=PENCIL, width=round(3.5 * u * S))
 
 
-def phone_layer(size):
+def phone_layer(size, shot_path):
     """The tilted phone, drawn upright on its own layer and rotated into place."""
     layer = Image.new("RGBA", size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
@@ -100,7 +110,7 @@ def phone_layer(size):
 
     sx, sy = x + SCREEN_INSET, y + SCREEN_INSET
     sw, sh = w - SCREEN_INSET * 2, h - SCREEN_INSET * 2
-    shot = Image.open(SHOT).convert("RGB").crop(CROP).resize(scale(sw, sh), Image.LANCZOS)
+    shot = Image.open(shot_path).convert("RGB").crop(CROP).resize(scale(sw, sh), Image.LANCZOS)
     mask = Image.new("L", shot.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle(
         (0, 0, shot.width - 1, shot.height - 1), radius=SCREEN_R * S, fill=255)
@@ -109,25 +119,40 @@ def phone_layer(size):
     return layer.rotate(TILT, resample=Image.BICUBIC, center=scale(*PIVOT))
 
 
-def main():
-    which = sys.argv[1] if len(sys.argv) > 1 else "ink"
+def fitted(d, text, path, largest):
+    """The largest size up to `largest` at which the text fits before the phone."""
+    size = largest
+    while d.textlength(text, font=ImageFont.truetype(path, size * S)) > (TEXT_RIGHT - TEXT_X) * S:
+        size -= 1
+    return ImageFont.truetype(path, size * S)
+
+
+def draw(language, which):
     field, glow, title_ink, sub_ink = FIELDS[which]
-    out = os.path.join(HERE, "feature-graphic.png" if len(sys.argv) <= 1
-                       else "feature-graphic-%s.png" % which)
+    first, second, catchphrase = WORDS[language]
+    name = f"feature-graphic-{language}.png" if which == "ink" else f"feature-graphic-{which}-{language}.png"
 
     img = Image.new("RGBA", (W * S, H * S), field + (255,))
     d = ImageDraw.Draw(img, "RGBA")
     d.ellipse(scale(650, -210, 1150, 290), fill=glow + (128,))
 
     launcher_icon(d, *ICON)
-    d.text(scale(252, 255), "To do list",
-           font=ImageFont.truetype(SANS, 78 * S), fill=title_ink, anchor="ls")
-    d.text(scale(255, 313), "Simple lists. Nothing else.",
-           font=ImageFont.truetype(SANS_TEXT, 32 * S), fill=sub_ink, anchor="ls")
+    title = ImageFont.truetype(SANS, 68 * S)
+    d.text(scale(TEXT_X, 222), first, font=title, fill=title_ink, anchor="ls")
+    d.text(scale(TEXT_X, 296), second, font=title, fill=title_ink, anchor="ls")
+    d.text(scale(TEXT_X + 3, 342), catchphrase,
+           font=fitted(d, catchphrase, SANS_TEXT, 30), fill=sub_ink, anchor="ls")
 
-    img.alpha_composite(phone_layer(img.size))
+    img.alpha_composite(phone_layer(img.size, os.path.join(CAPTURES, language, "phone-01-lists.png")))
+    out = os.path.join(HERE, name)
     img.convert("RGB").resize((W, H), Image.LANCZOS).save(out)
     print("wrote", out)
+
+
+def main():
+    which = sys.argv[1] if len(sys.argv) > 1 else "ink"
+    for language in WORDS:
+        draw(language, which)
 
 
 main()

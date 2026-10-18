@@ -1,6 +1,11 @@
 # Store assets
 
 Everything the Play Console listing needs, and the tooling that regenerates it.
+On 2026-10-18 the listing was rewritten for search: the store title became
+"Paper To-Do List – Offline" / "To-do list papier – Hors ligne" (the launcher
+name did not change), the descriptions gained the words people search for
+(offline, checklist, reminder, due date), and the screenshots gained captions and
+a sixth card saying the app has no internet permission.
 The screenshots were reshot on 2026-10-18 for the corkboard and the Calendar tab;
 the dark shots were dropped then, because the paper has one theme and they had
 become copies of the light ones. The 2026-10-03 set was the first in French as well
@@ -11,20 +16,24 @@ those, and anything older in the history shows the retired Material 3 build.
 ```
 listing/
   ic_launcher_play_store.png 512×512 high-res icon
-  feature-graphic.png        1024×500
-  make-feature-graphic.py    draws it
-  full-description-*.txt     en-US, fr-FR
-  short-description-*.txt    en-US, fr-FR (80 characters is the Play ceiling)
-screenshots/
-  en-US/, fr-FR/             one set per listing language, named by Play's code
+  feature-graphic-*.png      1024×500, one per listing language
+  make-feature-graphic.py    draws them
+  title-*.txt                en-US, fr-FR (30 characters is the Play ceiling)
+  full-description-*.txt     en-US, fr-FR (4000)
+  short-description-*.txt    en-US, fr-FR (80)
+captures/
+  en-US/, fr-FR/             the raw captures, one set per language, named by Play's code
     phone-0*.png             1080×1920
     tablet-7/                1200×1920
     tablet-10/               1600×2560
+screenshots/
+  en-US/, fr-FR/             what Play shows: the captures captioned, plus the offline card
 tools/
   make-demo-database.py      writes the Room database the screenshots show
   capture-screenshots.py     drives the app and takes one language's captures
-  reshoot-store.py           runs both languages at every size into screenshots/
-  publish-play.py            uploads bundle, notes and screenshots to Google Play
+  reshoot-store.py           runs both languages at every size into captures/, then captions
+  caption-screenshots.py     captures/ → screenshots/: headline, field, offline card
+  publish-play.py            uploads bundle, notes, listing text and images to Google Play
 ```
 
 ## The high-res icon
@@ -48,10 +57,11 @@ under `listing/` is the only one.
 cd listing && python3 make-feature-graphic.py
 ```
 
-It reads `app/src/main/res/font/patrick_hand.ttf` — the hand the app writes in —
-and hard-codes the `PaperPalette.light` tones. Re-run it when the palette moves, and
-after every reshoot: the phone in it is `screenshots/en-US/phone-01-lists.png`.
-`publish-play.py --feature-graphic` uploads it to every listing language.
+It hard-codes the `PaperPalette.light` tones and draws one graphic per language,
+its wordmark the store title over two lines so it clears the phone. Re-run it when
+the palette or the title moves, and after every reshoot: the phone in each is that
+language's `captures/<language>/phone-01-lists.png`.
+`publish-play.py --feature-graphic` uploads each to its own listing language.
 
 ## The screenshots
 
@@ -67,8 +77,8 @@ python3 store-assets/tools/reshoot-store.py emulator-5554
 
 `reshoot-store.py` writes the demo databases for each language, resizes the
 emulator to each form factor in turn, runs `capture-screenshots.py`, copies the
-captures to their final names under `screenshots/<language>/`, and puts the
-emulator's size and density back at the end. Look at every image before
+captures to their final names under `captures/<language>/`, puts the
+emulator's size and density back, and runs `caption-screenshots.py`. Look at every image before
 publishing: nothing in the run can tell a capture of the page from a capture of
 the splash screen.
 
@@ -113,7 +123,7 @@ and a failure deletes the edit, so the listing never shows half an update.
 `--validate-only` has Play check the edit and then throws it away.
 
 ```bash
-python3 tools/publish-play.py --screenshots                # listing images alone
+python3 tools/publish-play.py --listing --screenshots --feature-graphic   # the listing alone
 python3 tools/publish-play.py --bundle … --mapping … --track production \
     --release-name 2.2.0 --notes-dir notes/ [--screenshots]
 ```
@@ -138,14 +148,35 @@ already has — no Google client library, no fastlane, no Ruby.
    builds the edit, has Play validate it, and publishes nothing. A new invitation
    can take a few minutes, occasionally longer, before the API accepts it.
 
+## The captions
+
+The store page is an advert, not the app, so the wordless rule does not reach it:
+every screenshot carries a headline in the app's hand on the ink field of the
+feature graphic, and the first one a subline with the three absences people search
+for. `caption-screenshots.py` holds the words, both languages side by side —
+change them there and re-run it; no emulator is needed, because it reads
+`captures/`. A capture's caption is chosen by the last word of its name.
+
+| | en-US | fr-FR |
+|---|---|---|
+| `01-lists` | All your to-do lists on one board | Toutes vos to-do lists sur un seul tableau |
+| `02-items` | Tick it, it's crossed off | Cochez, c'est rayé |
+| `03-calendar` | Your week on a paper calendar | Votre semaine sur un calendrier papier |
+| `04-date` (phone) | One day per list, one reminder per day | Un jour par liste, un rappel par jour |
+| `offline` card | No internet permission | Aucune permission Internet |
+
+The offline card is drawn, not captured: a ruled sheet with the wifi glyph struck
+through, "your lists never leave your phone" and three ticked absences. It is the
+last screenshot of every form factor.
+
 ## What the screenshots are chosen to show
 
 | | |
 |---|---|
-| `01-lists` | the page of lists: both date kinds, the tally rule, a finished list struck through |
+| `01-lists` | the board: both date kinds, the week strip, the highlighter washes |
 | `02-items` | one list open: rings, the add line, the done section |
-| `03-calendar` | the paper calendar and the caption that teaches target day from deadline |
-| `04`, `05` | the same pages by lamplight |
+| `03-calendar` | the Calendar tab, a month with its dotted days |
+| `04-date` | the date sheet a list's day is circled on |
 
 Six of the demo lists carry a `ListColour` and the rest are plain, so the page
 shows the wash without reading as a paint chart. The phone set has three of them

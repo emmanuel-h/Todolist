@@ -1,6 +1,8 @@
+Une to-do list toute simple, qui sert aussi de checklist et fonctionne entièrement hors ligne. Pas de compte, pas de pub, pas d'Internet : vos listes ne quittent jamais votre téléphone.
+
 Ailleurs, on veut organiser votre vie. Ici, c'est une feuille de cahier.
 
-Vous l'ouvrez : rien d'autre. Des lignes, votre écriture, et de la place en dessous. Pas de projets, pas d'étiquettes, pas de boîte de réception à vider, pas de série à entretenir. Vous écrivez une to-do list, vous l'ouvrez, vous rayez. On ne vous demande rien de plus.
+Vous l'ouvrez : rien d'autre. Des lignes, votre écriture, et de la place en dessous. Pas de projets, pas d'étiquettes, pas de boîte de réception à vider, pas de série à entretenir. Vous écrivez une to-do list — les courses, la checklist des vacances, ce qu'il reste à faire samedi —, vous l'ouvrez, vous rayez. On ne vous demande rien de plus.
 
 Chaque ligne a ce qu'il faut : une case à cocher, un crayon pour se corriger, une corbeille pour arracher la feuille. Aucun geste à deviner, et rien ne part sans qu'on vous l'ait demandé. Cochez une tâche : elle se raye sous vos yeux et passe sous le trait, avec celles qui sont déjà faites. L'ordre ne vous va pas ? Attrapez une ligne, posez-la ailleurs. Une to-do list terminée passe sous le trait toute seule : en haut, il ne reste que ce qui vous attend encore.
 
@@ -12,15 +14,15 @@ La couleur va sur le papier, jamais sur l'encre — c'est toute la règle. L'amb
 
 UN JOUR SUFFIT
 
-Une to-do list porte un jour. Un seul. Celui où vous comptez vous y mettre, ou celui où il faudra que ce soit fini. Vous l'entourez sur un calendrier de papier, il s'inscrit dans la marge, et voilà tout l'agenda. L'échéance du jour s'écrit en ambre, celle qu'on a laissée passer en rouge : de loin, sans lunettes, vous savez laquelle est laquelle.
+Une to-do list porte un jour. Un seul. Celui où vous comptez vous y mettre, ou son échéance : le jour où il faudra que ce soit fini. Vous l'entourez sur un calendrier de papier, il s'inscrit dans la marge, et voilà tout l'agenda. L'échéance du jour s'écrit en ambre, celle qu'on a laissée passer en rouge : de loin, sans lunettes, vous savez laquelle est laquelle.
 
-Une fois par jour, et seulement s'il y a matière, la page vous glisse un mot — ce qui tombe aujourd'hui, ce que vous aviez prévu pour demain. Une fois. À huit heures, ou à l'heure que vous soufflerez à la cloche, en haut de la feuille. Et si vous préférez qu'elle se taise, refusez-lui les notifications : le reste ne bougera pas d'un cil.
+Une fois par jour, et seulement s'il y a matière, un rappel vous glisse un mot — ce qui tombe aujourd'hui, ce que vous aviez prévu pour demain. Une fois. À huit heures, ou à l'heure que vous soufflerez à la cloche, en haut de la feuille. Et si vous préférez qu'elle se taise, refusez-lui les notifications : le reste ne bougera pas d'un cil.
 
-CE QU'IL N'Y A PAS
+HORS LIGNE, ET PRIVÉE
 
 Pas de compte. Pas d'inscription. Pas d'adresse e-mail. Pas de publicité, pas de traceur, pas de statistiques dans votre dos.
 
-Et pas la moindre permission Internet. Non pas la promesse de ne pas regarder : l'incapacité d'aller voir. Vos listes dorment dans une base privée, sur votre téléphone. Elles ne peuvent aller nulle part. Nous n'en avons jamais lu une seule.
+Et pas la moindre permission Internet. Non pas la promesse de ne pas regarder : l'incapacité d'aller voir. L'application fonctionne entièrement hors ligne, dans l'avion comme à la cave : elle n'a jamais eu besoin d'Internet. Vos listes dorment dans une base privée, sur votre téléphone. Elles ne peuvent aller nulle part. Nous n'en avons jamais lu une seule.
 
 Encre sur crème le jour, craie sur ardoise le soir. Lue correctement par TalkBack. En français comme en anglais. Sur une tablette, c'est la feuille qui s'élargit, pas la colonne de texte.
 

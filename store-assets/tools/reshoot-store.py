@@ -3,15 +3,16 @@
 
     python3 reshoot-store.py [serial]
 
-Writes store-assets/screenshots/<locale>/ for en-US and fr-FR: four phone shots
-and three shots at each tablet size. The debug build has to be installed on the
+Writes the raw captures to store-assets/captures/<locale>/ for en-US and fr-FR,
+four phone shots and three at each tablet size, then runs caption-screenshots.py
+to write the captioned set Play shows into store-assets/screenshots/. The debug build has to be installed on the
 emulator first (./gradlew installDebug). The emulator is resized for each form
 factor and put back as it was at the end — see store-assets/README.md.
 """
 import os, shutil, subprocess, sys, tempfile
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
-SCREENSHOTS = os.path.join(os.path.dirname(TOOLS), "screenshots")
+CAPTURES = os.path.join(os.path.dirname(TOOLS), "captures")
 SDK = os.environ.get("ANDROID_HOME") or os.path.expanduser("~/Android/Sdk")
 ADB = f"{SDK}/platform-tools/adb"
 
@@ -56,7 +57,7 @@ def main():
                 run("python3", f"{TOOLS}/capture-screenshots.py", dev, out, prefix,
                     *[shot for shot, _ in shots], env=env)
 
-                target = os.path.join(SCREENSHOTS, locale, subdir)
+                target = os.path.join(CAPTURES, locale, subdir)
                 os.makedirs(target, exist_ok=True)
                 for shot, name in shots:
                     shutil.copyfile(f"{out}/{prefix}-{shot}.png", f"{target}/{name}.png")
@@ -65,7 +66,7 @@ def main():
         adb(dev, "wm", "density", "reset")
         adb(dev, "am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command", "exit")
         shutil.rmtree(work)
-    print("screenshots written to", SCREENSHOTS)
+    run("python3", f"{TOOLS}/caption-screenshots.py")
 
 
 main()
