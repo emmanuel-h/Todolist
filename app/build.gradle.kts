@@ -48,8 +48,8 @@ android {
         applicationId = "fr.mandarine.todolist"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.2.1"
+        versionCode = 9
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
